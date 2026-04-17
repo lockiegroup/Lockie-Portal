@@ -48,17 +48,15 @@ class SalesController extends Controller
                     $params        = ['startDate' => $from, 'endDate' => $apiEndDate];
                     $lookbackStart = Carbon::parse($from)->subDays(90)->toDateString();
 
-                    $fetched = $this->unleashed->parallelPaginate([
-                        'sales'   => ['SalesOrders', $params],
-                        'credits' => ['CreditNotes', $params],
-                        'invoices' => ['SalesOrders', [
-                            'startDate'   => $lookbackStart,
-                            'endDate'     => $apiEndDate,
-                            'orderStatus' => 'Completed',
-                        ]],
+                    $allOrders       = $this->unleashed->paginate('SalesOrders', $params);
+                    $creditNotes     = $this->unleashed->paginate('CreditNotes', $params);
+                    $completedOrders = $this->unleashed->paginate('SalesOrders', [
+                        'startDate'   => $lookbackStart,
+                        'endDate'     => $apiEndDate,
+                        'orderStatus' => 'Completed',
                     ]);
 
-                    $invoices = array_filter($fetched['invoices'], function ($o) use ($from, $to) {
+                    $invoices = array_filter($completedOrders, function ($o) use ($from, $to) {
                         if (empty($o['CompletedDate'])) return false;
                         $dateStr = $o['CompletedDate'];
                         if (preg_match('/\/Date\((\d+)(?:[+-]\d{4})?\)\//', $dateStr, $m)) {
@@ -70,13 +68,13 @@ class SalesController extends Controller
                     });
 
                     $salesOrders = array_filter(
-                        $fetched['sales'],
+                        $allOrders,
                         fn($o) => ($o['OrderStatus'] ?? '') !== 'Cancelled'
                     );
 
                     return [
                         $this->groupByWarehouse($salesOrders),
-                        $this->groupByWarehouse($fetched['credits']),
+                        $this->groupByWarehouse($creditNotes),
                         $this->groupByWarehouse($invoices),
                     ];
                 }
@@ -88,8 +86,11 @@ class SalesController extends Controller
                 'creditsByWarehouse'  => $creditsByWarehouse,
                 'invoicesByWarehouse' => $invoicesByWarehouse,
             ]);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'error'   => get_class($e) . ': ' . $e->getMessage(),
+            ], 500);
         }
     }
 
