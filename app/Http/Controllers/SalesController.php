@@ -40,7 +40,7 @@ class SalesController extends Controller
                 $allOrders   = $this->unleashed->paginate('SalesOrders', $params);
                 $creditNotes = $this->unleashed->paginate('CreditNotes', $params);
 
-                $invoiceStatuses = ['Dispatched', 'Complete', 'Invoiced'];
+                $invoiceStatuses = ['Dispatched', 'Completed', 'Invoiced'];
 
                 // Exclude only Cancelled — Unleashed never returns deleted orders via API
                 $salesOrders = array_filter($allOrders, fn($o) => ($o['OrderStatus'] ?? '') !== 'Cancelled');
