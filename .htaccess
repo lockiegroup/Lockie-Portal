@@ -7,6 +7,10 @@
 # Route all web traffic into the public/ folder
 <IfModule mod_rewrite.c>
     RewriteEngine On
+
+    # Override DirectoryIndex so Default.html / index.html don't intercept requests
+    DirectoryIndex index.php
+
     RewriteRule ^$ public/index.php [L]
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
