@@ -66,7 +66,12 @@ class SalesController extends Controller
         $grouped = [];
 
         foreach ($items as $item) {
-            $name = $item['Warehouse']['WarehouseName'] ?? 'No Warehouse';
+            // Handle both SalesOrders/CreditNotes (nested) and Invoices (may differ)
+            $name = $item['Warehouse']['WarehouseName']
+                ?? $item['Warehouse']['WarehouseCode']
+                ?? $item['WarehouseName']
+                ?? $item['WarehouseCode']
+                ?? 'No Warehouse';
 
             if (!isset($grouped[$name])) {
                 $grouped[$name] = ['count' => 0, 'sub' => 0.0, 'tax' => 0.0, 'total' => 0.0];
