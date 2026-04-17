@@ -42,9 +42,11 @@ class SalesController extends Controller
                 // Invoices use invoice date (not order date) — use the /Invoices endpoint
                 $invoices = $this->unleashed->paginate('Invoices', $params);
                 if (!empty($invoices)) {
+                    $firstLine = $invoices[0]['InvoiceLines'][0] ?? [];
                     \Log::debug('Invoice API structure', [
-                        'keys'      => array_keys($invoices[0]),
-                        'warehouse' => $invoices[0]['Warehouse'] ?? 'MISSING',
+                        'invoice_keys' => array_keys($invoices[0]),
+                        'line_keys'    => array_keys($firstLine),
+                        'line_sample'  => $firstLine,
                     ]);
                 }
 
