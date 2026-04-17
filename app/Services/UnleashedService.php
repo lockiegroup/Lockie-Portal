@@ -63,4 +63,67 @@ class UnleashedService
 
         return $items;
     }
+
+    /**
+     * Fetch multiple endpoints concurrently, paginating each in parallel batches.
+     * $requests: ['key' => ['Endpoint', ['param' => 'value']], ...]
+     */
+    public function parallelPaginate(array $requests): array
+    {
+        $keys       = array_keys($requests);
+        $results    = array_fill_keys($keys, []);
+        $maxPages   = array_fill_keys($keys, 1);
+        $activeKeys = $keys;
+        $page       = 1;
+
+        do {
+            $batch = [];
+            foreach ($activeKeys as $key) {
+                [$endpoint, $params] = $requests[$key];
+                $qs = http_build_query(array_merge($params, [
+                    'pageSize'   => 200,
+                    'pageNumber' => $page,
+                ]));
+                $batch[$key] = [
+                    'url'     => self::BASE_URL . '/' . $endpoint . "?{$qs}",
+                    'headers' => $this->headers($qs),
+                ];
+            }
+
+            $responses = Http::pool(function ($pool) use ($batch) {
+                $calls = [];
+                foreach ($batch as $key => $info) {
+                    $calls[] = $pool->as($key)
+                        ->timeout(30)
+                        ->withHeaders($info['headers'])
+                        ->get($info['url']);
+                }
+                return $calls;
+            });
+
+            $nextActive = [];
+            foreach ($activeKeys as $key) {
+                $res = $responses[$key];
+                if ($res instanceof \Throwable) {
+                    throw new \RuntimeException('Unleashed API error: ' . $res->getMessage());
+                }
+                if ($res->failed()) {
+                    throw new \RuntimeException(
+                        "Unleashed API error ({$res->status()}): " . $res->body()
+                    );
+                }
+                $data             = $res->json() ?? [];
+                $results[$key]    = array_merge($results[$key], $data['Items'] ?? []);
+                $maxPages[$key]   = $data['Pagination']['NumberOfPages'] ?? 1;
+                if ($page < $maxPages[$key]) {
+                    $nextActive[] = $key;
+                }
+            }
+
+            $activeKeys = $nextActive;
+            $page++;
+        } while (!empty($activeKeys));
+
+        return $results;
+    }
 }

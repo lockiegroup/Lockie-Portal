@@ -51,7 +51,7 @@
                     </button>
                 @endforeach
             </div>
-            <form method="GET" action="{{ route('sales') }}" class="flex flex-wrap items-end gap-4">
+            <form id="sales-form" method="GET" action="{{ route('sales') }}" class="flex flex-wrap items-end gap-4">
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1.5" for="from">From</label>
                     <input type="date" id="from" name="from" value="{{ $from }}"
@@ -69,127 +69,156 @@
             </form>
         </div>
 
-        @if($error)
-            <div class="bg-red-50 border border-red-200 text-red-700 rounded-xl px-6 py-4 mb-8 text-sm">
-                <strong class="font-semibold">Unleashed API error:</strong> {{ $error }}
-            </div>
-        @else
-
-        {{-- Totals --}}
-        @php
-            $totals = [];
-            foreach (['sales' => $salesByWarehouse, 'credits' => $creditsByWarehouse, 'invoices' => $invoicesByWarehouse] as $key => $group) {
-                $totals[$key] = ['count' => 0, 'sub' => 0.0, 'tax' => 0.0, 'total' => 0.0];
-                foreach ($group as $d) {
-                    $totals[$key]['count'] += $d['count'];
-                    $totals[$key]['sub']   += $d['sub'];
-                    $totals[$key]['tax']   += $d['tax'];
-                    $totals[$key]['total'] += $d['total'];
-                }
-            }
-        @endphp
-
-        {{-- Summary Cards --}}
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
-            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                <p class="text-slate-500 text-sm font-medium">Sales Enquiry</p>
-                <p class="text-2xl font-bold text-slate-800 mt-1">£{{ number_format($totals['sales']['total'], 2) }}</p>
-                <p class="text-slate-400 text-sm mt-1">{{ number_format($totals['sales']['count']) }} orders &middot; ex VAT £{{ number_format($totals['sales']['sub'], 2) }}</p>
-            </div>
-            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                <p class="text-slate-500 text-sm font-medium">Credit Enquiry</p>
-                <p class="text-2xl font-bold text-red-500 mt-1">£{{ number_format($totals['credits']['total'], 2) }}</p>
-                <p class="text-slate-400 text-sm mt-1">{{ number_format($totals['credits']['count']) }} credits &middot; ex VAT £{{ number_format($totals['credits']['sub'], 2) }}</p>
-            </div>
-            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                <p class="text-slate-500 text-sm font-medium">Invoice Enquiry</p>
-                <p class="text-2xl font-bold text-emerald-600 mt-1">£{{ number_format($totals['invoices']['total'], 2) }}</p>
-                <p class="text-slate-400 text-sm mt-1">{{ number_format($totals['invoices']['count']) }} invoices &middot; ex VAT £{{ number_format($totals['invoices']['sub'], 2) }}</p>
-            </div>
-        </div>
-
-        {{-- Tables --}}
-        @php
-            $sections = [
-                [
-                    'title'  => 'Sales Enquiry by Warehouse',
-                    'note'   => 'All non-cancelled orders by order date',
-                    'color'  => 'bg-sky-500',
-                    'data'   => $salesByWarehouse,
-                    'totals' => $totals['sales'],
-                ],
-                [
-                    'title'  => 'Credit Enquiry by Warehouse',
-                    'note'   => 'All credit notes including free credits',
-                    'color'  => 'bg-red-500',
-                    'data'   => $creditsByWarehouse,
-                    'totals' => $totals['credits'],
-                ],
-                [
-                    'title'  => 'Invoice Enquiry by Warehouse',
-                    'note'   => 'Completed invoices by invoice date',
-                    'color'  => 'bg-emerald-500',
-                    'data'   => $invoicesByWarehouse,
-                    'totals' => $totals['invoices'],
-                ],
-            ];
-        @endphp
-
-        @foreach($sections as $section)
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 mb-6 overflow-hidden">
-            <div class="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
-                <div class="w-2.5 h-2.5 rounded-full {{ $section['color'] }}"></div>
-                <h2 class="font-semibold text-slate-800">{{ $section['title'] }}</h2>
-                <span class="text-slate-400 text-xs ml-2">{!! $section['note'] !!}</span>
-                <span class="text-slate-400 text-sm ml-auto">{{ $from }} — {{ $to }}</span>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead>
-                        <tr class="bg-slate-50 border-b border-slate-100 text-slate-500 text-xs uppercase tracking-wide">
-                            <th class="px-6 py-3 text-left font-medium">Warehouse</th>
-                            <th class="px-6 py-3 text-right font-medium">Count</th>
-                            <th class="px-6 py-3 text-right font-medium">Sub-Total</th>
-                            <th class="px-6 py-3 text-right font-medium">VAT</th>
-                            <th class="px-6 py-3 text-right font-medium">Total inc VAT</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($section['data'] as $warehouse => $d)
-                        <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
-                            <td class="px-6 py-4 font-medium text-slate-800">{{ $warehouse }}</td>
-                            <td class="px-6 py-4 text-right text-slate-600">{{ number_format($d['count']) }}</td>
-                            <td class="px-6 py-4 text-right text-slate-600">£{{ number_format($d['sub'], 2) }}</td>
-                            <td class="px-6 py-4 text-right text-slate-600">£{{ number_format($d['tax'], 2) }}</td>
-                            <td class="px-6 py-4 text-right font-semibold text-slate-800">£{{ number_format($d['total'], 2) }}</td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="5" class="px-6 py-10 text-center text-slate-400">No records found for this period.</td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                    @if(!empty($section['data']))
-                    <tfoot>
-                        <tr class="bg-slate-50 border-t-2 border-slate-200 font-semibold text-slate-800">
-                            <td class="px-6 py-4">Total</td>
-                            <td class="px-6 py-4 text-right">{{ number_format($section['totals']['count']) }}</td>
-                            <td class="px-6 py-4 text-right">£{{ number_format($section['totals']['sub'], 2) }}</td>
-                            <td class="px-6 py-4 text-right">£{{ number_format($section['totals']['tax'], 2) }}</td>
-                            <td class="px-6 py-4 text-right">£{{ number_format($section['totals']['total'], 2) }}</td>
-                        </tr>
-                    </tfoot>
-                    @endif
-                </table>
-            </div>
-        </div>
-        @endforeach
-
-        @endif
+        {{-- Results (populated via AJAX) --}}
+        <div id="results"></div>
 
     </main>
 
     <script>
+        // ── Helpers ────────────────────────────────────────────────────────────
+
+        const fmt = n => new Intl.NumberFormat('en-GB', {
+            minimumFractionDigits: 2, maximumFractionDigits: 2
+        }).format(n);
+
+        const fmtInt = n => new Intl.NumberFormat('en-GB').format(n);
+
+        function escHtml(s) {
+            return String(s)
+                .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+                .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        // ── Render helpers ─────────────────────────────────────────────────────
+
+        function loadingHtml() {
+            return `<div class="flex items-center justify-center py-24">
+                <div class="text-center">
+                    <div class="inline-block w-10 h-10 border-4 border-slate-200 border-t-sky-500 rounded-full animate-spin mb-4"></div>
+                    <p class="text-slate-500 text-sm">Fetching data from Unleashed…</p>
+                </div>
+            </div>`;
+        }
+
+        function errorHtml(msg) {
+            return `<div class="bg-red-50 border border-red-200 text-red-700 rounded-xl px-6 py-4 text-sm">
+                <strong class="font-semibold">Unleashed API error:</strong> ${escHtml(msg)}
+            </div>`;
+        }
+
+        function tableHtml(group, totals) {
+            const keys = Object.keys(group);
+            if (keys.length === 0) {
+                return `<tbody><tr><td colspan="5" class="px-6 py-10 text-center text-slate-400">No records found for this period.</td></tr></tbody>`;
+            }
+            const rows = keys.map(w => {
+                const d = group[w];
+                return `<tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                    <td class="px-6 py-4 font-medium text-slate-800">${escHtml(w)}</td>
+                    <td class="px-6 py-4 text-right text-slate-600">${fmtInt(d.count)}</td>
+                    <td class="px-6 py-4 text-right text-slate-600">£${fmt(d.sub)}</td>
+                    <td class="px-6 py-4 text-right text-slate-600">£${fmt(d.tax)}</td>
+                    <td class="px-6 py-4 text-right font-semibold text-slate-800">£${fmt(d.total)}</td>
+                </tr>`;
+            }).join('');
+            return `<tbody>${rows}</tbody>
+            <tfoot>
+                <tr class="bg-slate-50 border-t-2 border-slate-200 font-semibold text-slate-800">
+                    <td class="px-6 py-4">Total</td>
+                    <td class="px-6 py-4 text-right">${fmtInt(totals.count)}</td>
+                    <td class="px-6 py-4 text-right">£${fmt(totals.sub)}</td>
+                    <td class="px-6 py-4 text-right">£${fmt(totals.tax)}</td>
+                    <td class="px-6 py-4 text-right">£${fmt(totals.total)}</td>
+                </tr>
+            </tfoot>`;
+        }
+
+        function renderResults(data, from, to) {
+            const sections = [
+                { key: 'salesByWarehouse',    title: 'Sales Enquiry by Warehouse',   note: 'All non-cancelled orders by order date',  dot: 'bg-sky-500',     cardLabel: 'Sales Enquiry',   cardCls: 'text-slate-800', unit: 'orders'   },
+                { key: 'creditsByWarehouse',   title: 'Credit Enquiry by Warehouse',  note: 'All credit notes including free credits', dot: 'bg-red-500',     cardLabel: 'Credit Enquiry',  cardCls: 'text-red-500',   unit: 'credits'  },
+                { key: 'invoicesByWarehouse',  title: 'Invoice Enquiry by Warehouse', note: 'Completed invoices by invoice date',      dot: 'bg-emerald-500', cardLabel: 'Invoice Enquiry', cardCls: 'text-emerald-600', unit: 'invoices' },
+            ];
+
+            const totals = {};
+            for (const s of sections) {
+                totals[s.key] = Object.values(data[s.key] || {}).reduce(
+                    (a, d) => ({ count: a.count+d.count, sub: a.sub+d.sub, tax: a.tax+d.tax, total: a.total+d.total }),
+                    { count: 0, sub: 0, tax: 0, total: 0 }
+                );
+            }
+
+            const cards = sections.map(s => {
+                const t = totals[s.key];
+                return `<div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                    <p class="text-slate-500 text-sm font-medium">${s.cardLabel}</p>
+                    <p class="text-2xl font-bold ${s.cardCls} mt-1">£${fmt(t.total)}</p>
+                    <p class="text-slate-400 text-sm mt-1">${fmtInt(t.count)} ${s.unit} &middot; ex VAT £${fmt(t.sub)}</p>
+                </div>`;
+            }).join('');
+
+            const tables = sections.map(s => {
+                const group = data[s.key] || {};
+                return `<div class="bg-white rounded-xl shadow-sm border border-slate-200 mb-6 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
+                        <div class="w-2.5 h-2.5 rounded-full ${s.dot}"></div>
+                        <h2 class="font-semibold text-slate-800">${s.title}</h2>
+                        <span class="text-slate-400 text-xs ml-2">${s.note}</span>
+                        <div class="ml-auto flex items-center gap-4">
+                            <span class="text-slate-400 text-sm">${escHtml(from)} — ${escHtml(to)}</span>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-100 text-slate-500 text-xs uppercase tracking-wide">
+                                    <th class="px-6 py-3 text-left font-medium">Warehouse</th>
+                                    <th class="px-6 py-3 text-right font-medium">Count</th>
+                                    <th class="px-6 py-3 text-right font-medium">Sub-Total</th>
+                                    <th class="px-6 py-3 text-right font-medium">VAT</th>
+                                    <th class="px-6 py-3 text-right font-medium">Total inc VAT</th>
+                                </tr>
+                            </thead>
+                            ${tableHtml(group, totals[s.key])}
+                        </table>
+                    </div>
+                </div>`;
+            }).join('');
+
+            return `<div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">${cards}</div>
+                <div class="flex justify-end mb-4">
+                    <button onclick="loadData(true)" class="text-xs text-slate-400 hover:text-slate-700 transition-colors">↻ Refresh data</button>
+                </div>
+                ${tables}`;
+        }
+
+        // ── Data loading ───────────────────────────────────────────────────────
+
+        function loadData(refresh = false) {
+            const from = document.getElementById('from').value;
+            const to   = document.getElementById('to').value;
+
+            document.getElementById('results').innerHTML = loadingHtml();
+
+            let url = `/sales/data?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+            if (refresh) url += '&refresh=1';
+
+            fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.success) {
+                        document.getElementById('results').innerHTML = errorHtml(data.error || 'Unknown error');
+                    } else {
+                        document.getElementById('results').innerHTML = renderResults(data, from, to);
+                    }
+                })
+                .catch(err => {
+                    document.getElementById('results').innerHTML = errorHtml(err.message);
+                });
+        }
+
+        // ── Presets ────────────────────────────────────────────────────────────
+
         function setPreset(preset) {
             const today = new Date();
             let from, to = new Date();
@@ -218,18 +247,16 @@
                     break;
             }
 
-            document.getElementById('from').value = fmt(from);
-            document.getElementById('to').value   = fmt(to);
+            document.getElementById('from').value = fmtDate(from);
+            document.getElementById('to').value   = fmtDate(to);
         }
 
-        function fmt(d) {
+        function fmtDate(d) {
             return d.toISOString().split('T')[0];
         }
 
-        document.querySelector('form').addEventListener('submit', () => {
-            const btn = document.getElementById('submit-btn');
-            btn.textContent = 'Loading…';
-            btn.disabled = true;
-        });
+        // ── Init ───────────────────────────────────────────────────────────────
+
+        document.addEventListener('DOMContentLoaded', () => loadData());
     </script>
 </x-layout>

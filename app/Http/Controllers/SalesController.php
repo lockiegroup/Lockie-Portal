@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\UnleashedService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
@@ -24,57 +25,72 @@ class SalesController extends Controller
         $from = $request->input('from', now()->startOfMonth()->toDateString());
         $to   = $request->input('to', now()->toDateString());
 
-        $error               = null;
-        $salesByWarehouse    = [];
-        $creditsByWarehouse  = [];
-        $invoicesByWarehouse = [];
+        return view('sales.index', compact('from', 'to'));
+    }
 
-        try {
-            $cacheKey = "unleashed_sales_{$from}_{$to}";
+    public function data(Request $request): JsonResponse
+    {
+        $from = $request->input('from', now()->startOfMonth()->toDateString());
+        $to   = $request->input('to', now()->toDateString());
 
-            [$salesByWarehouse, $creditsByWarehouse, $invoicesByWarehouse] = Cache::remember($cacheKey, 600, function () use ($from, $to) {
-                // Unleashed endDate is exclusive, so add 1 day to include the selected end date
-                $apiEndDate = Carbon::parse($to)->addDay()->toDateString();
-                $params     = ['startDate' => $from, 'endDate' => $apiEndDate];
+        $cacheKey = "unleashed_sales_{$from}_{$to}";
 
-                $allOrders   = $this->unleashed->paginate('SalesOrders', $params);
-                $creditNotes = $this->unleashed->paginate('CreditNotes', $params);
-                // Invoice Enquiry: Completed orders filtered by CompletedDate (= invoice date)
-                // Fetch 90 days back from start to catch orders placed earlier but completed in range
-                $lookbackStart = Carbon::parse($from)->subDays(90)->toDateString();
-                $completedOrders = $this->unleashed->paginate('SalesOrders', [
-                    'startDate'   => $lookbackStart,
-                    'endDate'     => $apiEndDate,
-                    'orderStatus' => 'Completed',
-                ]);
-                $invoices = array_filter($completedOrders, function ($o) use ($from, $to) {
-                    if (empty($o['CompletedDate'])) return false;
-                    $dateStr = $o['CompletedDate'];
-                    if (preg_match('/\/Date\((\d+)\)\//', $dateStr, $m)) {
-                        $completed = date('Y-m-d', (int)$m[1] / 1000);
-                    } else {
-                        $completed = substr($dateStr, 0, 10);
-                    }
-                    return $completed >= $from && $completed <= $to;
-                });
-
-                // Exclude only Cancelled — Unleashed never returns deleted orders via API
-                $salesOrders = array_filter($allOrders, fn($o) => ($o['OrderStatus'] ?? '') !== 'Cancelled');
-
-                return [
-                    $this->groupByWarehouse($salesOrders),
-                    $this->groupByWarehouse($creditNotes),
-                    $this->groupByWarehouse($invoices),
-                ];
-            });
-        } catch (\Exception $e) {
-            $error = $e->getMessage();
+        if ($request->boolean('refresh')) {
+            Cache::forget($cacheKey);
         }
 
-        return view('sales.index', compact(
-            'from', 'to', 'error',
-            'salesByWarehouse', 'creditsByWarehouse', 'invoicesByWarehouse'
-        ));
+        try {
+            [$salesByWarehouse, $creditsByWarehouse, $invoicesByWarehouse] = Cache::remember(
+                $cacheKey,
+                1800,
+                function () use ($from, $to) {
+                    $apiEndDate    = Carbon::parse($to)->addDay()->toDateString();
+                    $params        = ['startDate' => $from, 'endDate' => $apiEndDate];
+                    $lookbackStart = Carbon::parse($from)->subDays(90)->toDateString();
+
+                    $fetched = $this->unleashed->parallelPaginate([
+                        'sales'   => ['SalesOrders', $params],
+                        'credits' => ['CreditNotes', $params],
+                        'invoices' => ['SalesOrders', [
+                            'startDate'   => $lookbackStart,
+                            'endDate'     => $apiEndDate,
+                            'orderStatus' => 'Completed',
+                        ]],
+                    ]);
+
+                    $invoices = array_filter($fetched['invoices'], function ($o) use ($from, $to) {
+                        if (empty($o['CompletedDate'])) return false;
+                        $dateStr = $o['CompletedDate'];
+                        if (preg_match('/\/Date\((\d+)(?:[+-]\d{4})?\)\//', $dateStr, $m)) {
+                            $completed = date('Y-m-d', (int)$m[1] / 1000);
+                        } else {
+                            $completed = substr($dateStr, 0, 10);
+                        }
+                        return $completed >= $from && $completed <= $to;
+                    });
+
+                    $salesOrders = array_filter(
+                        $fetched['sales'],
+                        fn($o) => ($o['OrderStatus'] ?? '') !== 'Cancelled'
+                    );
+
+                    return [
+                        $this->groupByWarehouse($salesOrders),
+                        $this->groupByWarehouse($fetched['credits']),
+                        $this->groupByWarehouse($invoices),
+                    ];
+                }
+            );
+
+            return response()->json([
+                'success'             => true,
+                'salesByWarehouse'    => $salesByWarehouse,
+                'creditsByWarehouse'  => $creditsByWarehouse,
+                'invoicesByWarehouse' => $invoicesByWarehouse,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
     }
 
     private function groupByWarehouse(array $items): array
@@ -82,7 +98,6 @@ class SalesController extends Controller
         $grouped = [];
 
         foreach ($items as $item) {
-            // Handle both SalesOrders/CreditNotes (nested) and Invoices (may differ)
             $name = $item['Warehouse']['WarehouseName']
                 ?? $item['Warehouse']['WarehouseCode']
                 ?? $item['WarehouseName']
