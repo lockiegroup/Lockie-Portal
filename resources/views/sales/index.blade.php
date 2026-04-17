@@ -204,10 +204,15 @@
             if (refresh) url += '&refresh=1';
 
             fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-                .then(r => r.json())
-                .then(data => {
+                .then(r => r.text())
+                .then(text => {
+                    let data;
+                    try { data = JSON.parse(text); } catch (e) {
+                        document.getElementById('results').innerHTML = errorHtml('Bad response from server (not JSON). Check Laravel logs.');
+                        return;
+                    }
                     if (!data.success) {
-                        document.getElementById('results').innerHTML = errorHtml(data.error || 'Unknown error');
+                        document.getElementById('results').innerHTML = errorHtml(data.error || data.message || 'Unknown error — check storage/logs/laravel.log on the server');
                     } else {
                         document.getElementById('results').innerHTML = renderResults(data, from, to);
                     }
