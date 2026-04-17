@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\UnleashedService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class SalesController extends Controller
 {
@@ -28,20 +29,26 @@ class SalesController extends Controller
         $invoicesByWarehouse = [];
 
         try {
-            $params = ['startDate' => $from, 'endDate' => $to];
+            $cacheKey = "unleashed_sales_{$from}_{$to}";
 
-            $allOrders   = $this->unleashed->paginate('SalesOrders', $params);
-            $creditNotes = $this->unleashed->paginate('CreditNotes', $params);
+            [$salesByWarehouse, $creditsByWarehouse, $invoicesByWarehouse] = Cache::remember($cacheKey, 600, function () use ($from, $to) {
+                $params = ['startDate' => $from, 'endDate' => $to];
 
-            $activeStatuses  = ['Placed', 'Picking', 'Backordered', 'Dispatched', 'Complete', 'Invoiced'];
-            $invoiceStatuses = ['Dispatched', 'Complete', 'Invoiced'];
+                $allOrders   = $this->unleashed->paginate('SalesOrders', $params);
+                $creditNotes = $this->unleashed->paginate('CreditNotes', $params);
 
-            $salesOrders = array_filter($allOrders, fn($o) => in_array($o['OrderStatus'] ?? '', $activeStatuses));
-            $invoices    = array_filter($allOrders, fn($o) => in_array($o['OrderStatus'] ?? '', $invoiceStatuses));
+                $activeStatuses  = ['Placed', 'Picking', 'Backordered', 'Dispatched', 'Complete', 'Invoiced'];
+                $invoiceStatuses = ['Dispatched', 'Complete', 'Invoiced'];
 
-            $salesByWarehouse    = $this->groupByWarehouse($salesOrders);
-            $creditsByWarehouse  = $this->groupByWarehouse($creditNotes);
-            $invoicesByWarehouse = $this->groupByWarehouse($invoices);
+                $salesOrders = array_filter($allOrders, fn($o) => in_array($o['OrderStatus'] ?? '', $activeStatuses));
+                $invoices    = array_filter($allOrders, fn($o) => in_array($o['OrderStatus'] ?? '', $invoiceStatuses));
+
+                return [
+                    $this->groupByWarehouse($salesOrders),
+                    $this->groupByWarehouse($creditNotes),
+                    $this->groupByWarehouse($invoices),
+                ];
+            });
         } catch (\Exception $e) {
             $error = $e->getMessage();
         }
