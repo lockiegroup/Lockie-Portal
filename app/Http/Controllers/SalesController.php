@@ -39,16 +39,19 @@ class SalesController extends Controller
 
                 $allOrders   = $this->unleashed->paginate('SalesOrders', $params);
                 $creditNotes = $this->unleashed->paginate('CreditNotes', $params);
-                // Invoices use invoice date (not order date) — use the /Invoices endpoint
-                $invoices = $this->unleashed->paginate('Invoices', $params);
-                if (!empty($invoices)) {
-                    $firstLine = $invoices[0]['InvoiceLines'][0] ?? [];
-                    \Log::debug('Invoice API structure', [
-                        'invoice_keys' => array_keys($invoices[0]),
-                        'line_keys'    => array_keys($firstLine),
-                        'line_sample'  => $firstLine,
-                    ]);
-                }
+                // Invoice Enquiry: Completed orders filtered by CompletedDate (= invoice date)
+                // Fetch 90 days back from start to catch orders placed earlier but completed in range
+                $lookbackStart = Carbon::parse($from)->subDays(90)->toDateString();
+                $completedOrders = $this->unleashed->paginate('SalesOrders', [
+                    'startDate'   => $lookbackStart,
+                    'endDate'     => $apiEndDate,
+                    'orderStatus' => 'Completed',
+                ]);
+                $invoices = array_filter($completedOrders, function ($o) use ($from, $to) {
+                    if (empty($o['CompletedDate'])) return false;
+                    $completed = Carbon::parse($o['CompletedDate'])->toDateString();
+                    return $completed >= $from && $completed <= $to;
+                });
 
                 // Exclude only Cancelled — Unleashed never returns deleted orders via API
                 $salesOrders = array_filter($allOrders, fn($o) => ($o['OrderStatus'] ?? '') !== 'Cancelled');
