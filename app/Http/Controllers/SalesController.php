@@ -35,16 +35,15 @@ class SalesController extends Controller
             [$salesByWarehouse, $creditsByWarehouse, $invoicesByWarehouse] = Cache::remember($cacheKey, 600, function () use ($from, $to) {
                 // Unleashed endDate is exclusive, so add 1 day to include the selected end date
                 $apiEndDate = Carbon::parse($to)->addDay()->toDateString();
-                $params = ['startDate' => $from, 'endDate' => $apiEndDate];
+                $params     = ['startDate' => $from, 'endDate' => $apiEndDate];
 
                 $allOrders   = $this->unleashed->paginate('SalesOrders', $params);
                 $creditNotes = $this->unleashed->paginate('CreditNotes', $params);
-
-                $invoiceStatuses = ['Dispatched', 'Completed', 'Invoiced'];
+                // Invoices use invoice date (not order date) — use the /Invoices endpoint
+                $invoices    = $this->unleashed->paginate('Invoices', $params);
 
                 // Exclude only Cancelled — Unleashed never returns deleted orders via API
                 $salesOrders = array_filter($allOrders, fn($o) => ($o['OrderStatus'] ?? '') !== 'Cancelled');
-                $invoices    = array_filter($allOrders, fn($o) => in_array($o['OrderStatus'] ?? '', $invoiceStatuses));
 
                 return [
                     $this->groupByWarehouse($salesOrders),
