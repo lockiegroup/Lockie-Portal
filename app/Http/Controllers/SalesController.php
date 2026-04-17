@@ -40,7 +40,13 @@ class SalesController extends Controller
                 $allOrders   = $this->unleashed->paginate('SalesOrders', $params);
                 $creditNotes = $this->unleashed->paginate('CreditNotes', $params);
                 // Invoices use invoice date (not order date) — use the /Invoices endpoint
-                $invoices    = $this->unleashed->paginate('Invoices', $params);
+                $invoices = $this->unleashed->paginate('Invoices', $params);
+                if (!empty($invoices)) {
+                    \Log::debug('Invoice API structure', [
+                        'keys'      => array_keys($invoices[0]),
+                        'warehouse' => $invoices[0]['Warehouse'] ?? 'MISSING',
+                    ]);
+                }
 
                 // Exclude only Cancelled — Unleashed never returns deleted orders via API
                 $salesOrders = array_filter($allOrders, fn($o) => ($o['OrderStatus'] ?? '') !== 'Cancelled');
