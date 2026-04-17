@@ -29,7 +29,7 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
 
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4 opacity-60 cursor-not-allowed">
+            <a href="{{ route('sales') }}" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4 hover:shadow-md hover:border-slate-300 transition-all">
                 <div class="w-12 h-12 rounded-xl flex items-center justify-center bg-emerald-50 text-emerald-600">
                     <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                 </div>
@@ -37,8 +37,8 @@
                     <h2 class="font-semibold text-slate-800">Sales Figures</h2>
                     <p class="text-slate-500 text-sm mt-1">View and track your team's sales performance, targets, and reports.</p>
                 </div>
-                <span class="text-xs font-medium text-slate-400 uppercase tracking-wide mt-auto">Coming soon</span>
-            </div>
+                <span class="text-xs font-medium text-emerald-600 uppercase tracking-wide mt-auto">Open &rarr;</span>
+            </a>
 
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4 opacity-60 cursor-not-allowed">
                 <div class="w-12 h-12 rounded-xl flex items-center justify-center bg-amber-50 text-amber-600">

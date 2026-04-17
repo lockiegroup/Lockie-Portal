@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\OtpController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\SalesController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -20,6 +21,7 @@ Route::middleware('guest')->group(function () {
 // Authenticated + OTP verified routes
 Route::middleware(['auth', 'otp'])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('/sales', [SalesController::class, 'index'])->name('sales');
     Route::post('/logout', LogoutController::class)->name('logout');
 
     // Admin only
