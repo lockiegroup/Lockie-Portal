@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\UnleashedService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Carbon\Carbon;
 
 class SalesController extends Controller
 {
@@ -32,7 +33,9 @@ class SalesController extends Controller
             $cacheKey = "unleashed_sales_{$from}_{$to}";
 
             [$salesByWarehouse, $creditsByWarehouse, $invoicesByWarehouse] = Cache::remember($cacheKey, 600, function () use ($from, $to) {
-                $params = ['startDate' => $from, 'endDate' => $to];
+                // Unleashed endDate is exclusive, so add 1 day to include the selected end date
+                $apiEndDate = Carbon::parse($to)->addDay()->toDateString();
+                $params = ['startDate' => $from, 'endDate' => $apiEndDate];
 
                 $allOrders   = $this->unleashed->paginate('SalesOrders', $params);
                 $creditNotes = $this->unleashed->paginate('CreditNotes', $params);
