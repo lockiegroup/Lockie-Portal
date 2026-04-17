@@ -49,7 +49,12 @@ class SalesController extends Controller
                 ]);
                 $invoices = array_filter($completedOrders, function ($o) use ($from, $to) {
                     if (empty($o['CompletedDate'])) return false;
-                    $completed = Carbon::parse($o['CompletedDate'])->toDateString();
+                    $dateStr = $o['CompletedDate'];
+                    if (preg_match('/\/Date\((\d+)\)\//', $dateStr, $m)) {
+                        $completed = date('Y-m-d', (int)$m[1] / 1000);
+                    } else {
+                        $completed = substr($dateStr, 0, 10);
+                    }
                     return $completed >= $from && $completed <= $to;
                 });
 
@@ -89,9 +94,9 @@ class SalesController extends Controller
             }
 
             $grouped[$name]['count']++;
-            $grouped[$name]['sub']   += (float) ($item['SubTotal'] ?? 0);
-            $grouped[$name]['tax']   += (float) ($item['TaxTotal'] ?? 0);
-            $grouped[$name]['total'] += (float) ($item['Total'] ?? 0);
+            $grouped[$name]['sub']   += (float) ($item['BCSubTotal'] ?? $item['SubTotal'] ?? 0);
+            $grouped[$name]['tax']   += (float) ($item['BCTaxTotal'] ?? $item['TaxTotal'] ?? 0);
+            $grouped[$name]['total'] += (float) ($item['BCTotal']    ?? $item['Total']    ?? 0);
         }
 
         uasort($grouped, fn($a, $b) => $b['total'] <=> $a['total']);
