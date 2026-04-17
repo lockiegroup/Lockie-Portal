@@ -92,17 +92,17 @@
         {{-- Summary Cards --}}
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
             <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                <p class="text-slate-500 text-sm font-medium">Sales Orders</p>
+                <p class="text-slate-500 text-sm font-medium">Sales Enquiry</p>
                 <p class="text-2xl font-bold text-slate-800 mt-1">£{{ number_format($totals['sales']['total'], 2) }}</p>
                 <p class="text-slate-400 text-sm mt-1">{{ number_format($totals['sales']['count']) }} orders &middot; ex VAT £{{ number_format($totals['sales']['sub'], 2) }}</p>
             </div>
             <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                <p class="text-slate-500 text-sm font-medium">Credit Notes</p>
+                <p class="text-slate-500 text-sm font-medium">Credit Enquiry</p>
                 <p class="text-2xl font-bold text-red-500 mt-1">£{{ number_format($totals['credits']['total'], 2) }}</p>
                 <p class="text-slate-400 text-sm mt-1">{{ number_format($totals['credits']['count']) }} credits &middot; ex VAT £{{ number_format($totals['credits']['sub'], 2) }}</p>
             </div>
             <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                <p class="text-slate-500 text-sm font-medium">Invoiced</p>
+                <p class="text-slate-500 text-sm font-medium">Invoice Enquiry</p>
                 <p class="text-2xl font-bold text-emerald-600 mt-1">£{{ number_format($totals['invoices']['total'], 2) }}</p>
                 <p class="text-slate-400 text-sm mt-1">{{ number_format($totals['invoices']['count']) }} invoices &middot; ex VAT £{{ number_format($totals['invoices']['sub'], 2) }}</p>
             </div>
@@ -112,22 +112,22 @@
         @php
             $sections = [
                 [
-                    'title'  => 'Sales Orders by Warehouse',
-                    'note'   => 'Placed, Picking, Dispatched &amp; Complete',
+                    'title'  => 'Sales Enquiry by Warehouse',
+                    'note'   => 'All non-cancelled orders by order date',
                     'color'  => 'bg-sky-500',
                     'data'   => $salesByWarehouse,
                     'totals' => $totals['sales'],
                 ],
                 [
-                    'title'  => 'Credit Notes by Warehouse',
-                    'note'   => 'All credit notes',
+                    'title'  => 'Credit Enquiry by Warehouse',
+                    'note'   => 'All credit notes including free credits',
                     'color'  => 'bg-red-500',
                     'data'   => $creditsByWarehouse,
                     'totals' => $totals['credits'],
                 ],
                 [
-                    'title'  => 'Invoices by Warehouse',
-                    'note'   => 'Dispatched &amp; Complete orders only',
+                    'title'  => 'Invoice Enquiry by Warehouse',
+                    'note'   => 'Completed invoices by invoice date',
                     'color'  => 'bg-emerald-500',
                     'data'   => $invoicesByWarehouse,
                     'totals' => $totals['invoices'],
