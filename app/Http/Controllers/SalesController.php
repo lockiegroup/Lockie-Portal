@@ -40,7 +40,7 @@ class SalesController extends Controller
         }
 
         try {
-            [$salesByWarehouse, $creditsByWarehouse, $invoicesByWarehouse, $debugInvoice] = Cache::remember(
+            [$salesByWarehouse, $creditsByWarehouse, $invoicesByWarehouse] = Cache::remember(
                 $cacheKey,
                 1800,
                 function () use ($from, $to) {
@@ -51,7 +51,7 @@ class SalesController extends Controller
                     $fetched = $this->unleashed->parallelPaginate([
                         'sales'    => ['SalesOrders', $params],
                         'credits'  => ['CreditNotes', $params],
-                        'invoices' => ['Invoices', array_merge($params, ['status' => 'Completed'])],
+                        'invoices' => ['Invoices', array_merge($params, ['invoiceStatus' => 'Completed'])],
                     ]);
 
                     // Resolve warehouse for each invoice by fetching only the specific
@@ -97,7 +97,6 @@ class SalesController extends Controller
                         $this->groupByWarehouse($salesOrders),
                         $this->groupByWarehouse($fetched['credits']),
                         $this->groupByWarehouse($invoices),
-                        $fetched['invoices'][0] ?? [],
                     ];
                 }
             );
@@ -107,7 +106,6 @@ class SalesController extends Controller
                 'salesByWarehouse'    => $salesByWarehouse,
                 'creditsByWarehouse'  => $creditsByWarehouse,
                 'invoicesByWarehouse' => $invoicesByWarehouse,
-                '_debug_invoice'      => $debugInvoice,
             ]);
         } catch (\Throwable $e) {
             return response()->json([
