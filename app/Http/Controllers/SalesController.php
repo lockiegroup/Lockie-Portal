@@ -48,36 +48,26 @@ class SalesController extends Controller
                     $params     = ['startDate' => $from, 'endDate' => $apiEndDate];
 
                     // Fetch Sales Orders, Credit Notes, and Invoices in parallel.
-                    // The Invoices API filters by creation date (UTC), NOT InvoiceDate.
-                    // Invoices created before $from but with InvoiceDate inside the range would be
-                    // missed with an exact date match. Extend the lookback by 3 months and PHP-filter
-                    // by InvoiceDate so results match Unleashed's Invoice Enquiry (Invoice Date mode).
-                    // No invoiceStatus param: that filter causes the API to miscalculate pagination,
-                    // returning duplicate pages. We de-duplicate and filter in PHP instead.
-                    $invoiceLookback = Carbon::parse($from)->subMonths(3)->toDateString();
-
+                    // No invoiceStatus param: that filter causes the API to miscalculate pagination
+                    // (count is from unfiltered total), so page 2 returns the same records as page 1.
+                    // We de-duplicate and filter for Completed in PHP instead.
                     $fetched = $this->unleashed->parallelPaginate([
                         'sales'    => ['SalesOrders', $params],
                         'credits'  => ['CreditNotes', $params],
                         'invoices' => ['Invoices', [
-                            'startDate' => $invoiceLookback,
+                            'startDate' => $from,
                             'endDate'   => $to,
                         ]],
                     ]);
 
-                    // De-duplicate by InvoiceNumber, keep Completed with InvoiceDate in user's range
+                    // De-duplicate by InvoiceNumber and keep only Completed invoices
                     $uniqueInvoices = [];
                     foreach ($fetched['invoices'] as $inv) {
                         $uniqueInvoices[$inv['InvoiceNumber']] = $inv;
                     }
                     $fetched['invoices'] = array_values(array_filter(
                         array_values($uniqueInvoices),
-                        function ($inv) use ($from, $to) {
-                            if (($inv['InvoiceStatus'] ?? '') !== 'Completed') return false;
-                            if (!preg_match('/\/Date\((\d+)/', $inv['InvoiceDate'] ?? '', $m)) return false;
-                            $date = Carbon::createFromTimestampMs((int) $m[1])->toDateString();
-                            return $date >= $from && $date <= $to;
-                        }
+                        fn($inv) => ($inv['InvoiceStatus'] ?? '') === 'Completed'
                     ));
 
                     // Resolve warehouse for each invoice by fetching only the specific
