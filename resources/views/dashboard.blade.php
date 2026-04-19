@@ -2,7 +2,7 @@
     <nav class="bg-slate-900 shadow-lg">
         <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
             <a href="{{ route('dashboard') }}">
-                <img src="{{ asset('images/logo.png') }}" alt="Lockie Group" class="h-8 w-auto">
+                <img src="{{ asset('images/logo.png') }}" alt="Lockie Group" class="h-12 w-auto">
             </a>
             <div class="flex items-center gap-4">
                 @if(auth()->user()->isAdmin())

@@ -3,7 +3,7 @@
         <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
             <div class="flex items-center gap-6">
                 <a href="{{ route('dashboard') }}">
-                    <img src="{{ asset('images/logo.png') }}" alt="Lockie Group" class="h-8 w-auto">
+                    <img src="{{ asset('images/logo.png') }}" alt="Lockie Group" class="h-12 w-auto">
                 </a>
                 <div class="hidden sm:flex items-center gap-1">
                     <a href="{{ route('dashboard') }}" class="text-slate-400 hover:text-white text-sm px-3 py-1 rounded-lg transition-colors">Dashboard</a>
