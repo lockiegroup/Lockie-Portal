@@ -148,7 +148,8 @@ class UnleashedService
      */
     public function fetchStockAllWarehouses(array $productGuids, int $batchSize = 50): array
     {
-        $grouped = [];
+        $grouped  = [];
+        $debugged = false;
 
         foreach (array_chunk($productGuids, $batchSize) as $batch) {
             $responses = Http::pool(function ($pool) use ($batch) {
@@ -164,9 +165,24 @@ class UnleashedService
 
             foreach ($batch as $guid) {
                 $res = $responses[$guid] ?? null;
-                if (!$res || $res instanceof \Throwable || $res->failed()) continue;
+                if (!$res || $res instanceof \Throwable || $res->failed()) {
+                    if (!$debugged) {
+                        $status = $res instanceof \Throwable ? $res->getMessage() : ($res ? $res->status() : 'null');
+                        \Log::debug('AllWarehouses: skip', ['guid' => $guid, 'status' => $status]);
+                        $debugged = true;
+                    }
+                    continue;
+                }
+                if (!$debugged) {
+                    \Log::debug('AllWarehouses: first response', [
+                        'guid'   => $guid,
+                        'status' => $res->status(),
+                        'body'   => substr($res->body(), 0, 500),
+                    ]);
+                    $debugged = true;
+                }
                 foreach ($res->json()['Items'] ?? [] as $item) {
-                    $wh = $item['Warehouse'] ?? $item['WarehouseCode'] ?? 'Unknown';
+                    $wh = $item['WarehouseName'] ?? $item['Warehouse'] ?? $item['WarehouseCode'] ?? 'Unknown';
                     if (!isset($grouped[$wh])) {
                         $grouped[$wh] = ['totalCost' => 0.0, 'qty' => 0.0];
                     }
