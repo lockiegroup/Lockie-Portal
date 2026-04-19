@@ -72,6 +72,7 @@ class UnleashedService
     {
         $keys       = array_keys($requests);
         $results    = array_fill_keys($keys, []);
+        $seenGuids  = array_fill_keys($keys, []);
         $maxPages   = array_fill_keys($keys, 1);
         $activeKeys = $keys;
         $page       = 1;
@@ -112,10 +113,23 @@ class UnleashedService
                         "Unleashed API error ({$res->status()}): " . $res->body()
                     );
                 }
-                $data             = $res->json() ?? [];
-                $results[$key]    = array_merge($results[$key], $data['Items'] ?? []);
-                $maxPages[$key]   = $data['Pagination']['NumberOfPages'] ?? 1;
-                if ($page < $maxPages[$key]) {
+                $data     = $res->json() ?? [];
+                $items    = $data['Items'] ?? [];
+                $newCount = 0;
+                foreach ($items as $item) {
+                    $guid = $item['Guid'] ?? null;
+                    if ($guid === null || !isset($seenGuids[$key][$guid])) {
+                        $results[$key][] = $item;
+                        if ($guid !== null) {
+                            $seenGuids[$key][$guid] = true;
+                        }
+                        $newCount++;
+                    }
+                }
+                $maxPages[$key] = $data['Pagination']['NumberOfPages'] ?? 1;
+                // Stop if no new items were added (Unleashed pagination bug: filtered queries
+                // return the same page repeatedly when NumberOfPages > actual filtered pages)
+                if ($newCount > 0 && $page < $maxPages[$key]) {
                     $nextActive[] = $key;
                 }
             }

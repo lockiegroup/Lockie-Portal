@@ -69,6 +69,11 @@
             </form>
         </div>
 
+        {{-- Refresh button (always visible) --}}
+        <div class="flex justify-end mb-4">
+            <button id="refresh-btn" onclick="loadData(true)" class="text-xs text-slate-400 hover:text-slate-700 transition-colors">↻ Refresh data</button>
+        </div>
+
         {{-- Results (populated via AJAX) --}}
         <div id="results"></div>
 
@@ -185,11 +190,7 @@
                 </div>`;
             }).join('');
 
-            return `<div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">${cards}</div>
-                <div class="flex justify-end mb-4">
-                    <button onclick="loadData(true)" class="text-xs text-slate-400 hover:text-slate-700 transition-colors">↻ Refresh data</button>
-                </div>
-                ${tables}`;
+            return `<div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">${cards}</div>${tables}`;
         }
 
         // ── Data loading ───────────────────────────────────────────────────────

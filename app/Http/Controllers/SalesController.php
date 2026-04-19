@@ -58,7 +58,7 @@ class SalesController extends Controller
                     $fetched = $this->unleashed->parallelPaginate([
                         'sales'    => ['SalesOrders', $params],
                         'credits'  => ['CreditNotes', $params],
-                        'invoices' => ['Invoices', ['startDate' => '2000-01-01']],
+                        'invoices' => ['Invoices', ['startDate' => '2020-01-01']],
                     ]);
 
                     // De-duplicate by InvoiceNumber, keep Completed invoices with InvoiceDate in range
