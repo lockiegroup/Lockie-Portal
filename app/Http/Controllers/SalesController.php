@@ -47,20 +47,17 @@ class SalesController extends Controller
                     $apiEndDate = Carbon::parse($to)->addDay()->toDateString();
                     $params     = ['startDate' => $from, 'endDate' => $apiEndDate];
 
-                    // Invoices: look back 6 months so we capture orders placed earlier
-                    // but invoiced within the requested window. Results are post-filtered
-                    // by InvoiceDate below to match what Unleashed's Invoice Enquiry shows.
-                    $invoiceParams = [
-                        'startDate'     => Carbon::parse($from)->subMonths(6)->toDateString(),
-                        'endDate'       => $apiEndDate,
-                        'invoiceStatus' => 'Completed',
-                    ];
-
-                    // Fetch Sales Orders, Credit Notes, and Invoices in parallel
+                    // Fetch Sales Orders, Credit Notes, and Invoices in parallel.
+                    // Invoices use the exact user dates (no +1 day): the API filters by
+                    // InvoiceDate and treats endDate as inclusive.
                     $fetched = $this->unleashed->parallelPaginate([
                         'sales'    => ['SalesOrders', $params],
                         'credits'  => ['CreditNotes', $params],
-                        'invoices' => ['Invoices', $invoiceParams],
+                        'invoices' => ['Invoices', [
+                            'startDate'     => $from,
+                            'endDate'       => $to,
+                            'invoiceStatus' => 'Completed',
+                        ]],
                     ]);
 
                     // Resolve warehouse for each invoice by fetching only the specific
@@ -95,23 +92,6 @@ class SalesController extends Controller
                         $inv['Warehouse'] = ['WarehouseName' => $warehouseMap[$num] ?? 'No Warehouse'];
                         return $inv;
                     }, $fetched['invoices']);
-
-                    // Post-filter by InvoiceDate to match Unleashed's Invoice Enquiry
-                    // (the API startDate/endDate may filter by order date, not invoice date)
-                    $invoices = array_values(array_filter($invoices, function ($inv) use ($from, $to) {
-                        if (($inv['InvoiceStatus'] ?? '') !== 'Completed') {
-                            return false;
-                        }
-                        $raw = $inv['InvoiceDate'] ?? null;
-                        if (!$raw) return false;
-                        if (preg_match('/\/Date\((\d+)/', $raw, $m)) {
-                            $date = date('Y-m-d', (int)$m[1] / 1000);
-                        } else {
-                            try { $date = Carbon::parse($raw)->toDateString(); }
-                            catch (\Exception $e) { return false; }
-                        }
-                        return $date >= $from && $date <= $to;
-                    }));
 
                     // Sales Enquiry: open orders only — Completed go to Invoice Enquiry
                     $salesOrders = array_filter(
