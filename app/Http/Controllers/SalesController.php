@@ -60,6 +60,12 @@ class SalesController extends Controller
                         ]],
                     ]);
 
+                    // Temporary debug: log raw invoice count and first invoice fields
+                    \Illuminate\Support\Facades\Log::info('Unleashed invoices debug', [
+                        'total_raw'    => count($fetched['invoices']),
+                        'first_invoice' => array_slice($fetched['invoices'], 0, 1),
+                    ]);
+
                     // Resolve warehouse for each invoice by fetching only the specific
                     // sales orders referenced. Results cached per order for 7 days so
                     // repeat searches don't re-fetch the same orders.
