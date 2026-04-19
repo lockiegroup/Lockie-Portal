@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\OtpController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SalesController;
+use App\Http\Controllers\StockController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -23,6 +24,7 @@ Route::middleware(['auth', 'otp'])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/sales', [SalesController::class, 'index'])->name('sales');
     Route::get('/sales/data', [SalesController::class, 'data'])->name('sales.data');
+    Route::get('/stock/data', [StockController::class, 'data'])->name('stock.data');
     Route::post('/logout', LogoutController::class)->name('logout');
 
     // Admin only
