@@ -60,6 +60,17 @@ class SalesController extends Controller
                         ]],
                     ]);
 
+                    // Temporary: log all invoice numbers for comparison with Unleashed export
+                    \Illuminate\Support\Facades\Log::info('API invoice list', [
+                        'count' => count($fetched['invoices']),
+                        'invoices' => array_map(fn($i) => [
+                            'num' => $i['InvoiceNumber'],
+                            'order' => $i['OrderNumber'] ?? '',
+                            'sub' => round((float)($i['SubTotal'] ?? 0), 2),
+                            'date' => $i['InvoiceDate'] ?? '',
+                        ], $fetched['invoices']),
+                    ]);
+
                     // Resolve warehouse for each invoice by fetching only the specific
                     // sales orders referenced. Results cached per order for 7 days so
                     // repeat searches don't re-fetch the same orders.
