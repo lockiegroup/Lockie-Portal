@@ -38,7 +38,7 @@
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1.5">
                             Number of weeks
-                            <span class="text-slate-400 font-normal text-xs">(auto-calculated)</span>
+                            <span class="text-slate-400 font-normal text-xs">(52 = standard)</span>
                         </label>
                         <input type="number" name="num_weeks" id="num_weeks"
                             value="{{ old('num_weeks', 52) }}" min="1" max="53" required
@@ -165,20 +165,29 @@
         const currentType = document.querySelector('input[name="set_number_type"]:checked')?.value || 'sequential';
         toggleSetType(currentType);
 
-        // ── Weeks auto-calculate ───────────────────────────────────────────────
-        document.getElementById('start_date').addEventListener('change', function () {
-            const d = new Date(this.value);
-            if (isNaN(d)) return;
-            const yearEnd = new Date(d.getFullYear(), 11, 31);
-            let count = 0, cur = new Date(d);
-            while (cur <= yearEnd) { count++; cur.setDate(cur.getDate() + 7); }
-            document.getElementById('num_weeks').value = count;
+        // ── Weeks preview (standard = 52 weeks from start date) ───────────────
+        function updateWeeksPreview() {
+            const val = document.getElementById('start_date').value;
+            const n   = parseInt(document.getElementById('num_weeks').value) || 52;
+            if (!val) return;
+            const start = new Date(val);
+            const end   = new Date(start);
+            end.setDate(end.getDate() + (n - 1) * 7);
+            const fmt = d => d.toLocaleDateString('en-GB', {day:'numeric', month:'long', year:'numeric'});
             document.getElementById('weeks-preview').textContent =
-                count + ' Sundays from ' + d.toLocaleDateString('en-GB', {day:'numeric',month:'long',year:'numeric'}) + ' to end of year.';
+                n + ' weekly envelopes: ' + fmt(start) + ' to ' + fmt(end) + '.';
             updateSummary();
+        }
+
+        document.getElementById('start_date').addEventListener('change', function () {
+            // Default to 52 (standard church giving year = 52 weeks from start date)
+            if (!document.getElementById('num_weeks').value) {
+                document.getElementById('num_weeks').value = 52;
+            }
+            updateWeeksPreview();
         });
 
-        document.getElementById('num_weeks').addEventListener('input', updateSummary);
+        document.getElementById('num_weeks').addEventListener('input', updateWeeksPreview);
 
         // ── Custom numbers count ───────────────────────────────────────────────
         document.getElementById('custom_numbers').addEventListener('input', function () {

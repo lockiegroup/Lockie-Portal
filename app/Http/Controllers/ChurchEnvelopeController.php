@@ -46,29 +46,48 @@ class ChurchEnvelopeController extends Controller
             return back()->withErrors(['custom_numbers' => 'No valid set numbers found.']);
         }
 
-        // Build envelope template (same for every set)
-        $template = [];
+        // Build weekly envelopes with sort timestamp
+        $dated   = [];
+        $undated = [];
 
         for ($i = 0; $i < $numWeeks; $i++) {
-            $template[] = [
-                'type'  => 'Weekly',
-                'label' => 'Week ' . ($i + 1),
-                'date'  => $startDate->copy()->addWeeks($i)->format('d/m/Y'),
+            $date    = $startDate->copy()->addWeeks($i);
+            $dated[] = [
+                'type'      => 'Weekly',
+                'label'     => 'Week ' . ($i + 1),
+                'date'      => $date->format('d/m/Y'),
+                'sort_date' => $date->timestamp,
             ];
         }
 
+        // Special envelopes — dated ones interleave with weekly, undated go at the end
         foreach ($request->input('specials', []) as $special) {
             if (empty($special['name'])) continue;
-            $dated      = !empty($special['dated']);
-            $date       = ($dated && !empty($special['date']))
-                ? Carbon::parse($special['date'])->format('d/m/Y')
-                : '';
-            $template[] = [
-                'type'  => 'Special',
-                'label' => trim($special['name']),
-                'date'  => $date,
-            ];
+            $isDated = !empty($special['dated']) && !empty($special['date']);
+            if ($isDated) {
+                $d       = Carbon::parse($special['date']);
+                $dated[] = [
+                    'type'      => 'Special',
+                    'label'     => trim($special['name']),
+                    'date'      => $d->format('d/m/Y'),
+                    'sort_date' => $d->timestamp,
+                ];
+            } else {
+                $undated[] = [
+                    'type'  => 'Special',
+                    'label' => trim($special['name']),
+                    'date'  => '',
+                ];
+            }
         }
+
+        // Sort dated envelopes by date, then append undated at the end
+        usort($dated, fn($a, $b) => $a['sort_date'] <=> $b['sort_date']);
+
+        $template = array_merge(
+            array_map(fn($e) => ['type' => $e['type'], 'label' => $e['label'], 'date' => $e['date']], $dated),
+            $undated
+        );
 
         // Build CSV — one row per physical envelope
         $rows   = [];
