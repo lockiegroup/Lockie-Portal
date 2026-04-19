@@ -60,6 +60,19 @@ class SalesController extends Controller
                         ]],
                     ]);
 
+                    // Temporary debug: check for zero/negative sub-total invoices
+                    $negOrZero = array_filter($fetched['invoices'], fn($i) => (float)($i['SubTotal'] ?? 0) <= 0);
+                    \Illuminate\Support\Facades\Log::info('Invoice subtotal debug', [
+                        'total'       => count($fetched['invoices']),
+                        'positive'    => count($fetched['invoices']) - count($negOrZero),
+                        'zero_or_neg' => count($negOrZero),
+                        'samples'     => array_map(fn($i) => [
+                            'num' => $i['InvoiceNumber'],
+                            'sub' => $i['SubTotal'],
+                            'status' => $i['InvoiceStatus'],
+                        ], array_slice(array_values($negOrZero), 0, 10)),
+                    ]);
+
                     // Resolve warehouse for each invoice by fetching only the specific
                     // sales orders referenced. Results cached per order for 7 days so
                     // repeat searches don't re-fetch the same orders.
