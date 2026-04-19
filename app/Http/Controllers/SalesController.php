@@ -55,9 +55,9 @@ class SalesController extends Controller
                     // the /Invoices endpoint has no warehouse field directly).
                     $invoiceItems = $this->unleashed->paginate('Invoices', $params);
 
-                    // Build OrderNumber → warehouse map from a 90-day lookback of sales orders
-                    // so invoices for orders placed before the selected period are still matched.
-                    $lookbackStart = Carbon::parse($from)->subDays(90)->toDateString();
+                    // Build OrderNumber → warehouse map from a 180-day lookback so older
+                    // orders (e.g. SO-22xxx placed months ago) are still matched to invoices.
+                    $lookbackStart = Carbon::parse($from)->subDays(180)->toDateString();
                     $lookupOrders  = $this->unleashed->paginate('SalesOrders', [
                         'startDate' => $lookbackStart,
                         'endDate'   => $apiEndDate,
@@ -82,9 +82,11 @@ class SalesController extends Controller
                         return $inv;
                     }, $invoiceItems);
 
+                    // Sales Enquiry = open orders only (Parked, Placed, Backordered, Pick, Ship).
+                    // Completed orders belong in Invoice Enquiry, not here.
                     $salesOrders = array_filter(
                         $allOrders,
-                        fn($o) => ($o['OrderStatus'] ?? '') !== 'Cancelled'
+                        fn($o) => !in_array($o['OrderStatus'] ?? '', ['Cancelled', 'Completed'])
                     );
 
                     return [
@@ -125,9 +127,9 @@ class SalesController extends Controller
             }
 
             $grouped[$name]['count']++;
-            $grouped[$name]['sub']   += (float) ($item['BCSubTotal'] ?? $item['SubTotal'] ?? 0);
-            $grouped[$name]['tax']   += (float) ($item['BCTaxTotal'] ?? $item['TaxTotal'] ?? 0);
-            $grouped[$name]['total'] += (float) ($item['BCTotal']    ?? $item['Total']    ?? 0);
+            $grouped[$name]['sub']   += (float) ($item['SubTotal'] ?? 0);
+            $grouped[$name]['tax']   += (float) ($item['TaxTotal'] ?? 0);
+            $grouped[$name]['total'] += (float) ($item['Total'] ?? 0);
         }
 
         uasort($grouped, fn($a, $b) => $b['total'] <=> $a['total']);
