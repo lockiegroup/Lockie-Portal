@@ -142,6 +142,46 @@ class UnleashedService
     }
 
     /**
+     * Fetch stock on hand per warehouse for a list of ProductGuids.
+     * Calls /StockOnHand/{guid}/AllWarehouses for each guid in parallel batches.
+     * Returns ['Warehouse Name' => ['totalCost' => float, 'qty' => float], ...]
+     */
+    public function fetchStockAllWarehouses(array $productGuids, int $batchSize = 50): array
+    {
+        $grouped = [];
+
+        foreach (array_chunk($productGuids, $batchSize) as $batch) {
+            $responses = Http::pool(function ($pool) use ($batch) {
+                $calls = [];
+                foreach ($batch as $guid) {
+                    $calls[] = $pool->as($guid)
+                        ->timeout(30)
+                        ->withHeaders($this->headers(''))
+                        ->get(self::BASE_URL . '/StockOnHand/' . $guid . '/AllWarehouses');
+                }
+                return $calls;
+            });
+
+            foreach ($batch as $guid) {
+                $res = $responses[$guid] ?? null;
+                if (!$res || $res instanceof \Throwable || $res->failed()) continue;
+                foreach ($res->json()['Items'] ?? [] as $item) {
+                    $wh = $item['Warehouse'] ?? $item['WarehouseCode'] ?? 'Unknown';
+                    if (!isset($grouped[$wh])) {
+                        $grouped[$wh] = ['totalCost' => 0.0, 'qty' => 0.0];
+                    }
+                    $grouped[$wh]['totalCost'] += (float) ($item['TotalCost'] ?? 0);
+                    $grouped[$wh]['qty']       += (float) ($item['QtyOnHand'] ?? 0);
+                }
+            }
+        }
+
+        uasort($grouped, fn($a, $b) => $b['totalCost'] <=> $a['totalCost']);
+
+        return $grouped;
+    }
+
+    /**
      * Fetch warehouse names for specific order numbers in parallel batches.
      * Returns ['SO-00012345' => 'JW Products', ...]
      */
