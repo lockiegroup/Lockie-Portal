@@ -33,6 +33,16 @@ class StockController extends Controller
                 // (filtered queries trigger the Unleashed NumberOfPages bug).
                 $items = $this->unleashed->paginate('StockOnHand');
 
+                // Temporary: log raw structure to identify correct field names
+                \Illuminate\Support\Facades\Log::info('StockOnHand debug', [
+                    'total_items' => count($items),
+                    'sample'      => array_slice($items, 0, 3),
+                    'warehouse_values' => array_values(array_unique(array_map(
+                        fn($i) => json_encode($i['Warehouse'] ?? 'KEY_MISSING'),
+                        array_slice($items, 0, 50)
+                    ))),
+                ]);
+
                 $grouped = [];
                 foreach ($items as $item) {
                     $name = $item['Warehouse'] ?? 'Unknown';
