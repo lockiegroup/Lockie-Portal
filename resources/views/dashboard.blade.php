@@ -58,6 +58,17 @@
                 <span class="text-xs font-medium text-slate-400 uppercase tracking-wide mt-auto">Coming soon</span>
             </div>
 
+            <a href="{{ route('church-envelopes.index') }}" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4 hover:shadow-md hover:border-slate-300 transition-all">
+                <div class="w-12 h-12 rounded-xl flex items-center justify-center bg-violet-50 text-violet-600">
+                    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                </div>
+                <div>
+                    <h2 class="font-semibold text-slate-800">Church Envelopes</h2>
+                    <p class="text-slate-500 text-sm mt-1">Generate print-ready CSV files for church envelope box sets.</p>
+                </div>
+                <span class="text-xs font-medium text-violet-600 uppercase tracking-wide mt-auto">Open &rarr;</span>
+            </a>
+
         </div>
 
         {{-- Stock On Hand widget --}}

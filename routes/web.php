@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\OtpController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SalesController;
 use App\Http\Controllers\StockController;
+use App\Http\Controllers\ChurchEnvelopeController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\HealthSafety\ActionController as HsActionController;
 use App\Http\Controllers\HealthSafety\SettingsController as HsSettingsController;
@@ -28,6 +29,10 @@ Route::middleware(['auth', 'otp'])->group(function () {
     Route::get('/sales/data', [SalesController::class, 'data'])->name('sales.data');
     Route::get('/stock/data', [StockController::class, 'data'])->name('stock.data');
     Route::post('/logout', LogoutController::class)->name('logout');
+
+    // Church Envelope Generator
+    Route::get('/church-envelopes', [ChurchEnvelopeController::class, 'index'])->name('church-envelopes.index');
+    Route::post('/church-envelopes/generate', [ChurchEnvelopeController::class, 'generate'])->name('church-envelopes.generate');
 
     // Health & Safety
     Route::prefix('health-safety')->name('hs.')->group(function () {
