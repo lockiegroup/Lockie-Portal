@@ -4,9 +4,8 @@ namespace App\Http\Controllers;
 
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\View\View;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ChurchEnvelopeController extends Controller
 {
@@ -15,7 +14,7 @@ class ChurchEnvelopeController extends Controller
         return view('church-envelopes.index');
     }
 
-    public function generate(Request $request): StreamedResponse|Response
+    public function generate(Request $request): BinaryFileResponse|\Illuminate\Http\RedirectResponse
     {
         $request->validate([
             'start_date'       => 'required|date',
@@ -92,22 +91,23 @@ class ChurchEnvelopeController extends Controller
 
         $filename = 'church-envelopes-' . $startDate->format('Y') . '.csv';
 
-        // Stream the CSV row-by-row so large box set counts don't hit memory limits
-        return response()->streamDownload(function () use ($setNumbers, $template) {
-            $fp = fopen('php://output', 'w');
-            fputcsv($fp, ['Set Number', 'Box Set Index', 'Envelope Type', 'Label', 'Date']);
-            foreach ($setNumbers as $boxIndex => $setNumber) {
-                foreach ($template as $envelope) {
-                    fputcsv($fp, [
-                        $setNumber,
-                        $boxIndex + 1,
-                        $envelope['type'],
-                        $envelope['label'],
-                        $envelope['date'],
-                    ]);
-                }
+        set_time_limit(0);
+        $tmpFile = tempnam(sys_get_temp_dir(), 'envelopes_');
+        $fp = fopen($tmpFile, 'w');
+        fputcsv($fp, ['Set Number', 'Box Set Index', 'Envelope Type', 'Label', 'Date']);
+        foreach ($setNumbers as $boxIndex => $setNumber) {
+            foreach ($template as $envelope) {
+                fputcsv($fp, [
+                    $setNumber,
+                    $boxIndex + 1,
+                    $envelope['type'],
+                    $envelope['label'],
+                    $envelope['date'],
+                ]);
             }
-            fclose($fp);
-        }, $filename, ['Content-Type' => 'text/csv']);
+        }
+        fclose($fp);
+
+        return response()->download($tmpFile, $filename, ['Content-Type' => 'text/csv'])->deleteFileAfterSend(true);
     }
 }
