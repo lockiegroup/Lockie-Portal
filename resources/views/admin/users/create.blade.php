@@ -1,13 +1,9 @@
 <x-layout title="Add Staff Member — Lockie Portal">
     <nav class="bg-slate-900 shadow-lg">
         <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <svg class="w-7 h-7 text-sky-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                </svg>
-                <span class="text-white font-bold text-lg tracking-tight">Lockie Portal</span>
-            </div>
+            <a href="{{ route('dashboard') }}">
+                <img src="{{ asset('images/logo.png') }}" alt="Lockie Group" class="h-8 w-auto">
+            </a>
             <a href="{{ route('admin.users.index') }}" class="text-slate-400 hover:text-white text-sm transition-colors">← Back to Users</a>
         </div>
     </nav>
