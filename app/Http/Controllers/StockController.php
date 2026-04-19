@@ -21,7 +21,7 @@ class StockController extends Controller
 
     public function data(Request $request): JsonResponse
     {
-        $cacheKey = 'unleashed_stock_on_hand_v3';
+        $cacheKey = 'unleashed_stock_on_hand_v4';
 
         if ($request->boolean('refresh')) {
             Cache::forget($cacheKey);
@@ -29,24 +29,7 @@ class StockController extends Controller
 
         try {
             $stockByWarehouse = Cache::remember($cacheKey, 1800, function () {
-                // Step 1: fetch all stock unfiltered — gives global TotalCost per product
-                $allItems = $this->unleashed->paginate('StockOnHand');
-
-                // Step 2: build unit cost map (guid → cost per unit)
-                // AllWarehouses endpoint only returns AvailableQty, not TotalCost,
-                // so we derive cost as unitCost × warehouseQty
-                $unitCostMap = [];
-                foreach ($allItems as $item) {
-                    $guid      = $item['Guid'] ?? null;
-                    $totalCost = (float) ($item['TotalCost'] ?? 0);
-                    $globalQty = (float) ($item['QtyOnHand'] ?? 0);
-                    if (!$guid || $totalCost <= 0) continue;
-                    $unitCostMap[$guid] = $globalQty > 0 ? $totalCost / $globalQty : 0.0;
-                }
-
-                // Step 3: call /StockOnHand/{guid}/AllWarehouses for each product
-                // and distribute cost proportionally by warehouse AvailableQty
-                return $this->unleashed->fetchStockAllWarehouses($unitCostMap);
+                return $this->unleashed->fetchStockByWarehouse();
             });
 
             return response()->json(['success' => true, 'stockByWarehouse' => $stockByWarehouse]);

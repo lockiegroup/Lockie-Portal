@@ -142,51 +142,100 @@ class UnleashedService
     }
 
     /**
-     * Fetch stock cost per warehouse using AllWarehouses endpoint.
-     * AllWarehouses only returns AvailableQty (no TotalCost), so cost is
-     * computed as unitCost × warehouseAvailableQty where unitCost comes
-     * from the global unfiltered StockOnHand data passed in $unitCostMap.
-     *
-     * @param array $unitCostMap  ['productGuid' => unitCostFloat, ...]
+     * Fetch real TotalCost and QtyOnHand per warehouse using warehouseCode filter.
+     * Runs warehouses in parallel. pageSize=500 attempts to get all products in
+     * one page; Guid dedup stops if Unleashed repeats pages due to its pagination bug.
      * Returns ['Warehouse Name' => ['totalCost' => float, 'qty' => float], ...]
      */
-    public function fetchStockAllWarehouses(array $unitCostMap, int $batchSize = 50): array
+    public function fetchStockByWarehouse(): array
     {
+        // Get all warehouses
+        $whData     = $this->get('Warehouses', ['pageSize' => 200, 'pageNumber' => 1]);
+        $warehouses = $whData['Items'] ?? [];
+        if (empty($warehouses)) return [];
+
         $grouped = [];
 
-        foreach (array_chunk(array_keys($unitCostMap), $batchSize) as $batch) {
-            $responses = Http::pool(function ($pool) use ($batch) {
-                $calls = [];
-                foreach ($batch as $guid) {
-                    $calls[] = $pool->as($guid)
-                        ->timeout(30)
-                        ->withHeaders($this->headers(''))
-                        ->get(self::BASE_URL . '/StockOnHand/' . $guid . '/AllWarehouses');
+        // Process in batches of 10 warehouses at a time
+        foreach (array_chunk($warehouses, 10) as $batch) {
+            $meta     = []; // code → name
+            $seen     = []; // code → [guid => true]
+            $totals   = []; // code → [totalCost, qty]
+            $active   = [];
+
+            foreach ($batch as $wh) {
+                $code = $wh['WarehouseCode'] ?? '';
+                $name = $wh['WarehouseName'] ?? $code;
+                if (!$code) continue;
+                $meta[$code]   = $name;
+                $seen[$code]   = [];
+                $totals[$code] = ['totalCost' => 0.0, 'qty' => 0.0];
+                $active[]      = $code;
+            }
+
+            $page = 1;
+            do {
+                $pageRequests = [];
+                foreach ($active as $code) {
+                    $qs = http_build_query([
+                        'warehouseCode' => $code,
+                        'pageSize'      => 500,
+                        'pageNumber'    => $page,
+                    ]);
+                    $pageRequests[$code] = [
+                        'url'     => self::BASE_URL . '/StockOnHand?' . $qs,
+                        'headers' => $this->headers($qs),
+                    ];
                 }
-                return $calls;
-            });
 
-            foreach ($batch as $guid) {
-                $res = $responses[$guid] ?? null;
-                if (!$res || $res instanceof \Throwable || $res->failed()) continue;
-
-                $unitCost = $unitCostMap[$guid] ?? 0.0;
-
-                foreach ($res->json()['Items'] ?? [] as $item) {
-                    $wh  = $item['Warehouse'] ?? 'Unknown';
-                    $qty = max(0.0, (float) ($item['AvailableQty'] ?? 0));
-                    if ($qty <= 0) continue;
-                    if (!isset($grouped[$wh])) {
-                        $grouped[$wh] = ['totalCost' => 0.0, 'qty' => 0.0];
+                $responses = Http::pool(function ($pool) use ($pageRequests) {
+                    $calls = [];
+                    foreach ($pageRequests as $code => $info) {
+                        $calls[] = $pool->as($code)
+                            ->timeout(30)
+                            ->withHeaders($info['headers'])
+                            ->get($info['url']);
                     }
-                    $grouped[$wh]['totalCost'] += $qty * $unitCost;
-                    $grouped[$wh]['qty']       += $qty;
+                    return $calls;
+                });
+
+                $nextActive = [];
+                foreach ($active as $code) {
+                    $res = $responses[$code] ?? null;
+                    if (!$res || $res instanceof \Throwable || $res->failed()) continue;
+
+                    $data     = $res->json() ?? [];
+                    $items    = $data['Items'] ?? [];
+                    $maxPages = $data['Pagination']['NumberOfPages'] ?? 1;
+                    $newCount = 0;
+
+                    foreach ($items as $item) {
+                        $guid = $item['Guid'] ?? null;
+                        if ($guid !== null && isset($seen[$code][$guid])) continue;
+                        if ($guid !== null) $seen[$code][$guid] = true;
+                        $newCount++;
+                        $totals[$code]['totalCost'] += (float) ($item['TotalCost'] ?? 0);
+                        $totals[$code]['qty']       += (float) ($item['QtyOnHand'] ?? 0);
+                    }
+
+                    // Stop paginating if no new items (Unleashed pagination bug on filtered queries)
+                    if ($newCount > 0 && $page < $maxPages) {
+                        $nextActive[] = $code;
+                    }
+                }
+
+                $active = $nextActive;
+                $page++;
+            } while (!empty($active));
+
+            foreach ($meta as $code => $name) {
+                if ($totals[$code]['totalCost'] > 0) {
+                    $grouped[$name] = $totals[$code];
                 }
             }
         }
 
         uasort($grouped, fn($a, $b) => $b['totalCost'] <=> $a['totalCost']);
-
         return $grouped;
     }
 
