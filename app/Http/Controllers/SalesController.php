@@ -48,28 +48,29 @@ class SalesController extends Controller
                     $params     = ['startDate' => $from, 'endDate' => $apiEndDate];
 
                     // Fetch Sales Orders, Credit Notes, and Invoices in parallel.
-                    // Invoices use the exact user dates (no +1 day): the API filters by
-                    // InvoiceDate and treats endDate as inclusive.
+                    // NOTE: The Invoices API filters by creation date (UTC), NOT InvoiceDate.
+                    // This means invoices created outside the range but dated inside it won't appear.
                     $fetched = $this->unleashed->parallelPaginate([
                         'sales'    => ['SalesOrders', $params],
                         'credits'  => ['CreditNotes', $params],
+                        // Fetch without invoiceStatus filter: using that filter causes the API to
+                        // miscalculate pagination (count is from unfiltered total), so page 2 returns
+                        // the same 200 records as page 1. We de-duplicate and filter in PHP instead.
                         'invoices' => ['Invoices', [
-                            'startDate'     => $from,
-                            'endDate'       => $to,
-                            'invoiceStatus' => 'Completed',
+                            'startDate' => $from,
+                            'endDate'   => $to,
                         ]],
                     ]);
 
-                    // Temporary: log all invoice numbers for comparison with Unleashed export
-                    \Illuminate\Support\Facades\Log::info('API invoice list', [
-                        'count' => count($fetched['invoices']),
-                        'invoices' => array_map(fn($i) => [
-                            'num' => $i['InvoiceNumber'],
-                            'order' => $i['OrderNumber'] ?? '',
-                            'sub' => round((float)($i['SubTotal'] ?? 0), 2),
-                            'date' => $i['InvoiceDate'] ?? '',
-                        ], $fetched['invoices']),
-                    ]);
+                    // De-duplicate by InvoiceNumber and keep only Completed invoices
+                    $uniqueInvoices = [];
+                    foreach ($fetched['invoices'] as $inv) {
+                        $uniqueInvoices[$inv['InvoiceNumber']] = $inv;
+                    }
+                    $fetched['invoices'] = array_values(array_filter(
+                        array_values($uniqueInvoices),
+                        fn($inv) => ($inv['InvoiceStatus'] ?? '') === 'Completed'
+                    ));
 
                     // Resolve warehouse for each invoice by fetching only the specific
                     // sales orders referenced. Results cached per order for 7 days so
