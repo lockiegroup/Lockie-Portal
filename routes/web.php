@@ -7,6 +7,8 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SalesController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\HealthSafety\ActionController as HsActionController;
+use App\Http\Controllers\HealthSafety\SettingsController as HsSettingsController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn() => redirect()->route('login'));
@@ -26,6 +28,22 @@ Route::middleware(['auth', 'otp'])->group(function () {
     Route::get('/sales/data', [SalesController::class, 'data'])->name('sales.data');
     Route::get('/stock/data', [StockController::class, 'data'])->name('stock.data');
     Route::post('/logout', LogoutController::class)->name('logout');
+
+    // Health & Safety
+    Route::prefix('health-safety')->name('hs.')->group(function () {
+        Route::get('actions', [HsActionController::class, 'index'])->name('actions.index');
+        Route::get('actions/create', [HsActionController::class, 'create'])->name('actions.create');
+        Route::post('actions', [HsActionController::class, 'store'])->name('actions.store');
+        Route::get('actions/{action}/edit', [HsActionController::class, 'edit'])->name('actions.edit');
+        Route::put('actions/{action}', [HsActionController::class, 'update'])->name('actions.update');
+        Route::delete('actions/{action}', [HsActionController::class, 'destroy'])->name('actions.destroy');
+        Route::patch('actions/{action}/complete', [HsActionController::class, 'complete'])->name('actions.complete');
+
+        Route::middleware('can:admin')->group(function () {
+            Route::get('settings', [HsSettingsController::class, 'index'])->name('settings.index');
+            Route::post('settings', [HsSettingsController::class, 'update'])->name('settings.update');
+        });
+    });
 
     // Admin only
     Route::middleware('can:admin')->group(function () {
