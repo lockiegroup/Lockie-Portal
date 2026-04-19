@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ChurchEnvelopeController extends Controller
 {
@@ -14,14 +15,14 @@ class ChurchEnvelopeController extends Controller
         return view('church-envelopes.index');
     }
 
-    public function generate(Request $request): Response
+    public function generate(Request $request): StreamedResponse|Response
     {
         $request->validate([
             'start_date'       => 'required|date',
             'num_weeks'        => 'required|integer|min:1|max:53',
             'set_number_type'  => 'required|in:sequential,custom',
             'seq_start'        => 'required_if:set_number_type,sequential|nullable|integer|min:1',
-            'seq_count'        => 'required_if:set_number_type,sequential|nullable|integer|min:1',
+            'seq_count'        => 'required_if:set_number_type,sequential|nullable|integer|min:1|max:9999',
             'custom_numbers'   => 'required_if:set_number_type,custom|nullable|string',
             'specials'         => 'nullable|array',
             'specials.*.name'  => 'required_with:specials|string|max:100',
@@ -89,40 +90,23 @@ class ChurchEnvelopeController extends Controller
             $undated
         );
 
-        // Build CSV — one row per physical envelope
-        $rows   = [];
-        $rows[] = ['Set Number', 'Box Set Index', 'Envelope Type', 'Label', 'Date'];
-
-        foreach ($setNumbers as $boxIndex => $setNumber) {
-            foreach ($template as $envelope) {
-                $rows[] = [
-                    $setNumber,
-                    $boxIndex + 1,
-                    $envelope['type'],
-                    $envelope['label'],
-                    $envelope['date'],
-                ];
-            }
-        }
-
-        $csv      = $this->toCsv($rows);
         $filename = 'church-envelopes-' . $startDate->format('Y') . '.csv';
 
-        return response($csv, 200, [
-            'Content-Type'        => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-        ]);
-    }
-
-    private function toCsv(array $rows): string
-    {
-        $fp = fopen('php://temp', 'r+');
-        foreach ($rows as $row) {
-            fputcsv($fp, $row);
-        }
-        rewind($fp);
-        $csv = stream_get_contents($fp);
-        fclose($fp);
-        return $csv;
-    }
+        // Stream the CSV row-by-row so large box set counts don't hit memory limits
+        return response()->streamDownload(function () use ($setNumbers, $template) {
+            $fp = fopen('php://output', 'w');
+            fputcsv($fp, ['Set Number', 'Box Set Index', 'Envelope Type', 'Label', 'Date']);
+            foreach ($setNumbers as $boxIndex => $setNumber) {
+                foreach ($template as $envelope) {
+                    fputcsv($fp, [
+                        $setNumber,
+                        $boxIndex + 1,
+                        $envelope['type'],
+                        $envelope['label'],
+                        $envelope['date'],
+                    ]);
+                }
+            }
+            fclose($fp);
+        }, $filename, ['Content-Type' => 'text/csv']);
 }
