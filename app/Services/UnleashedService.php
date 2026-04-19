@@ -142,16 +142,19 @@ class UnleashedService
     }
 
     /**
-     * Fetch stock on hand per warehouse for a list of ProductGuids.
-     * Calls /StockOnHand/{guid}/AllWarehouses for each guid in parallel batches.
+     * Fetch stock cost per warehouse using AllWarehouses endpoint.
+     * AllWarehouses only returns AvailableQty (no TotalCost), so cost is
+     * computed as unitCost × warehouseAvailableQty where unitCost comes
+     * from the global unfiltered StockOnHand data passed in $unitCostMap.
+     *
+     * @param array $unitCostMap  ['productGuid' => unitCostFloat, ...]
      * Returns ['Warehouse Name' => ['totalCost' => float, 'qty' => float], ...]
      */
-    public function fetchStockAllWarehouses(array $productGuids, int $batchSize = 50): array
+    public function fetchStockAllWarehouses(array $unitCostMap, int $batchSize = 50): array
     {
-        $grouped  = [];
-        $debugged = false;
+        $grouped = [];
 
-        foreach (array_chunk($productGuids, $batchSize) as $batch) {
+        foreach (array_chunk(array_keys($unitCostMap), $batchSize) as $batch) {
             $responses = Http::pool(function ($pool) use ($batch) {
                 $calls = [];
                 foreach ($batch as $guid) {
@@ -165,29 +168,19 @@ class UnleashedService
 
             foreach ($batch as $guid) {
                 $res = $responses[$guid] ?? null;
-                if (!$res || $res instanceof \Throwable || $res->failed()) {
-                    if (!$debugged) {
-                        $status = $res instanceof \Throwable ? $res->getMessage() : ($res ? $res->status() : 'null');
-                        \Log::debug('AllWarehouses: skip', ['guid' => $guid, 'status' => $status]);
-                        $debugged = true;
-                    }
-                    continue;
-                }
-                if (!$debugged) {
-                    \Log::debug('AllWarehouses: first response', [
-                        'guid'   => $guid,
-                        'status' => $res->status(),
-                        'body'   => substr($res->body(), 0, 500),
-                    ]);
-                    $debugged = true;
-                }
+                if (!$res || $res instanceof \Throwable || $res->failed()) continue;
+
+                $unitCost = $unitCostMap[$guid] ?? 0.0;
+
                 foreach ($res->json()['Items'] ?? [] as $item) {
-                    $wh = $item['WarehouseName'] ?? $item['Warehouse'] ?? $item['WarehouseCode'] ?? 'Unknown';
+                    $wh  = $item['Warehouse'] ?? 'Unknown';
+                    $qty = max(0.0, (float) ($item['AvailableQty'] ?? 0));
+                    if ($qty <= 0) continue;
                     if (!isset($grouped[$wh])) {
                         $grouped[$wh] = ['totalCost' => 0.0, 'qty' => 0.0];
                     }
-                    $grouped[$wh]['totalCost'] += (float) ($item['TotalCost'] ?? 0);
-                    $grouped[$wh]['qty']       += (float) ($item['QtyOnHand'] ?? 0);
+                    $grouped[$wh]['totalCost'] += $qty * $unitCost;
+                    $grouped[$wh]['qty']       += $qty;
                 }
             }
         }
