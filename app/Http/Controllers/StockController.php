@@ -29,28 +29,35 @@ class StockController extends Controller
 
         try {
             $stockByWarehouse = Cache::remember($cacheKey, 1800, function () {
-                // Fetch all stock without filters so pagination is accurate
-                // (filtered queries trigger the Unleashed NumberOfPages bug).
-                $items = $this->unleashed->paginate('StockOnHand');
+                // Unfiltered /StockOnHand returns aggregated "Global" data with empty
+                // warehouse fields. Fetch warehouses first, then query per warehouse.
+                // parallelPaginate's Guid-dedup handles the Unleashed pagination bug
+                // that affects any filtered query.
+                $whItems = ($this->unleashed->get('Warehouses', [
+                    'pageSize' => 200, 'pageNumber' => 1,
+                ]))['Items'] ?? [];
 
-                // Temporary: log raw structure to identify correct field names
-                \Illuminate\Support\Facades\Log::info('StockOnHand debug', [
-                    'total_items' => count($items),
-                    'sample'      => array_slice($items, 0, 3),
-                    'warehouse_values' => array_values(array_unique(array_map(
-                        fn($i) => json_encode($i['Warehouse'] ?? 'KEY_MISSING'),
-                        array_slice($items, 0, 50)
-                    ))),
-                ]);
+                $nameMap  = [];
+                $requests = [];
+                foreach ($whItems as $wh) {
+                    $code = $wh['WarehouseCode'] ?? '';
+                    if (!$code) continue;
+                    $nameMap[$code]  = $wh['WarehouseName'] ?? $code;
+                    $requests[$code] = ['StockOnHand', ['warehouseCode' => $code]];
+                }
+
+                $fetched = $this->unleashed->parallelPaginate($requests);
 
                 $grouped = [];
-                foreach ($items as $item) {
-                    $name = $item['Warehouse'] ?? 'Unknown';
-                    if (!isset($grouped[$name])) {
-                        $grouped[$name] = ['totalCost' => 0.0, 'qty' => 0.0];
+                foreach ($fetched as $code => $items) {
+                    $totalCost = 0.0;
+                    $totalQty  = 0.0;
+                    foreach ($items as $item) {
+                        $totalCost += (float) ($item['TotalCost'] ?? 0);
+                        $totalQty  += (float) ($item['QtyOnHand'] ?? 0);
                     }
-                    $grouped[$name]['totalCost'] += (float) ($item['TotalCost'] ?? 0);
-                    $grouped[$name]['qty']       += (float) ($item['QtyOnHand'] ?? 0);
+                    $name = $nameMap[$code] ?? $code;
+                    $grouped[$name] = ['totalCost' => $totalCost, 'qty' => $totalQty];
                 }
 
                 uasort($grouped, fn($a, $b) => $b['totalCost'] <=> $a['totalCost']);
