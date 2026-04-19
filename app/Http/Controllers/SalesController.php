@@ -44,28 +44,43 @@ class SalesController extends Controller
                 $cacheKey,
                 1800,
                 function () use ($from, $to) {
-                    $apiEndDate    = Carbon::parse($to)->addDay()->toDateString();
-                    $params        = ['startDate' => $from, 'endDate' => $apiEndDate];
+                    $apiEndDate = Carbon::parse($to)->addDay()->toDateString();
+                    $params     = ['startDate' => $from, 'endDate' => $apiEndDate];
+
+                    $allOrders   = $this->unleashed->paginate('SalesOrders', $params);
+                    $creditNotes = $this->unleashed->paginate('CreditNotes', $params);
+
+                    // Invoice Enquiry: fetch invoices by invoice date, then enrich with
+                    // warehouse data from the originating sales order (Unleashed confirmed
+                    // the /Invoices endpoint has no warehouse field directly).
+                    $invoiceItems = $this->unleashed->paginate('Invoices', $params);
+
+                    // Build OrderNumber → warehouse map from a 90-day lookback of sales orders
+                    // so invoices for orders placed before the selected period are still matched.
                     $lookbackStart = Carbon::parse($from)->subDays(90)->toDateString();
-
-                    $allOrders       = $this->unleashed->paginate('SalesOrders', $params);
-                    $creditNotes     = $this->unleashed->paginate('CreditNotes', $params);
-                    $completedOrders = $this->unleashed->paginate('SalesOrders', [
-                        'startDate'   => $lookbackStart,
-                        'endDate'     => $apiEndDate,
-                        'orderStatus' => 'Completed',
+                    $lookupOrders  = $this->unleashed->paginate('SalesOrders', [
+                        'startDate' => $lookbackStart,
+                        'endDate'   => $apiEndDate,
                     ]);
-
-                    $invoices = array_filter($completedOrders, function ($o) use ($from, $to) {
-                        if (empty($o['CompletedDate'])) return false;
-                        $dateStr = $o['CompletedDate'];
-                        if (preg_match('/\/Date\((\d+)(?:[+-]\d{4})?\)\//', $dateStr, $m)) {
-                            $completed = date('Y-m-d', (int)$m[1] / 1000);
-                        } else {
-                            $completed = substr($dateStr, 0, 10);
+                    $warehouseMap = [];
+                    foreach ($lookupOrders as $order) {
+                        $num = $order['OrderNumber'] ?? '';
+                        if ($num) {
+                            $warehouseMap[$num] =
+                                $order['Warehouse']['WarehouseName']
+                                ?? $order['Warehouse']['WarehouseCode']
+                                ?? 'No Warehouse';
                         }
-                        return $completed >= $from && $completed <= $to;
-                    });
+                    }
+
+                    // Inject warehouse into each invoice so groupByWarehouse() can use it
+                    $invoices = array_map(function ($inv) use ($warehouseMap) {
+                        $num = $inv['OrderNumber'] ?? $inv['SalesOrderNumber'] ?? '';
+                        $inv['Warehouse'] = [
+                            'WarehouseName' => $warehouseMap[$num] ?? 'No Warehouse',
+                        ];
+                        return $inv;
+                    }, $invoiceItems);
 
                     $salesOrders = array_filter(
                         $allOrders,
