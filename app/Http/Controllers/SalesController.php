@@ -47,51 +47,55 @@ class SalesController extends Controller
                     $apiEndDate = Carbon::parse($to)->addDay()->toDateString();
                     $params     = ['startDate' => $from, 'endDate' => $apiEndDate];
 
-                    $allOrders   = $this->unleashed->paginate('SalesOrders', $params);
-                    $creditNotes = $this->unleashed->paginate('CreditNotes', $params);
-
-                    // Invoice Enquiry: fetch invoices by invoice date, then enrich with
-                    // warehouse data from the originating sales order (Unleashed confirmed
-                    // the /Invoices endpoint has no warehouse field directly).
-                    $invoiceItems = $this->unleashed->paginate('Invoices', $params);
-
-                    // Build OrderNumber → warehouse map from a 180-day lookback so older
-                    // orders (e.g. SO-22xxx placed months ago) are still matched to invoices.
-                    $lookbackStart = Carbon::parse($from)->subDays(180)->toDateString();
-                    $lookupOrders  = $this->unleashed->paginate('SalesOrders', [
-                        'startDate' => $lookbackStart,
-                        'endDate'   => $apiEndDate,
+                    // Fetch Sales Orders, Credit Notes, and Invoices in parallel
+                    $fetched = $this->unleashed->parallelPaginate([
+                        'sales'    => ['SalesOrders', $params],
+                        'credits'  => ['CreditNotes', $params],
+                        'invoices' => ['Invoices', $params],
                     ]);
+
+                    // Resolve warehouse for each invoice by fetching only the specific
+                    // sales orders referenced. Results cached per order for 7 days so
+                    // repeat searches don't re-fetch the same orders.
+                    $orderNums = array_values(array_unique(array_filter(array_map(
+                        fn($inv) => $inv['OrderNumber'] ?? $inv['SalesOrderNumber'] ?? '',
+                        $fetched['invoices']
+                    ))));
+
                     $warehouseMap = [];
-                    foreach ($lookupOrders as $order) {
-                        $num = $order['OrderNumber'] ?? '';
-                        if ($num) {
-                            $warehouseMap[$num] =
-                                $order['Warehouse']['WarehouseName']
-                                ?? $order['Warehouse']['WarehouseCode']
-                                ?? 'No Warehouse';
+                    $uncached     = [];
+                    foreach ($orderNums as $num) {
+                        $cached = Cache::get("unleashed_wh_{$num}");
+                        if ($cached !== null) {
+                            $warehouseMap[$num] = $cached;
+                        } else {
+                            $uncached[] = $num;
+                        }
+                    }
+                    if (!empty($uncached)) {
+                        $resolved = $this->unleashed->fetchWarehousesByOrderNumber($uncached);
+                        foreach ($resolved as $num => $wh) {
+                            $warehouseMap[$num] = $wh;
+                            Cache::put("unleashed_wh_{$num}", $wh, 604800);
                         }
                     }
 
-                    // Inject warehouse into each invoice so groupByWarehouse() can use it
+                    // Inject warehouse into each invoice
                     $invoices = array_map(function ($inv) use ($warehouseMap) {
                         $num = $inv['OrderNumber'] ?? $inv['SalesOrderNumber'] ?? '';
-                        $inv['Warehouse'] = [
-                            'WarehouseName' => $warehouseMap[$num] ?? 'No Warehouse',
-                        ];
+                        $inv['Warehouse'] = ['WarehouseName' => $warehouseMap[$num] ?? 'No Warehouse'];
                         return $inv;
-                    }, $invoiceItems);
+                    }, $fetched['invoices']);
 
-                    // Sales Enquiry = open orders only (Parked, Placed, Backordered, Pick, Ship).
-                    // Completed orders belong in Invoice Enquiry, not here.
+                    // Sales Enquiry: open orders only — Completed go to Invoice Enquiry
                     $salesOrders = array_filter(
-                        $allOrders,
+                        $fetched['sales'],
                         fn($o) => !in_array($o['OrderStatus'] ?? '', ['Cancelled', 'Completed'])
                     );
 
                     return [
                         $this->groupByWarehouse($salesOrders),
-                        $this->groupByWarehouse($creditNotes),
+                        $this->groupByWarehouse($fetched['credits']),
                         $this->groupByWarehouse($invoices),
                     ];
                 }
