@@ -179,7 +179,7 @@ class UnleashedService
                 foreach ($active as $code) {
                     $qs = http_build_query([
                         'warehouseCode' => $code,
-                        'pageSize'      => 500,
+                        'pageSize'      => 2000,
                         'pageNumber'    => $page,
                     ]);
                     $pageRequests[$code] = [

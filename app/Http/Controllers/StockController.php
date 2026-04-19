@@ -21,7 +21,7 @@ class StockController extends Controller
 
     public function data(Request $request): JsonResponse
     {
-        $cacheKey = 'unleashed_stock_on_hand_v4';
+        $cacheKey = 'unleashed_stock_on_hand_v5';
 
         if ($request->boolean('refresh')) {
             Cache::forget($cacheKey);
