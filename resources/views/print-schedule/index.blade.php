@@ -188,19 +188,6 @@
             });
         };
 
-        // ─── SortableJS ───────────────────────────────────────────────────
-        document.querySelectorAll('[id^="sortable-"]').forEach(function (el) {
-            Sortable.create(el, {
-                handle:    '.drag-handle',
-                animation: 150,
-                onEnd: function (evt) {
-                    const boardKey  = el.dataset.board;
-                    const cards     = el.querySelectorAll('.job-card');
-                    const orderedIds = Array.from(cards).map(c => c.dataset.jobId);
-                    saveReorder(boardKey, orderedIds);
-                },
-            });
-        });
 
         function saveReorder(boardKey, orderedIds) {
             fetch('{{ route("print.jobs.reorder") }}', {
@@ -497,6 +484,22 @@
                 if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
             });
         };
+
+        // ─── SortableJS (initialised last so a CDN failure can't block other functions) ──
+        if (typeof Sortable !== 'undefined') {
+            document.querySelectorAll('[id^="sortable-"]').forEach(function (el) {
+                Sortable.create(el, {
+                    handle:    '.drag-handle',
+                    animation: 150,
+                    onEnd: function (evt) {
+                        const boardKey   = el.dataset.board;
+                        const cards      = el.querySelectorAll('.job-card');
+                        const orderedIds = Array.from(cards).map(c => c.dataset.jobId);
+                        saveReorder(boardKey, orderedIds);
+                    },
+                });
+            });
+        }
 
         // ─── Utility ──────────────────────────────────────────────────────
         function escapeHtml(str) {
