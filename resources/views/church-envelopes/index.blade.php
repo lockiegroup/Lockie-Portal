@@ -421,9 +421,10 @@
                     document.querySelector('[name="diocese_1"]').value = data.diocese_1 ?? '';
                     document.querySelector('[name="diocese_2"]').value = data.diocese_2 ?? '';
                     document.querySelector('[name="diocese_3"]').value = data.diocese_3 ?? '';
-                    document.getElementById('start_date').value        = data.start_date ?? '';
-                    document.getElementById('num_weeks').value         = data.num_weeks  ?? 52;
+                    document.getElementById('start_date').value        = data.start_date  ?? '';
+                    document.getElementById('num_weeks').value         = data.num_weeks   ?? 52;
                     document.getElementById('set_numbers').value       = data.set_numbers ?? '';
+                    document.getElementById('none_copies').value       = data.none_copies ?? 0;
 
                     (data.vts || []).forEach((val, i) => {
                         const el = document.getElementById('vt-' + (i + 1));

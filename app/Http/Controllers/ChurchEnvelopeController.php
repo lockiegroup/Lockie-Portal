@@ -214,6 +214,7 @@ class ChurchEnvelopeController extends Controller
             $seenSpecials = [];
             $specials     = [];
             $parsedStatic = false;
+            $blankSetRows = 0;
 
             foreach ($allRows as $row) {
                 if (empty(array_filter($row, fn($v) => $v !== null && $v !== ''))) {
@@ -240,11 +241,17 @@ class ChurchEnvelopeController extends Controller
                 }
 
                 // Collect numbered set values from columns E and F
-                foreach ([4, 5] as $col) {
-                    $v = $row[$col] ?? null;
+                $setLeft  = $row[4] ?? '';
+                $setRight = $row[5] ?? '';
+                foreach ([$setLeft, $setRight] as $v) {
                     if (is_numeric($v) && (int) $v > 0) {
                         $setNums[(int) $v] = true;
                     }
+                }
+
+                // Count rows belonging to unnumbered (blank) sets
+                if (($setLeft === '' || $setLeft === null) && ($setRight === '' || $setRight === null)) {
+                    $blankSetRows++;
                 }
 
                 if (!$isSpecial) {
@@ -289,8 +296,15 @@ class ChurchEnvelopeController extends Controller
             }
 
             ksort($weeklyDates);
-            $startDate = array_key_first($weeklyDates) ?? '';
-            $numWeeks  = count($weeklyDates);
+            $startDate    = array_key_first($weeklyDates) ?? '';
+            $numWeeks     = count($weeklyDates);
+            $templateSize = $numWeeks + count($seenSpecials);
+
+            // Each unnumbered "block" in the spreadsheet represents a pair of copies.
+            // Divide blank rows by template size to get block count, then × 2 for copies.
+            $noneCopies = $templateSize > 0
+                ? intdiv($blankSetRows, $templateSize) * 2
+                : 0;
 
             $setNumsList = array_keys($setNums);
             sort($setNumsList);
@@ -310,6 +324,7 @@ class ChurchEnvelopeController extends Controller
                 'start_date'   => $startDate,
                 'num_weeks'    => $numWeeks,
                 'set_numbers'  => $this->buildRangeString($setNumsList),
+                'none_copies'  => $noneCopies,
                 'design_id'    => $designId,
                 'specials'     => $specials,
             ]);
