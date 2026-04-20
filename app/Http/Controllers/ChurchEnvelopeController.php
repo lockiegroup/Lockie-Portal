@@ -142,7 +142,7 @@ class ChurchEnvelopeController extends Controller
         $sheet       = $spreadsheet->getActiveSheet();
 
         $sheet->fromArray(
-            ['0', 'DAY', 'MONTH', 'YEAR', '-1', '-2', '@imag', '@imag',
+            ['0', 'DAY', 'MONTH', 'YEAR', '-1', '-2', '@image', '@image',
              'CHURCH', 'TOWN', 'DIOCESE LINE 1', 'DIOCESE LINE 2', 'DIOCESE LINE 3',
              'VT1', 'VT2', 'VT3', 'VT4', 'VT5', 'VT6', 'VT7', 'VT8'],
             null, 'A1'
@@ -175,7 +175,7 @@ class ChurchEnvelopeController extends Controller
                 $sheet->fromArray(
                     [$lineNum, $day, $month, $year,
                      $setLeft ?? '', $setRight ?? '',
-                     $isSpecial ? $spiralPath : $imagePath, '',
+                     $isSpecial ? '' : $imagePath, $isSpecial ? $spiralPath : '',
                      $church, $town, $diocese1, $diocese2, $diocese3,
                      ...$rowVt],
                     null, 'A' . $row
