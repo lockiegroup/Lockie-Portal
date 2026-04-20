@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\EnvelopeDesign;
+use App\Models\EnvelopeVerse;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -13,7 +15,10 @@ class ChurchEnvelopeController extends Controller
 {
     public function index(): View
     {
-        return view('church-envelopes.index');
+        $verses  = EnvelopeVerse::orderBy('sort_order')->get();
+        $designs = EnvelopeDesign::orderBy('name')->get();
+
+        return view('church-envelopes.index', compact('verses', 'designs'));
     }
 
     public function generate(Request $request): BinaryFileResponse|\Illuminate\Http\RedirectResponse
@@ -29,6 +34,7 @@ class ChurchEnvelopeController extends Controller
             'vt'                   => 'nullable|array',
             'set_numbers'          => 'nullable|string',
             'none_copies'          => 'nullable|integer|min:0',
+            'design_id'            => 'nullable|integer|exists:envelope_designs,id',
             'specials'             => 'nullable|array',
             'specials.*.name'      => 'nullable|string|max:100',
             'specials.*.date'      => 'nullable|date',
@@ -49,6 +55,12 @@ class ChurchEnvelopeController extends Controller
         for ($i = 1; $i <= 8; $i++) {
             $weeklyVt[] = trim($vtInputs[$i] ?? '');
         }
+
+        $imagePath = $request->design_id
+            ? EnvelopeDesign::find($request->design_id)?->path ?? ''
+            : '';
+
+        $verses = EnvelopeVerse::orderBy('sort_order')->get();
 
         // Resolve set numbers — supports ranges (1-50), individual numbers, or blank
         $setNumbers = [];
@@ -161,7 +173,7 @@ class ChurchEnvelopeController extends Controller
                 $sheet->fromArray(
                     [$lineNum, $day, $month, $year,
                      $setLeft ?? '', $setRight ?? '',
-                     '', '',
+                     $imagePath, '',
                      $church, $town, $diocese1, $diocese2, $diocese3,
                      ...$rowVt],
                     null, 'A' . $row
