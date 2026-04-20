@@ -1,5 +1,4 @@
 <x-layout title="A1 Print Schedule — Lockie Portal">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <nav class="bg-slate-900 shadow-lg">
         <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -417,12 +416,15 @@
                         changedBadge.classList.toggle('hidden', !data.date_changed);
                     }
 
-                    if (display) display.classList.remove('hidden');
-                    if (editor)  editor.classList.add('hidden');
+                    if (display) display.style.display = '';
+                    if (editor)  editor.style.display  = 'none';
+                } else {
+                    alert('Save failed: ' + (data.message || data.error || JSON.stringify(data)));
                 }
                 if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
             })
-            .catch(() => {
+            .catch(e => {
+                alert('Save error: ' + e.message);
                 if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
             });
         };
@@ -437,15 +439,15 @@
         window.editComplete = function (jobId) {
             const display = document.getElementById('complete-display-' + jobId);
             const editor  = document.getElementById('complete-editor-' + jobId);
-            if (display) display.classList.add('hidden');
-            if (editor)  editor.classList.remove('hidden');
+            if (display) display.style.display = 'none';
+            if (editor)  editor.style.display  = 'inline-flex';
         };
 
         window.cancelComplete = function (jobId) {
             const display = document.getElementById('complete-display-' + jobId);
             const editor  = document.getElementById('complete-editor-' + jobId);
-            if (display) display.classList.remove('hidden');
-            if (editor)  editor.classList.add('hidden');
+            if (display) display.style.display = '';
+            if (editor)  editor.style.display  = 'none';
         };
 
         window.saveComplete = function (jobId) {
@@ -483,12 +485,15 @@
                         updateMachineBanner(board);
                     }
 
-                    if (display) display.classList.remove('hidden');
-                    if (editor)  editor.classList.add('hidden');
+                    if (display) display.style.display = '';
+                    if (editor)  editor.style.display  = 'none';
+                } else {
+                    alert('Save failed: ' + (data.message || data.error || JSON.stringify(data)));
                 }
                 if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
             })
-            .catch(() => {
+            .catch(e => {
+                alert('Save error: ' + e.message);
                 if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
             });
         };

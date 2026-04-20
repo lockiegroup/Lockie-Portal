@@ -172,7 +172,7 @@
                     <span class="text-slate-400">(<span id="completed-qty-{{ $job->id }}">{{ $job->quantity_completed }}</span>)</span>
                 </button>
             </span>
-            <span id="complete-editor-{{ $job->id }}" class="hidden flex items-center gap-1">
+            <span id="complete-editor-{{ $job->id }}" style="display:none" class="items-center gap-1">
                 <input type="number" id="complete-input-{{ $job->id }}"
                     value="{{ $job->quantity_completed }}"
                     min="0" max="{{ $job->order_quantity }}"
