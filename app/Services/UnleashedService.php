@@ -46,14 +46,13 @@ class UnleashedService
         return $response->json() ?? [];
     }
 
-    public function paginate(string $endpoint, array $params = []): array
+    public function paginate(string $endpoint, array $params = [], int $pageSize = 200): array
     {
         $items = [];
         $page  = 1;
 
         do {
-            $data  = $this->get($endpoint, array_merge($params, [
-                'pageSize'   => 200,
+            $data  = $this->get($endpoint, array_merge(['pageSize' => $pageSize], $params, [
                 'pageNumber' => $page,
             ]));
             $items    = array_merge($items, $data['Items'] ?? []);
@@ -273,17 +272,23 @@ class UnleashedService
      */
     public function fetchA1PrintingOrders(): array
     {
-        $orders = $this->paginate('SalesOrders', []);
+        // Find A1 Printing warehouse code to filter at API level (avoids fetching all orders)
+        $whData = $this->get('Warehouses', ['pageSize' => 200, 'pageNumber' => 1]);
+        $a1Code = null;
+        foreach ($whData['Items'] ?? [] as $wh) {
+            if (str_contains(strtolower($wh['WarehouseName'] ?? ''), 'a1')) {
+                $a1Code = $wh['WarehouseCode'];
+                break;
+            }
+        }
+
+        if (!$a1Code) return [];
+
+        $orders = $this->paginate('SalesOrders', ['warehouseCode' => $a1Code], 500);
 
         return array_values(array_filter($orders, function (array $order) {
-            $warehouseName = $order['Warehouse']['WarehouseName'] ?? '';
-            $status        = $order['OrderStatus'] ?? '';
-
-            if (in_array($status, ['Completed', 'Deleted'], true)) {
-                return false;
-            }
-
-            return str_contains(strtolower($warehouseName), 'a1');
+            $status = $order['OrderStatus'] ?? '';
+            return !in_array($status, ['Completed', 'Deleted'], true);
         }));
     }
 
