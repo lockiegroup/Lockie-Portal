@@ -37,7 +37,7 @@ class ChurchEnvelopeController extends Controller
             'vt'                   => 'nullable|array',
             'set_numbers'          => 'nullable|string',
             'none_copies'          => 'nullable|integer|min:0',
-            'design_id'            => 'nullable|integer|exists:envelope_designs,id',
+            'design_path'          => 'nullable|string|max:500',
             'specials'             => 'nullable|array',
             'specials.*.name'      => 'nullable|string|max:100',
             'specials.*.date'      => 'nullable|date',
@@ -59,9 +59,7 @@ class ChurchEnvelopeController extends Controller
             $weeklyVt[] = trim($vtInputs[$i] ?? '');
         }
 
-        $imagePath   = $request->design_id
-            ? EnvelopeDesign::find($request->design_id)?->path ?? ''
-            : '';
+        $imagePath   = trim($request->design_path ?? '');
         $spiralPath  = EnvelopeSetting::getValue('spiral_image_path');
 
         $verses = EnvelopeVerse::orderBy('sort_order')->get();
@@ -309,15 +307,6 @@ class ChurchEnvelopeController extends Controller
             $setNumsList = array_keys($setNums);
             sort($setNumsList);
 
-            $designId = null;
-            if ($imagePath !== '') {
-                $norm = trim($imagePath);
-                $design = EnvelopeDesign::where('path', $norm)->first()
-                    ?? EnvelopeDesign::whereRaw('LOWER(TRIM(path)) = ?', [strtolower($norm)])->first()
-                    ?? EnvelopeDesign::where('path', 'like', '%' . basename($norm))->first();
-                $designId = $design?->id;
-            }
-
             return response()->json([
                 'success'      => true,
                 'church'       => $church,
@@ -330,7 +319,7 @@ class ChurchEnvelopeController extends Controller
                 'num_weeks'    => $numWeeks,
                 'set_numbers'  => $this->buildRangeString($setNumsList),
                 'none_copies'  => $noneCopies,
-                'design_id'    => $designId,
+                'design_path'  => $imagePath,
                 'specials'     => $specials,
             ]);
         } catch (\Throwable $e) {

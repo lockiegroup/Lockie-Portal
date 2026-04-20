@@ -100,16 +100,22 @@
                 </div>
                 <div class="grid grid-cols-1 gap-4" style="margin-top:1rem;">
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Design</label>
-                        <select name="design_id"
-                            class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
-                            <option value="">— None (column G blank) —</option>
-                            @foreach($designs as $design)
-                                <option value="{{ $design->id }}" {{ old('design_id') == $design->id ? 'selected' : '' }}>
-                                    {{ $design->name }}
-                                </option>
-                            @endforeach
-                        </select>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Design image path</label>
+                        @if($designs->isNotEmpty())
+                            <select id="design-preset"
+                                onchange="if(this.value){document.getElementById('design_path').value=this.value;this.value=''}"
+                                class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition mb-2">
+                                <option value="">— Select a saved design to fill path —</option>
+                                @foreach($designs as $design)
+                                    <option value="{{ $design->path }}">{{ $design->name }}</option>
+                                @endforeach
+                            </select>
+                        @endif
+                        <input type="text" name="design_path" id="design_path"
+                            value="{{ old('design_path') }}"
+                            placeholder="Paste or type the full image path, or leave blank for none"
+                            class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition font-mono text-sm">
+                        <p class="text-xs text-slate-400 mt-1">Selecting a saved design above copies its path here. You can also paste a path directly.</p>
                     </div>
                 </div>
             </div>
@@ -442,8 +448,8 @@
                     });
                     document.getElementById('verse-select').value = 'custom';
 
-                    const designSel = document.querySelector('[name="design_id"]');
-                    if (designSel) designSel.value = data.design_id ?? '';
+                    const designPath = document.getElementById('design_path');
+                    if (designPath) designPath.value = data.design_path ?? '';
 
                     document.getElementById('specials-list').innerHTML = '';
                     document.getElementById('no-specials-msg').style.display = '';
