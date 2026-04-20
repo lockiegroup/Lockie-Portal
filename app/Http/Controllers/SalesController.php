@@ -40,94 +40,35 @@ class SalesController extends Controller
         }
 
         try {
-            [$salesByWarehouse, $creditsByWarehouse, $invoicesByWarehouse] = Cache::remember(
+            [$salesByWarehouse, $creditsByWarehouse] = Cache::remember(
                 $cacheKey,
                 1800,
                 function () use ($from, $to) {
                     $apiEndDate = Carbon::parse($to)->addDay()->toDateString();
                     $params     = ['startDate' => $from, 'endDate' => $apiEndDate];
 
-                    // Fetch Sales Orders, Credit Notes, and Invoices in parallel.
-                    // The /Invoices API offers no Invoice Date filter. startDate/endDate filter by
-                    // creation date, and modifiedSince suffers the same pagination bug (NumberOfPages
-                    // is calculated from the total unfiltered count, so filtered queries return the
-                    // same page of results repeatedly). The only correct approach is to fetch ALL
-                    // invoices (no date filter) — pagination is accurate for unfiltered queries —
-                    // then PHP-filter by InvoiceDate and Completed status.
-                    // Total invoice count is ~2,200 so this is 11 pages and fast enough to cache.
                     $fetched = $this->unleashed->parallelPaginate([
-                        'sales'    => ['SalesOrders', $params],
-                        'credits'  => ['CreditNotes', $params],
-                        'invoices' => ['Invoices', ['startDate' => '2020-01-01']],
+                        'sales'   => ['SalesOrders', $params],
+                        'credits' => ['CreditNotes', $params],
                     ]);
 
-                    // De-duplicate by InvoiceNumber, keep Completed invoices with InvoiceDate in range
-                    $uniqueInvoices = [];
-                    foreach ($fetched['invoices'] as $inv) {
-                        $uniqueInvoices[$inv['InvoiceNumber']] = $inv;
-                    }
-                    $fetched['invoices'] = array_values(array_filter(
-                        array_values($uniqueInvoices),
-                        function ($inv) use ($from, $to) {
-                            if (($inv['InvoiceStatus'] ?? '') !== 'Completed') return false;
-                            if (!preg_match('/\/Date\((\d+)/', $inv['InvoiceDate'] ?? '', $m)) return false;
-                            $date = Carbon::createFromTimestamp((int) $m[1] / 1000)->utc()->toDateString();
-                            return $date >= $from && $date <= $to;
-                        }
-                    ));
-
-                    // Resolve warehouse for each invoice by fetching only the specific
-                    // sales orders referenced. Results cached per order for 7 days so
-                    // repeat searches don't re-fetch the same orders.
-                    $orderNums = array_values(array_unique(array_filter(array_map(
-                        fn($inv) => $inv['OrderNumber'] ?? $inv['SalesOrderNumber'] ?? '',
-                        $fetched['invoices']
-                    ))));
-
-                    $warehouseMap = [];
-                    $uncached     = [];
-                    foreach ($orderNums as $num) {
-                        $cached = Cache::get("unleashed_wh_{$num}");
-                        if ($cached !== null) {
-                            $warehouseMap[$num] = $cached;
-                        } else {
-                            $uncached[] = $num;
-                        }
-                    }
-                    if (!empty($uncached)) {
-                        $resolved = $this->unleashed->fetchWarehousesByOrderNumber($uncached);
-                        foreach ($resolved as $num => $wh) {
-                            $warehouseMap[$num] = $wh;
-                            Cache::put("unleashed_wh_{$num}", $wh, 604800);
-                        }
-                    }
-
-                    // Inject warehouse into each invoice
-                    $invoices = array_map(function ($inv) use ($warehouseMap) {
-                        $num = $inv['OrderNumber'] ?? $inv['SalesOrderNumber'] ?? '';
-                        $inv['Warehouse'] = ['WarehouseName' => $warehouseMap[$num] ?? 'No Warehouse'];
-                        return $inv;
-                    }, $fetched['invoices']);
-
-                    // Sales Enquiry: open orders only — Completed go to Invoice Enquiry
+                    // All non-cancelled orders in the date range
                     $salesOrders = array_filter(
                         $fetched['sales'],
-                        fn($o) => !in_array($o['OrderStatus'] ?? '', ['Cancelled', 'Completed'])
+                        fn($o) => ($o['OrderStatus'] ?? '') !== 'Cancelled'
                     );
 
                     return [
                         $this->groupByWarehouse($salesOrders),
                         $this->groupByWarehouse($fetched['credits']),
-                        $this->groupByWarehouse($invoices),
                     ];
                 }
             );
 
             return response()->json([
-                'success'             => true,
-                'salesByWarehouse'    => $salesByWarehouse,
-                'creditsByWarehouse'  => $creditsByWarehouse,
-                'invoicesByWarehouse' => $invoicesByWarehouse,
+                'success'            => true,
+                'salesByWarehouse'   => $salesByWarehouse,
+                'creditsByWarehouse' => $creditsByWarehouse,
             ]);
         } catch (\Throwable $e) {
             return response()->json([

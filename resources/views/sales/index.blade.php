@@ -27,7 +27,7 @@
 
         <div class="mb-8">
             <h1 class="text-2xl font-bold text-slate-800">Sales Figures</h1>
-            <p class="text-slate-500 mt-1">Sales orders, invoices and credit notes by warehouse.</p>
+            <p class="text-slate-500 mt-1">Sales orders and credit notes by warehouse.</p>
         </div>
 
         {{-- Date Range Form --}}
@@ -136,9 +136,8 @@
 
         function renderResults(data, from, to) {
             const sections = [
-                { key: 'salesByWarehouse',    title: 'Sales Enquiry by Warehouse',   note: 'All non-cancelled orders by order date',  dot: 'bg-sky-500',     cardLabel: 'Sales Enquiry',   cardCls: 'text-slate-800', unit: 'orders'   },
-                { key: 'creditsByWarehouse',   title: 'Credit Enquiry by Warehouse',  note: 'All credit notes including free credits', dot: 'bg-red-500',     cardLabel: 'Credit Enquiry',  cardCls: 'text-red-500',   unit: 'credits'  },
-                { key: 'invoicesByWarehouse',  title: 'Invoice Enquiry by Warehouse', note: 'Completed invoices by invoice date',      dot: 'bg-emerald-500', cardLabel: 'Invoice Enquiry', cardCls: 'text-emerald-600', unit: 'invoices' },
+                { key: 'salesByWarehouse',  title: 'Sales Enquiry by Warehouse',  note: 'All non-cancelled orders by order date',  dot: 'bg-sky-500', cardLabel: 'Sales Enquiry',  cardCls: 'text-slate-800', unit: 'orders'  },
+                { key: 'creditsByWarehouse', title: 'Credit Enquiry by Warehouse', note: 'All credit notes including free credits', dot: 'bg-red-500', cardLabel: 'Credit Enquiry', cardCls: 'text-red-500',   unit: 'credits' },
             ];
 
             const totals = {};
@@ -186,7 +185,7 @@
                 </div>`;
             }).join('');
 
-            return `<div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">${cards}</div>${tables}`;
+            return `<div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">${cards}</div>${tables}`;
         }
 
         // ── Data loading ───────────────────────────────────────────────────────
