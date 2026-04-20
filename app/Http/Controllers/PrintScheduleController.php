@@ -1,0 +1,160 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\PrintJob;
+use App\Models\PrintJobDateChange;
+use App\Models\PrintJobNote;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\View\View;
+
+class PrintScheduleController extends Controller
+{
+    public function index(): View
+    {
+        $boards       = PrintJob::BOARDS;
+        $boardLabels  = PrintJob::BOARDS;
+        $machines     = PrintJob::MACHINES;
+
+        $boardJobs = [];
+        foreach (array_keys($boards) as $boardKey) {
+            $boardJobs[$boardKey] = PrintJob::where('board', $boardKey)
+                ->orderBy('position')
+                ->with(['notes', 'dateChanges.user'])
+                ->get();
+        }
+
+        // Machine lead times: sum remaining_quantity / 350, rounded to 1dp
+        $machineLeadTimes = [];
+        foreach ($machines as $machine) {
+            $jobs  = $boardJobs[$machine];
+            $total = $jobs->sum(fn($job) => $job->remaining_quantity);
+            $machineLeadTimes[$machine] = round($total / 350, 1);
+        }
+
+        return view('print-schedule.index', compact(
+            'boardJobs',
+            'boards',
+            'boardLabels',
+            'machines',
+            'machineLeadTimes'
+        ));
+    }
+
+    public function sync(): JsonResponse
+    {
+        try {
+            Artisan::call('print:sync');
+            return response()->json(['success' => true]);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function moveBoard(Request $request, PrintJob $job): JsonResponse
+    {
+        $request->validate([
+            'board' => ['required', 'in:' . implode(',', array_keys(PrintJob::BOARDS))],
+        ]);
+
+        $board       = $request->input('board');
+        $maxPosition = PrintJob::where('board', $board)->max('position') ?? 0;
+
+        $job->update([
+            'board'    => $board,
+            'position' => $maxPosition + 1,
+        ]);
+
+        return response()->json(['success' => true]);
+    }
+
+    public function reorder(Request $request): JsonResponse
+    {
+        $request->validate([
+            'order'   => ['required', 'array'],
+            'order.*' => ['integer'],
+        ]);
+
+        foreach ($request->input('order') as $position => $id) {
+            PrintJob::where('id', $id)->update(['position' => $position]);
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    public function partComplete(Request $request, PrintJob $job): JsonResponse
+    {
+        $request->validate([
+            'quantity_completed' => ['required', 'integer', 'min:0', 'max:' . $job->order_quantity],
+        ]);
+
+        $job->update(['quantity_completed' => $request->integer('quantity_completed')]);
+
+        return response()->json([
+            'success'   => true,
+            'remaining' => $job->remaining_quantity,
+        ]);
+    }
+
+    public function updateDate(Request $request, PrintJob $job): JsonResponse
+    {
+        $request->validate([
+            'required_date' => ['required', 'date'],
+        ]);
+
+        $newDate = $request->input('required_date');
+        $oldDate = $job->required_date ? $job->required_date->format('Y-m-d') : null;
+
+        if ($oldDate !== $newDate) {
+            PrintJobDateChange::create([
+                'print_job_id' => $job->id,
+                'user_id'      => auth()->id(),
+                'old_date'     => $oldDate,
+                'new_date'     => $newDate,
+            ]);
+        }
+
+        $job->update(['required_date' => $newDate]);
+
+        return response()->json([
+            'success'      => true,
+            'date_changed' => $job->fresh()->date_changed,
+        ]);
+    }
+
+    public function storeNote(Request $request, PrintJob $job): JsonResponse
+    {
+        $request->validate([
+            'body' => ['required', 'string', 'max:1000'],
+        ]);
+
+        $note = PrintJobNote::create([
+            'print_job_id' => $job->id,
+            'user_id'      => auth()->id(),
+            'body'         => $request->input('body'),
+        ]);
+
+        $note->load('user');
+
+        return response()->json([
+            'success' => true,
+            'note'    => [
+                'id'         => $note->id,
+                'body'       => $note->body,
+                'user_name'  => $note->user?->name ?? 'Unknown',
+                'created_at' => $note->created_at->format('d M Y, H:i'),
+            ],
+        ]);
+    }
+
+    public function destroyNote(PrintJob $job, PrintJobNote $note): JsonResponse
+    {
+        abort_unless($note->print_job_id === $job->id, 404);
+
+        $note->delete();
+
+        return response()->json(['success' => true]);
+    }
+}

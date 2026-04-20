@@ -97,6 +97,19 @@
                 <span class="text-xs font-medium text-violet-600 uppercase tracking-wide mt-auto">Open &rarr;</span>
             </a>
 
+            <a href="{{ route('print.index') }}" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4 hover:shadow-md hover:border-slate-300 transition-all">
+                <div class="w-12 h-12 rounded-xl flex items-center justify-center bg-rose-50 text-rose-600">
+                    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="font-semibold text-slate-800">Print Schedule</h2>
+                    <p class="text-slate-500 text-sm mt-1">Manage A1 Printing jobs, machine queues, and lead times.</p>
+                </div>
+                <span class="text-xs font-medium text-rose-600 uppercase tracking-wide mt-auto">Open &rarr;</span>
+            </a>
+
         </div>
 
         {{-- Stock On Hand widget --}}
