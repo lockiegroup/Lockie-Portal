@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\EnvelopeDesign;
+use App\Models\EnvelopeSetting;
 use App\Models\EnvelopeVerse;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -56,9 +57,10 @@ class ChurchEnvelopeController extends Controller
             $weeklyVt[] = trim($vtInputs[$i] ?? '');
         }
 
-        $imagePath = $request->design_id
+        $imagePath   = $request->design_id
             ? EnvelopeDesign::find($request->design_id)?->path ?? ''
             : '';
+        $spiralPath  = EnvelopeSetting::getValue('spiral_image_path');
 
         $verses = EnvelopeVerse::orderBy('sort_order')->get();
 
@@ -173,7 +175,7 @@ class ChurchEnvelopeController extends Controller
                 $sheet->fromArray(
                     [$lineNum, $day, $month, $year,
                      $setLeft ?? '', $setRight ?? '',
-                     $imagePath, '',
+                     $isSpecial ? $spiralPath : $imagePath, '',
                      $church, $town, $diocese1, $diocese2, $diocese3,
                      ...$rowVt],
                     null, 'A' . $row

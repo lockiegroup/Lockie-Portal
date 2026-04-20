@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\EnvelopeDesign;
+use App\Models\EnvelopeSetting;
 use App\Models\EnvelopeVerse;
 use Illuminate\Http\Request;
 
@@ -11,10 +12,19 @@ class EnvelopeSettingsController extends Controller
 {
     public function index()
     {
-        $verses  = EnvelopeVerse::orderBy('sort_order')->get();
-        $designs = EnvelopeDesign::orderBy('name')->get();
+        $verses      = EnvelopeVerse::orderBy('sort_order')->get();
+        $designs     = EnvelopeDesign::orderBy('name')->get();
+        $spiralPath  = EnvelopeSetting::getValue('spiral_image_path');
 
-        return view('admin.envelope-settings.index', compact('verses', 'designs'));
+        return view('admin.envelope-settings.index', compact('verses', 'designs', 'spiralPath'));
+    }
+
+    public function updateSpiralPath(Request $r)
+    {
+        $r->validate(['spiral_image_path' => 'nullable|string|max:500']);
+        EnvelopeSetting::setValue('spiral_image_path', trim($r->spiral_image_path ?? ''));
+
+        return back()->with('success', 'Spiral image path saved.');
     }
 
     public function storeVerse(Request $r)

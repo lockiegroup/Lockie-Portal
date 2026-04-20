@@ -27,6 +27,34 @@
         @endif
 
         {{-- ================================================================ --}}
+        {{-- GLOBAL SETTINGS                                                  --}}
+        {{-- ================================================================ --}}
+        <section class="mb-12">
+            <h2 class="text-lg font-semibold text-slate-800 mb-4">Global Settings</h2>
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <form action="{{ route('admin.envelope-settings.spiral-path.update') }}" method="POST">
+                    @csrf
+                    <div style="display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap;">
+                        <div style="flex:1;min-width:260px;">
+                            <label class="block text-sm font-medium text-slate-700 mb-1.5">Spiral Image Path</label>
+                            <p class="text-xs text-slate-400 mb-2">Used for special envelopes (e.g. Christmas, Easter). Leave blank to omit image.</p>
+                            <input type="text" name="spiral_image_path"
+                                value="{{ $spiralPath }}"
+                                placeholder="e.g. Lockie iMac HD:Users:design:Envelopes:Spiral.tif"
+                                class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
+                        </div>
+                        <div>
+                            <button type="submit"
+                                class="px-5 py-2.5 bg-slate-900 hover:bg-slate-700 text-white text-sm font-semibold rounded-lg transition-colors">
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        {{-- ================================================================ --}}
         {{-- DESIGNS SECTION                                                  --}}
         {{-- ================================================================ --}}
         <section class="mb-12">
