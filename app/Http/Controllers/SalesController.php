@@ -91,14 +91,10 @@ class SalesController extends Controller
                 $grouped[$name] = ['count' => 0, 'sub' => 0.0, 'tax' => 0.0, 'total' => 0.0];
             }
 
-            $lines   = $item['SalesOrderLines'] ?? [];
-            $lineSub = array_sum(array_map(fn($l) => (float) ($l['LineTotal'] ?? 0), $lines));
-            $lineTax = array_sum(array_map(fn($l) => (float) ($l['LineTax']   ?? 0), $lines));
-
             $grouped[$name]['count']++;
-            $grouped[$name]['sub']   += $lineSub ?: (float) ($item['SubTotal'] ?? 0);
-            $grouped[$name]['tax']   += $lineTax ?: (float) ($item['TaxTotal'] ?? 0);
-            $grouped[$name]['total'] += ($lineSub + $lineTax) ?: (float) ($item['Total'] ?? 0);
+            $grouped[$name]['sub']   += (float) ($item['SubTotal'] ?? 0);
+            $grouped[$name]['tax']   += (float) ($item['TaxTotal'] ?? 0);
+            $grouped[$name]['total'] += (float) ($item['Total']    ?? 0);
         }
 
         uasort($grouped, fn($a, $b) => $b['total'] <=> $a['total']);
