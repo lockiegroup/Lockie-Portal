@@ -135,7 +135,7 @@ class ChurchEnvelopeController extends Controller
         // Back specials sorted by their own date, appended last
         usort($backSpecials, fn($a, $b) => $a['sort_date'] <=> $b['sort_date']);
 
-        $template = array_merge($main, $backSpecials);
+        $template = array_reverse(array_merge($main, $backSpecials));
 
         // Build spreadsheet
         $spreadsheet = new Spreadsheet();
