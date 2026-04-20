@@ -8,6 +8,7 @@ use App\Http\Controllers\SalesController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\ChurchEnvelopeController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\EnvelopeSettingsController;
 use App\Http\Controllers\HealthSafety\ActionController as HsActionController;
 use App\Http\Controllers\HealthSafety\SettingsController as HsSettingsController;
 use App\Http\Controllers\PrintScheduleController;
@@ -66,5 +67,15 @@ Route::middleware(['auth', 'otp'])->group(function () {
     // Admin only
     Route::middleware('can:admin')->group(function () {
         Route::resource('admin/users', UserController::class)->names('admin.users');
+
+        Route::prefix('admin/envelope-settings')->name('admin.envelope-settings.')->group(function () {
+            Route::get('/', [EnvelopeSettingsController::class, 'index'])->name('index');
+            Route::post('/verses', [EnvelopeSettingsController::class, 'storeVerse'])->name('verses.store');
+            Route::put('/verses/{verse}', [EnvelopeSettingsController::class, 'updateVerse'])->name('verses.update');
+            Route::delete('/verses/{verse}', [EnvelopeSettingsController::class, 'destroyVerse'])->name('verses.destroy');
+            Route::post('/designs', [EnvelopeSettingsController::class, 'storeDesign'])->name('designs.store');
+            Route::put('/designs/{design}', [EnvelopeSettingsController::class, 'updateDesign'])->name('designs.update');
+            Route::delete('/designs/{design}', [EnvelopeSettingsController::class, 'destroyDesign'])->name('designs.destroy');
+        });
     });
 });
