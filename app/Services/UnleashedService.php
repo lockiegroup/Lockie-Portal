@@ -67,7 +67,7 @@ class UnleashedService
      * Fetch multiple endpoints concurrently, paginating each in parallel batches.
      * $requests: ['key' => ['Endpoint', ['param' => 'value']], ...]
      */
-    public function parallelPaginate(array $requests): array
+    public function parallelPaginate(array $requests, int $pageSize = 500): array
     {
         $keys       = array_keys($requests);
         $results    = array_fill_keys($keys, []);
@@ -81,7 +81,7 @@ class UnleashedService
             foreach ($activeKeys as $key) {
                 [$endpoint, $params] = $requests[$key];
                 $qs = http_build_query(array_merge($params, [
-                    'pageSize'   => 200,
+                    'pageSize'   => $pageSize,
                     'pageNumber' => $page,
                 ]));
                 $batch[$key] = [
