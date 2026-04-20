@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ChurchEnvelopeController extends Controller
@@ -19,6 +21,14 @@ class ChurchEnvelopeController extends Controller
         $request->validate([
             'start_date'       => 'required|date',
             'num_weeks'        => 'required|integer|min:1|max:53',
+            'church'           => 'required|string|max:200',
+            'town'             => 'required|string|max:200',
+            'parish_1'         => 'required|integer|min:1',
+            'parish_2'         => 'nullable|integer|min:1',
+            'diocese_1'        => 'nullable|string|max:200',
+            'diocese_2'        => 'nullable|string|max:200',
+            'diocese_3'        => 'nullable|string|max:200',
+            'vt'               => 'nullable|array',
             'set_number_type'  => 'required|in:sequential,custom',
             'seq_start'        => 'required_if:set_number_type,sequential|nullable|integer|min:1',
             'seq_count'        => 'required_if:set_number_type,sequential|nullable|integer|min:1|max:9999',
@@ -31,6 +41,18 @@ class ChurchEnvelopeController extends Controller
 
         $startDate = Carbon::parse($request->start_date);
         $numWeeks  = (int) $request->num_weeks;
+        $church    = trim($request->church);
+        $town      = trim($request->town);
+        $parish1   = (int) $request->parish_1;
+        $parish2   = $request->parish_2 ? (int) $request->parish_2 : '';
+        $diocese1  = trim($request->diocese_1 ?? '');
+        $diocese2  = trim($request->diocese_2 ?? '');
+        $diocese3  = trim($request->diocese_3 ?? '');
+        $vtInputs  = $request->input('vt', []);
+        $vt        = [];
+        for ($i = 1; $i <= 8; $i++) {
+            $vt[] = trim($vtInputs[$i] ?? '');
+        }
 
         // Resolve set numbers
         if ($request->set_number_type === 'sequential') {
@@ -46,68 +68,66 @@ class ChurchEnvelopeController extends Controller
             return back()->withErrors(['custom_numbers' => 'No valid set numbers found.']);
         }
 
-        // Build weekly envelopes with sort timestamp
+        // Build envelope template (dated first, sorted; undated appended)
         $dated   = [];
         $undated = [];
 
         for ($i = 0; $i < $numWeeks; $i++) {
             $date    = $startDate->copy()->addWeeks($i);
-            $dated[] = [
-                'type'      => 'Weekly',
-                'label'     => 'Week ' . ($i + 1),
-                'date'      => $date->format('d M Y'),
-                'sort_date' => $date->timestamp,
-            ];
+            $dated[] = ['carbon' => $date, 'sort_date' => $date->timestamp];
         }
 
-        // Special envelopes — dated ones interleave with weekly, undated go at the end
         foreach ($request->input('specials', []) as $special) {
             if (empty($special['name'])) continue;
             $isDated = !empty($special['dated']) && !empty($special['date']);
             if ($isDated) {
                 $d       = Carbon::parse($special['date']);
-                $dated[] = [
-                    'type'      => 'Special',
-                    'label'     => trim($special['name']),
-                    'date'      => $d->format('d M Y'),
-                    'sort_date' => $d->timestamp,
-                ];
+                $dated[] = ['carbon' => $d, 'sort_date' => $d->timestamp];
             } else {
-                $undated[] = [
-                    'type'  => 'Special',
-                    'label' => trim($special['name']),
-                    'date'  => '',
-                ];
+                $undated[] = ['carbon' => null];
             }
         }
 
-        // Sort dated envelopes by date, then append undated at the end
         usort($dated, fn($a, $b) => $a['sort_date'] <=> $b['sort_date']);
+        $template = array_merge($dated, $undated);
 
-        $template = array_merge(
-            array_map(fn($e) => ['type' => $e['type'], 'label' => $e['label'], 'date' => $e['date']], $dated),
-            $undated
+        // Build spreadsheet
+        $spreadsheet = new Spreadsheet();
+        $sheet       = $spreadsheet->getActiveSheet();
+
+        $sheet->fromArray(
+            ['0', 'DAY', 'MONTH', 'YEAR', '-1', '-2', '@imag', '@imag',
+             'CHURCH', 'TOWN', 'DIOCESE LINE 1', 'DIOCESE LINE 2', 'DIOCESE LINE 3',
+             'VT1', 'VT2', 'VT3', 'VT4', 'VT5', 'VT6', 'VT7', 'VT8'],
+            null, 'A1'
         );
 
-        $filename = 'church-envelopes-' . $startDate->format('Y') . '.csv';
-
-        set_time_limit(0);
-        $tmpFile = tempnam(sys_get_temp_dir(), 'envelopes_');
-        $fp = fopen($tmpFile, 'w');
-        fputcsv($fp, ['Set Number', 'Box Set Index', 'Envelope Type', 'Label', 'Date']);
-        foreach ($setNumbers as $boxIndex => $setNumber) {
+        $row = 2;
+        foreach ($setNumbers as $setNumber) {
             foreach ($template as $envelope) {
-                fputcsv($fp, [
-                    $setNumber,
-                    $boxIndex + 1,
-                    $envelope['type'],
-                    $envelope['label'],
-                    $envelope['date'],
-                ]);
+                $carbon = $envelope['carbon'];
+                $day    = $carbon ? (int) $carbon->format('j') : '';
+                $month  = $carbon ? strtoupper($carbon->format('M')) : '';
+                $year   = $carbon ? (int) $carbon->format('Y') : '';
+
+                $sheet->fromArray(
+                    [$setNumber, $day, $month, $year, $parish1, $parish2, '', '',
+                     $church, $town, $diocese1, $diocese2, $diocese3,
+                     ...$vt],
+                    null, 'A' . $row
+                );
+                $row++;
             }
         }
-        fclose($fp);
 
-        return response()->download($tmpFile, $filename, ['Content-Type' => 'text/csv'])->deleteFileAfterSend(true);
+        set_time_limit(0);
+        $tmpFile = tempnam(sys_get_temp_dir(), 'envelopes_') . '.xlsx';
+        (new Xlsx($spreadsheet))->save($tmpFile);
+
+        return response()->download(
+            $tmpFile,
+            'church-envelopes-' . $startDate->format('Y') . '.xlsx',
+            ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
+        )->deleteFileAfterSend(true);
     }
 }

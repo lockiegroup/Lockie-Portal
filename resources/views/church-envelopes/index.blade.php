@@ -11,7 +11,7 @@
     <main class="max-w-2xl mx-auto px-6 py-10">
         <div class="mb-8">
             <h1 class="text-2xl font-bold text-slate-800">Church Envelope Generator</h1>
-            <p class="text-slate-500 mt-1">Generate a print-ready CSV for Adobe Illustrator data merge.</p>
+            <p class="text-slate-500 mt-1">Generate a print-ready Excel file for envelope data merge.</p>
         </div>
 
         @if($errors->any())
@@ -23,7 +23,7 @@
         <form action="{{ route('church-envelopes.generate') }}" method="POST" class="space-y-6">
             @csrf
 
-            {{-- Start date & weeks --}}
+            {{-- Schedule --}}
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
                 <h2 class="font-semibold text-slate-800">Schedule</h2>
                 <div class="grid grid-cols-2 gap-4">
@@ -46,6 +46,47 @@
                     </div>
                 </div>
                 <p id="weeks-preview" class="text-xs text-slate-400"></p>
+            </div>
+
+            {{-- Job Details --}}
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
+                <h2 class="font-semibold text-slate-800">Job Details</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">
+                            Church Name <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="church" value="{{ old('church') }}" required
+                            placeholder="e.g. St. Andrew with Holy Trinity"
+                            class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">
+                            Town <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="town" value="{{ old('town') }}" required
+                            placeholder="e.g. HALSTEAD"
+                            class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">
+                            Parish Number 1 <span class="text-red-500">*</span>
+                        </label>
+                        <input type="number" name="parish_1" value="{{ old('parish_1') }}" required min="1"
+                            placeholder="e.g. 17"
+                            class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">
+                            Parish Number 2 <span class="text-slate-400 font-normal text-xs">(2-up printing)</span>
+                        </label>
+                        <input type="number" name="parish_2" value="{{ old('parish_2') }}" min="1"
+                            placeholder="e.g. 18"
+                            class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
+                    </div>
+                </div>
             </div>
 
             {{-- Set numbers --}}
@@ -139,12 +180,52 @@
                 </p>
             </div>
 
+            {{-- Diocese Lines --}}
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
+                <h2 class="font-semibold text-slate-800">Diocese Lines</h2>
+                <p class="text-xs text-slate-400">Printed on every envelope. Edit if your diocese wording differs.</p>
+                <div class="space-y-3">
+                    <input type="text" name="diocese_1"
+                        value="{{ old('diocese_1', 'REGISTERED CHARITY No. 1127357.') }}"
+                        placeholder="Diocese Line 1"
+                        class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
+                    <input type="text" name="diocese_2"
+                        value="{{ old('diocese_2') }}"
+                        placeholder="Diocese Line 2 (optional)"
+                        class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
+                    <input type="text" name="diocese_3"
+                        value="{{ old('diocese_3') }}"
+                        placeholder="Diocese Line 3 (optional)"
+                        class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
+                </div>
+            </div>
+
+            {{-- Variable Text --}}
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
+                <h2 class="font-semibold text-slate-800">Variable Text (VT1–VT8)</h2>
+                <p class="text-xs text-slate-400">Text fields merged into the envelope artwork. Leave blank if unused.</p>
+                <div class="grid grid-cols-2 gap-3">
+                    @php
+                        $vtDefaults = ['In Thanksgiving to God', 'and for the work of', 'His Church', '', '', '', '', ''];
+                    @endphp
+                    @for($v = 1; $v <= 8; $v++)
+                        <div>
+                            <label class="block text-xs font-medium text-slate-500 mb-1">VT{{ $v }}</label>
+                            <input type="text" name="vt[{{ $v }}]"
+                                value="{{ old('vt.' . $v, $vtDefaults[$v - 1]) }}"
+                                placeholder="VT{{ $v }}"
+                                class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
+                        </div>
+                    @endfor
+                </div>
+            </div>
+
             {{-- Summary & submit --}}
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
                 <p id="summary" class="text-sm text-slate-500 mb-4"></p>
                 <button type="submit"
                     class="w-full bg-slate-900 hover:bg-slate-700 text-white font-semibold py-3 rounded-lg transition-colors">
-                    Download CSV
+                    Download Excel
                 </button>
             </div>
 
@@ -154,18 +235,15 @@
     <script>
         let specialIndex = {{ old('specials') ? count(old('specials')) : 0 }};
 
-        // ── Set type toggle ────────────────────────────────────────────────────
         function toggleSetType(type) {
             document.getElementById('sequential-section').classList.toggle('hidden', type !== 'sequential');
             document.getElementById('custom-section').classList.toggle('hidden', type !== 'custom');
             updateSummary();
         }
 
-        // Init
         const currentType = document.querySelector('input[name="set_number_type"]:checked')?.value || 'sequential';
         toggleSetType(currentType);
 
-        // ── Weeks preview (standard = 52 weeks from start date) ───────────────
         function updateWeeksPreview() {
             const val = document.getElementById('start_date').value;
             const n   = parseInt(document.getElementById('num_weeks').value) || 52;
@@ -180,16 +258,13 @@
         }
 
         document.getElementById('start_date').addEventListener('change', function () {
-            // Default to 52 (standard church giving year = 52 weeks from start date)
             if (!document.getElementById('num_weeks').value) {
                 document.getElementById('num_weeks').value = 52;
             }
             updateWeeksPreview();
         });
-
         document.getElementById('num_weeks').addEventListener('input', updateWeeksPreview);
 
-        // ── Custom numbers count ───────────────────────────────────────────────
         document.getElementById('custom_numbers').addEventListener('input', function () {
             const nums = this.value.trim().split(/[\s,;]+/).filter(n => n && !isNaN(parseInt(n)));
             document.getElementById('custom-count').textContent = nums.length + ' set number' + (nums.length === 1 ? '' : 's') + ' detected.';
@@ -198,7 +273,6 @@
 
         document.getElementById('seq_count').addEventListener('input', updateSummary);
 
-        // ── Add special envelope ───────────────────────────────────────────────
         function addSpecial() {
             document.getElementById('no-specials-msg').style.display = 'none';
             const i = specialIndex++;
@@ -231,7 +305,6 @@
             document.getElementById('date_wrap_' + i).classList.toggle('hidden', !checkbox.checked);
         }
 
-        // ── Summary ────────────────────────────────────────────────────────────
         function updateSummary() {
             const weeks    = parseInt(document.getElementById('num_weeks').value) || 0;
             const specials = document.querySelectorAll('.special-row').length;
@@ -246,7 +319,7 @@
             const total = sets * (weeks + specials);
             const el    = document.getElementById('summary');
             if (sets && weeks) {
-                el.textContent = `${sets} box sets × ${weeks + specials} envelopes (${weeks} weekly + ${specials} special) = ${total.toLocaleString()} total rows in CSV.`;
+                el.textContent = `${sets} box sets × ${weeks + specials} envelopes (${weeks} weekly + ${specials} special) = ${total.toLocaleString()} total rows.`;
             } else {
                 el.textContent = '';
             }
