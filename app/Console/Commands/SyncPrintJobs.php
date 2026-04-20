@@ -38,10 +38,8 @@ class SyncPrintJobs extends Command
             foreach ($lines as $lineIndex => $line) {
                 $productCode = $line['Product']['ProductCode'] ?? null;
 
-                // Skip comment/service lines with no product code
-                if (empty($productCode)) {
-                    continue;
-                }
+                if (empty($productCode)) continue;
+                if (str_contains(strtolower($productCode), 'a1-carriage')) continue;
 
                 $lineNumber         = (int) ($line['LineNumber'] ?? ($lineIndex + 1));
                 $productDescription = $line['Product']['ProductDescription'] ?? null;
