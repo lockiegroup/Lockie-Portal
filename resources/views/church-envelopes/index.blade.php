@@ -187,17 +187,48 @@
             {{-- Variable Text --}}
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
                 <h2 class="font-semibold text-slate-800">Variable Text — Weekly Envelopes</h2>
-                <p class="text-xs text-slate-400">VT1–VT8 for weekly envelopes. Special envelopes use VT6 (title) and VT7 (offering text) only.</p>
+                <p class="text-xs text-slate-400">Select a verse to auto-fill, or choose Custom to type your own text. Special envelopes use VT6 (title) and VT7 (offering text) only.</p>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Verse</label>
+                    <select id="verse-select" onchange="applyVerse(this.value)"
+                        class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
+                        <option value="custom">— Custom (enter below) —</option>
+                        <option value="v1">V1 — All things come from You, O Lord...</option>
+                        <option value="v2">V2 — "Give back some of God's gifts..."</option>
+                        <option value="v3">V3 — The Lord blesses His people with peace.</option>
+                        <option value="v4">V4 — In Thanksgiving to God and for the work of His Church</option>
+                        <option value="v5">V5 — Trust in the Lord with all your heart.</option>
+                        <option value="v6">V6 — Blessed are the pure in heart...</option>
+                        <option value="v7">V7 — What return can I make to the Lord...</option>
+                        <option value="v8">V8 — OUR GIFT TO GOD AND HIS CHURCH</option>
+                        <option value="v9">V9 — For the support of our Church, Schools and Priests.</option>
+                        <option value="v10">V10 — My Gift to God and His Church</option>
+                        <option value="v11">V11 — Those that hope in the Lord will renew their strength.</option>
+                        <option value="v12">V12 — I am the Good Shepherd...</option>
+                        <option value="v13">V13 — If unable to come, please remember...</option>
+                        <option value="v14">V14 — "For God loveth a cheerful giver"</option>
+                        <option value="v15">V15 — "Freely you have received, Freely give..."</option>
+                        <option value="v16">V16 — Faith comes from hearing the message...</option>
+                        <option value="v17">V17 — "The Lord Jesus Himself said happiness lies more in giving..."</option>
+                        <option value="v18">V18 — MY WEEKLY OFFERING</option>
+                        <option value="v19">V19 — "Where your treasure is, there will your heart be also."</option>
+                        <option value="v20">V20 — OUR WEEKLY OFFERING TO GOD</option>
+                        <option value="v21">V21 — Weekly Offering to God and for the Work of His Church</option>
+                        <option value="v22">V22 — For whenever you eat this bread...</option>
+                        <option value="v23">V23 — The Lord shall be unto thee an everlasting light.</option>
+                        <option value="v24">V24 — Rejoice in the Lord always.</option>
+                    </select>
+                </div>
+
                 <div class="grid grid-cols-2 gap-3">
-                    @php
-                        $vtDefaults = ['In Thanksgiving to God', 'and for the work of', 'His Church', '', '', '', '', ''];
-                    @endphp
                     @for($v = 1; $v <= 8; $v++)
                         <div>
                             <label class="block text-xs font-medium text-slate-500 mb-1">VT{{ $v }}</label>
-                            <input type="text" name="vt[{{ $v }}]"
-                                value="{{ old('vt.' . $v, $vtDefaults[$v - 1]) }}"
+                            <input type="text" name="vt[{{ $v }}]" id="vt-{{ $v }}"
+                                value="{{ old('vt.' . $v) }}"
                                 placeholder="VT{{ $v }}"
+                                oninput="document.getElementById('verse-select').value='custom'"
                                 class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
                         </div>
                     @endfor
@@ -330,5 +361,49 @@
         }
 
         updateSummary();
+
+        // ── Verse library ────────────────────────────────────────────────────
+        const VERSES = {
+            v1:  ['All things come from You,', 'O Lord and of Your Own do', 'we give You', '', '', '', '', ''],
+            v2:  ['"Give back some of God\'s', 'gifts to God, that you may', 'safely enjoy the rest."', 'St. John Henry Newman', '', '', '', ''],
+            v3:  ['The Lord blesses His', 'people with peace.', 'Psalms 29 V11', '', '', '', '', ''],
+            v4:  ['In Thanksgiving to God', 'and for the work of', 'His Church', '', '', '', '', ''],
+            v5:  ['Trust in the Lord with all', 'your heart.', '', '', '', '', '', ''],
+            v6:  ['Blessed are the pure in', 'heart for they shall', 'see God.', '', '', '', '', ''],
+            v7:  ['What return can I make', 'to the Lord for all His', 'goodness to me.', '', '', '', '', ''],
+            v8:  ['OUR GIFT TO GOD AND', 'HIS CHURCH', '', '', '', '', '', ''],
+            v9:  ['For the support of our Church,', 'Schools and Priests.', '', '', '', '', '', ''],
+            v10: ['My Gift to God', 'and His Church', '', '', '', '', '', ''],
+            v11: ['Those that hope in the Lord', 'will renew their strength.', '', '', '', '', '', ''],
+            v12: ['I am the Good Shepherd \u2013', 'the good shepherd giveth his life', 'for his sheep.', '', '', '', '', ''],
+            v13: ['If unable to come, please remember', 'the work is going on and needs your', 'support. Kindly fill up the envelopes', 'for the Sundays missed and bring', 'them next time you are present', '', '', ''],
+            v14: ['"For God loveth a cheerful giver"', '(2 Cor, 9 v. 7)', '', '', '', '', '', ''],
+            v15: ['"Freely you have received', 'Freely give ..."', 'St. Matt. 10 v. 8.', '', '', '', '', ''],
+            v16: ['Faith comes from hearing the', 'message, and the message is', 'heard through the word of', 'Christ.', '', '', '', ''],
+            v17: ['"The Lord Jesus Himself said', 'happiness lies more in giving', 'than in receiving"', 'Acts 20, 35.', '', '', '', ''],
+            v18: ['MY WEEKLY OFFERING', '', '', '', '', '', '', ''],
+            v19: ['"Where your treasure is, there', 'will your heart be also."', 'Matt. 6, v. 21', '', '', '', '', ''],
+            v20: ['OUR WEEKLY', 'OFFERING TO GOD', '', '', '', '', '', ''],
+            v21: ['Weekly Offering to God', 'and for the Work', 'of His Church', '', '', '', '', ''],
+            v22: ['For whenever you eat this bread', 'and drink this cup \u2013 you', 'proclaim the Lord\'s death until', 'he cometh.', '', '', '', ''],
+            v23: ['The Lord shall be unto thee an', 'everlasting light.', '', '', '', '', '', ''],
+            v24: ['Rejoice in the Lord always.', '', '', '', '', '', '', ''],
+        };
+
+        function applyVerse(key) {
+            if (key === 'custom') return;
+            const lines = VERSES[key];
+            if (!lines) return;
+            for (let i = 1; i <= 8; i++) {
+                const el = document.getElementById('vt-' + i);
+                if (el) el.value = lines[i - 1] ?? '';
+            }
+        }
+
+        // Default to V4 on fresh load (no old() values)
+        @unless(old('vt'))
+            document.getElementById('verse-select').value = 'v4';
+            applyVerse('v4');
+        @endunless
     </script>
 </x-layout>
