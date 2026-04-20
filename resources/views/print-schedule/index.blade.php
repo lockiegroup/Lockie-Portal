@@ -164,19 +164,25 @@
                 method:  'POST',
                 headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
             })
-            .then(r => r.json())
-            .then(data => {
+            .then(r => r.text())
+            .then(text => {
+                let data;
+                try { data = JSON.parse(text); } catch(e) {
+                    alert('Sync failed (non-JSON response):\n' + text.substring(0, 500));
+                    btn.disabled = false; label.textContent = 'Sync from Unleashed'; icon.classList.remove('animate-spin');
+                    return;
+                }
                 if (data.success) {
                     window.location.reload();
                 } else {
-                    alert('Sync failed: ' + (data.error || 'Unknown error'));
+                    alert('Sync failed: ' + (data.error || JSON.stringify(data)));
                     btn.disabled = false;
                     label.textContent = 'Sync from Unleashed';
                     icon.classList.remove('animate-spin');
                 }
             })
-            .catch(() => {
-                alert('Sync request failed. Please try again.');
+            .catch(e => {
+                alert('Sync request failed: ' + e.message);
                 btn.disabled = false;
                 label.textContent = 'Sync from Unleashed';
                 icon.classList.remove('animate-spin');
