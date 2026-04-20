@@ -240,6 +240,54 @@ class UnleashedService
     }
 
     /**
+     * Parse a date string from Unleashed API.
+     * Handles /Date(ms)/ format and ISO strings, returns Y-m-d or null.
+     */
+    public function parseDate(?string $date): ?string
+    {
+        if ($date === null || $date === '') {
+            return null;
+        }
+
+        // Handle /Date(1234567890000)/ or /Date(1234567890000+0000)/ format
+        if (preg_match('#/Date\((\d+)([+-]\d+)?\)/#', $date, $matches)) {
+            $ms = (int) $matches[1];
+            return date('Y-m-d', (int) ($ms / 1000));
+        }
+
+        // ISO or any other parseable date string
+        try {
+            $ts = strtotime($date);
+            if ($ts === false) {
+                return null;
+            }
+            return date('Y-m-d', $ts);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * Fetch all open Sales Orders from Unleashed where the warehouse name contains "a1".
+     * Returns filtered array of orders.
+     */
+    public function fetchA1PrintingOrders(): array
+    {
+        $orders = $this->paginate('SalesOrders', []);
+
+        return array_values(array_filter($orders, function (array $order) {
+            $warehouseName = $order['Warehouse']['WarehouseName'] ?? '';
+            $status        = $order['OrderStatus'] ?? '';
+
+            if (in_array($status, ['Completed', 'Deleted'], true)) {
+                return false;
+            }
+
+            return str_contains(strtolower($warehouseName), 'a1');
+        }));
+    }
+
+    /**
      * Fetch warehouse names for specific order numbers in parallel batches.
      * Returns ['SO-00012345' => 'JW Products', ...]
      */

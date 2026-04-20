@@ -1,0 +1,81 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class PrintJob extends Model
+{
+    public const BOARDS = [
+        'unplanned' => 'Unplanned',
+        'call_off'  => 'Call Off',
+        'on_hold'   => 'On Hold',
+        'auto_1'    => 'Auto 1',
+        'auto_2'    => 'Auto 2',
+        'auto_3'    => 'Auto 3',
+        'baby'      => 'Baby',
+    ];
+
+    public const MACHINES = ['auto_1', 'auto_2', 'auto_3', 'baby'];
+
+    protected $fillable = [
+        'unleashed_guid',
+        'line_number',
+        'order_number',
+        'customer_name',
+        'product_code',
+        'product_description',
+        'line_comment',
+        'order_total',
+        'line_total',
+        'order_quantity',
+        'quantity_completed',
+        'required_date',
+        'original_required_date',
+        'board',
+        'position',
+        'unleashed_status',
+        'synced_at',
+    ];
+
+    protected $casts = [
+        'required_date'          => 'date',
+        'original_required_date' => 'date',
+        'synced_at'              => 'datetime',
+        'order_total'            => 'decimal:2',
+        'line_total'             => 'decimal:2',
+        'order_quantity'         => 'integer',
+        'quantity_completed'     => 'integer',
+        'line_number'            => 'integer',
+        'position'               => 'integer',
+    ];
+
+    public function notes(): HasMany
+    {
+        return $this->hasMany(PrintJobNote::class);
+    }
+
+    public function dateChanges(): HasMany
+    {
+        return $this->hasMany(PrintJobDateChange::class);
+    }
+
+    public function getDateChangedAttribute(): bool
+    {
+        if ($this->required_date === null && $this->original_required_date === null) {
+            return false;
+        }
+
+        if ($this->required_date === null || $this->original_required_date === null) {
+            return true;
+        }
+
+        return $this->required_date->format('Y-m-d') !== $this->original_required_date->format('Y-m-d');
+    }
+
+    public function getRemainingQuantityAttribute(): int
+    {
+        return max(0, $this->order_quantity - $this->quantity_completed);
+    }
+}
