@@ -11,8 +11,12 @@ class SyncPrintJobs extends Command
     protected $signature   = 'print:sync';
     protected $description = 'Sync open A1 printing Sales Orders from Unleashed into the print schedule';
 
-    public function handle(UnleashedService $unleashed): int
+    public function handle(): int
     {
+        $unleashed = new UnleashedService(
+            config('services.unleashed.id'),
+            config('services.unleashed.key')
+        );
         $orders  = $unleashed->fetchA1PrintingOrders();
         $seenKeys = [];
         $created  = 0;
