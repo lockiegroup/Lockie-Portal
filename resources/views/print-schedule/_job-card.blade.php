@@ -10,7 +10,7 @@
      id="job-card-{{ $job->id }}">
 
     {{-- Row 1: Drag handle | Order number | Customer | Board select --}}
-    <div class="flex items-start gap-3 mb-3">
+    <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:0.75rem;">
         <span class="drag-handle cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 mt-0.5 flex-shrink-0 pt-0.5" title="Drag to reorder">
             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                 <circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/>
@@ -58,7 +58,7 @@
     @endif
 
     {{-- Row 4: Order total · packs · required date --}}
-    <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 mb-3 text-sm text-slate-600">
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;margin-bottom:0.75rem;font-size:0.875rem;color:#475569;">
         <span class="font-medium text-slate-700">&pound;{{ number_format((float)$job->order_total, 2) }}</span>
         <span>
             <span id="remaining-qty-{{ $job->id }}">{{ $job->remaining_quantity }}</span>/<span>{{ $job->order_quantity }}</span>
@@ -146,7 +146,7 @@
     @endif
 
     {{-- Row 5: Notes toggle | Part complete --}}
-    <div class="flex items-center gap-2 flex-wrap">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
 
         {{-- Notes toggle --}}
         <button onclick="toggleNotes({{ $job->id }})"
@@ -160,8 +160,8 @@
         </button>
 
         {{-- Part complete --}}
-        <div class="flex items-center gap-1">
-            <span id="complete-display-{{ $job->id }}" class="flex items-center gap-1">
+        <div style="display:flex;align-items:center;gap:4px;">
+            <span id="complete-display-{{ $job->id }}" style="display:flex;align-items:center;gap:4px;">
                 <button onclick="editComplete({{ $job->id }})"
                     class="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg px-3 py-1.5 transition-colors">
                     <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -188,12 +188,12 @@
     </div>
 
     {{-- Notes panel (hidden by default) --}}
-    <div id="notes-panel-{{ $job->id }}" class="hidden mt-3 border-t border-slate-100 pt-3">
+    <div id="notes-panel-{{ $job->id }}" style="display:none;margin-top:0.75rem;border-top:1px solid #f1f5f9;padding-top:0.75rem;">
 
         {{-- Existing notes --}}
-        <div id="notes-list-{{ $job->id }}" class="space-y-2 mb-3">
+        <div id="notes-list-{{ $job->id }}" style="display:flex;flex-direction:column;gap:8px;margin-bottom:0.75rem;">
             @forelse($job->notes->sortByDesc('created_at') as $note)
-                <div class="note-item flex gap-2 text-sm bg-slate-50 rounded-lg p-3" id="note-{{ $note->id }}">
+                <div class="note-item" style="display:flex;gap:8px;font-size:0.875rem;background:#f8fafc;border-radius:0.5rem;padding:0.75rem;" id="note-{{ $note->id }}">
                     <div class="flex-1 min-w-0">
                         <p class="text-slate-700">{{ $note->body }}</p>
                         <p class="text-xs text-slate-400 mt-1">
@@ -211,7 +211,7 @@
         </div>
 
         {{-- Add note --}}
-        <div class="flex gap-2">
+        <div style="display:flex;gap:8px;">
             <input type="text"
                 id="note-input-{{ $job->id }}"
                 placeholder="Add a note…"

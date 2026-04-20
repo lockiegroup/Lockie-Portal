@@ -12,7 +12,7 @@
     <main class="max-w-5xl mx-auto px-4 sm:px-6 py-8">
 
         {{-- Page header --}}
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:1.5rem;flex-wrap:wrap;">
             <div>
                 <h1 class="text-2xl font-bold text-slate-800">A1 Print Schedule</h1>
                 <p class="text-slate-500 text-sm mt-1">
@@ -83,7 +83,7 @@
                         $totalRemaining = $machineJobs->sum(fn($j) => $j->remaining_quantity);
                         $leadTime = $machineLeadTimes[$boardKey];
                     @endphp
-                    <div class="mb-4 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex flex-wrap gap-x-6 gap-y-1 items-center text-sm" id="banner-{{ $boardKey }}">
+                    <div class="mb-4 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm" style="display:flex;flex-wrap:wrap;align-items:center;gap:4px 24px;" id="banner-{{ $boardKey }}">
                         <span class="font-medium text-blue-800">
                             <span class="job-count-{{ $boardKey }}">{{ $machineJobs->count() }}</span> job{{ $machineJobs->count() !== 1 ? 's' : '' }}
                         </span>
@@ -98,7 +98,7 @@
                 @endif
 
                 {{-- Sortable job list --}}
-                <div id="sortable-{{ $boardKey }}" class="space-y-3" data-board="{{ $boardKey }}">
+                <div id="sortable-{{ $boardKey }}" style="display:flex;flex-direction:column;gap:12px;" data-board="{{ $boardKey }}">
 
                     @forelse($boardJobs[$boardKey] as $job)
                         @include('print-schedule._job-card', ['job' => $job, 'boards' => $boards])
@@ -273,7 +273,7 @@
         // ─── Toggle notes panel ───────────────────────────────────────────
         window.toggleNotes = function (jobId) {
             const panel = document.getElementById('notes-panel-' + jobId);
-            if (panel) panel.classList.toggle('hidden');
+            if (panel) panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
         };
 
         // ─── Add note ─────────────────────────────────────────────────────
@@ -300,7 +300,8 @@
                     const list = document.getElementById('notes-list-' + jobId);
                     const note = data.note;
                     const el   = document.createElement('div');
-                    el.className = 'note-item flex gap-2 text-sm bg-slate-50 rounded-lg p-3';
+                    el.className = 'note-item';
+                    el.style.cssText = 'display:flex;gap:8px;font-size:0.875rem;background:#f8fafc;border-radius:0.5rem;padding:0.75rem;';
                     el.id = 'note-' + note.id;
                     el.innerHTML =
                         '<div class="flex-1 min-w-0">' +
