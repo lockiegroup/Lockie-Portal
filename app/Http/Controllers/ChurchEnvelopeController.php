@@ -309,9 +309,14 @@ class ChurchEnvelopeController extends Controller
             $setNumsList = array_keys($setNums);
             sort($setNumsList);
 
-            $designId = $imagePath !== ''
-                ? EnvelopeDesign::where('path', $imagePath)->value('id')
-                : null;
+            $designId = null;
+            if ($imagePath !== '') {
+                $norm = trim($imagePath);
+                $design = EnvelopeDesign::where('path', $norm)->first()
+                    ?? EnvelopeDesign::whereRaw('LOWER(TRIM(path)) = ?', [strtolower($norm)])->first()
+                    ?? EnvelopeDesign::where('path', 'like', '%' . basename($norm))->first();
+                $designId = $design?->id;
+            }
 
             return response()->json([
                 'success'      => true,

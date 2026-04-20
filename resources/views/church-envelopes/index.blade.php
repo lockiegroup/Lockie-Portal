@@ -26,18 +26,28 @@
         @endif
 
         {{-- Upload previous spreadsheet --}}
-        <div class="bg-sky-50 rounded-xl border border-sky-200 p-5 mb-6">
-            <h2 class="font-semibold text-slate-800 mb-1">Load from previous spreadsheet</h2>
-            <p class="text-xs text-slate-500 mb-3">Upload a previously generated file to pre-fill all fields. Update the start date for the new year after loading.</p>
-            <div class="flex flex-wrap items-center gap-3">
-                <input type="file" id="parse-file" accept=".xlsx,.xls"
-                    class="text-sm text-slate-600 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-slate-900 file:text-white hover:file:bg-slate-700 cursor-pointer flex-1 min-w-0">
+        <div style="background:#f8fafc;border:1.5px dashed #94a3b8;border-radius:12px;padding:20px 24px;margin-bottom:24px;">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+                <div style="width:36px;height:36px;background:#1e293b;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                </div>
+                <div>
+                    <h2 style="font-weight:600;color:#1e293b;margin:0;font-size:15px;">Load from previous spreadsheet</h2>
+                    <p style="color:#64748b;font-size:12px;margin:2px 0 0 0;">Pre-fills all fields — just update the start date for the new year.</p>
+                </div>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+                <label style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;background:white;border:1px solid #cbd5e1;border-radius:8px;padding:8px 12px;cursor:pointer;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                    <span id="parse-file-label" style="font-size:13px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Choose .xlsx file…</span>
+                    <input type="file" id="parse-file" accept=".xlsx,.xls" style="display:none;" onchange="document.getElementById('parse-file-label').textContent=this.files[0]?.name||'Choose .xlsx file…'">
+                </label>
                 <button type="button" id="parse-btn" onclick="loadFromFile()"
-                    class="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap">
+                    style="background:#1e293b;color:white;border:none;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;flex-shrink:0;">
                     Load from file
                 </button>
             </div>
-            <p id="parse-status" class="text-xs mt-2" style="display:none;"></p>
+            <p id="parse-status" style="font-size:12px;margin:10px 0 0 0;display:none;"></p>
         </div>
 
         <form action="{{ route('church-envelopes.generate') }}" method="POST" class="space-y-6">
@@ -433,7 +443,7 @@
                     document.getElementById('verse-select').value = 'custom';
 
                     const designSel = document.querySelector('[name="design_id"]');
-                    if (designSel && data.design_id != null) designSel.value = data.design_id;
+                    if (designSel) designSel.value = data.design_id ?? '';
 
                     document.getElementById('specials-list').innerHTML = '';
                     document.getElementById('no-specials-msg').style.display = '';
