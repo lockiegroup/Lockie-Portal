@@ -37,8 +37,7 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1.5">
-                            Number of weeks
-                            <span class="text-slate-400 font-normal text-xs">(52 = standard)</span>
+                            Number of weeks <span class="text-slate-400 font-normal text-xs">(52 = standard)</span>
                         </label>
                         <input type="number" name="num_weeks" id="num_weeks"
                             value="{{ old('num_weeks', 52) }}" min="1" max="53" required
@@ -69,15 +68,13 @@
                             class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
                     </div>
                 </div>
-                <p class="text-xs text-slate-400">Columns E &amp; F will be set automatically to the donor set number (2-up: both positions print the same set).</p>
             </div>
 
-            {{-- Set numbers --}}
+            {{-- Set Numbers --}}
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
                 <h2 class="font-semibold text-slate-800">Set Numbers</h2>
-                <p class="text-xs text-slate-400">Each set number represents one donor's box of envelopes.</p>
 
-                <div class="flex gap-3">
+                <div style="display:flex;gap:12px;flex-wrap:wrap;">
                     <label class="flex items-center gap-2 cursor-pointer">
                         <input type="radio" name="set_number_type" value="sequential"
                             {{ old('set_number_type', 'sequential') === 'sequential' ? 'checked' : '' }}
@@ -88,10 +85,17 @@
                         <input type="radio" name="set_number_type" value="custom"
                             {{ old('set_number_type') === 'custom' ? 'checked' : '' }}
                             onchange="toggleSetType('custom')" class="text-sky-600">
-                        <span class="text-sm font-medium text-slate-700">Custom list</span>
+                        <span class="text-sm font-medium text-slate-700">Custom / ranges</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="set_number_type" value="none"
+                            {{ old('set_number_type') === 'none' ? 'checked' : '' }}
+                            onchange="toggleSetType('none')" class="text-sky-600">
+                        <span class="text-sm font-medium text-slate-700">No set numbers</span>
                     </label>
                 </div>
 
+                {{-- Sequential --}}
                 <div id="sequential-section" class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1.5">Starting number</label>
@@ -106,53 +110,82 @@
                     </div>
                 </div>
 
+                {{-- Custom / ranges --}}
                 <div id="custom-section" class="hidden">
-                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Paste set numbers</label>
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">
+                        Set numbers
+                        <span class="text-slate-400 font-normal text-xs">— individual numbers, ranges (1-50), or a mix e.g. <code>1-50, 75, 100-110</code></span>
+                    </label>
                     <textarea name="custom_numbers" rows="4" id="custom_numbers"
-                        placeholder="Paste numbers separated by commas, spaces, or new lines&#10;e.g. 5, 15, 30, 34&#10;or one per line"
+                        placeholder="e.g. 1-50, 75, 100-110&#10;or one per line"
                         class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition resize-none font-mono text-sm">{{ old('custom_numbers') }}</textarea>
                     <p id="custom-count" class="text-xs text-slate-400 mt-1"></p>
                 </div>
+
+                {{-- No set numbers --}}
+                <div id="none-section" class="hidden">
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">
+                        Number of copies to print
+                    </label>
+                    <input type="number" name="none_copies" id="none_copies"
+                        value="{{ old('none_copies', 1) }}" min="1"
+                        class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
+                    <p class="text-xs text-slate-400 mt-1">Set number columns will be left blank.</p>
+                </div>
             </div>
 
-            {{-- Special envelopes --}}
+            {{-- Special Envelopes --}}
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
                 <div class="flex items-center justify-between">
                     <div>
                         <h2 class="font-semibold text-slate-800">Special Envelopes</h2>
-                        <p class="text-xs text-slate-400 mt-0.5">Added to every box set in addition to weekly envelopes.</p>
+                        <p class="text-xs text-slate-400 mt-0.5">
+                            Added to every box set. Date used for ordering — tick to also print it on the envelope.
+                            VT1–VT5 are left blank; VT6 = title; VT7 = e.g. Offering or Thanks Giving.
+                        </p>
                     </div>
                     <button type="button" onclick="addSpecial()"
-                        class="text-sm font-medium text-sky-600 hover:text-sky-800 transition-colors">+ Add</button>
+                        class="text-sm font-medium text-sky-600 hover:text-sky-800 transition-colors flex-shrink-0 ml-4">+ Add</button>
                 </div>
 
                 <div id="specials-list" class="space-y-3">
                     @if(old('specials'))
                         @foreach(old('specials') as $i => $s)
-                            <div class="special-row flex items-start gap-3 p-3 rounded-lg border border-slate-200 bg-slate-50">
-                                <div class="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                    <div class="sm:col-span-1">
+                            <div class="special-row rounded-lg border border-slate-200 bg-slate-50 p-3">
+                                <div class="grid grid-cols-2 gap-3 mb-2">
+                                    <div>
+                                        <label class="block text-xs font-medium text-slate-500 mb-1">Title (VT6)</label>
                                         <input type="text" name="specials[{{ $i }}][name]"
-                                            placeholder="e.g. Easter, Christmas"
+                                            placeholder="e.g. Easter"
                                             value="{{ $s['name'] ?? '' }}"
                                             class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
                                     </div>
-                                    <div class="flex items-center gap-2">
-                                        <input type="checkbox" name="specials[{{ $i }}][dated]"
-                                            id="dated_{{ $i }}" value="1"
-                                            {{ !empty($s['dated']) ? 'checked' : '' }}
-                                            onchange="toggleDate(this, {{ $i }})"
-                                            class="rounded">
-                                        <label for="dated_{{ $i }}" class="text-sm text-slate-600">Has a date</label>
-                                    </div>
-                                    <div id="date_wrap_{{ $i }}" class="{{ empty($s['dated']) ? 'hidden' : '' }}">
+                                    <div>
+                                        <label class="block text-xs font-medium text-slate-500 mb-1">Date <span class="text-red-400">*</span></label>
                                         <input type="date" name="specials[{{ $i }}][date]"
                                             value="{{ $s['date'] ?? '' }}"
                                             class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
                                     </div>
                                 </div>
-                                <button type="button" onclick="this.closest('.special-row').remove()"
-                                    class="text-slate-400 hover:text-red-500 mt-2 transition-colors text-lg leading-none">&times;</button>
+                                <div class="grid grid-cols-2 gap-3 items-center">
+                                    <div>
+                                        <label class="block text-xs font-medium text-slate-500 mb-1">VT7 (e.g. Offering)</label>
+                                        <input type="text" name="specials[{{ $i }}][vt7]"
+                                            placeholder="Offering or Thanks Giving"
+                                            value="{{ $s['vt7'] ?? '' }}"
+                                            class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
+                                    </div>
+                                    <div style="display:flex;align-items:center;justify-content:space-between;padding-top:1.25rem;">
+                                        <label class="flex items-center gap-2 cursor-pointer">
+                                            <input type="checkbox" name="specials[{{ $i }}][show_date]" value="1"
+                                                {{ !empty($s['show_date']) ? 'checked' : '' }}
+                                                class="rounded">
+                                            <span class="text-sm text-slate-600">Show date on envelope</span>
+                                        </label>
+                                        <button type="button" onclick="this.closest('.special-row').remove(); updateSummary();"
+                                            class="text-slate-400 hover:text-red-500 transition-colors text-xl leading-none">&times;</button>
+                                    </div>
+                                </div>
                             </div>
                         @endforeach
                     @endif
@@ -183,10 +216,10 @@
                 </div>
             </div>
 
-            {{-- Variable Text --}}
+            {{-- Variable Text (weekly envelopes) --}}
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
-                <h2 class="font-semibold text-slate-800">Variable Text (VT1–VT8)</h2>
-                <p class="text-xs text-slate-400">Text fields merged into the envelope artwork. Leave blank if unused.</p>
+                <h2 class="font-semibold text-slate-800">Variable Text — Weekly Envelopes</h2>
+                <p class="text-xs text-slate-400">VT1–VT8 used for weekly envelopes. Special envelopes use VT6 (title) and VT7 (offering text) only.</p>
                 <div class="grid grid-cols-2 gap-3">
                     @php
                         $vtDefaults = ['In Thanksgiving to God', 'and for the work of', 'His Church', '', '', '', '', ''];
@@ -218,15 +251,17 @@
     <script>
         let specialIndex = {{ old('specials') ? count(old('specials')) : 0 }};
 
+        // ── Set type toggle ──────────────────────────────────────────────────
         function toggleSetType(type) {
             document.getElementById('sequential-section').classList.toggle('hidden', type !== 'sequential');
             document.getElementById('custom-section').classList.toggle('hidden', type !== 'custom');
+            document.getElementById('none-section').classList.toggle('hidden', type !== 'none');
             updateSummary();
         }
-
         const currentType = document.querySelector('input[name="set_number_type"]:checked')?.value || 'sequential';
         toggleSetType(currentType);
 
+        // ── Weeks preview ────────────────────────────────────────────────────
         function updateWeeksPreview() {
             const val = document.getElementById('start_date').value;
             const n   = parseInt(document.getElementById('num_weeks').value) || 52;
@@ -239,55 +274,75 @@
                 n + ' weekly envelopes: ' + fmt(start) + ' to ' + fmt(end) + '.';
             updateSummary();
         }
-
         document.getElementById('start_date').addEventListener('change', function () {
-            if (!document.getElementById('num_weeks').value) {
-                document.getElementById('num_weeks').value = 52;
-            }
+            if (!document.getElementById('num_weeks').value) document.getElementById('num_weeks').value = 52;
             updateWeeksPreview();
         });
         document.getElementById('num_weeks').addEventListener('input', updateWeeksPreview);
 
+        // ── Custom numbers parse (supports ranges) ───────────────────────────
+        function parseCustomNumbers(raw) {
+            const nums = [];
+            raw.trim().split(/[\s,;]+/).forEach(part => {
+                const range = part.match(/^(\d+)-(\d+)$/);
+                if (range) {
+                    for (let n = parseInt(range[1]); n <= parseInt(range[2]); n++) nums.push(n);
+                } else if (/^\d+$/.test(part)) {
+                    nums.push(parseInt(part));
+                }
+            });
+            return [...new Set(nums)];
+        }
+
         document.getElementById('custom_numbers').addEventListener('input', function () {
-            const nums = this.value.trim().split(/[\s,;]+/).filter(n => n && !isNaN(parseInt(n)));
-            document.getElementById('custom-count').textContent = nums.length + ' set number' + (nums.length === 1 ? '' : 's') + ' detected.';
+            const nums = parseCustomNumbers(this.value);
+            document.getElementById('custom-count').textContent =
+                nums.length + ' set number' + (nums.length === 1 ? '' : 's') + ' detected.';
             updateSummary();
         });
 
         document.getElementById('seq_count').addEventListener('input', updateSummary);
+        document.getElementById('none_copies').addEventListener('input', updateSummary);
 
+        // ── Add special envelope ─────────────────────────────────────────────
         function addSpecial() {
             document.getElementById('no-specials-msg').style.display = 'none';
-            const i = specialIndex++;
+            const i   = specialIndex++;
             const row = document.createElement('div');
-            row.className = 'special-row flex items-start gap-3 p-3 rounded-lg border border-slate-200 bg-slate-50';
+            row.className = 'special-row rounded-lg border border-slate-200 bg-slate-50 p-3';
             row.innerHTML = `
-                <div class="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div class="sm:col-span-1">
-                        <input type="text" name="specials[${i}][name]"
-                            placeholder="e.g. Easter, Christmas"
+                <div class="grid grid-cols-2 gap-3 mb-2">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Title (VT6)</label>
+                        <input type="text" name="specials[${i}][name]" placeholder="e.g. Easter"
                             class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
                     </div>
-                    <div class="flex items-center gap-2">
-                        <input type="checkbox" name="specials[${i}][dated]" id="dated_${i}" value="1"
-                            onchange="toggleDate(this, ${i})" class="rounded">
-                        <label for="dated_${i}" class="text-sm text-slate-600">Has a date</label>
-                    </div>
-                    <div id="date_wrap_${i}" class="hidden">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Date <span class="text-red-400">*</span></label>
                         <input type="date" name="specials[${i}][date]"
                             class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
                     </div>
                 </div>
-                <button type="button" onclick="this.closest('.special-row').remove(); updateSummary();"
-                    class="text-slate-400 hover:text-red-500 mt-2 transition-colors text-lg leading-none">&times;</button>`;
+                <div class="grid grid-cols-2 gap-3 items-center">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">VT7 (e.g. Offering)</label>
+                        <input type="text" name="specials[${i}][vt7]" placeholder="Offering or Thanks Giving"
+                            class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
+                    </div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;padding-top:1.25rem;">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="specials[${i}][show_date]" value="1" checked class="rounded">
+                            <span class="text-sm text-slate-600">Show date on envelope</span>
+                        </label>
+                        <button type="button" onclick="this.closest('.special-row').remove(); updateSummary();"
+                            class="text-slate-400 hover:text-red-500 transition-colors text-xl leading-none">&times;</button>
+                    </div>
+                </div>`;
             document.getElementById('specials-list').appendChild(row);
             updateSummary();
         }
 
-        function toggleDate(checkbox, i) {
-            document.getElementById('date_wrap_' + i).classList.toggle('hidden', !checkbox.checked);
-        }
-
+        // ── Summary ──────────────────────────────────────────────────────────
         function updateSummary() {
             const weeks    = parseInt(document.getElementById('num_weeks').value) || 0;
             const specials = document.querySelectorAll('.special-row').length;
@@ -295,14 +350,18 @@
             let sets = 0;
             if (type === 'sequential') {
                 sets = parseInt(document.getElementById('seq_count').value) || 0;
+            } else if (type === 'custom') {
+                sets = parseCustomNumbers(document.getElementById('custom_numbers').value).length;
             } else {
-                const raw = document.getElementById('custom_numbers').value.trim();
-                sets = raw ? raw.split(/[\s,;]+/).filter(n => n && !isNaN(parseInt(n))).length : 0;
+                sets = parseInt(document.getElementById('none_copies').value) || 0;
             }
-            const total = sets * (weeks + specials);
-            const el    = document.getElementById('summary');
+            const envsPerSet = weeks + specials;
+            const pairs      = Math.ceil(sets / 2);
+            const totalRows  = pairs * envsPerSet;
+            const el         = document.getElementById('summary');
             if (sets && weeks) {
-                el.textContent = `${sets} box sets × ${weeks + specials} envelopes (${weeks} weekly + ${specials} special) = ${total.toLocaleString()} total rows.`;
+                const setsLabel = type === 'none' ? sets + ' copies' : sets + ' sets';
+                el.textContent = `${setsLabel} × ${envsPerSet} envelopes = ${totalRows.toLocaleString()} rows (${pairs} pairs, 2-up).`;
             } else {
                 el.textContent = '';
             }
