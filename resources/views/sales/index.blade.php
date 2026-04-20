@@ -136,7 +136,7 @@
 
         function renderResults(data, from, to) {
             const sections = [
-                { key: 'salesByWarehouse',  title: 'Sales Enquiry by Warehouse',  note: 'Completed invoices by invoice date',  dot: 'bg-sky-500', cardLabel: 'Sales Enquiry',  cardCls: 'text-slate-800', unit: 'invoices'  },
+                { key: 'salesByWarehouse',  title: 'Sales Enquiry by Warehouse',  note: 'All non-cancelled orders by order date',  dot: 'bg-sky-500', cardLabel: 'Sales Enquiry',  cardCls: 'text-slate-800', unit: 'orders'  },
                 { key: 'creditsByWarehouse', title: 'Credit Enquiry by Warehouse', note: 'All credit notes including free credits', dot: 'bg-red-500', cardLabel: 'Credit Enquiry', cardCls: 'text-red-500',   unit: 'credits' },
             ];
 

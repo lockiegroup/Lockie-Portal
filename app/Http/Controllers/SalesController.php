@@ -47,61 +47,27 @@ class SalesController extends Controller
                     $apiEndDate = Carbon::parse($to)->addDay()->toDateString();
                     $params     = ['startDate' => $from, 'endDate' => $apiEndDate];
 
-                    // Unleashed's own Sales Enquiry sums invoice values by invoice date.
-                    // Fetch all invoices unfiltered (pagination is accurate for unfiltered
-                    // queries), then PHP-filter to Completed invoices with InvoiceDate in range.
+                    // SalesOrders suffers the same Unleashed pagination bug as Invoices:
+                    // NumberOfPages is based on the total unfiltered count, so any date-filtered
+                    // query (even startDate-only) repeats pages. Fetch entirely unfiltered and
+                    // PHP-filter by OrderDate — pagination is only accurate for unfiltered queries.
                     $fetched = $this->unleashed->parallelPaginate([
-                        'invoices' => ['Invoices', ['startDate' => '2020-01-01']],
-                        'credits'  => ['CreditNotes', $params],
+                        'sales'   => ['SalesOrders', []],
+                        'credits' => ['CreditNotes', $params],
                     ]);
 
-                    // De-duplicate and filter invoices by InvoiceDate in range
-                    $uniqueInvoices = [];
-                    foreach ($fetched['invoices'] as $inv) {
-                        $uniqueInvoices[$inv['InvoiceNumber']] = $inv;
-                    }
-                    $invoices = array_values(array_filter(
-                        array_values($uniqueInvoices),
-                        function ($inv) use ($from, $to) {
-                            if (($inv['InvoiceStatus'] ?? '') !== 'Completed') return false;
-                            $date = $this->unleashed->parseDate($inv['InvoiceDate'] ?? null);
+                    $salesOrders = array_filter(
+                        $fetched['sales'],
+                        function ($o) use ($from, $to) {
+                            if (($o['OrderStatus'] ?? '') === 'Cancelled') return false;
+                            $date = $this->unleashed->parseDate($o['OrderDate'] ?? null);
                             if ($date === null) return false;
                             return $date >= $from && $date <= $to;
                         }
-                    ));
-
-                    // Resolve warehouse for each invoice via its sales order
-                    $orderNums = array_values(array_unique(array_filter(array_map(
-                        fn($inv) => $inv['OrderNumber'] ?? $inv['SalesOrderNumber'] ?? '',
-                        $invoices
-                    ))));
-
-                    $warehouseMap = [];
-                    $uncached     = [];
-                    foreach ($orderNums as $num) {
-                        $cached = Cache::get("unleashed_wh_{$num}");
-                        if ($cached !== null) {
-                            $warehouseMap[$num] = $cached;
-                        } else {
-                            $uncached[] = $num;
-                        }
-                    }
-                    if (!empty($uncached)) {
-                        $resolved = $this->unleashed->fetchWarehousesByOrderNumber($uncached);
-                        foreach ($resolved as $num => $wh) {
-                            $warehouseMap[$num] = $wh;
-                            Cache::put("unleashed_wh_{$num}", $wh, 604800);
-                        }
-                    }
-
-                    $invoices = array_map(function ($inv) use ($warehouseMap) {
-                        $num = $inv['OrderNumber'] ?? $inv['SalesOrderNumber'] ?? '';
-                        $inv['Warehouse'] = ['WarehouseName' => $warehouseMap[$num] ?? 'No Warehouse'];
-                        return $inv;
-                    }, $invoices);
+                    );
 
                     return [
-                        $this->groupByWarehouse($invoices),
+                        $this->groupByWarehouse($salesOrders),
                         $this->groupByWarehouse($fetched['credits']),
                     ];
                 }
