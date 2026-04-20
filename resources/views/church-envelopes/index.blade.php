@@ -103,11 +103,11 @@
                         <label class="block text-sm font-medium text-slate-700 mb-1.5">Design image path</label>
                         @if($designs->isNotEmpty())
                             <select id="design-preset"
-                                onchange="if(this.value){document.getElementById('design_path').value=this.value;this.value=''}"
+                                onchange="document.getElementById('design_path').value=this.value"
                                 class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition mb-2">
-                                <option value="">— Select a saved design to fill path —</option>
+                                <option value="">— None (column G blank) —</option>
                                 @foreach($designs as $design)
-                                    <option value="{{ $design->path }}">{{ $design->name }}</option>
+                                    <option value="{{ $design->path }}" {{ old('design_path') === $design->path ? 'selected' : '' }}>{{ $design->name }}</option>
                                 @endforeach
                             </select>
                         @endif
@@ -450,6 +450,8 @@
 
                     const designPath = document.getElementById('design_path');
                     if (designPath) designPath.value = data.design_path ?? '';
+                    const designPreset = document.getElementById('design-preset');
+                    if (designPreset) designPreset.value = data.design_path ?? '';
 
                     document.getElementById('specials-list').innerHTML = '';
                     document.getElementById('no-specials-msg').style.display = '';
