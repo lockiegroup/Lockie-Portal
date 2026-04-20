@@ -204,7 +204,7 @@
         // ─── Move board ───────────────────────────────────────────────────
         window.moveBoard = function (jobId, board) {
             fetch('/print-schedule/jobs/' + jobId + '/board', {
-                method:  'PATCH',
+                method:  'POST',
                 headers: {
                     'X-CSRF-TOKEN': csrfToken,
                     'Accept':       'application/json',
@@ -368,7 +368,7 @@
             if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving…'; }
 
             fetch('/print-schedule/jobs/' + jobId + '/date', {
-                method:  'PATCH',
+                method:  'POST',
                 headers: {
                     'X-CSRF-TOKEN': csrfToken,
                     'Accept':       'application/json',
@@ -445,7 +445,7 @@
             if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving…'; }
 
             fetch('/print-schedule/jobs/' + jobId + '/complete', {
-                method:  'PATCH',
+                method:  'POST',
                 headers: {
                     'X-CSRF-TOKEN': csrfToken,
                     'Accept':       'application/json',

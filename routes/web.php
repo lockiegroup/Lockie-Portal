@@ -55,10 +55,10 @@ Route::middleware(['auth', 'otp'])->group(function () {
     Route::prefix('print-schedule')->name('print.')->group(function () {
         Route::get('/', [PrintScheduleController::class, 'index'])->name('index');
         Route::post('/sync', [PrintScheduleController::class, 'sync'])->name('sync');
-        Route::patch('/jobs/{job}/board', [PrintScheduleController::class, 'moveBoard'])->name('jobs.board');
+        Route::post('/jobs/{job}/board', [PrintScheduleController::class, 'moveBoard'])->name('jobs.board');
         Route::post('/jobs/reorder', [PrintScheduleController::class, 'reorder'])->name('jobs.reorder');
-        Route::patch('/jobs/{job}/complete', [PrintScheduleController::class, 'partComplete'])->name('jobs.complete');
-        Route::patch('/jobs/{job}/date', [PrintScheduleController::class, 'updateDate'])->name('jobs.date');
+        Route::post('/jobs/{job}/complete', [PrintScheduleController::class, 'partComplete'])->name('jobs.complete');
+        Route::post('/jobs/{job}/date', [PrintScheduleController::class, 'updateDate'])->name('jobs.date');
         Route::post('/jobs/{job}/notes', [PrintScheduleController::class, 'storeNote'])->name('jobs.notes.store');
         Route::delete('/jobs/{job}/notes/{note}', [PrintScheduleController::class, 'destroyNote'])->name('jobs.notes.destroy');
     });
