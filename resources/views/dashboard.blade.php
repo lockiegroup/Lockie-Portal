@@ -100,7 +100,7 @@
         </div>
 
         {{-- Stock On Hand widget --}}
-        <div class="mt-14 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden" style="margin-top:3.5rem">
             <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                 <div>
                     <h2 class="font-semibold text-slate-800">Stock On Hand</h2>
