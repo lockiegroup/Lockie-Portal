@@ -142,7 +142,7 @@ class ChurchEnvelopeController extends Controller
         $sheet       = $spreadsheet->getActiveSheet();
 
         $sheet->fromArray(
-            ['0', 'DAY', 'MONTH', 'YEAR', '-1', '-2', '@image', '@image',
+            ['0', 'DAY', 'MONTH', 'YEAR', '-1', '-2', "'@image", "'@image",
              'CHURCH', 'TOWN', 'DIOCESE LINE 1', 'DIOCESE LINE 2', 'DIOCESE LINE 3',
              'VT1', 'VT2', 'VT3', 'VT4', 'VT5', 'VT6', 'VT7', 'VT8'],
             null, 'A1'
