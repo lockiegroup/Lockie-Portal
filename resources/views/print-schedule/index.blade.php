@@ -40,12 +40,12 @@
                 </p>
             </div>
             <button id="sync-btn" onclick="triggerSync()"
-                class="inline-flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
-                <svg id="sync-icon" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                style="background:#1e293b;color:#fff;font-size:0.75rem;padding:5px 10px;border-radius:6px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;">
+                <svg id="sync-icon" style="width:12px;height:12px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
                     <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
                 </svg>
-                <span id="sync-label">Sync from Unleashed</span>
+                <span id="sync-label">Sync</span>
             </button>
         </div>
 
@@ -362,7 +362,6 @@
         window.saveDate = function (jobId) {
             const input = document.getElementById('date-input-' + jobId);
             const val   = input ? input.value : '';
-            alert('saveDate: job=' + jobId + ' val=' + val);
             if (!val) return;
 
             const saveBtn = document.getElementById('date-save-btn-' + jobId);

@@ -117,9 +117,9 @@
                     class="text-xs border border-slate-300 rounded px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-rose-500">
                 <button id="date-save-btn-{{ $job->id }}"
                     onclick="saveDate({{ $job->id }})"
-                    class="text-xs bg-rose-600 hover:bg-rose-700 text-white px-2 py-0.5 rounded transition-colors">Save</button>
+                    style="background:#e11d48;color:#fff;font-size:0.75rem;padding:2px 8px;border-radius:4px;border:none;cursor:pointer;">Save</button>
                 <button onclick="cancelDate({{ $job->id }})"
-                    class="text-xs text-slate-500 hover:text-slate-700 px-1">&#10005;</button>
+                    style="font-size:0.75rem;color:#64748b;padding:2px 4px;background:none;border:none;cursor:pointer;">&#10005;</button>
             </span>
         </div>
     </div>
@@ -180,9 +180,9 @@
                 <span class="text-xs text-slate-400">/ {{ $job->order_quantity }}</span>
                 <button id="complete-save-btn-{{ $job->id }}"
                     onclick="saveComplete({{ $job->id }})"
-                    class="text-xs bg-rose-600 hover:bg-rose-700 text-white px-2 py-0.5 rounded transition-colors">Save</button>
+                    style="background:#e11d48;color:#fff;font-size:0.75rem;padding:2px 8px;border-radius:4px;border:none;cursor:pointer;">Save</button>
                 <button onclick="cancelComplete({{ $job->id }})"
-                    class="text-xs text-slate-500 hover:text-slate-700 px-1">&#10005;</button>
+                    style="font-size:0.75rem;color:#64748b;padding:2px 4px;background:none;border:none;cursor:pointer;">&#10005;</button>
             </span>
         </div>
     </div>
