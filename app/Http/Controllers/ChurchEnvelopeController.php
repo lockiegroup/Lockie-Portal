@@ -98,8 +98,14 @@ class ChurchEnvelopeController extends Controller
             null, 'A1'
         );
 
-        $row = 2;
-        foreach ($setNumbers as $setNumber) {
+        $row     = 2;
+        $lineNum = 1;
+
+        // Pair set numbers: (1,2), (3,4), etc. — each row prints 2 envelopes side by side
+        for ($i = 0; $i < count($setNumbers); $i += 2) {
+            $setLeft  = $setNumbers[$i];
+            $setRight = $setNumbers[$i + 1] ?? '';  // blank if odd number of sets
+
             foreach ($template as $envelope) {
                 $carbon = $envelope['carbon'];
                 $day    = $carbon ? (int) $carbon->format('j') : '';
@@ -107,12 +113,13 @@ class ChurchEnvelopeController extends Controller
                 $year   = $carbon ? (int) $carbon->format('Y') : '';
 
                 $sheet->fromArray(
-                    [$setNumber, $day, $month, $year, $setNumber, $setNumber, '', '',
+                    [$lineNum, $day, $month, $year, $setLeft, $setRight, '', '',
                      $church, $town, $diocese1, $diocese2, $diocese3,
                      ...$vt],
                     null, 'A' . $row
                 );
                 $row++;
+                $lineNum++;
             }
         }
 
