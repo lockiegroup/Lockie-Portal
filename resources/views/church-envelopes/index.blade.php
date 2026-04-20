@@ -100,8 +100,7 @@
                     <div>
                         <h2 class="font-semibold text-slate-800">Special Envelopes</h2>
                         <p class="text-xs text-slate-400 mt-0.5">
-                            Default: placed at the front of the set (sorted by date).
-                            Tick "Put at back" to place after all weekly envelopes instead.
+                            Choose position per special: before or after the weekly on the same date, or at the back of the entire set.
                             VT1–VT5 are blank; VT6 = title; VT7 = offering text.
                         </p>
                     </div>
@@ -136,21 +135,23 @@
                                             value="{{ $s['vt7'] ?? '' }}"
                                             class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
                                     </div>
-                                    <div style="display:flex;align-items:flex-end;justify-content:space-between;padding-bottom:2px;">
-                                        <div class="space-y-1.5">
-                                            <label class="flex items-center gap-2 cursor-pointer">
+                                    <div>
+                                        <label class="block text-xs font-medium text-slate-500 mb-1">Position</label>
+                                        <div style="display:flex;align-items:center;gap:8px;">
+                                            <select name="specials[{{ $i }}][position]"
+                                                class="flex-1 px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
+                                                <option value="before" {{ ($s['position'] ?? 'before') === 'before' ? 'selected' : '' }}>Before same date (default)</option>
+                                                <option value="after"  {{ ($s['position'] ?? '') === 'after'  ? 'selected' : '' }}>After same date</option>
+                                                <option value="back"   {{ ($s['position'] ?? '') === 'back'   ? 'selected' : '' }}>At back of set</option>
+                                            </select>
+                                            <label style="display:flex;align-items:center;gap:6px;white-space:nowrap;" class="cursor-pointer">
                                                 <input type="checkbox" name="specials[{{ $i }}][show_date]" value="1"
                                                     {{ !empty($s['show_date']) ? 'checked' : '' }} class="rounded">
-                                                <span class="text-xs text-slate-600">Show date on envelope</span>
+                                                <span class="text-xs text-slate-600">Show date</span>
                                             </label>
-                                            <label class="flex items-center gap-2 cursor-pointer">
-                                                <input type="checkbox" name="specials[{{ $i }}][put_at_back]" value="1"
-                                                    {{ !empty($s['put_at_back']) ? 'checked' : '' }} class="rounded">
-                                                <span class="text-xs text-slate-600">Put at back of set</span>
-                                            </label>
+                                            <button type="button" onclick="this.closest('.special-row').remove(); updateSummary();"
+                                                class="text-slate-400 hover:text-red-500 transition-colors text-xl leading-none flex-shrink-0">&times;</button>
                                         </div>
-                                        <button type="button" onclick="this.closest('.special-row').remove(); updateSummary();"
-                                            class="text-slate-400 hover:text-red-500 transition-colors text-xl leading-none">&times;</button>
                                     </div>
                                 </div>
                             </div>
@@ -285,19 +286,22 @@
                         <input type="text" name="specials[${i}][vt7]" placeholder="Offering or Thanks Giving"
                             class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
                     </div>
-                    <div style="display:flex;align-items:flex-end;justify-content:space-between;padding-bottom:2px;">
-                        <div class="space-y-1.5">
-                            <label class="flex items-center gap-2 cursor-pointer">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Position</label>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <select name="specials[${i}][position]"
+                                class="flex-1 px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
+                                <option value="before">Before same date (default)</option>
+                                <option value="after">After same date</option>
+                                <option value="back">At back of set</option>
+                            </select>
+                            <label style="display:flex;align-items:center;gap:6px;white-space:nowrap;" class="cursor-pointer">
                                 <input type="checkbox" name="specials[${i}][show_date]" value="1" checked class="rounded">
-                                <span class="text-xs text-slate-600">Show date on envelope</span>
+                                <span class="text-xs text-slate-600">Show date</span>
                             </label>
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" name="specials[${i}][put_at_back]" value="1" class="rounded">
-                                <span class="text-xs text-slate-600">Put at back of set</span>
-                            </label>
+                            <button type="button" onclick="this.closest('.special-row').remove(); updateSummary();"
+                                class="text-slate-400 hover:text-red-500 transition-colors text-xl leading-none flex-shrink-0">&times;</button>
                         </div>
-                        <button type="button" onclick="this.closest('.special-row').remove(); updateSummary();"
-                            class="text-slate-400 hover:text-red-500 transition-colors text-xl leading-none">&times;</button>
                     </div>
                 </div>`;
             document.getElementById('specials-list').appendChild(row);

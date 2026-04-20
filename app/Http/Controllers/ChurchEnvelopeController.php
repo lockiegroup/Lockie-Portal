@@ -33,7 +33,7 @@ class ChurchEnvelopeController extends Controller
             'specials.*.name'      => 'required_with:specials|string|max:100',
             'specials.*.date'      => 'required_with:specials|date',
             'specials.*.show_date' => 'nullable',
-            'specials.*.put_at_back' => 'nullable',
+            'specials.*.position'  => 'nullable|in:before,after,back',
             'specials.*.vt7'       => 'nullable|string|max:200',
         ]);
 
@@ -78,35 +78,50 @@ class ChurchEnvelopeController extends Controller
         $weekly = [];
         for ($i = 0; $i < $numWeeks; $i++) {
             $date     = $startDate->copy()->addWeeks($i);
-            $weekly[] = ['carbon' => $date, 'sort_date' => $date->timestamp, 'is_special' => false];
+            $weekly[] = [
+                'carbon'     => $date,
+                'sort_date'  => $date->timestamp,
+                'priority'   => 1,   // weekly sits between before/after specials on same date
+                'is_special' => false,
+            ];
         }
-        usort($weekly, fn($a, $b) => $a['sort_date'] <=> $b['sort_date']);
 
-        // Build special envelopes — split into front (default) and back groups
-        $frontSpecials = [];
-        $backSpecials  = [];
+        // Build special envelopes — split by position
+        $mainSpecials = [];  // before/after: interleave with weekly by date
+        $backSpecials = [];  // back: appended after all weekly, ordered by their date
+
         foreach ($request->input('specials', []) as $special) {
             if (empty($special['name']) || empty($special['date'])) continue;
-            $d     = Carbon::parse($special['date']);
-            $entry = [
+            $d        = Carbon::parse($special['date']);
+            $position = $special['position'] ?? 'before';
+            $entry    = [
                 'carbon'       => $d,
                 'sort_date'    => $d->timestamp,
+                'priority'     => $position === 'after' ? 2 : 0,
                 'is_special'   => true,
                 'special_name' => trim($special['name']),
                 'show_date'    => !empty($special['show_date']),
                 'special_vt7'  => trim($special['vt7'] ?? ''),
             ];
-            if (!empty($special['put_at_back'])) {
+            if ($position === 'back') {
                 $backSpecials[] = $entry;
             } else {
-                $frontSpecials[] = $entry;
+                $mainSpecials[] = $entry;
             }
         }
-        usort($frontSpecials, fn($a, $b) => $a['sort_date'] <=> $b['sort_date']);
+
+        // Main block: weekly + before/after specials sorted by (date, priority)
+        $main = array_merge($weekly, $mainSpecials);
+        usort($main, function ($a, $b) {
+            return $a['sort_date'] !== $b['sort_date']
+                ? $a['sort_date'] <=> $b['sort_date']
+                : $a['priority'] <=> $b['priority'];
+        });
+
+        // Back specials sorted by their own date, appended last
         usort($backSpecials, fn($a, $b) => $a['sort_date'] <=> $b['sort_date']);
 
-        // Final order: front specials → weekly → back specials
-        $template = array_merge($frontSpecials, $weekly, $backSpecials);
+        $template = array_merge($main, $backSpecials);
 
         // Build spreadsheet
         $spreadsheet = new Spreadsheet();
