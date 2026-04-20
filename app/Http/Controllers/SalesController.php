@@ -44,10 +44,7 @@ class SalesController extends Controller
                 $cacheKey,
                 1800,
                 function () use ($from, $to) {
-                    // Add one day to endDate so the API captures the full last day.
-                    // Unleashed filters by datetime, so endDate=April19 misses late-day orders.
-                    $apiTo  = Carbon::parse($to)->addDay()->toDateString();
-                    $params = ['startDate' => $from, 'endDate' => $apiTo];
+                    $params = ['startDate' => $from, 'endDate' => $to];
 
                     $fetched = $this->unleashed->parallelPaginate([
                         'sales'   => ['SalesOrders', $params],
