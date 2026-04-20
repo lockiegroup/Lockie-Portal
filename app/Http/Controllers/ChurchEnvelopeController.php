@@ -55,7 +55,7 @@ class ChurchEnvelopeController extends Controller
             $dated[] = [
                 'type'      => 'Weekly',
                 'label'     => 'Week ' . ($i + 1),
-                'date'      => $date->format('d/m/Y'),
+                'date'      => $date->format('d M Y'),
                 'sort_date' => $date->timestamp,
             ];
         }
@@ -69,7 +69,7 @@ class ChurchEnvelopeController extends Controller
                 $dated[] = [
                     'type'      => 'Special',
                     'label'     => trim($special['name']),
-                    'date'      => $d->format('d/m/Y'),
+                    'date'      => $d->format('d M Y'),
                     'sort_date' => $d->timestamp,
                 ];
             } else {
