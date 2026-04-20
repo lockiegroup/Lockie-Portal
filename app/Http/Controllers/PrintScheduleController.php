@@ -5,9 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\PrintJob;
 use App\Models\PrintJobDateChange;
 use App\Models\PrintJobNote;
+use App\Services\UnleashedService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\View\View;
 
 class PrintScheduleController extends Controller
@@ -46,10 +46,84 @@ class PrintScheduleController extends Controller
     public function sync(): JsonResponse
     {
         try {
-            Artisan::call('print:sync');
-            return response()->json(['success' => true]);
+            $unleashed = new UnleashedService(
+                config('services.unleashed.id'),
+                config('services.unleashed.key')
+            );
+            $orders   = $unleashed->fetchA1PrintingOrders();
+            $seenKeys = [];
+            $created  = 0;
+            $updated  = 0;
+
+            foreach ($orders as $order) {
+                $guid         = $order['Guid'] ?? null;
+                if (!$guid) continue;
+                $orderNumber  = $order['OrderNumber'] ?? '';
+                $customerName = $order['Customer']['CustomerName'] ?? '';
+                $orderTotal   = (float) ($order['Total'] ?? $order['SubTotal'] ?? 0);
+                $orderStatus  = $order['OrderStatus'] ?? 'Open';
+                $requiredDate = $unleashed->parseDate($order['RequiredDate'] ?? null);
+
+                foreach ($order['SalesOrderLines'] ?? [] as $lineIndex => $line) {
+                    $productCode = $line['Product']['ProductCode'] ?? null;
+                    if (empty($productCode)) continue;
+
+                    $lineNumber  = (int) ($line['LineNumber'] ?? ($lineIndex + 1));
+                    $key         = $guid . ':' . $lineNumber;
+                    $seenKeys[$key] = true;
+
+                    $existing = PrintJob::where('unleashed_guid', $guid)->where('line_number', $lineNumber)->first();
+
+                    if ($existing) {
+                        $existing->update([
+                            'order_number'        => $orderNumber,
+                            'customer_name'       => $customerName,
+                            'product_code'        => $productCode,
+                            'product_description' => $line['Product']['ProductDescription'] ?? null,
+                            'line_comment'        => $line['LineComment'] ?? null,
+                            'order_total'         => $orderTotal,
+                            'line_total'          => (float) ($line['LineTotal'] ?? 0),
+                            'order_quantity'      => (int) ($line['OrderQuantity'] ?? 0),
+                            'unleashed_status'    => $orderStatus,
+                            'synced_at'           => now(),
+                        ]);
+                        $updated++;
+                    } else {
+                        PrintJob::create([
+                            'unleashed_guid'         => $guid,
+                            'line_number'            => $lineNumber,
+                            'order_number'           => $orderNumber,
+                            'customer_name'          => $customerName,
+                            'product_code'           => $productCode,
+                            'product_description'    => $line['Product']['ProductDescription'] ?? null,
+                            'line_comment'           => $line['LineComment'] ?? null,
+                            'order_total'            => $orderTotal,
+                            'line_total'             => (float) ($line['LineTotal'] ?? 0),
+                            'order_quantity'         => (int) ($line['OrderQuantity'] ?? 0),
+                            'quantity_completed'     => 0,
+                            'required_date'          => $requiredDate,
+                            'original_required_date' => $requiredDate,
+                            'board'                  => 'unplanned',
+                            'position'               => PrintJob::where('board', 'unplanned')->max('position') + 1,
+                            'unleashed_status'       => $orderStatus,
+                            'synced_at'              => now(),
+                        ]);
+                        $created++;
+                    }
+                }
+            }
+
+            if (!empty($seenKeys)) {
+                PrintJob::all()->each(function ($job) use ($seenKeys) {
+                    if (!isset($seenKeys[$job->unleashed_guid . ':' . $job->line_number])) {
+                        $job->delete();
+                    }
+                });
+            }
+
+            return response()->json(['success' => true, 'created' => $created, 'updated' => $updated]);
         } catch (\Throwable $e) {
-            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+            return response()->json(['success' => false, 'error' => get_class($e) . ': ' . $e->getMessage()], 500);
         }
     }
 
