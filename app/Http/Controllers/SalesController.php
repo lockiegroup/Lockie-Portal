@@ -47,12 +47,12 @@ class SalesController extends Controller
                     $apiEndDate = Carbon::parse($to)->addDay()->toDateString();
                     $params     = ['startDate' => $from, 'endDate' => $apiEndDate];
 
-                    // CreditNotes pagination works fine with date filter.
-                    // SalesOrders suffers the same Unleashed bug as Invoices: NumberOfPages is
-                    // calculated from the total unfiltered count, so filtered queries repeat the
-                    // same page. Fetch all orders (no date filter) and PHP-filter by OrderDate.
+                    // SalesOrders suffers the same Unleashed pagination bug as Invoices:
+                    // NumberOfPages is based on the total unfiltered count, so any date-filtered
+                    // query (even startDate-only) repeats pages. Fetch entirely unfiltered and
+                    // PHP-filter by OrderDate — pagination is only accurate for unfiltered queries.
                     $fetched = $this->unleashed->parallelPaginate([
-                        'sales'   => ['SalesOrders', ['startDate' => '2020-01-01']],
+                        'sales'   => ['SalesOrders', []],
                         'credits' => ['CreditNotes', $params],
                     ]);
 
@@ -60,8 +60,8 @@ class SalesController extends Controller
                         $fetched['sales'],
                         function ($o) use ($from, $to) {
                             if (($o['OrderStatus'] ?? '') === 'Cancelled') return false;
-                            if (!preg_match('/\/Date\((\d+)/', $o['OrderDate'] ?? '', $m)) return false;
-                            $date = Carbon::createFromTimestamp((int) $m[1] / 1000)->utc()->toDateString();
+                            $date = $this->unleashed->parseDate($o['OrderDate'] ?? null);
+                            if ($date === null) return false;
                             return $date >= $from && $date <= $to;
                         }
                     );
