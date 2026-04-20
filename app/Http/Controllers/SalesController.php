@@ -56,7 +56,7 @@ class SalesController extends Controller
                         'credits' => ['CreditNotes', $params],
                     ]);
 
-                    $salesOrders = array_filter(
+                    $salesOrders = array_values(array_filter(
                         $fetched['sales'],
                         function ($o) use ($from, $to) {
                             if (($o['OrderStatus'] ?? '') === 'Cancelled') return false;
@@ -64,6 +64,15 @@ class SalesController extends Controller
                             if ($date === null) return false;
                             return $date >= $from && $date <= $to;
                         }
+                    ));
+
+                    // Fetch full order details (includes SalesOrderLines) for accurate line totals.
+                    // The paginated list endpoint omits line data.
+                    $guids   = array_column($salesOrders, 'Guid');
+                    $details = $this->unleashed->fetchSalesOrderDetails($guids);
+                    $salesOrders = array_map(
+                        fn($o) => $details[$o['Guid']] ?? $o,
+                        $salesOrders
                     );
 
                     return [

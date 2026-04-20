@@ -293,6 +293,40 @@ class UnleashedService
     }
 
     /**
+     * Fetch full SalesOrder details (including SalesOrderLines) by GUID in parallel.
+     * The paginated list endpoint omits line data; individual GETs include it.
+     * Returns ['guid' => $orderArray, ...]
+     */
+    public function fetchSalesOrderDetails(array $guids, int $batchSize = 50): array
+    {
+        $results = [];
+
+        foreach (array_chunk($guids, $batchSize) as $batch) {
+            $responses = Http::pool(function ($pool) use ($batch) {
+                $calls = [];
+                foreach ($batch as $guid) {
+                    $calls[] = $pool->as($guid)
+                        ->timeout(30)
+                        ->withHeaders($this->headers(''))
+                        ->get(self::BASE_URL . '/SalesOrders/' . $guid);
+                }
+                return $calls;
+            });
+
+            foreach ($batch as $guid) {
+                $res = $responses[$guid] ?? null;
+                if (!$res || $res instanceof \Throwable || $res->failed()) continue;
+                $data = $res->json() ?? [];
+                if (!empty($data['Guid'])) {
+                    $results[$guid] = $data;
+                }
+            }
+        }
+
+        return $results;
+    }
+
+    /**
      * Fetch warehouse names for specific order numbers in parallel batches.
      * Returns ['SO-00012345' => 'JW Products', ...]
      */
