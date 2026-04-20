@@ -362,15 +362,15 @@
         window.editDate = function (jobId) {
             const display = document.getElementById('date-display-' + jobId);
             const editor  = document.getElementById('date-editor-' + jobId);
-            if (display) display.classList.add('hidden');
-            if (editor)  editor.classList.remove('hidden');
+            if (display) display.style.display = 'none';
+            if (editor)  editor.style.display  = 'inline-flex';
         };
 
         window.cancelDate = function (jobId) {
             const display = document.getElementById('date-display-' + jobId);
             const editor  = document.getElementById('date-editor-' + jobId);
-            if (display) display.classList.remove('hidden');
-            if (editor)  editor.classList.add('hidden');
+            if (display) display.style.display = '';
+            if (editor)  editor.style.display  = 'none';
         };
 
         window.saveDate = function (jobId) {

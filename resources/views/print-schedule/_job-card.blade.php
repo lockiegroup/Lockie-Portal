@@ -111,7 +111,7 @@
             </span>
 
             {{-- Inline date editor (hidden by default) --}}
-            <span id="date-editor-{{ $job->id }}" class="hidden flex items-center gap-1">
+            <span id="date-editor-{{ $job->id }}" style="display:none" class="items-center gap-1">
                 <input type="date" id="date-input-{{ $job->id }}"
                     value="{{ $job->required_date ? $job->required_date->format('Y-m-d') : '' }}"
                     class="text-xs border border-slate-300 rounded px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-rose-500">

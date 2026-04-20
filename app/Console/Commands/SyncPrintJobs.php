@@ -43,7 +43,7 @@ class SyncPrintJobs extends Command
 
                 $lineNumber         = (int) ($line['LineNumber'] ?? ($lineIndex + 1));
                 $productDescription = $line['Product']['ProductDescription'] ?? null;
-                $lineComment        = $line['LineComment'] ?? null;
+                $lineComment        = $line['Comments'] ?? $line['LineComment'] ?? null;
                 $lineTotal          = (float) ($line['LineTotal'] ?? 0);
                 $orderQuantity      = (int) ($line['OrderQuantity'] ?? 0);
                 $key                = $guid . ':' . $lineNumber;

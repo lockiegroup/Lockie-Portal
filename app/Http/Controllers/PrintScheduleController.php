@@ -81,7 +81,7 @@ class PrintScheduleController extends Controller
                             'customer_name'       => $customerName,
                             'product_code'        => $productCode,
                             'product_description' => $line['Product']['ProductDescription'] ?? null,
-                            'line_comment'        => $line['LineComment'] ?? null,
+                            'line_comment'        => $line['Comments'] ?? $line['LineComment'] ?? null,
                             'order_total'         => $orderTotal,
                             'line_total'          => (float) ($line['LineTotal'] ?? 0),
                             'order_quantity'      => (int) ($line['OrderQuantity'] ?? 0),
