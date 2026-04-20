@@ -56,27 +56,6 @@ class SalesController extends Controller
                         fn($o) => ($o['OrderStatus'] ?? '') !== 'Cancelled'
                     ));
 
-                    // Fetch full order details for SalesOrderLines (line-level totals).
-                    // Cache each order by GUID for 24 hours — only uncached orders are fetched.
-                    $uncached = [];
-                    $details  = [];
-                    foreach ($salesOrders as $o) {
-                        $cached = Cache::get('unleashed_order_' . $o['Guid']);
-                        if ($cached !== null) {
-                            $details[$o['Guid']] = $cached;
-                        } else {
-                            $uncached[] = $o['Guid'];
-                        }
-                    }
-                    if (!empty($uncached)) {
-                        $fresh = $this->unleashed->fetchSalesOrderDetails($uncached);
-                        foreach ($fresh as $guid => $order) {
-                            Cache::put('unleashed_order_' . $guid, $order, 86400);
-                            $details[$guid] = $order;
-                        }
-                    }
-                    $salesOrders = array_map(fn($o) => $details[$o['Guid']] ?? $o, $salesOrders);
-
                     return [
                         $this->groupByWarehouse($salesOrders),
                         $this->groupByWarehouse($fetched['credits']),
