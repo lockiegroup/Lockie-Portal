@@ -305,10 +305,12 @@ class UnleashedService
             $responses = Http::pool(function ($pool) use ($batch) {
                 $calls = [];
                 foreach ($batch as $guid) {
+                    // Use list endpoint with guid filter — same pattern as fetchWarehousesByOrderNumber
+                    $qs = http_build_query(['pageSize' => 1, 'pageNumber' => 1, 'guid' => $guid]);
                     $calls[] = $pool->as($guid)
                         ->timeout(30)
-                        ->withHeaders($this->headers(''))
-                        ->get(self::BASE_URL . '/SalesOrders/' . $guid);
+                        ->withHeaders($this->headers($qs))
+                        ->get(self::BASE_URL . '/SalesOrders?' . $qs);
                 }
                 return $calls;
             });
@@ -316,9 +318,10 @@ class UnleashedService
             foreach ($batch as $guid) {
                 $res = $responses[$guid] ?? null;
                 if (!$res || $res instanceof \Throwable || $res->failed()) continue;
-                $data = $res->json() ?? [];
-                if (!empty($data['Guid'])) {
-                    $results[$guid] = $data;
+                $data  = $res->json() ?? [];
+                $order = ($data['Items'] ?? [])[0] ?? null;
+                if ($order && !empty($order['Guid'])) {
+                    $results[$guid] = $order;
                 }
             }
         }
