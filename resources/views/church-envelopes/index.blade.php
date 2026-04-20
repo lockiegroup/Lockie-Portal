@@ -73,64 +73,24 @@
             {{-- Set Numbers --}}
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
                 <h2 class="font-semibold text-slate-800">Set Numbers</h2>
-
-                <div style="display:flex;gap:12px;flex-wrap:wrap;">
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="set_number_type" value="sequential"
-                            {{ old('set_number_type', 'sequential') === 'sequential' ? 'checked' : '' }}
-                            onchange="toggleSetType('sequential')" class="text-sky-600">
-                        <span class="text-sm font-medium text-slate-700">Sequential</span>
-                    </label>
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="set_number_type" value="custom"
-                            {{ old('set_number_type') === 'custom' ? 'checked' : '' }}
-                            onchange="toggleSetType('custom')" class="text-sky-600">
-                        <span class="text-sm font-medium text-slate-700">Custom / ranges</span>
-                    </label>
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="set_number_type" value="none"
-                            {{ old('set_number_type') === 'none' ? 'checked' : '' }}
-                            onchange="toggleSetType('none')" class="text-sky-600">
-                        <span class="text-sm font-medium text-slate-700">No set numbers</span>
-                    </label>
+                <p class="text-xs text-slate-400">
+                    Enter numbers, ranges, or a mix — e.g. <code class="bg-slate-100 px-1 rounded">1-50, 75, 100-110</code>.
+                    Leave blank if only printing unnumbered copies.
+                </p>
+                <div>
+                    <textarea name="set_numbers" id="set_numbers" rows="3"
+                        placeholder="e.g. 1-50&#10;or 1-50, 75, 100-110&#10;or leave blank for unnumbered only"
+                        class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition resize-none font-mono text-sm">{{ old('set_numbers') }}</textarea>
+                    <p id="set-numbers-count" class="text-xs text-slate-400 mt-1"></p>
                 </div>
-
-                {{-- Sequential --}}
-                <div id="sequential-section" class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Starting number</label>
-                        <input type="number" name="seq_start" value="{{ old('seq_start', 1) }}" min="1"
-                            class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1.5">How many sets</label>
-                        <input type="number" name="seq_count" value="{{ old('seq_count', 20) }}" min="1"
-                            id="seq_count"
-                            class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
-                    </div>
-                </div>
-
-                {{-- Custom / ranges --}}
-                <div id="custom-section" class="hidden">
+                <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1.5">
-                        Set numbers
-                        <span class="text-slate-400 font-normal text-xs">— individual numbers, ranges (1-50), or a mix e.g. <code>1-50, 75, 100-110</code></span>
-                    </label>
-                    <textarea name="custom_numbers" rows="4" id="custom_numbers"
-                        placeholder="e.g. 1-50, 75, 100-110&#10;or one per line"
-                        class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition resize-none font-mono text-sm">{{ old('custom_numbers') }}</textarea>
-                    <p id="custom-count" class="text-xs text-slate-400 mt-1"></p>
-                </div>
-
-                {{-- No set numbers --}}
-                <div id="none-section" class="hidden">
-                    <label class="block text-sm font-medium text-slate-700 mb-1.5">
-                        Number of copies to print
+                        Plus unnumbered copies
+                        <span class="text-slate-400 font-normal text-xs">— added after numbered sets, E &amp; F columns blank</span>
                     </label>
                     <input type="number" name="none_copies" id="none_copies"
-                        value="{{ old('none_copies', 1) }}" min="1"
+                        value="{{ old('none_copies', 0) }}" min="0"
                         class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
-                    <p class="text-xs text-slate-400 mt-1">Set number columns will be left blank.</p>
                 </div>
             </div>
 
@@ -140,8 +100,9 @@
                     <div>
                         <h2 class="font-semibold text-slate-800">Special Envelopes</h2>
                         <p class="text-xs text-slate-400 mt-0.5">
-                            Added to every box set. Date used for ordering — tick to also print it on the envelope.
-                            VT1–VT5 are left blank; VT6 = title; VT7 = e.g. Offering or Thanks Giving.
+                            Default: placed at the front of the set (sorted by date).
+                            Tick "Put at back" to place after all weekly envelopes instead.
+                            VT1–VT5 are blank; VT6 = title; VT7 = offering text.
                         </p>
                     </div>
                     <button type="button" onclick="addSpecial()"
@@ -167,7 +128,7 @@
                                             class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
                                     </div>
                                 </div>
-                                <div class="grid grid-cols-2 gap-3 items-center">
+                                <div class="grid grid-cols-2 gap-3">
                                     <div>
                                         <label class="block text-xs font-medium text-slate-500 mb-1">VT7 (e.g. Offering)</label>
                                         <input type="text" name="specials[{{ $i }}][vt7]"
@@ -175,13 +136,19 @@
                                             value="{{ $s['vt7'] ?? '' }}"
                                             class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
                                     </div>
-                                    <div style="display:flex;align-items:center;justify-content:space-between;padding-top:1.25rem;">
-                                        <label class="flex items-center gap-2 cursor-pointer">
-                                            <input type="checkbox" name="specials[{{ $i }}][show_date]" value="1"
-                                                {{ !empty($s['show_date']) ? 'checked' : '' }}
-                                                class="rounded">
-                                            <span class="text-sm text-slate-600">Show date on envelope</span>
-                                        </label>
+                                    <div style="display:flex;align-items:flex-end;justify-content:space-between;padding-bottom:2px;">
+                                        <div class="space-y-1.5">
+                                            <label class="flex items-center gap-2 cursor-pointer">
+                                                <input type="checkbox" name="specials[{{ $i }}][show_date]" value="1"
+                                                    {{ !empty($s['show_date']) ? 'checked' : '' }} class="rounded">
+                                                <span class="text-xs text-slate-600">Show date on envelope</span>
+                                            </label>
+                                            <label class="flex items-center gap-2 cursor-pointer">
+                                                <input type="checkbox" name="specials[{{ $i }}][put_at_back]" value="1"
+                                                    {{ !empty($s['put_at_back']) ? 'checked' : '' }} class="rounded">
+                                                <span class="text-xs text-slate-600">Put at back of set</span>
+                                            </label>
+                                        </div>
                                         <button type="button" onclick="this.closest('.special-row').remove(); updateSummary();"
                                             class="text-slate-400 hover:text-red-500 transition-colors text-xl leading-none">&times;</button>
                                     </div>
@@ -216,10 +183,10 @@
                 </div>
             </div>
 
-            {{-- Variable Text (weekly envelopes) --}}
+            {{-- Variable Text --}}
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
                 <h2 class="font-semibold text-slate-800">Variable Text — Weekly Envelopes</h2>
-                <p class="text-xs text-slate-400">VT1–VT8 used for weekly envelopes. Special envelopes use VT6 (title) and VT7 (offering text) only.</p>
+                <p class="text-xs text-slate-400">VT1–VT8 for weekly envelopes. Special envelopes use VT6 (title) and VT7 (offering text) only.</p>
                 <div class="grid grid-cols-2 gap-3">
                     @php
                         $vtDefaults = ['In Thanksgiving to God', 'and for the work of', 'His Church', '', '', '', '', ''];
@@ -251,15 +218,19 @@
     <script>
         let specialIndex = {{ old('specials') ? count(old('specials')) : 0 }};
 
-        // ── Set type toggle ──────────────────────────────────────────────────
-        function toggleSetType(type) {
-            document.getElementById('sequential-section').classList.toggle('hidden', type !== 'sequential');
-            document.getElementById('custom-section').classList.toggle('hidden', type !== 'custom');
-            document.getElementById('none-section').classList.toggle('hidden', type !== 'none');
-            updateSummary();
+        // ── Parse set numbers (supports ranges 1-50 and individual numbers) ──
+        function parseSetNumbers(raw) {
+            const nums = [];
+            raw.trim().split(/[\s,;]+/).forEach(part => {
+                const range = part.match(/^(\d+)-(\d+)$/);
+                if (range) {
+                    for (let n = parseInt(range[1]); n <= parseInt(range[2]); n++) nums.push(n);
+                } else if (/^\d+$/.test(part)) {
+                    nums.push(parseInt(part));
+                }
+            });
+            return [...new Set(nums)];
         }
-        const currentType = document.querySelector('input[name="set_number_type"]:checked')?.value || 'sequential';
-        toggleSetType(currentType);
 
         // ── Weeks preview ────────────────────────────────────────────────────
         function updateWeeksPreview() {
@@ -280,28 +251,13 @@
         });
         document.getElementById('num_weeks').addEventListener('input', updateWeeksPreview);
 
-        // ── Custom numbers parse (supports ranges) ───────────────────────────
-        function parseCustomNumbers(raw) {
-            const nums = [];
-            raw.trim().split(/[\s,;]+/).forEach(part => {
-                const range = part.match(/^(\d+)-(\d+)$/);
-                if (range) {
-                    for (let n = parseInt(range[1]); n <= parseInt(range[2]); n++) nums.push(n);
-                } else if (/^\d+$/.test(part)) {
-                    nums.push(parseInt(part));
-                }
-            });
-            return [...new Set(nums)];
-        }
-
-        document.getElementById('custom_numbers').addEventListener('input', function () {
-            const nums = parseCustomNumbers(this.value);
-            document.getElementById('custom-count').textContent =
-                nums.length + ' set number' + (nums.length === 1 ? '' : 's') + ' detected.';
+        // ── Set numbers counter ──────────────────────────────────────────────
+        document.getElementById('set_numbers').addEventListener('input', function () {
+            const nums = parseSetNumbers(this.value);
+            const el   = document.getElementById('set-numbers-count');
+            el.textContent = nums.length ? nums.length + ' numbered set' + (nums.length === 1 ? '' : 's') + ' detected.' : '';
             updateSummary();
         });
-
-        document.getElementById('seq_count').addEventListener('input', updateSummary);
         document.getElementById('none_copies').addEventListener('input', updateSummary);
 
         // ── Add special envelope ─────────────────────────────────────────────
@@ -323,17 +279,23 @@
                             class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-3 items-center">
+                <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-medium text-slate-500 mb-1">VT7 (e.g. Offering)</label>
                         <input type="text" name="specials[${i}][vt7]" placeholder="Offering or Thanks Giving"
                             class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
                     </div>
-                    <div style="display:flex;align-items:center;justify-content:space-between;padding-top:1.25rem;">
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="specials[${i}][show_date]" value="1" checked class="rounded">
-                            <span class="text-sm text-slate-600">Show date on envelope</span>
-                        </label>
+                    <div style="display:flex;align-items:flex-end;justify-content:space-between;padding-bottom:2px;">
+                        <div class="space-y-1.5">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" name="specials[${i}][show_date]" value="1" checked class="rounded">
+                                <span class="text-xs text-slate-600">Show date on envelope</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" name="specials[${i}][put_at_back]" value="1" class="rounded">
+                                <span class="text-xs text-slate-600">Put at back of set</span>
+                            </label>
+                        </div>
                         <button type="button" onclick="this.closest('.special-row').remove(); updateSummary();"
                             class="text-slate-400 hover:text-red-500 transition-colors text-xl leading-none">&times;</button>
                     </div>
@@ -344,24 +306,20 @@
 
         // ── Summary ──────────────────────────────────────────────────────────
         function updateSummary() {
-            const weeks    = parseInt(document.getElementById('num_weeks').value) || 0;
-            const specials = document.querySelectorAll('.special-row').length;
-            const type     = document.querySelector('input[name="set_number_type"]:checked')?.value;
-            let sets = 0;
-            if (type === 'sequential') {
-                sets = parseInt(document.getElementById('seq_count').value) || 0;
-            } else if (type === 'custom') {
-                sets = parseCustomNumbers(document.getElementById('custom_numbers').value).length;
-            } else {
-                sets = parseInt(document.getElementById('none_copies').value) || 0;
-            }
-            const envsPerSet = weeks + specials;
-            const pairs      = Math.ceil(sets / 2);
-            const totalRows  = pairs * envsPerSet;
-            const el         = document.getElementById('summary');
-            if (sets && weeks) {
-                const setsLabel = type === 'none' ? sets + ' copies' : sets + ' sets';
-                el.textContent = `${setsLabel} × ${envsPerSet} envelopes = ${totalRows.toLocaleString()} rows (${pairs} pairs, 2-up).`;
+            const weeks       = parseInt(document.getElementById('num_weeks').value) || 0;
+            const specials    = document.querySelectorAll('.special-row').length;
+            const numbered    = parseSetNumbers(document.getElementById('set_numbers').value).length;
+            const unnumbered  = Math.max(0, parseInt(document.getElementById('none_copies').value) || 0);
+            const totalSets   = numbered + unnumbered;
+            const envsPerSet  = weeks + specials;
+            const pairs       = Math.ceil(totalSets / 2);
+            const totalRows   = pairs * envsPerSet;
+            const el          = document.getElementById('summary');
+            if (totalSets && weeks) {
+                const parts = [];
+                if (numbered)   parts.push(numbered + ' numbered');
+                if (unnumbered) parts.push(unnumbered + ' unnumbered');
+                el.textContent = `${parts.join(' + ')} sets × ${envsPerSet} envelopes = ${totalRows.toLocaleString()} rows (${pairs} pairs, 2-up).`;
             } else {
                 el.textContent = '';
             }

@@ -19,24 +19,22 @@ class ChurchEnvelopeController extends Controller
     public function generate(Request $request): BinaryFileResponse|\Illuminate\Http\RedirectResponse
     {
         $request->validate([
-            'start_date'            => 'required|date',
-            'num_weeks'             => 'required|integer|min:1|max:53',
-            'church'                => 'required|string|max:200',
-            'town'                  => 'required|string|max:200',
-            'diocese_1'             => 'nullable|string|max:200',
-            'diocese_2'             => 'nullable|string|max:200',
-            'diocese_3'             => 'nullable|string|max:200',
-            'vt'                    => 'nullable|array',
-            'set_number_type'       => 'required|in:sequential,custom,none',
-            'seq_start'             => 'required_if:set_number_type,sequential|nullable|integer|min:1',
-            'seq_count'             => 'required_if:set_number_type,sequential|nullable|integer|min:1|max:9999',
-            'custom_numbers'        => 'required_if:set_number_type,custom|nullable|string',
-            'none_copies'           => 'required_if:set_number_type,none|nullable|integer|min:1|max:9999',
-            'specials'              => 'nullable|array',
-            'specials.*.name'       => 'required_with:specials|string|max:100',
-            'specials.*.date'       => 'required_with:specials|date',
-            'specials.*.show_date'  => 'nullable',
-            'specials.*.vt7'        => 'nullable|string|max:200',
+            'start_date'           => 'required|date',
+            'num_weeks'            => 'required|integer|min:1|max:53',
+            'church'               => 'required|string|max:200',
+            'town'                 => 'required|string|max:200',
+            'diocese_1'            => 'nullable|string|max:200',
+            'diocese_2'            => 'nullable|string|max:200',
+            'diocese_3'            => 'nullable|string|max:200',
+            'vt'                   => 'nullable|array',
+            'set_numbers'          => 'nullable|string',
+            'none_copies'          => 'nullable|integer|min:0',
+            'specials'             => 'nullable|array',
+            'specials.*.name'      => 'required_with:specials|string|max:100',
+            'specials.*.date'      => 'required_with:specials|date',
+            'specials.*.show_date' => 'nullable',
+            'specials.*.put_at_back' => 'nullable',
+            'specials.*.vt7'       => 'nullable|string|max:200',
         ]);
 
         $startDate = Carbon::parse($request->start_date);
@@ -52,50 +50,45 @@ class ChurchEnvelopeController extends Controller
             $weeklyVt[] = trim($vtInputs[$i] ?? '');
         }
 
-        // Resolve set numbers
-        if ($request->set_number_type === 'sequential') {
-            $start      = (int) $request->seq_start;
-            $count      = (int) $request->seq_count;
-            $setNumbers = range($start, $start + $count - 1);
-        } elseif ($request->set_number_type === 'custom') {
-            $setNumbers = [];
-            foreach (preg_split('/[\s,;]+/', trim($request->custom_numbers ?? '')) as $part) {
-                $part = trim($part);
-                if (preg_match('/^(\d+)-(\d+)$/', $part, $m)) {
-                    for ($n = (int)$m[1]; $n <= (int)$m[2]; $n++) {
-                        $setNumbers[] = $n;
-                    }
-                } elseif (ctype_digit($part) && $part !== '') {
-                    $setNumbers[] = (int)$part;
+        // Resolve set numbers — supports ranges (1-50), individual numbers, or blank
+        $setNumbers = [];
+        foreach (preg_split('/[\s,;]+/', trim($request->set_numbers ?? '')) as $part) {
+            $part = trim($part);
+            if (preg_match('/^(\d+)-(\d+)$/', $part, $m)) {
+                for ($n = (int)$m[1]; $n <= (int)$m[2]; $n++) {
+                    $setNumbers[] = $n;
                 }
+            } elseif (ctype_digit($part) && $part !== '') {
+                $setNumbers[] = (int)$part;
             }
-            $setNumbers = array_values(array_unique($setNumbers));
-        } else {
-            // No set numbers — generate N anonymous slots (null = blank in output)
-            $copies     = max(1, (int) $request->none_copies);
-            $setNumbers = array_fill(0, $copies, null);
+        }
+        $setNumbers = array_values(array_unique($setNumbers));
+
+        // Append unnumbered copies (null = blank set number columns)
+        $noneCopies = max(0, (int) ($request->none_copies ?? 0));
+        for ($i = 0; $i < $noneCopies; $i++) {
+            $setNumbers[] = null;
         }
 
         if (empty($setNumbers)) {
-            return back()->withErrors(['custom_numbers' => 'No valid set numbers found.']);
+            return back()->withErrors(['set_numbers' => 'Enter set numbers and/or at least 1 unnumbered copy.']);
         }
 
-        // Build envelope template — weekly envelopes sorted by date, specials interleaved by date
-        $envelopes = [];
-
+        // Build weekly envelopes
+        $weekly = [];
         for ($i = 0; $i < $numWeeks; $i++) {
-            $date        = $startDate->copy()->addWeeks($i);
-            $envelopes[] = [
-                'carbon'     => $date,
-                'sort_date'  => $date->timestamp,
-                'is_special' => false,
-            ];
+            $date     = $startDate->copy()->addWeeks($i);
+            $weekly[] = ['carbon' => $date, 'sort_date' => $date->timestamp, 'is_special' => false];
         }
+        usort($weekly, fn($a, $b) => $a['sort_date'] <=> $b['sort_date']);
 
+        // Build special envelopes — split into front (default) and back groups
+        $frontSpecials = [];
+        $backSpecials  = [];
         foreach ($request->input('specials', []) as $special) {
             if (empty($special['name']) || empty($special['date'])) continue;
-            $d           = Carbon::parse($special['date']);
-            $envelopes[] = [
+            $d     = Carbon::parse($special['date']);
+            $entry = [
                 'carbon'       => $d,
                 'sort_date'    => $d->timestamp,
                 'is_special'   => true,
@@ -103,10 +96,17 @@ class ChurchEnvelopeController extends Controller
                 'show_date'    => !empty($special['show_date']),
                 'special_vt7'  => trim($special['vt7'] ?? ''),
             ];
+            if (!empty($special['put_at_back'])) {
+                $backSpecials[] = $entry;
+            } else {
+                $frontSpecials[] = $entry;
+            }
         }
+        usort($frontSpecials, fn($a, $b) => $a['sort_date'] <=> $b['sort_date']);
+        usort($backSpecials, fn($a, $b) => $a['sort_date'] <=> $b['sort_date']);
 
-        // Sort everything by date so specials interleave with weekly
-        usort($envelopes, fn($a, $b) => $a['sort_date'] <=> $b['sort_date']);
+        // Final order: front specials → weekly → back specials
+        $template = array_merge($frontSpecials, $weekly, $backSpecials);
 
         // Build spreadsheet
         $spreadsheet = new Spreadsheet();
@@ -122,16 +122,15 @@ class ChurchEnvelopeController extends Controller
         $row     = 2;
         $lineNum = 1;
 
-        // Pair set numbers (1,2), (3,4)… each row = one physical 2-up sheet
+        // Pair set numbers: (1,2), (3,4)… each row = one physical 2-up sheet
         for ($i = 0; $i < count($setNumbers); $i += 2) {
-            $setLeft  = $setNumbers[$i];           // null → blank
-            $setRight = $setNumbers[$i + 1] ?? null; // null → blank
+            $setLeft  = $setNumbers[$i];
+            $setRight = $setNumbers[$i + 1] ?? null;
 
-            foreach ($envelopes as $envelope) {
+            foreach ($template as $envelope) {
                 $carbon    = $envelope['carbon'];
                 $isSpecial = $envelope['is_special'];
 
-                // Date columns: blank for specials where show_date is off
                 if ($isSpecial && !$envelope['show_date']) {
                     $day = $month = $year = '';
                 } else {
@@ -140,7 +139,6 @@ class ChurchEnvelopeController extends Controller
                     $year  = (int) $carbon->format('Y');
                 }
 
-                // VT columns: specials use VT6=title, VT7=offering text; weekly use standard VT
                 $rowVt = $isSpecial
                     ? ['', '', '', '', '', $envelope['special_name'], $envelope['special_vt7'], '']
                     : $weeklyVt;
