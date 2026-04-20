@@ -6,5 +6,5 @@ use Illuminate\Database\Eloquent\Model;
 
 class EnvelopeDesign extends Model
 {
-    protected $fillable = ['name', 'path'];
+    protected $fillable = ['name', 'path', 'sort_order'];
 }

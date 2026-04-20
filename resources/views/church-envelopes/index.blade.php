@@ -159,8 +159,8 @@
                                         <div style="display:flex;align-items:center;gap:8px;">
                                             <select name="specials[{{ $i }}][position]"
                                                 class="flex-1 px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
-                                                <option value="before" {{ ($s['position'] ?? 'before') === 'before' ? 'selected' : '' }}>Before same date (default)</option>
-                                                <option value="after"  {{ ($s['position'] ?? '') === 'after'  ? 'selected' : '' }}>After same date</option>
+                                                <option value="before" {{ ($s['position'] ?? '') === 'before' ? 'selected' : '' }}>Before same date</option>
+                                                <option value="after"  {{ ($s['position'] ?? 'after') === 'after'  ? 'selected' : '' }}>After same date (default)</option>
                                                 <option value="back"   {{ ($s['position'] ?? '') === 'back'   ? 'selected' : '' }}>At back of set</option>
                                             </select>
                                             <label style="display:flex;align-items:center;gap:6px;white-space:nowrap;" class="cursor-pointer">
@@ -320,8 +320,8 @@
                         <div style="display:flex;align-items:center;gap:8px;">
                             <select name="specials[${i}][position]"
                                 class="flex-1 px-3 py-2 rounded-lg border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
-                                <option value="before">Before same date (default)</option>
-                                <option value="after">After same date</option>
+                                <option value="before">Before same date</option>
+                                <option value="after" selected>After same date (default)</option>
                                 <option value="back">At back of set</option>
                             </select>
                             <label style="display:flex;align-items:center;gap:6px;white-space:nowrap;" class="cursor-pointer">

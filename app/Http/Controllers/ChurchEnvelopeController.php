@@ -17,7 +17,7 @@ class ChurchEnvelopeController extends Controller
     public function index(): View
     {
         $verses  = EnvelopeVerse::orderBy('sort_order')->get();
-        $designs = EnvelopeDesign::orderBy('name')->get();
+        $designs = EnvelopeDesign::orderBy('sort_order')->orderBy('name')->get();
 
         return view('church-envelopes.index', compact('verses', 'designs'));
     }

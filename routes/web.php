@@ -73,10 +73,12 @@ Route::middleware(['auth', 'otp'])->group(function () {
             Route::post('/verses', [EnvelopeSettingsController::class, 'storeVerse'])->name('verses.store');
             Route::put('/verses/{verse}', [EnvelopeSettingsController::class, 'updateVerse'])->name('verses.update');
             Route::delete('/verses/{verse}', [EnvelopeSettingsController::class, 'destroyVerse'])->name('verses.destroy');
+            Route::post('/verses/reorder', [EnvelopeSettingsController::class, 'reorderVerses'])->name('verses.reorder');
             Route::post('/spiral-path', [EnvelopeSettingsController::class, 'updateSpiralPath'])->name('spiral-path.update');
             Route::post('/designs', [EnvelopeSettingsController::class, 'storeDesign'])->name('designs.store');
             Route::put('/designs/{design}', [EnvelopeSettingsController::class, 'updateDesign'])->name('designs.update');
             Route::delete('/designs/{design}', [EnvelopeSettingsController::class, 'destroyDesign'])->name('designs.destroy');
+            Route::post('/designs/reorder', [EnvelopeSettingsController::class, 'reorderDesigns'])->name('designs.reorder');
         });
     });
 });

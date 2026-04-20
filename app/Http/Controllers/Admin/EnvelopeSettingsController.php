@@ -13,7 +13,7 @@ class EnvelopeSettingsController extends Controller
     public function index()
     {
         $verses      = EnvelopeVerse::orderBy('sort_order')->get();
-        $designs     = EnvelopeDesign::orderBy('name')->get();
+        $designs     = EnvelopeDesign::orderBy('sort_order')->orderBy('name')->get();
         $spiralPath  = EnvelopeSetting::getValue('spiral_image_path');
 
         return view('admin.envelope-settings.index', compact('verses', 'designs', 'spiralPath'));
@@ -115,5 +115,23 @@ class EnvelopeSettingsController extends Controller
         $design->delete();
 
         return back()->with('success', 'Design deleted.');
+    }
+
+    public function reorderVerses(Request $r)
+    {
+        $r->validate(['ids' => 'required|array', 'ids.*' => 'integer']);
+        foreach ($r->ids as $order => $id) {
+            EnvelopeVerse::where('id', $id)->update(['sort_order' => $order]);
+        }
+        return response()->json(['ok' => true]);
+    }
+
+    public function reorderDesigns(Request $r)
+    {
+        $r->validate(['ids' => 'required|array', 'ids.*' => 'integer']);
+        foreach ($r->ids as $order => $id) {
+            EnvelopeDesign::where('id', $id)->update(['sort_order' => $order]);
+        }
+        return response()->json(['ok' => true]);
     }
 }

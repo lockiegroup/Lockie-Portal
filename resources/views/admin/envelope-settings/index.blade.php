@@ -94,14 +94,18 @@
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="border-b border-slate-200 bg-slate-50">
+                            <th class="px-3 py-3 w-8"></th>
                             <th class="text-left px-6 py-3 font-semibold text-slate-600">Name</th>
                             <th class="text-left px-6 py-3 font-semibold text-slate-600">Path</th>
                             <th class="px-6 py-3"></th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100">
+                    <tbody id="designs-sortable" class="divide-y divide-slate-100">
                         @foreach($designs as $design)
-                            <tr class="hover:bg-slate-50 transition-colors">
+                            <tr class="hover:bg-slate-50 transition-colors" data-id="{{ $design->id }}">
+                                <td class="px-3 py-4 text-slate-300 cursor-grab active:cursor-grabbing design-handle">
+                                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg>
+                                </td>
                                 <td class="px-6 py-4 font-medium text-slate-800">{{ $design->name }}</td>
                                 <td class="px-6 py-4 text-slate-500 max-w-xs">
                                     <span title="{{ $design->path }}" class="block truncate">{{ $design->path }}</span>
@@ -120,7 +124,7 @@
                                 </td>
                             </tr>
                             <tr id="edit-design-{{ $design->id }}" style="display:none;">
-                                <td colspan="3" class="px-6 py-4 bg-slate-50 border-b border-slate-200">
+                                <td colspan="4" class="px-6 py-4 bg-slate-50 border-b border-slate-200">
                                     <form action="{{ route('admin.envelope-settings.designs.update', $design) }}" method="POST">
                                         @csrf @method('PUT')
                                         <div style="display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap;">
@@ -205,20 +209,22 @@
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="border-b border-slate-200 bg-slate-50">
+                            <th class="px-3 py-3 w-8"></th>
                             <th class="text-left px-6 py-3 font-semibold text-slate-600 w-24">Label</th>
                             <th class="text-left px-6 py-3 font-semibold text-slate-600">Preview</th>
-                            <th class="text-left px-6 py-3 font-semibold text-slate-600 w-20">Order</th>
                             <th class="px-6 py-3"></th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100">
+                    <tbody id="verses-sortable" class="divide-y divide-slate-100">
                         @foreach($verses as $verse)
-                            <tr class="hover:bg-slate-50 transition-colors">
+                            <tr class="hover:bg-slate-50 transition-colors" data-id="{{ $verse->id }}">
+                                <td class="px-3 py-4 text-slate-300 cursor-grab active:cursor-grabbing verse-handle">
+                                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg>
+                                </td>
                                 <td class="px-6 py-4 font-mono font-semibold text-slate-800">{{ $verse->label }}</td>
                                 <td class="px-6 py-4 text-slate-600">
                                     {{ collect($verse->lines)->first(fn($l) => $l !== '') ?? '—' }}
                                 </td>
-                                <td class="px-6 py-4 text-slate-400 text-xs">{{ $verse->sort_order }}</td>
                                 <td class="px-6 py-4 text-right">
                                     <div style="display:flex;justify-content:flex-end;gap:12px;align-items:center;">
                                         <button type="button"
@@ -233,7 +239,7 @@
                                 </td>
                             </tr>
                             <tr id="edit-verse-{{ $verse->id }}" style="display:none;">
-                                <td colspan="4" class="px-6 py-4 bg-slate-50 border-b border-slate-200">
+                                <td colspan="4" class="px-6 py-4 bg-slate-50 border-b border-slate-200" style="padding-left:3rem;">
                                     <form action="{{ route('admin.envelope-settings.verses.update', $verse) }}" method="POST">
                                         @csrf @method('PUT')
                                         <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;margin-bottom:12px;">
@@ -285,11 +291,47 @@
         </section>
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
     <script>
         function toggleEdit(id) {
             const row = document.getElementById(id);
             if (!row) return;
             row.style.display = row.style.display === 'none' ? '' : 'none';
+        }
+
+        function saveOrder(url, ids) {
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                },
+                body: JSON.stringify({ ids }),
+            });
+        }
+
+        const designsEl = document.getElementById('designs-sortable');
+        if (designsEl) {
+            Sortable.create(designsEl, {
+                handle: '.design-handle',
+                animation: 150,
+                onEnd() {
+                    const ids = [...designsEl.querySelectorAll('tr[data-id]')].map(r => r.dataset.id);
+                    saveOrder('{{ route('admin.envelope-settings.designs.reorder') }}', ids);
+                },
+            });
+        }
+
+        const versesEl = document.getElementById('verses-sortable');
+        if (versesEl) {
+            Sortable.create(versesEl, {
+                handle: '.verse-handle',
+                animation: 150,
+                onEnd() {
+                    const ids = [...versesEl.querySelectorAll('tr[data-id]')].map(r => r.dataset.id);
+                    saveOrder('{{ route('admin.envelope-settings.verses.reorder') }}', ids);
+                },
+            });
         }
     </script>
 </x-layout>
