@@ -362,6 +362,7 @@
         window.saveDate = function (jobId) {
             const input = document.getElementById('date-input-' + jobId);
             const val   = input ? input.value : '';
+            alert('saveDate: job=' + jobId + ' val=' + val);
             if (!val) return;
 
             const saveBtn = document.getElementById('date-save-btn-' + jobId);
