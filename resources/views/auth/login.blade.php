@@ -3,13 +3,7 @@
         <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
 
             <div class="bg-slate-900 px-8 py-6 text-center">
-                <div class="flex items-center justify-center gap-3 mb-1">
-                    <svg class="w-8 h-8 text-sky-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                    </svg>
-                    <span class="text-white text-2xl font-bold tracking-tight">Lockie Portal</span>
-                </div>
+                <img src="{{ asset('images/logo.png') }}" alt="Lockie Group" class="h-14 w-auto mx-auto mb-1">
                 <p class="text-slate-400 text-sm">Staff access only</p>
             </div>
 
