@@ -52,10 +52,31 @@ class SalesController extends Controller
                         'credits' => ['CreditNotes', $params],
                     ]);
 
-                    $salesOrders = array_filter(
+                    $salesOrders = array_values(array_filter(
                         $fetched['sales'],
                         fn($o) => ($o['OrderStatus'] ?? '') !== 'Cancelled'
-                    );
+                    ));
+
+                    // Fetch full order details for SalesOrderLines (line-level totals).
+                    // Cache each order by GUID for 24 hours — only uncached orders are fetched.
+                    $uncached = [];
+                    $details  = [];
+                    foreach ($salesOrders as $o) {
+                        $cached = Cache::get('unleashed_order_' . $o['Guid']);
+                        if ($cached !== null) {
+                            $details[$o['Guid']] = $cached;
+                        } else {
+                            $uncached[] = $o['Guid'];
+                        }
+                    }
+                    if (!empty($uncached)) {
+                        $fresh = $this->unleashed->fetchSalesOrderDetails($uncached);
+                        foreach ($fresh as $guid => $order) {
+                            Cache::put('unleashed_order_' . $guid, $order, 86400);
+                            $details[$guid] = $order;
+                        }
+                    }
+                    $salesOrders = array_map(fn($o) => $details[$o['Guid']] ?? $o, $salesOrders);
 
                     return [
                         $this->groupByWarehouse($salesOrders),
@@ -92,10 +113,14 @@ class SalesController extends Controller
                 $grouped[$name] = ['count' => 0, 'sub' => 0.0, 'tax' => 0.0, 'total' => 0.0];
             }
 
+            $lines   = $item['SalesOrderLines'] ?? [];
+            $lineSub = array_sum(array_map(fn($l) => (float) ($l['LineTotal'] ?? 0), $lines));
+            $lineTax = array_sum(array_map(fn($l) => (float) ($l['LineTax']   ?? 0), $lines));
+
             $grouped[$name]['count']++;
-            $grouped[$name]['sub']   += (float) ($item['SubTotal'] ?? 0);
-            $grouped[$name]['tax']   += (float) ($item['TaxTotal'] ?? 0);
-            $grouped[$name]['total'] += (float) ($item['Total'] ?? 0);
+            $grouped[$name]['sub']   += $lineSub ?: (float) ($item['SubTotal'] ?? 0);
+            $grouped[$name]['tax']   += $lineTax ?: (float) ($item['TaxTotal'] ?? 0);
+            $grouped[$name]['total'] += ($lineSub + $lineTax) ?: (float) ($item['Total'] ?? 0);
         }
 
         uasort($grouped, fn($a, $b) => $b['total'] <=> $a['total']);
