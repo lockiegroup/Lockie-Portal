@@ -6,8 +6,10 @@ use App\Models\EnvelopeDesign;
 use App\Models\EnvelopeSetting;
 use App\Models\EnvelopeVerse;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -194,5 +196,142 @@ class ChurchEnvelopeController extends Controller
             'church-envelopes-' . $startDate->format('Y') . '.xlsx',
             ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
         )->deleteFileAfterSend(true);
+    }
+
+    public function parse(Request $request): JsonResponse
+    {
+        $request->validate(['file' => 'required|file|mimes:xlsx,xls|max:10240']);
+
+        try {
+            $spreadsheet = IOFactory::load($request->file('file')->getRealPath());
+            $allRows     = $spreadsheet->getActiveSheet()->toArray(null, true, true, false);
+            array_shift($allRows); // remove header row
+
+            $church = $town = $diocese1 = $diocese2 = $diocese3 = $imagePath = '';
+            $weeklyVts    = array_fill(0, 8, '');
+            $weeklyDates  = [];
+            $setNums      = [];
+            $seenSpecials = [];
+            $specials     = [];
+            $parsedStatic = false;
+
+            foreach ($allRows as $row) {
+                if (empty(array_filter($row, fn($v) => $v !== null && $v !== ''))) {
+                    continue;
+                }
+
+                // Columns: 0=lineNum,1=DAY,2=MONTH,3=YEAR,4=setL,5=setR,
+                //          6=G(design),7=H(spiral),8=church,9=town,
+                //          10=diocese1,11=diocese2,12=diocese3, 13-20=VT1-VT8
+                $vt1    = (string) ($row[13] ?? '');
+                $vt6    = (string) ($row[18] ?? '');
+                $spiral = (string) ($row[7]  ?? '');
+
+                // Specials have VT6 set and VT1 blank (or a spiral path in col H)
+                $isSpecial = $spiral !== '' || ($vt6 !== '' && $vt1 === '');
+
+                if (!$parsedStatic) {
+                    $church   = (string) ($row[8]  ?? '');
+                    $town     = (string) ($row[9]  ?? '');
+                    $diocese1 = (string) ($row[10] ?? '');
+                    $diocese2 = (string) ($row[11] ?? '');
+                    $diocese3 = (string) ($row[12] ?? '');
+                    $parsedStatic = true;
+                }
+
+                // Collect numbered set values from columns E and F
+                foreach ([4, 5] as $col) {
+                    $v = $row[$col] ?? null;
+                    if (is_numeric($v) && (int) $v > 0) {
+                        $setNums[(int) $v] = true;
+                    }
+                }
+
+                if (!$isSpecial) {
+                    // First weekly row gives us VT1-VT8 and design path
+                    if ($imagePath === '' && ($row[6] ?? '') !== '') {
+                        $imagePath = (string) $row[6];
+                    }
+                    if (empty(array_filter($weeklyVts))) {
+                        for ($i = 0; $i < 8; $i++) {
+                            $weeklyVts[$i] = (string) ($row[13 + $i] ?? '');
+                        }
+                    }
+
+                    $day   = $row[1] ?? '';
+                    $month = ucfirst(strtolower((string) ($row[2] ?? '')));
+                    $year  = $row[3] ?? '';
+                    if ($day !== '' && $month !== '' && $year !== '') {
+                        try {
+                            $d = Carbon::createFromFormat('j M Y', "{$day} {$month} {$year}");
+                            $weeklyDates[$d->format('Y-m-d')] = true;
+                        } catch (\Exception) {}
+                    }
+                } elseif ($vt6 !== '' && !isset($seenSpecials[$vt6])) {
+                    $seenSpecials[$vt6] = true;
+                    $day   = $row[1] ?? '';
+                    $month = ucfirst(strtolower((string) ($row[2] ?? '')));
+                    $year  = $row[3] ?? '';
+                    $specialDate = '';
+                    if ($day !== '' && $month !== '' && $year !== '') {
+                        try {
+                            $specialDate = Carbon::createFromFormat('j M Y', "{$day} {$month} {$year}")->format('Y-m-d');
+                        } catch (\Exception) {}
+                    }
+                    $specials[] = [
+                        'name'      => $vt6,
+                        'date'      => $specialDate,
+                        'vt7'       => (string) ($row[19] ?? ''),
+                        'show_date' => $day !== '' || $month !== '',
+                        'position'  => 'after',
+                    ];
+                }
+            }
+
+            ksort($weeklyDates);
+            $startDate = array_key_first($weeklyDates) ?? '';
+            $numWeeks  = count($weeklyDates);
+
+            $setNumsList = array_keys($setNums);
+            sort($setNumsList);
+
+            $designId = $imagePath !== ''
+                ? EnvelopeDesign::where('path', $imagePath)->value('id')
+                : null;
+
+            return response()->json([
+                'success'      => true,
+                'church'       => $church,
+                'town'         => $town,
+                'diocese_1'    => $diocese1,
+                'diocese_2'    => $diocese2,
+                'diocese_3'    => $diocese3,
+                'vts'          => $weeklyVts,
+                'start_date'   => $startDate,
+                'num_weeks'    => $numWeeks,
+                'set_numbers'  => $this->buildRangeString($setNumsList),
+                'design_id'    => $designId,
+                'specials'     => $specials,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 422);
+        }
+    }
+
+    private function buildRangeString(array $nums): string
+    {
+        if (empty($nums)) return '';
+        $ranges = [];
+        $start  = $end = $nums[0];
+        for ($i = 1; $i < count($nums); $i++) {
+            if ($nums[$i] === $end + 1) {
+                $end = $nums[$i];
+            } else {
+                $ranges[] = $start === $end ? (string) $start : "{$start}-{$end}";
+                $start    = $end = $nums[$i];
+            }
+        }
+        $ranges[] = $start === $end ? (string) $start : "{$start}-{$end}";
+        return implode(', ', $ranges);
     }
 }

@@ -34,6 +34,7 @@ Route::middleware(['auth', 'otp'])->group(function () {
 
     // Church Envelope Generator
     Route::get('/church-envelopes', [ChurchEnvelopeController::class, 'index'])->name('church-envelopes.index');
+    Route::post('/church-envelopes/parse', [ChurchEnvelopeController::class, 'parse'])->name('church-envelopes.parse');
     Route::post('/church-envelopes/generate', [ChurchEnvelopeController::class, 'generate'])->name('church-envelopes.generate');
 
     // Health & Safety

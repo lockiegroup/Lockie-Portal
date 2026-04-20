@@ -25,6 +25,21 @@
             </div>
         @endif
 
+        {{-- Upload previous spreadsheet --}}
+        <div class="bg-sky-50 rounded-xl border border-sky-200 p-5 mb-6">
+            <h2 class="font-semibold text-slate-800 mb-1">Load from previous spreadsheet</h2>
+            <p class="text-xs text-slate-500 mb-3">Upload a previously generated file to pre-fill all fields. Update the start date for the new year after loading.</p>
+            <div class="flex flex-wrap items-center gap-3">
+                <input type="file" id="parse-file" accept=".xlsx,.xls"
+                    class="text-sm text-slate-600 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-slate-900 file:text-white hover:file:bg-slate-700 cursor-pointer flex-1 min-w-0">
+                <button type="button" id="parse-btn" onclick="loadFromFile()"
+                    class="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap">
+                    Load from file
+                </button>
+            </div>
+            <p id="parse-status" class="text-xs mt-2" style="display:none;"></p>
+        </div>
+
         <form action="{{ route('church-envelopes.generate') }}" method="POST" class="space-y-6">
             @csrf
 
@@ -371,6 +386,87 @@
                 const el = document.getElementById('vt-' + i);
                 if (el) el.value = lines[i - 1] ?? '';
             }
+        }
+
+        // ── Load from spreadsheet ────────────────────────────────────────────
+        function loadFromFile() {
+            const fileInput = document.getElementById('parse-file');
+            const statusEl  = document.getElementById('parse-status');
+            const btn       = document.getElementById('parse-btn');
+
+            if (!fileInput.files[0]) {
+                statusEl.textContent = 'Please select a file first.';
+                statusEl.style.display = '';
+                statusEl.style.color = '#dc2626';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Loading…';
+            statusEl.textContent = 'Parsing spreadsheet…';
+            statusEl.style.display = '';
+            statusEl.style.color = '#64748b';
+
+            const fd = new FormData();
+            fd.append('file', fileInput.files[0]);
+            fd.append('_token', '{{ csrf_token() }}');
+
+            fetch('{{ route("church-envelopes.parse") }}', { method: 'POST', body: fd })
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.success) throw new Error(data.error || 'Unknown error');
+
+                    document.querySelector('[name="church"]').value    = data.church    ?? '';
+                    document.querySelector('[name="town"]').value      = data.town      ?? '';
+                    document.querySelector('[name="diocese_1"]').value = data.diocese_1 ?? '';
+                    document.querySelector('[name="diocese_2"]').value = data.diocese_2 ?? '';
+                    document.querySelector('[name="diocese_3"]').value = data.diocese_3 ?? '';
+                    document.getElementById('start_date').value        = data.start_date ?? '';
+                    document.getElementById('num_weeks').value         = data.num_weeks  ?? 52;
+                    document.getElementById('set_numbers').value       = data.set_numbers ?? '';
+
+                    (data.vts || []).forEach((val, i) => {
+                        const el = document.getElementById('vt-' + (i + 1));
+                        if (el) el.value = val ?? '';
+                    });
+                    document.getElementById('verse-select').value = 'custom';
+
+                    const designSel = document.querySelector('[name="design_id"]');
+                    if (designSel && data.design_id != null) designSel.value = data.design_id;
+
+                    document.getElementById('specials-list').innerHTML = '';
+                    document.getElementById('no-specials-msg').style.display = '';
+                    specialIndex = 0;
+                    (data.specials || []).forEach(s => {
+                        addSpecial();
+                        const rows = document.querySelectorAll('.special-row');
+                        const row  = rows[rows.length - 1];
+                        row.querySelector('[name$="[name]"]').value = s.name ?? '';
+                        row.querySelector('[name$="[date]"]').value = s.date ?? '';
+                        row.querySelector('[name$="[vt7]"]').value  = s.vt7  ?? '';
+                        const showDate = row.querySelector('[name$="[show_date]"]');
+                        if (showDate) showDate.checked = !!s.show_date;
+                        const pos = row.querySelector('[name$="[position]"]');
+                        if (pos) pos.value = s.position ?? 'after';
+                    });
+                    if ((data.specials || []).length > 0) {
+                        document.getElementById('no-specials-msg').style.display = 'none';
+                    }
+
+                    updateWeeksPreview();
+                    document.getElementById('set_numbers').dispatchEvent(new Event('input'));
+
+                    statusEl.textContent = 'Fields loaded. Update the start date for the new year.';
+                    statusEl.style.color = '#16a34a';
+                })
+                .catch(err => {
+                    statusEl.textContent = 'Error: ' + err.message;
+                    statusEl.style.color = '#dc2626';
+                })
+                .finally(() => {
+                    btn.disabled = false;
+                    btn.textContent = 'Load from file';
+                });
         }
 
         // Default to V4 on fresh load (no old() values)
