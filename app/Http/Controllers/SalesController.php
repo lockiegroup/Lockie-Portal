@@ -47,32 +47,14 @@ class SalesController extends Controller
                     $apiEndDate = Carbon::parse($to)->addDay()->toDateString();
                     $params     = ['startDate' => $from, 'endDate' => $apiEndDate];
 
-                    // SalesOrders suffers the same Unleashed pagination bug as Invoices:
-                    // NumberOfPages is based on the total unfiltered count, so any date-filtered
-                    // query (even startDate-only) repeats pages. Fetch entirely unfiltered and
-                    // PHP-filter by OrderDate — pagination is only accurate for unfiltered queries.
                     $fetched = $this->unleashed->parallelPaginate([
-                        'sales'   => ['SalesOrders', []],
+                        'sales'   => ['SalesOrders', $params],
                         'credits' => ['CreditNotes', $params],
                     ]);
 
-                    $salesOrders = array_values(array_filter(
+                    $salesOrders = array_filter(
                         $fetched['sales'],
-                        function ($o) use ($from, $to) {
-                            if (($o['OrderStatus'] ?? '') === 'Cancelled') return false;
-                            $date = $this->unleashed->parseDate($o['OrderDate'] ?? null);
-                            if ($date === null) return false;
-                            return $date >= $from && $date <= $to;
-                        }
-                    ));
-
-                    // Fetch full order details (includes SalesOrderLines) for accurate line totals.
-                    // The paginated list endpoint omits line data.
-                    $guids   = array_column($salesOrders, 'Guid');
-                    $details = $this->unleashed->fetchSalesOrderDetails($guids);
-                    $salesOrders = array_map(
-                        fn($o) => $details[$o['Guid']] ?? $o,
-                        $salesOrders
+                        fn($o) => ($o['OrderStatus'] ?? '') !== 'Cancelled'
                     );
 
                     return [
@@ -110,16 +92,10 @@ class SalesController extends Controller
                 $grouped[$name] = ['count' => 0, 'sub' => 0.0, 'tax' => 0.0, 'total' => 0.0];
             }
 
-            // Unleashed Sales Enquiry sums line-level totals, not the order SubTotal
-            // (order SubTotal is after order-level discounts, line totals are before).
-            $lines   = $item['SalesOrderLines'] ?? [];
-            $lineSub = array_sum(array_map(fn($l) => (float) ($l['LineTotal'] ?? 0), $lines));
-            $lineTax = array_sum(array_map(fn($l) => (float) ($l['LineTax']   ?? 0), $lines));
-
             $grouped[$name]['count']++;
-            $grouped[$name]['sub']   += $lineSub ?: (float) ($item['SubTotal'] ?? 0);
-            $grouped[$name]['tax']   += $lineTax ?: (float) ($item['TaxTotal'] ?? 0);
-            $grouped[$name]['total'] += ($lineSub + $lineTax) ?: (float) ($item['Total'] ?? 0);
+            $grouped[$name]['sub']   += (float) ($item['SubTotal'] ?? 0);
+            $grouped[$name]['tax']   += (float) ($item['TaxTotal'] ?? 0);
+            $grouped[$name]['total'] += (float) ($item['Total'] ?? 0);
         }
 
         uasort($grouped, fn($a, $b) => $b['total'] <=> $a['total']);
