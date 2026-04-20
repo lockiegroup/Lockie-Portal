@@ -25,7 +25,7 @@
         <div id="nav-menu" class="hidden sm:hidden border-t border-slate-800 px-6 py-4 space-y-3">
             <p class="text-slate-500 text-sm">{{ auth()->user()->email }}</p>
             @if(auth()->user()->isAdmin())
-                <a href="{{ route('admin.users.index') }}" class="block text-slate-300 hover:text-white text-sm py-1 transition-colors">Manage Users</a>
+                <a href="{{ route('admin.users.index') }}" class="block text-white hover:text-slate-300 text-sm py-1 transition-colors">Manage Users</a>
             @endif
             <form action="{{ route('logout') }}" method="POST">
                 @csrf
@@ -100,7 +100,7 @@
         </div>
 
         {{-- Stock On Hand widget --}}
-        <div class="mt-10 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="mt-14 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                 <div>
                     <h2 class="font-semibold text-slate-800">Stock On Hand</h2>
