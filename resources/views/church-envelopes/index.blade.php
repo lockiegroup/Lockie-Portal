@@ -69,24 +69,7 @@
                             class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1.5">
-                            Parish Number 1 <span class="text-red-500">*</span>
-                        </label>
-                        <input type="number" name="parish_1" value="{{ old('parish_1') }}" required min="1"
-                            placeholder="e.g. 17"
-                            class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1.5">
-                            Parish Number 2 <span class="text-slate-400 font-normal text-xs">(2-up printing)</span>
-                        </label>
-                        <input type="number" name="parish_2" value="{{ old('parish_2') }}" min="1"
-                            placeholder="e.g. 18"
-                            class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
-                    </div>
-                </div>
+                <p class="text-xs text-slate-400">Columns E &amp; F will be set automatically to the donor set number (2-up: both positions print the same set).</p>
             </div>
 
             {{-- Set numbers --}}

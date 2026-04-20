@@ -23,8 +23,6 @@ class ChurchEnvelopeController extends Controller
             'num_weeks'        => 'required|integer|min:1|max:53',
             'church'           => 'required|string|max:200',
             'town'             => 'required|string|max:200',
-            'parish_1'         => 'required|integer|min:1',
-            'parish_2'         => 'nullable|integer|min:1',
             'diocese_1'        => 'nullable|string|max:200',
             'diocese_2'        => 'nullable|string|max:200',
             'diocese_3'        => 'nullable|string|max:200',
@@ -43,8 +41,6 @@ class ChurchEnvelopeController extends Controller
         $numWeeks  = (int) $request->num_weeks;
         $church    = trim($request->church);
         $town      = trim($request->town);
-        $parish1   = (int) $request->parish_1;
-        $parish2   = $request->parish_2 ? (int) $request->parish_2 : '';
         $diocese1  = trim($request->diocese_1 ?? '');
         $diocese2  = trim($request->diocese_2 ?? '');
         $diocese3  = trim($request->diocese_3 ?? '');
@@ -111,7 +107,7 @@ class ChurchEnvelopeController extends Controller
                 $year   = $carbon ? (int) $carbon->format('Y') : '';
 
                 $sheet->fromArray(
-                    [$setNumber, $day, $month, $year, $parish1, $parish2, '', '',
+                    [$setNumber, $day, $month, $year, $setNumber, $setNumber, '', '',
                      $church, $town, $diocese1, $diocese2, $diocese3,
                      ...$vt],
                     null, 'A' . $row
