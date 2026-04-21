@@ -9,6 +9,7 @@ use App\Http\Controllers\StockController;
 use App\Http\Controllers\ChurchEnvelopeController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\EnvelopeSettingsController;
+use App\Http\Controllers\Admin\PrintScheduleSettingController;
 use App\Http\Controllers\HealthSafety\ActionController as HsActionController;
 use App\Http\Controllers\HealthSafety\SettingsController as HsSettingsController;
 use App\Http\Controllers\PrintScheduleController;
@@ -69,6 +70,11 @@ Route::middleware(['auth', 'otp'])->group(function () {
     // Admin only
     Route::middleware('can:admin')->group(function () {
         Route::resource('admin/users', UserController::class)->names('admin.users');
+
+        Route::prefix('admin/print-schedule-settings')->name('admin.print-settings.')->group(function () {
+            Route::get('/', [PrintScheduleSettingController::class, 'index'])->name('index');
+            Route::post('/', [PrintScheduleSettingController::class, 'update'])->name('update');
+        });
 
         Route::prefix('admin/envelope-settings')->name('admin.envelope-settings.')->group(function () {
             Route::get('/', [EnvelopeSettingsController::class, 'index'])->name('index');

@@ -39,6 +39,17 @@
                     @endif
                 </p>
             </div>
+            @can('admin')
+            <a href="{{ route('admin.print-settings.index') }}"
+                style="background:#f1f5f9;color:#64748b;font-size:0.75rem;padding:5px 10px;border-radius:6px;border:1px solid #e2e8f0;display:inline-flex;align-items:center;gap:5px;text-decoration:none;white-space:nowrap;"
+                title="Print Schedule Settings">
+                <svg style="width:12px;height:12px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                </svg>
+                Settings
+            </a>
+            @endcan
             <button id="sync-btn" onclick="triggerSync()"
                 style="background:#1e293b;color:#fff;font-size:0.75rem;padding:5px 10px;border-radius:6px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;">
                 <svg id="sync-icon" style="width:12px;height:12px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -255,7 +266,8 @@
 
         function updateMachineBanner(boardKey) {
             if (!boardKey) return;
-            const machines = @json($machines);
+            const machines    = @json($machines);
+            const throughputs = @json($throughputs);
             if (!machines.includes(boardKey)) return;
             const banner = document.getElementById('banner-' + boardKey);
             if (!banner) return;
@@ -264,7 +276,8 @@
             cards.forEach(c => {
                 totalRemaining += parseInt(c.dataset.remaining || '0', 10);
             });
-            const leadTime = (totalRemaining / 350).toFixed(1);
+            const tp       = throughputs[boardKey] || 350;
+            const leadTime = (totalRemaining / tp).toFixed(1);
             const countEl = banner.querySelector('.job-count-' + boardKey);
             const remEl   = banner.querySelector('.remaining-sum-' + boardKey);
             const ltEl    = banner.querySelector('.lead-time-' + boardKey);

@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\PrintJob;
 use App\Models\PrintJobDateChange;
 use App\Models\PrintJobNote;
+use App\Models\PrintScheduleSetting;
 use App\Services\UnleashedService;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -14,9 +16,12 @@ class PrintScheduleController extends Controller
 {
     public function index(): View
     {
-        $boards       = PrintJob::BOARDS;
-        $boardLabels  = PrintJob::BOARDS;
-        $machines     = PrintJob::MACHINES;
+        $boards      = PrintJob::BOARDS;
+        $boardLabels = PrintJob::BOARDS;
+        $machines    = PrintJob::MACHINES;
+        $settings    = $this->loadPrintSettings();
+        $workingDays = $settings['working_days'];
+        $throughputs = $settings['throughputs'];
 
         $boardJobs = [];
         foreach (array_keys($boards) as $boardKey) {
@@ -26,12 +31,34 @@ class PrintScheduleController extends Controller
                 ->get();
         }
 
-        // Machine lead times: sum remaining_quantity / 350, rounded to 1dp
+        // Machine lead times using per-machine throughput
         $machineLeadTimes = [];
         foreach ($machines as $machine) {
-            $jobs  = $boardJobs[$machine];
-            $total = $jobs->sum(fn($job) => $job->remaining_quantity);
-            $machineLeadTimes[$machine] = round($total / 350, 1);
+            $total = $boardJobs[$machine]->sum(fn($job) => $job->remaining_quantity);
+            $tp    = $throughputs[$machine] ?? 350;
+            $machineLeadTimes[$machine] = $tp > 0 ? round($total / $tp, 1) : 0;
+        }
+
+        // Compute estimated completion and late flags for machine board jobs
+        $today = now()->startOfDay();
+        foreach ($machines as $machine) {
+            $throughput  = $throughputs[$machine] ?? 350;
+            $cumulative  = 0;
+            foreach ($boardJobs[$machine] as $job) {
+                $cumulative += $job->remaining_quantity;
+                if ($job->required_date && $throughput > 0 && $cumulative > 0) {
+                    $daysNeeded          = (int) ceil($cumulative / $throughput);
+                    $estimated           = $this->nthWorkingDay($today, $daysNeeded, $workingDays);
+                    $daysLate            = (int) $job->required_date->diffInDays($estimated, false);
+                    $job->is_late        = $daysLate > 0;
+                    $job->days_overdue   = max(0, $daysLate);
+                    $job->est_completion = $estimated;
+                } else {
+                    $job->is_late        = false;
+                    $job->days_overdue   = 0;
+                    $job->est_completion = null;
+                }
+            }
         }
 
         return view('print-schedule.index', compact(
@@ -39,8 +66,37 @@ class PrintScheduleController extends Controller
             'boards',
             'boardLabels',
             'machines',
-            'machineLeadTimes'
+            'machineLeadTimes',
+            'throughputs'
         ));
+    }
+
+    private function loadPrintSettings(): array
+    {
+        return [
+            'working_days' => json_decode(PrintScheduleSetting::getValue('working_days', '[1,2,3,4]'), true) ?? [1, 2, 3, 4],
+            'throughputs'  => [
+                'auto_1' => (int) PrintScheduleSetting::getValue('throughput_auto_1', '350'),
+                'auto_2' => (int) PrintScheduleSetting::getValue('throughput_auto_2', '350'),
+                'auto_3' => (int) PrintScheduleSetting::getValue('throughput_auto_3', '350'),
+                'baby'   => (int) PrintScheduleSetting::getValue('throughput_baby',   '180'),
+            ],
+        ];
+    }
+
+    private function nthWorkingDay(Carbon $from, int $n, array $workingDayNumbers): Carbon
+    {
+        if ($n <= 0 || empty($workingDayNumbers)) return $from->copy();
+        $date  = $from->copy()->startOfDay();
+        $count = 0;
+        for ($i = 0; $i < 500; $i++) {
+            if (in_array($date->dayOfWeek, $workingDayNumbers)) {
+                $count++;
+                if ($count >= $n) return $date;
+            }
+            $date->addDay();
+        }
+        return $date;
     }
 
     public function sync(): JsonResponse
