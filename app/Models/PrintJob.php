@@ -40,6 +40,7 @@ class PrintJob extends Model
         'position',
         'unleashed_status',
         'synced_at',
+        'archived_at',
     ];
 
     protected $casts = [
@@ -54,7 +55,13 @@ class PrintJob extends Model
         'material_checked'       => 'boolean',
         'line_number'            => 'integer',
         'position'               => 'integer',
+        'archived_at'            => 'datetime',
     ];
+
+    public function scopeActive($query)
+    {
+        return $query->whereNull('archived_at');
+    }
 
     public function notes(): HasMany
     {

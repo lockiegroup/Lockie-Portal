@@ -21,9 +21,10 @@ class PrintScheduleController extends Controller
         $machines    = PrintJob::MACHINES;
         $throughputs = $this->loadThroughputs();
 
+        $lastSync  = PrintJob::active()->max('synced_at');
         $boardJobs = [];
         foreach (array_keys($boards) as $boardKey) {
-            $boardJobs[$boardKey] = PrintJob::where('board', $boardKey)
+            $boardJobs[$boardKey] = PrintJob::active()->where('board', $boardKey)
                 ->orderBy('position')
                 ->with(['notes', 'dateChanges.user'])
                 ->get();
@@ -64,7 +65,8 @@ class PrintScheduleController extends Controller
             'boardLabels',
             'machines',
             'machineLeadTimes',
-            'throughputs'
+            'throughputs',
+            'lastSync'
         ));
     }
 
@@ -180,9 +182,9 @@ class PrintScheduleController extends Controller
             }
 
             if (!empty($seenKeys)) {
-                PrintJob::all()->each(function ($job) use ($seenKeys) {
+                PrintJob::active()->get()->each(function ($job) use ($seenKeys) {
                     if (!isset($seenKeys[$job->unleashed_guid . ':' . $job->line_number])) {
-                        $job->delete();
+                        $job->update(['archived_at' => now()]);
                     }
                 });
             }

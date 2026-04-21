@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\PrintScheduleSettingController;
 use App\Http\Controllers\HealthSafety\ActionController as HsActionController;
 use App\Http\Controllers\HealthSafety\SettingsController as HsSettingsController;
 use App\Http\Controllers\PrintScheduleController;
+use App\Http\Controllers\PrintJobArchiveController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn() => redirect()->route('login'));
@@ -57,6 +58,7 @@ Route::middleware(['auth', 'otp'])->group(function () {
     // Print Schedule
     Route::prefix('print-schedule')->name('print.')->group(function () {
         Route::get('/', [PrintScheduleController::class, 'index'])->name('index');
+        Route::get('/archive', [PrintJobArchiveController::class, 'index'])->name('archive');
         Route::post('/sync', [PrintScheduleController::class, 'sync'])->name('sync');
         Route::post('/jobs/{job}/board', [PrintScheduleController::class, 'moveBoard'])->name('jobs.board');
         Route::post('/jobs/reorder', [PrintScheduleController::class, 'reorder'])->name('jobs.reorder');

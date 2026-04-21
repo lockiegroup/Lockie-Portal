@@ -17,12 +17,18 @@
                 <h1 class="text-2xl font-bold text-slate-800">A1 Print Schedule</h1>
                 <p class="text-slate-500 text-sm mt-1">
                     Manage machine queues, track progress, and plan delivery dates.
-                    @php $lastSync = \App\Models\PrintJob::max('synced_at'); @endphp
                     <span class="text-slate-400" id="last-synced-wrap">
                         &bull; <span id="last-synced-text">{{ $lastSync ? 'just now' : 'Never synced' }}</span>
                     </span>
                 </p>
             </div>
+            <a href="{{ route('print.archive') }}"
+                style="background:#f1f5f9;color:#64748b;font-size:0.75rem;padding:5px 10px;border-radius:6px;border:1px solid #e2e8f0;display:inline-flex;align-items:center;gap:5px;text-decoration:none;white-space:nowrap;">
+                <svg style="width:12px;height:12px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>
+                </svg>
+                Archive
+            </a>
             @can('admin')
             <a href="{{ route('admin.print-settings.index') }}"
                 style="background:#f1f5f9;color:#64748b;font-size:0.75rem;padding:5px 10px;border-radius:6px;border:1px solid #e2e8f0;display:inline-flex;align-items:center;gap:5px;text-decoration:none;white-space:nowrap;"
