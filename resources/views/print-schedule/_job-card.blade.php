@@ -171,10 +171,10 @@
         {{-- Material checked toggle --}}
         <button id="material-btn-{{ $job->id }}"
             onclick="toggleMaterial({{ $job->id }})"
-            class="inline-flex items-center gap-1.5 text-xs border rounded-lg px-3 py-1.5 transition-colors
-                {{ $job->material_checked
-                    ? 'text-green-700 bg-green-50 hover:bg-green-100 border-green-300'
-                    : 'text-slate-500 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 border-slate-200' }}">
+            class="inline-flex items-center gap-1.5 text-xs border rounded-lg px-3 py-1.5 transition-colors"
+            style="{{ $job->material_checked
+                ? 'background:#16a34a;color:#fff;border-color:#16a34a;'
+                : 'background:#f8fafc;color:#64748b;border-color:#e2e8f0;' }}">
             <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <polyline points="20 6 9 17 4 12"/>
             </svg>

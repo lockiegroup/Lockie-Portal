@@ -294,13 +294,9 @@
                 if (!data.success) return;
                 if (label) label.textContent = newVal ? 'Material checked' : 'Material?';
                 if (btn) {
-                    if (newVal) {
-                        btn.classList.remove('text-slate-500', 'hover:text-slate-700', 'bg-slate-50', 'hover:bg-slate-100', 'border-slate-200');
-                        btn.classList.add('text-green-700', 'bg-green-50', 'hover:bg-green-100', 'border-green-300');
-                    } else {
-                        btn.classList.remove('text-green-700', 'bg-green-50', 'hover:bg-green-100', 'border-green-300');
-                        btn.classList.add('text-slate-500', 'hover:text-slate-700', 'bg-slate-50', 'hover:bg-slate-100', 'border-slate-200');
-                    }
+                    btn.style.background   = newVal ? '#16a34a' : '#f8fafc';
+                    btn.style.color        = newVal ? '#fff'    : '#64748b';
+                    btn.style.borderColor  = newVal ? '#16a34a' : '#e2e8f0';
                 }
             });
         };
