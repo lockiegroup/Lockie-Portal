@@ -179,6 +179,13 @@ class PrintScheduleController extends Controller
         ]);
     }
 
+    public function toggleMaterial(Request $request, PrintJob $job): JsonResponse
+    {
+        $request->validate(['checked' => ['required', 'boolean']]);
+        $job->update(['material_checked' => $request->boolean('checked')]);
+        return response()->json(['success' => true, 'material_checked' => $job->material_checked]);
+    }
+
     public function updateDate(Request $request, PrintJob $job): JsonResponse
     {
         $request->validate([

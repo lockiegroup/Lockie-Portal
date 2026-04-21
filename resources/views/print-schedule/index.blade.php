@@ -273,6 +273,38 @@
             if (ltEl)    ltEl.textContent    = leadTime;
         }
 
+        // ─── Material checked ─────────────────────────────────────────────
+        window.toggleMaterial = function (jobId) {
+            const btn   = document.getElementById('material-btn-' + jobId);
+            const label = document.getElementById('material-label-' + jobId);
+            const isChecked = label && label.textContent.trim() === 'Material checked';
+            const newVal = !isChecked;
+
+            fetch('/print-schedule/jobs/' + jobId + '/material', {
+                method:  'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept':       'application/json',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ checked: newVal }),
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (!data.success) return;
+                if (label) label.textContent = newVal ? 'Material checked' : 'Material?';
+                if (btn) {
+                    if (newVal) {
+                        btn.classList.remove('text-slate-500', 'hover:text-slate-700', 'bg-slate-50', 'hover:bg-slate-100', 'border-slate-200');
+                        btn.classList.add('text-green-700', 'bg-green-50', 'hover:bg-green-100', 'border-green-300');
+                    } else {
+                        btn.classList.remove('text-green-700', 'bg-green-50', 'hover:bg-green-100', 'border-green-300');
+                        btn.classList.add('text-slate-500', 'hover:text-slate-700', 'bg-slate-50', 'hover:bg-slate-100', 'border-slate-200');
+                    }
+                }
+            });
+        };
+
         // ─── Toggle notes panel ───────────────────────────────────────────
         window.toggleNotes = function (jobId) {
             const panel = document.getElementById('notes-panel-' + jobId);

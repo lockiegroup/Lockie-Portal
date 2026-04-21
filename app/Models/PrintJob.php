@@ -33,6 +33,7 @@ class PrintJob extends Model
         'line_total',
         'order_quantity',
         'quantity_completed',
+        'material_checked',
         'required_date',
         'original_required_date',
         'board',
@@ -50,6 +51,7 @@ class PrintJob extends Model
         'line_total'             => 'decimal:2',
         'order_quantity'         => 'integer',
         'quantity_completed'     => 'integer',
+        'material_checked'       => 'boolean',
         'line_number'            => 'integer',
         'position'               => 'integer',
     ];
