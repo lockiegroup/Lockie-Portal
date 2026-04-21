@@ -8,6 +8,7 @@
      data-job-id="{{ $job->id }}"
      data-current-board="{{ $job->board }}"
      data-remaining="{{ $job->remaining_quantity }}"
+     data-required-date="{{ $job->required_date ? $job->required_date->format('Y-m-d') : '' }}"
      id="job-card-{{ $job->id }}">
 
     {{-- Row 1: Drag handle | Order number | Customer | Board select --}}
@@ -60,19 +61,20 @@
         </p>
     </div>
 
-    {{-- Late warning --}}
-    @if($job->is_late ?? false)
-        <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:0.5rem;padding:6px 10px;margin-bottom:0.75rem;display:flex;align-items:center;gap:6px;">
-            <svg style="width:14px;height:14px;color:#dc2626;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-            </svg>
-            <span style="font-size:0.75rem;color:#dc2626;font-weight:500;">
+    {{-- Late warning (also updated live by JS recalculateLateFlags) --}}
+    <div id="late-banner-{{ $job->id }}"
+         style="background:#fef2f2;border:1px solid #fecaca;border-radius:0.5rem;padding:6px 10px;margin-bottom:0.75rem;display:{{ ($job->is_late ?? false) ? 'flex' : 'none' }};align-items:center;gap:6px;">
+        <svg style="width:14px;height:14px;color:#dc2626;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <span class="late-text" style="font-size:0.75rem;color:#dc2626;font-weight:500;">
+            @if($job->is_late ?? false)
                 Estimated late by {{ $job->days_overdue }} day{{ $job->days_overdue !== 1 ? 's' : '' }}
                 &mdash; est. {{ $job->est_completion->format('d M') }}
-            </span>
-        </div>
-    @endif
+            @endif
+        </span>
+    </div>
 
     {{-- Row 3: Line comment (print data) --}}
     @if($job->line_comment)

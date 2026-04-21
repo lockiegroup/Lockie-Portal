@@ -252,6 +252,8 @@
                         updateTabCount(board);
                         updateMachineBanner(oldBoard);
                         updateMachineBanner(board);
+                        recalculateLateFlags(oldBoard);
+                        recalculateLateFlags(board);
                     }
                 }
             });
@@ -515,6 +517,7 @@
                         card.dataset.remaining = data.remaining;
                         const board = card.dataset.currentBoard;
                         updateMachineBanner(board);
+                        recalculateLateFlags(board);
                     }
 
                     if (display) display.style.display = '';
@@ -541,8 +544,55 @@
                         const cards      = el.querySelectorAll('.job-card');
                         const orderedIds = Array.from(cards).map(c => c.dataset.jobId);
                         saveReorder(boardKey, orderedIds);
+                        recalculateLateFlags(boardKey);
                     },
                 });
+            });
+        }
+
+        // ─── Late flag estimation (mirrors PHP estimatedCompletion logic) ─
+        // Mon-Thu = 1.0 full day, Fri = 5/8 day (5 effective hours of 8)
+        const DAY_WEIGHTS = {1: 1.0, 2: 1.0, 3: 1.0, 4: 1.0, 5: 5/8};
+        const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+        function estimatedCompletion(packsNeeded, throughput) {
+            const date = new Date();
+            date.setHours(0, 0, 0, 0);
+            let remaining = packsNeeded;
+            for (let i = 0; i < 500; i++) {
+                const weight = DAY_WEIGHTS[date.getDay()] || 0;
+                if (weight > 0) {
+                    remaining -= throughput * weight;
+                    if (remaining <= 0) return new Date(date);
+                }
+                date.setDate(date.getDate() + 1);
+            }
+            return date;
+        }
+
+        function recalculateLateFlags(boardKey) {
+            const machines = @json($machines);
+            if (!machines.includes(boardKey)) return;
+            const tp    = (throughputs[boardKey] || 350);
+            const cards = document.querySelectorAll('#sortable-' + boardKey + ' .job-card');
+            let cumulative = 0;
+            cards.forEach(function (card) {
+                cumulative += parseInt(card.dataset.remaining || '0', 10);
+                const banner       = document.getElementById('late-banner-' + card.dataset.jobId);
+                const lateText     = banner ? banner.querySelector('.late-text') : null;
+                const requiredDate = card.dataset.requiredDate;
+                if (!banner) return;
+                if (!requiredDate || cumulative === 0) { banner.style.display = 'none'; return; }
+                const estimated = estimatedCompletion(cumulative, tp);
+                const required  = new Date(requiredDate + 'T00:00:00');
+                if (estimated > required) {
+                    const daysLate = Math.round((estimated - required) / 86400000);
+                    const estStr   = estimated.getDate() + ' ' + MONTHS[estimated.getMonth()];
+                    if (lateText) lateText.textContent = 'Estimated late by ' + daysLate + ' day' + (daysLate !== 1 ? 's' : '') + ' — est. ' + estStr;
+                    banner.style.display = 'flex';
+                } else {
+                    banner.style.display = 'none';
+                }
             });
         }
 
