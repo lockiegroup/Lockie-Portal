@@ -670,22 +670,41 @@
         }
 
         function recalculateLateFlags(boardKey) {
-            if (!machines.includes(boardKey)) return;
-            const tp = throughputs[boardKey] || 350;
+            const isMachine = machines.includes(boardKey);
             const cards = document.querySelectorAll('#sortable-' + boardKey + ' .job-card');
+
+            if (!isMachine) {
+                cards.forEach(function (card) {
+                    const banner = document.getElementById('late-banner-' + card.dataset.jobId);
+                    const estOut = document.getElementById('est-out-' + card.dataset.jobId);
+                    if (banner) banner.style.display = 'none';
+                    if (estOut) estOut.style.display = 'none';
+                });
+                return;
+            }
+
+            const tp = throughputs[boardKey] || 350;
             let cumulative = 0;
             cards.forEach(function (card) {
                 cumulative += parseInt(card.dataset.remaining || '0', 10);
                 const banner       = document.getElementById('late-banner-' + card.dataset.jobId);
                 const lateText     = banner ? banner.querySelector('.late-text') : null;
+                const estOut       = document.getElementById('est-out-' + card.dataset.jobId);
                 const requiredDate = card.dataset.requiredDate;
                 if (!banner) return;
-                if (!requiredDate || cumulative === 0) { banner.style.display = 'none'; return; }
+                if (!requiredDate || cumulative === 0) {
+                    banner.style.display = 'none';
+                    if (estOut) estOut.style.display = 'none';
+                    return;
+                }
                 const estimated = estimatedCompletion(cumulative, tp);
                 const required  = new Date(requiredDate + 'T00:00:00');
+                const estStr    = estimated.getDate() + ' ' + MONTHS[estimated.getMonth()];
+
+                if (estOut) { estOut.textContent = '→ est. ' + estStr; estOut.style.display = ''; }
+
                 if (estimated > required) {
                     const daysLate = Math.round((estimated - required) / 86400000);
-                    const estStr   = estimated.getDate() + ' ' + MONTHS[estimated.getMonth()];
                     if (lateText) lateText.textContent = 'Estimated late by ' + daysLate + ' day' + (daysLate !== 1 ? 's' : '') + ' — est. ' + estStr;
                     banner.style.display = 'flex';
                 } else {
