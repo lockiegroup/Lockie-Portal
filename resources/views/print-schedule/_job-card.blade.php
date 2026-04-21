@@ -81,7 +81,7 @@
     @if($job->line_comment)
         <div class="mb-3 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
             <p class="text-xs text-blue-400 font-medium mb-0.5 uppercase tracking-wide">Print data:</p>
-            <p class="font-mono text-xs text-blue-800 whitespace-pre-wrap break-words">{{ $job->line_comment }}</p>
+            <p class="font-mono text-xs text-blue-800" style="white-space:pre-wrap;word-break:break-word;">{{ $job->line_comment }}</p>
         </div>
     @endif
 
