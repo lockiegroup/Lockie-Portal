@@ -89,6 +89,7 @@
         <div class="flex items-center gap-1">
             {{-- Date display --}}
             <span id="date-display-{{ $job->id }}" class="flex items-center gap-1">
+                <span class="text-xs text-slate-400">Delivery:</span>
                 @if($requiredDateFmt)
                     <span id="date-text-{{ $job->id }}"
                         class="text-xs {{ $job->date_changed ? 'text-amber-600 font-medium' : 'text-slate-600' }}">
