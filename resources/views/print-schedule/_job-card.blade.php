@@ -1,9 +1,10 @@
 @php
     $requiredDateFmt = $job->required_date ? $job->required_date->format('d M Y') : null;
+    $orderDateFmt    = $job->order_date    ? $job->order_date->format('d M Y')    : null;
     $noteCount       = $job->notes->count();
 @endphp
 
-<div class="job-card bg-white rounded-xl border border-slate-200 shadow-sm p-4 select-none"
+<div class="job-card bg-white rounded-xl border border-slate-200 shadow-sm p-5 select-none"
      data-job-id="{{ $job->id }}"
      data-current-board="{{ $job->board }}"
      data-remaining="{{ $job->remaining_quantity }}"
@@ -23,6 +24,16 @@
                 <span class="font-mono text-xs text-slate-400 font-medium">{{ $job->order_number }}</span>
                 <span class="text-sm font-medium text-slate-800 truncate">{{ $job->customer_name }}</span>
             </div>
+            @if($orderDateFmt || $job->customer_ref)
+                <div style="display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:3px;">
+                    @if($orderDateFmt)
+                        <span class="text-xs text-slate-400">Ordered: {{ $orderDateFmt }}</span>
+                    @endif
+                    @if($job->customer_ref)
+                        <span class="text-xs text-slate-400">Ref: <span class="text-slate-600 font-medium">{{ $job->customer_ref }}</span></span>
+                    @endif
+                </div>
+            @endif
         </div>
         <select
             class="text-xs border border-slate-200 rounded-lg px-2 py-1 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-rose-500 flex-shrink-0 cursor-pointer"
@@ -59,10 +70,19 @@
 
     {{-- Row 4: Order total · packs · required date --}}
     <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;margin-bottom:0.75rem;font-size:0.875rem;color:#475569;">
-        <span class="font-medium text-slate-700">&pound;{{ number_format((float)$job->order_total, 2) }}</span>
         <span>
-            <span id="remaining-qty-{{ $job->id }}">{{ $job->remaining_quantity }}</span>/<span>{{ $job->order_quantity }}</span>
-            <span class="text-slate-400 text-xs">packs</span>
+            <span class="text-xs text-slate-400">Total Net Price: </span>
+            <span class="font-medium text-slate-700">&pound;{{ number_format((float)$job->order_total, 2) }}</span>
+        </span>
+        <span>
+            <span class="text-xs text-slate-400">Total: </span>
+            <span class="font-medium text-slate-700">{{ $job->order_quantity }}</span>
+            <span class="text-slate-400 text-xs"> packs</span>
+        </span>
+        <span>
+            <span class="text-xs text-slate-400">Balance: </span>
+            <span class="font-medium {{ $job->remaining_quantity > 0 ? 'text-slate-700' : 'text-green-600' }}" id="remaining-qty-{{ $job->id }}">{{ $job->remaining_quantity }}</span>
+            <span class="text-slate-400 text-xs"> packs</span>
         </span>
 
         {{-- Required date --}}

@@ -98,7 +98,7 @@
                 @endif
 
                 {{-- Sortable job list --}}
-                <div id="sortable-{{ $boardKey }}" style="display:flex;flex-direction:column;gap:12px;" data-board="{{ $boardKey }}">
+                <div id="sortable-{{ $boardKey }}" style="display:flex;flex-direction:column;gap:16px;" data-board="{{ $boardKey }}">
 
                     @forelse($boardJobs[$boardKey] as $job)
                         @include('print-schedule._job-card', ['job' => $job, 'boards' => $boards])
@@ -151,12 +151,12 @@
         window.switchTab = switchTab;
 
         // ─── Sync ─────────────────────────────────────────────────────────
-        window.triggerSync = function () {
+        window.triggerSync = function (silent) {
             const btn   = document.getElementById('sync-btn');
             const label = document.getElementById('sync-label');
             const icon  = document.getElementById('sync-icon');
             btn.disabled = true;
-            label.textContent = 'Syncing…';
+            if (!silent) label.textContent = 'Syncing…';
             icon.classList.add('animate-spin');
 
             fetch('{{ route("print.sync") }}', {
@@ -167,26 +167,29 @@
             .then(text => {
                 let data;
                 try { data = JSON.parse(text); } catch(e) {
-                    alert('Sync failed (non-JSON response):\n' + text.substring(0, 500));
-                    btn.disabled = false; label.textContent = 'Sync from Unleashed'; icon.classList.remove('animate-spin');
+                    if (!silent) alert('Sync failed (non-JSON response):\n' + text.substring(0, 500));
+                    btn.disabled = false; label.textContent = 'Sync'; icon.classList.remove('animate-spin');
                     return;
                 }
                 if (data.success) {
                     window.location.reload();
                 } else {
-                    alert('Sync failed: ' + (data.error || JSON.stringify(data)));
+                    if (!silent) alert('Sync failed: ' + (data.error || JSON.stringify(data)));
                     btn.disabled = false;
-                    label.textContent = 'Sync from Unleashed';
+                    label.textContent = 'Sync';
                     icon.classList.remove('animate-spin');
                 }
             })
             .catch(e => {
-                alert('Sync request failed: ' + e.message);
+                if (!silent) alert('Sync request failed: ' + e.message);
                 btn.disabled = false;
-                label.textContent = 'Sync from Unleashed';
+                label.textContent = 'Sync';
                 icon.classList.remove('animate-spin');
             });
         };
+
+        // Auto-sync every 60 minutes (silent — reloads page on success)
+        setInterval(function () { triggerSync(true); }, 60 * 60 * 1000);
 
 
         function saveReorder(boardKey, orderedIds) {

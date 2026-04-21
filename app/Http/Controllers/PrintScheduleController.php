@@ -59,8 +59,10 @@ class PrintScheduleController extends Controller
                 $guid         = $order['Guid'] ?? null;
                 if (!$guid) continue;
                 $orderNumber  = $order['OrderNumber'] ?? '';
+                $orderDate    = $unleashed->parseDate($order['OrderDate'] ?? null);
                 $customerName = $order['Customer']['CustomerName'] ?? '';
-                $orderTotal   = (float) ($order['Total'] ?? $order['SubTotal'] ?? 0);
+                $customerRef  = trim($order['CustomerRef'] ?? $order['CustomerOrderNo'] ?? '');
+                $orderTotal   = (float) ($order['SubTotal'] ?? 0);
                 $orderStatus  = $order['OrderStatus'] ?? 'Open';
                 $requiredDate = $unleashed->parseDate($order['RequiredDate'] ?? null);
 
@@ -78,7 +80,9 @@ class PrintScheduleController extends Controller
                     if ($existing) {
                         $existing->update([
                             'order_number'        => $orderNumber,
+                            'order_date'          => $orderDate,
                             'customer_name'       => $customerName,
+                            'customer_ref'        => $customerRef ?: null,
                             'product_code'        => $productCode,
                             'product_description' => $line['Product']['ProductDescription'] ?? null,
                             'line_comment'        => $line['Comments'] ?? $line['LineComment'] ?? null,
@@ -94,7 +98,9 @@ class PrintScheduleController extends Controller
                             'unleashed_guid'         => $guid,
                             'line_number'            => $lineNumber,
                             'order_number'           => $orderNumber,
+                            'order_date'             => $orderDate,
                             'customer_name'          => $customerName,
+                            'customer_ref'           => $customerRef ?: null,
                             'product_code'           => $productCode,
                             'product_description'    => $line['Product']['ProductDescription'] ?? null,
                             'line_comment'           => $line['LineComment'] ?? null,

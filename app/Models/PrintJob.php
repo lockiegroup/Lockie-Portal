@@ -23,7 +23,9 @@ class PrintJob extends Model
         'unleashed_guid',
         'line_number',
         'order_number',
+        'order_date',
         'customer_name',
+        'customer_ref',
         'product_code',
         'product_description',
         'line_comment',
@@ -42,6 +44,7 @@ class PrintJob extends Model
     protected $casts = [
         'required_date'          => 'date',
         'original_required_date' => 'date',
+        'order_date'             => 'date',
         'synced_at'              => 'datetime',
         'order_total'            => 'decimal:2',
         'line_total'             => 'decimal:2',
