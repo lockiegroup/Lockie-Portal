@@ -4,7 +4,7 @@
     $noteCount       = $job->notes->count();
 @endphp
 
-<div class="job-card bg-white rounded-xl border border-slate-200 shadow-sm p-5 select-none"
+<div class="job-card bg-white rounded-xl border border-slate-200 shadow-sm select-none" style="padding: 1.25rem 1.5rem;"
      data-job-id="{{ $job->id }}"
      data-current-board="{{ $job->board }}"
      data-remaining="{{ $job->remaining_quantity }}"
