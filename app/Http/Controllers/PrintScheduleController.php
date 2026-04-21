@@ -19,9 +19,7 @@ class PrintScheduleController extends Controller
         $boards      = PrintJob::BOARDS;
         $boardLabels = PrintJob::BOARDS;
         $machines    = PrintJob::MACHINES;
-        $settings    = $this->loadPrintSettings();
-        $workingDays = $settings['working_days'];
-        $throughputs = $settings['throughputs'];
+        $throughputs = $this->loadThroughputs();
 
         $boardJobs = [];
         foreach (array_keys($boards) as $boardKey) {
@@ -42,13 +40,12 @@ class PrintScheduleController extends Controller
         // Compute estimated completion and late flags for machine board jobs
         $today = now()->startOfDay();
         foreach ($machines as $machine) {
-            $throughput  = $throughputs[$machine] ?? 350;
-            $cumulative  = 0;
+            $throughput = $throughputs[$machine] ?? 350;
+            $cumulative = 0;
             foreach ($boardJobs[$machine] as $job) {
                 $cumulative += $job->remaining_quantity;
                 if ($job->required_date && $throughput > 0 && $cumulative > 0) {
-                    $daysNeeded          = (int) ceil($cumulative / $throughput);
-                    $estimated           = $this->nthWorkingDay($today, $daysNeeded, $workingDays);
+                    $estimated           = $this->estimatedCompletion($today, $cumulative, $throughput);
                     $daysLate            = (int) $job->required_date->diffInDays($estimated, false);
                     $job->is_late        = $daysLate > 0;
                     $job->days_overdue   = max(0, $daysLate);
@@ -71,28 +68,34 @@ class PrintScheduleController extends Controller
         ));
     }
 
-    private function loadPrintSettings(): array
+    // Mon–Thu = full 8h day (weight 1.0), Fri = 5h day (8:00–13:30 minus 30min break, weight 5/8)
+    private const DAY_WEIGHTS = [
+        1 => 1.0,          // Monday
+        2 => 1.0,          // Tuesday
+        3 => 1.0,          // Wednesday
+        4 => 1.0,          // Thursday
+        5 => 5.0 / 8.0,    // Friday
+    ];
+
+    private function loadThroughputs(): array
     {
         return [
-            'working_days' => json_decode(PrintScheduleSetting::getValue('working_days', '[1,2,3,4]'), true) ?? [1, 2, 3, 4],
-            'throughputs'  => [
-                'auto_1' => (int) PrintScheduleSetting::getValue('throughput_auto_1', '350'),
-                'auto_2' => (int) PrintScheduleSetting::getValue('throughput_auto_2', '350'),
-                'auto_3' => (int) PrintScheduleSetting::getValue('throughput_auto_3', '350'),
-                'baby'   => (int) PrintScheduleSetting::getValue('throughput_baby',   '180'),
-            ],
+            'auto_1' => (int) PrintScheduleSetting::getValue('throughput_auto_1', '350'),
+            'auto_2' => (int) PrintScheduleSetting::getValue('throughput_auto_2', '350'),
+            'auto_3' => (int) PrintScheduleSetting::getValue('throughput_auto_3', '350'),
+            'baby'   => (int) PrintScheduleSetting::getValue('throughput_baby',   '180'),
         ];
     }
 
-    private function nthWorkingDay(Carbon $from, int $n, array $workingDayNumbers): Carbon
+    private function estimatedCompletion(Carbon $from, int $packsNeeded, int $throughput): Carbon
     {
-        if ($n <= 0 || empty($workingDayNumbers)) return $from->copy();
-        $date  = $from->copy()->startOfDay();
-        $count = 0;
+        $date      = $from->copy()->startOfDay();
+        $remaining = (float) $packsNeeded;
         for ($i = 0; $i < 500; $i++) {
-            if (in_array($date->dayOfWeek, $workingDayNumbers)) {
-                $count++;
-                if ($count >= $n) return $date;
+            $weight = self::DAY_WEIGHTS[$date->dayOfWeek] ?? 0.0;
+            if ($weight > 0.0) {
+                $remaining -= $throughput * $weight;
+                if ($remaining <= 0.0) return $date;
             }
             $date->addDay();
         }

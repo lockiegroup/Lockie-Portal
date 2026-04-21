@@ -31,52 +31,10 @@
             </div>
         @endif
 
+        <p class="text-xs text-slate-400 -mt-4 mb-2">Working schedule: Mon–Thu 08:00–16:30 (30 min break), Fri 08:00–13:30 (30 min break).</p>
+
         <form method="POST" action="{{ route('admin.print-settings.update') }}" class="space-y-6">
             @csrf
-
-            {{-- Working Days & Hours --}}
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-5">
-                <div>
-                    <h2 class="font-semibold text-slate-800">Working Schedule</h2>
-                    <p class="text-xs text-slate-400 mt-0.5">Used to calculate estimated delivery dates, skipping non-working days.</p>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-2">Working Days</label>
-                    <div style="display:flex;flex-wrap:wrap;gap:8px;">
-                        @foreach($days as $num => $label)
-                            <label id="day-label-{{ $num }}"
-                                style="display:inline-flex;align-items:center;cursor:pointer;
-                                    {{ in_array($num, $settings['working_days']) ? 'background:#1e293b;color:#fff;border-color:#1e293b;' : 'background:#f8fafc;color:#64748b;border-color:#e2e8f0;' }}
-                                    border:1px solid;padding:6px 16px;border-radius:8px;font-size:0.875rem;font-weight:500;user-select:none;">
-                                <input type="checkbox" name="working_days[]" value="{{ $num }}"
-                                    {{ in_array($num, $settings['working_days']) ? 'checked' : '' }}
-                                    style="display:none;"
-                                    onchange="toggleDay(this, {{ $num }})">
-                                {{ $label }}
-                            </label>
-                        @endforeach
-                    </div>
-                </div>
-
-                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Start Time</label>
-                        <input type="time" name="work_start" value="{{ $settings['work_start'] }}"
-                            class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent transition">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1.5">End Time</label>
-                        <input type="time" name="work_end" value="{{ $settings['work_end'] }}"
-                            class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent transition">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Break (mins)</label>
-                        <input type="number" name="break_minutes" value="{{ $settings['break_minutes'] }}" min="0" max="480"
-                            class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent transition">
-                    </div>
-                </div>
-            </div>
 
             {{-- Machine Throughput --}}
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
@@ -108,19 +66,5 @@
 
     </main>
 
-    <script>
-    function toggleDay(checkbox, num) {
-        const label = document.getElementById('day-label-' + num);
-        if (checkbox.checked) {
-            label.style.background   = '#1e293b';
-            label.style.color        = '#fff';
-            label.style.borderColor  = '#1e293b';
-        } else {
-            label.style.background   = '#f8fafc';
-            label.style.color        = '#64748b';
-            label.style.borderColor  = '#e2e8f0';
-        }
-    }
-    </script>
 
 </x-layout>
