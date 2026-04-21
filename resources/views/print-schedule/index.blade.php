@@ -455,6 +455,13 @@
 
                     if (display) display.style.display = '';
                     if (editor)  editor.style.display  = 'none';
+
+                    // Update card dataset and recalculate late flag immediately
+                    const card = document.querySelector('.job-card[data-job-id="' + jobId + '"]');
+                    if (card) {
+                        card.dataset.requiredDate = val;
+                        recalculateLateFlags(card.dataset.currentBoard);
+                    }
                 } else {
                     alert('Save failed: ' + (data.message || data.error || JSON.stringify(data)));
                 }
@@ -535,6 +542,9 @@
                 if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
             });
         };
+
+        // Run once on load so late flags are live-computed from the start
+        machines.forEach(function (m) { recalculateLateFlags(m); });
 
         // ─── SortableJS (initialised last so a CDN failure can't block other functions) ──
         if (typeof Sortable !== 'undefined') {
