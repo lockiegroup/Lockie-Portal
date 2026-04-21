@@ -17,26 +17,10 @@
                 <h1 class="text-2xl font-bold text-slate-800">A1 Print Schedule</h1>
                 <p class="text-slate-500 text-sm mt-1">
                     Manage machine queues, track progress, and plan delivery dates.
-                    @php
-                        $lastSync = \App\Models\PrintJob::max('synced_at');
-                    @endphp
-                    @if($lastSync)
-                        <span class="text-slate-400">
-                            &bull; Last synced:
-                            @php
-                                $mins = (int) now()->diffInMinutes($lastSync);
-                            @endphp
-                            @if($mins < 2)
-                                just now
-                            @elseif($mins < 60)
-                                {{ $mins }} mins ago
-                            @else
-                                {{ \Carbon\Carbon::parse($lastSync)->format('d M Y, H:i') }}
-                            @endif
-                        </span>
-                    @else
-                        <span class="text-slate-400">&bull; Never synced</span>
-                    @endif
+                    @php $lastSync = \App\Models\PrintJob::max('synced_at'); @endphp
+                    <span class="text-slate-400" id="last-synced-wrap">
+                        &bull; <span id="last-synced-text">{{ $lastSync ? 'just now' : 'Never synced' }}</span>
+                    </span>
                 </p>
             </div>
             @can('admin')
@@ -131,7 +115,26 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script>
     (function () {
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const csrfToken  = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const throughputs = @json($throughputs);
+        const machines    = @json($machines);
+
+        // ─── Last synced ticker ───────────────────────────────────────────
+        let lastSyncTs = {{ $lastSync ? \Carbon\Carbon::parse($lastSync)->timestamp : 0 }};
+        function updateLastSynced() {
+            const el = document.getElementById('last-synced-text');
+            if (!el || !lastSyncTs) return;
+            const mins = Math.floor((Date.now() / 1000 - lastSyncTs) / 60);
+            if (mins < 2)       el.textContent = 'Last synced: just now';
+            else if (mins < 60) el.textContent = 'Last synced: ' + mins + ' mins ago';
+            else {
+                const d = new Date(lastSyncTs * 1000);
+                el.textContent = 'Last synced: ' + d.toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'})
+                    + ', ' + d.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
+            }
+        }
+        updateLastSynced();
+        setInterval(updateLastSynced, 60000);
 
         // ─── Tab switching ────────────────────────────────────────────────
         function switchTab(boardKey) {
@@ -183,6 +186,8 @@
                     return;
                 }
                 if (data.success) {
+                    lastSyncTs = Math.floor(Date.now() / 1000);
+                    updateLastSynced();
                     window.location.reload();
                 } else {
                     if (!silent) alert('Sync failed: ' + (data.error || JSON.stringify(data)));
@@ -268,8 +273,6 @@
 
         function updateMachineBanner(boardKey) {
             if (!boardKey) return;
-            const machines    = @json($machines);
-            const throughputs = @json($throughputs);
             if (!machines.includes(boardKey)) return;
             const banner = document.getElementById('banner-' + boardKey);
             if (!banner) return;
@@ -571,9 +574,8 @@
         }
 
         function recalculateLateFlags(boardKey) {
-            const machines = @json($machines);
             if (!machines.includes(boardKey)) return;
-            const tp    = (throughputs[boardKey] || 350);
+            const tp = throughputs[boardKey] || 350;
             const cards = document.querySelectorAll('#sortable-' + boardKey + ' .job-card');
             let cumulative = 0;
             cards.forEach(function (card) {
