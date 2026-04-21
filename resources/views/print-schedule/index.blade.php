@@ -543,9 +543,6 @@
             });
         };
 
-        // Run once on load so late flags are live-computed from the start
-        machines.forEach(function (m) { recalculateLateFlags(m); });
-
         // ─── SortableJS (initialised last so a CDN failure can't block other functions) ──
         if (typeof Sortable !== 'undefined') {
             document.querySelectorAll('[id^="sortable-"]').forEach(function (el) {
@@ -607,6 +604,9 @@
                 }
             });
         }
+
+        // Run on page load so server-rendered cards match JS state
+        machines.forEach(function (m) { recalculateLateFlags(m); });
 
         // ─── Utility ──────────────────────────────────────────────────────
         function escapeHtml(str) {
