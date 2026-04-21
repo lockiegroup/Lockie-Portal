@@ -44,8 +44,27 @@
             </button>
         </div>
 
+        {{-- Search bar --}}
+        <div style="margin-bottom:1.25rem;position:relative;">
+            <svg style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:#94a3b8;pointer-events:none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+            <input type="text" id="schedule-search"
+                placeholder="Search orders, customer refs, print data…"
+                oninput="filterJobs(this.value)"
+                autocomplete="off"
+                style="width:100%;padding:9px 36px 9px 36px;border:1px solid #e2e8f0;border-radius:0.75rem;font-size:0.875rem;color:#1e293b;background:#fff;outline:none;box-sizing:border-box;"
+                onfocus="this.style.borderColor='#e11d48';this.style.boxShadow='0 0 0 3px rgba(225,29,72,0.1)'"
+                onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
+            <button id="search-clear-btn" onclick="clearSearch()"
+                style="display:none;position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#94a3b8;font-size:1.2rem;line-height:1;padding:2px;">&#215;</button>
+        </div>
+
+        {{-- Search results info (shown when searching) --}}
+        <div id="search-results-info" style="display:none;background:#f8fafc;border:1px solid #e2e8f0;border-radius:0.75rem;padding:8px 16px;margin-bottom:1rem;font-size:0.875rem;color:#64748b;"></div>
+
         {{-- Tab bar --}}
-        <div class="overflow-x-auto -mx-4 sm:mx-0 mb-6">
+        <div id="tab-bar" class="overflow-x-auto -mx-4 sm:mx-0 mb-6">
             <div class="flex min-w-max px-4 sm:px-0 gap-1 border-b border-slate-200 pb-0">
                 @foreach($boards as $key => $label)
                     <button
@@ -70,6 +89,11 @@
         {{-- Board panes --}}
         @foreach($boards as $boardKey => $boardLabel)
             <div id="pane-{{ $boardKey }}" class="board-pane {{ !$loop->first ? 'hidden' : '' }}">
+
+                {{-- Board heading shown during search --}}
+                <div id="search-board-label-{{ $boardKey }}" style="display:none;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.75rem;">
+                    {{ $boardLabel }}
+                </div>
 
                 {{-- Machine lead time banner --}}
                 @if(in_array($boardKey, $machines))
@@ -135,6 +159,65 @@
         }
         updateLastSynced();
         setInterval(updateLastSynced, 60000);
+
+        // ─── Search ───────────────────────────────────────────────────────
+        window.filterJobs = function (query) {
+            const q          = query.trim().toLowerCase();
+            const searching  = q.length > 0;
+            const tabBar     = document.getElementById('tab-bar');
+            const info       = document.getElementById('search-results-info');
+            const clearBtn   = document.getElementById('search-clear-btn');
+
+            if (clearBtn) clearBtn.style.display = searching ? '' : 'none';
+
+            if (!searching) {
+                if (tabBar) tabBar.style.display = '';
+                if (info)   info.style.display   = 'none';
+
+                // Restore: show only the active tab's pane
+                const activeBoard = document.querySelector('.tab-btn.active-tab')?.dataset.board;
+                document.querySelectorAll('.board-pane').forEach(function (pane) {
+                    const key = pane.id.replace('pane-', '');
+                    pane.style.display = '';
+                    pane.classList.toggle('hidden', key !== activeBoard);
+                    const lbl = document.getElementById('search-board-label-' + key);
+                    if (lbl) lbl.style.display = 'none';
+                });
+                document.querySelectorAll('.job-card').forEach(function (c) { c.style.display = ''; });
+                return;
+            }
+
+            if (tabBar) tabBar.style.display = 'none';
+
+            let total = 0;
+            document.querySelectorAll('.board-pane').forEach(function (pane) {
+                pane.classList.remove('hidden');
+                const key   = pane.id.replace('pane-', '');
+                const cards = pane.querySelectorAll('.job-card');
+                let hits    = 0;
+                cards.forEach(function (card) {
+                    const match = (card.dataset.searchText || '').includes(q);
+                    card.style.display = match ? '' : 'none';
+                    if (match) hits++;
+                });
+                const lbl = document.getElementById('search-board-label-' + key);
+                if (lbl) lbl.style.display = hits > 0 ? '' : 'none';
+                pane.style.display = hits > 0 ? '' : 'none';
+                total += hits;
+            });
+
+            if (info) {
+                info.style.display = '';
+                info.textContent   = total > 0
+                    ? total + ' result' + (total !== 1 ? 's' : '') + ' across all boards'
+                    : 'No results found';
+            }
+        };
+
+        window.clearSearch = function () {
+            const input = document.getElementById('schedule-search');
+            if (input) { input.value = ''; filterJobs(''); input.focus(); }
+        };
 
         // ─── Tab switching ────────────────────────────────────────────────
         function switchTab(boardKey) {

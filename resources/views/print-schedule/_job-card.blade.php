@@ -9,6 +9,7 @@
      data-current-board="{{ $job->board }}"
      data-remaining="{{ $job->remaining_quantity }}"
      data-required-date="{{ $job->required_date ? $job->required_date->format('Y-m-d') : '' }}"
+     data-search-text="{{ strtolower(collect([$job->order_number, $job->customer_name, $job->customer_ref, $job->product_code, $job->product_description, $job->line_comment])->filter()->implode(' ')) }}"
      id="job-card-{{ $job->id }}">
 
     {{-- Row 1: Drag handle | Order number | Customer | Board select --}}
