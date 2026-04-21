@@ -702,7 +702,7 @@
                 const required  = new Date(requiredDate + 'T00:00:00');
                 const estStr    = estimated.getDate() + ' ' + MONTHS[estimated.getMonth()];
 
-                if (estOut) { estOut.textContent = '→ est. ' + estStr; estOut.style.display = ''; }
+                if (estOut) { estOut.textContent = '→ est del. ' + estStr; estOut.style.display = ''; }
 
                 if (estimated > required) {
                     const daysLate = Math.round((estimated - required) / 86400000);

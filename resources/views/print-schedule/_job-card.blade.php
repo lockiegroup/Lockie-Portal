@@ -104,7 +104,7 @@
 
         {{-- Estimated out (machine boards only; updated live by JS) --}}
         <span id="est-out-{{ $job->id }}"
-              style="{{ ($job->est_completion ?? null) ? '' : 'display:none;' }}font-size:0.7rem;color:#94a3b8;">@if($job->est_completion ?? null)&rarr; est. {{ $job->est_completion->format('d M') }}@endif</span>
+              style="{{ ($job->est_completion ?? null) ? '' : 'display:none;' }}font-size:0.7rem;color:#94a3b8;">@if($job->est_completion ?? null)&rarr; est del. {{ $job->est_completion->format('d M') }}@endif</span>
 
         {{-- Required date --}}
         <div class="flex items-center gap-1">
