@@ -89,7 +89,7 @@ class PrintScheduleController extends Controller
 
     private function estimatedCompletion(Carbon $from, int $packsNeeded, int $throughput): Carbon
     {
-        $date      = $from->copy()->startOfDay();
+        $date      = $from->copy()->addDay()->startOfDay(); // work starts next working day
         $remaining = (float) $packsNeeded;
         for ($i = 0; $i < 500; $i++) {
             $weight = self::DAY_WEIGHTS[$date->dayOfWeek] ?? 0.0;

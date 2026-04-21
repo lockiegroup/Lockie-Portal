@@ -657,6 +657,7 @@
         function estimatedCompletion(packsNeeded, throughput) {
             const date = new Date();
             date.setHours(0, 0, 0, 0);
+            date.setDate(date.getDate() + 1); // work starts next working day
             let remaining = packsNeeded;
             for (let i = 0; i < 500; i++) {
                 const weight = DAY_WEIGHTS[date.getDay()] || 0;
