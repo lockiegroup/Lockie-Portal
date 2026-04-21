@@ -204,8 +204,14 @@
             });
         };
 
-        // Auto-sync every 60 minutes (silent — reloads page on success)
-        setInterval(function () { triggerSync(true); }, 60 * 60 * 1000);
+        // Auto-sync every 60 minutes; if overdue on page load, sync sooner
+        const SYNC_INTERVAL_MS = 60 * 60 * 1000;
+        const msSinceLastSync  = lastSyncTs ? (Date.now() - lastSyncTs * 1000) : SYNC_INTERVAL_MS;
+        const msUntilFirstSync = Math.max(5000, SYNC_INTERVAL_MS - msSinceLastSync);
+        setTimeout(function () {
+            triggerSync(true);
+            setInterval(function () { triggerSync(true); }, SYNC_INTERVAL_MS);
+        }, msUntilFirstSync);
 
 
         function saveReorder(boardKey, orderedIds) {
