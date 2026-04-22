@@ -142,6 +142,18 @@
                         value="{{ old('none_copies', 0) }}" min="0"
                         class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
                 </div>
+                <div style="border-top:1px solid #f1f5f9;padding-top:1rem;">
+                    <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;">
+                        <input type="checkbox" name="include_setup" id="include_setup" value="1"
+                            {{ old('include_setup') ? 'checked' : '' }}
+                            onchange="updateSummary()"
+                            style="margin-top:2px;flex-shrink:0;">
+                        <span>
+                            <span class="text-sm font-medium text-slate-700">Include 2 setup samples</span>
+                            <span class="block text-xs text-slate-400 mt-0.5">Printed first, both numbered <strong>0</strong> — machine setup trial, to be binned.</span>
+                        </span>
+                    </label>
+                </div>
             </div>
 
             {{-- Special Envelopes --}}
@@ -370,20 +382,23 @@
 
         // ── Summary ──────────────────────────────────────────────────────────
         function updateSummary() {
-            const weeks       = parseInt(document.getElementById('num_weeks').value) || 0;
-            const specials    = document.querySelectorAll('.special-row').length;
-            const numbered    = parseSetNumbers(document.getElementById('set_numbers').value).length;
-            const unnumbered  = Math.max(0, parseInt(document.getElementById('none_copies').value) || 0);
-            const totalSets   = numbered + unnumbered;
-            const envsPerSet  = weeks + specials;
-            const pairs       = Math.ceil(totalSets / 2);
-            const totalRows   = pairs * envsPerSet;
-            const el          = document.getElementById('summary');
-            if (totalSets && weeks) {
+            const weeks        = parseInt(document.getElementById('num_weeks').value) || 0;
+            const specials     = document.querySelectorAll('.special-row').length;
+            const numbered     = parseSetNumbers(document.getElementById('set_numbers').value).length;
+            const unnumbered   = Math.max(0, parseInt(document.getElementById('none_copies').value) || 0);
+            const setupChecked = document.getElementById('include_setup')?.checked ? 1 : 0;
+            const totalSets    = numbered + unnumbered;
+            const envsPerSet   = weeks + specials;
+            const mainPairs    = Math.ceil(totalSets / 2);
+            const totalPairs   = mainPairs + setupChecked;
+            const totalRows    = totalPairs * envsPerSet;
+            const el           = document.getElementById('summary');
+            if ((totalSets || setupChecked) && weeks) {
                 const parts = [];
-                if (numbered)   parts.push(numbered + ' numbered');
-                if (unnumbered) parts.push(unnumbered + ' unnumbered');
-                el.textContent = `${parts.join(' + ')} sets × ${envsPerSet} envelopes = ${totalRows.toLocaleString()} rows (${pairs} pairs, 2-up).`;
+                if (setupChecked) parts.push('2 setup samples');
+                if (numbered)     parts.push(numbered + ' numbered');
+                if (unnumbered)   parts.push(unnumbered + ' unnumbered');
+                el.textContent = `${parts.join(' + ')} sets × ${envsPerSet} envelopes = ${totalRows.toLocaleString()} rows (${totalPairs} pairs, 2-up).`;
             } else {
                 el.textContent = '';
             }
@@ -441,6 +456,8 @@
                     document.getElementById('num_weeks').value         = data.num_weeks   ?? 52;
                     document.getElementById('set_numbers').value       = data.set_numbers ?? '';
                     document.getElementById('none_copies').value       = data.none_copies ?? 0;
+                    const setupEl = document.getElementById('include_setup');
+                    if (setupEl) setupEl.checked = !!data.include_setup;
 
                     (data.vts || []).forEach((val, i) => {
                         const el = document.getElementById('vt-' + (i + 1));

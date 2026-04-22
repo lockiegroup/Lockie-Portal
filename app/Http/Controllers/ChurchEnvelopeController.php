@@ -37,6 +37,7 @@ class ChurchEnvelopeController extends Controller
             'vt'                   => 'nullable|array',
             'set_numbers'          => 'nullable|string',
             'none_copies'          => 'nullable|integer|min:0',
+            'include_setup'        => 'nullable|boolean',
             'design_path'          => 'nullable|string|max:500',
             'specials'             => 'nullable|array',
             'specials.*.name'      => 'nullable|string|max:100',
@@ -151,6 +152,33 @@ class ChurchEnvelopeController extends Controller
         $row     = 2;
         $lineNum = 1;
 
+        // Setup samples: 2 copies both numbered 0, printed first as machine trial
+        if ($request->boolean('include_setup')) {
+            foreach ($template as $envelope) {
+                $carbon    = $envelope['carbon'];
+                $isSpecial = $envelope['is_special'];
+                if ($isSpecial && !$envelope['show_date']) {
+                    $day = $month = $year = '';
+                } else {
+                    $day   = (int) $carbon->format('j');
+                    $month = strtoupper($carbon->format('M'));
+                    $year  = (int) $carbon->format('Y');
+                }
+                $rowVt = $isSpecial
+                    ? ['', '', '', '', '', $envelope['special_name'], $envelope['special_vt7'], '']
+                    : $weeklyVt;
+                $sheet->fromArray(
+                    [$lineNum, $day, $month, $year, 0, 0,
+                     $isSpecial ? '' : $imagePath, $isSpecial ? $spiralPath : '',
+                     $church, $town, $diocese1, $diocese2, $diocese3,
+                     ...$rowVt],
+                    null, 'A' . $row
+                );
+                $row++;
+                $lineNum++;
+            }
+        }
+
         // Pair set numbers: (1,2), (3,4)… each row = one physical 2-up sheet
         for ($i = 0; $i < count($setNumbers); $i += 2) {
             $setLeft  = $setNumbers[$i];
@@ -206,13 +234,14 @@ class ChurchEnvelopeController extends Controller
             array_shift($allRows); // remove header row
 
             $church = $town = $diocese1 = $diocese2 = $diocese3 = $imagePath = '';
-            $weeklyVts    = array_fill(0, 8, '');
-            $weeklyDates  = [];
-            $setNums      = [];
-            $seenSpecials = [];
-            $specials     = [];
-            $parsedStatic = false;
-            $blankSetRows = 0;
+            $weeklyVts      = array_fill(0, 8, '');
+            $weeklyDates    = [];
+            $setNums        = [];
+            $seenSpecials   = [];
+            $specials       = [];
+            $parsedStatic   = false;
+            $blankSetRows   = 0;
+            $hasSetupSamples = false;
 
             foreach ($allRows as $row) {
                 if (empty(array_filter($row, fn($v) => $v !== null && $v !== ''))) {
@@ -241,6 +270,13 @@ class ChurchEnvelopeController extends Controller
                 // Collect numbered set values from columns E and F
                 $setLeft  = $row[4] ?? '';
                 $setRight = $row[5] ?? '';
+
+                // Detect setup samples (both columns = 0)
+                if (is_numeric($setLeft) && (int) $setLeft === 0 &&
+                    is_numeric($setRight) && (int) $setRight === 0) {
+                    $hasSetupSamples = true;
+                }
+
                 foreach ([$setLeft, $setRight] as $v) {
                     if (is_numeric($v) && (int) $v > 0) {
                         $setNums[(int) $v] = true;
@@ -308,8 +344,9 @@ class ChurchEnvelopeController extends Controller
             sort($setNumsList);
 
             return response()->json([
-                'success'      => true,
-                'church'       => $church,
+                'success'        => true,
+                'include_setup'  => $hasSetupSamples,
+                'church'         => $church,
                 'town'         => $town,
                 'diocese_1'    => $diocese1,
                 'diocese_2'    => $diocese2,
