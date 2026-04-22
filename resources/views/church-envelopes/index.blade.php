@@ -144,12 +144,13 @@
                 </div>
                 <div style="border-top:1px solid #f1f5f9;padding-top:1rem;">
                     <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;">
+                        <input type="hidden" name="include_setup" value="0">
                         <input type="checkbox" name="include_setup" id="include_setup" value="1"
-                            {{ old('include_setup') ? 'checked' : '' }}
+                            {{ old('include_setup', '1') !== '0' ? 'checked' : '' }}
                             onchange="updateSummary()"
                             style="margin-top:2px;flex-shrink:0;">
                         <span>
-                            <span class="text-sm font-medium text-slate-700">Include 2 setup samples</span>
+                            <span class="text-sm font-medium text-slate-700">Include 2 sets as setup samples</span>
                             <span class="block text-xs text-slate-400 mt-0.5">Printed first, both numbered <strong>0</strong> — machine setup trial, to be binned.</span>
                         </span>
                     </label>

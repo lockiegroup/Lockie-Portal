@@ -172,7 +172,7 @@ class ChurchEnvelopeController extends Controller
                      $isSpecial ? '' : $imagePath, $isSpecial ? $spiralPath : '',
                      $church, $town, $diocese1, $diocese2, $diocese3,
                      ...$rowVt],
-                    null, 'A' . $row
+                    null, 'A' . $row, true  // strictNullComparison: prevents 0 being treated as null
                 );
                 $row++;
                 $lineNum++;
