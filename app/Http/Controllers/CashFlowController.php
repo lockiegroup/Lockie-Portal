@@ -3,41 +3,70 @@
 namespace App\Http\Controllers;
 
 use App\Models\CashFlowEntry;
-use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class CashFlowController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $horizon = (int) session('cash_flow_horizon', 12);
-        $from    = now()->startOfMonth();
-        $to      = now()->addMonths($horizon - 1)->endOfMonth();
+        $horizon  = (int) $request->input('horizon', session('cash_flow_horizon', 12));
+        $viewMode = $request->input('view', session('cash_flow_view', 'monthly'));
+        $horizon  = max(1, min(36, $horizon));
+
+        session(['cash_flow_horizon' => $horizon, 'cash_flow_view' => $viewMode]);
+
+        $from = now()->startOfMonth();
+        $to   = now()->addMonths($horizon - 1)->endOfMonth();
 
         $entries = CashFlowEntry::whereBetween('entry_date', [$from->toDateString(), $to->toDateString()])
             ->orderBy('entry_date')
             ->orderBy('id')
             ->get();
 
+        // Monthly summary
         $months = [];
         $cursor = $from->copy();
         while ($cursor->lte($to)) {
             $key   = $cursor->format('Y-m');
             $slice = $entries->filter(fn($e) => $e->entry_date->format('Y-m') === $key);
 
-            $income  = (float) $slice->where('type', 'income')->sum('amount');
-            $expense = (float) $slice->where('type', 'expense')->sum('amount');
+            $actualIn    = (float) $slice->where('type', 'income')->where('status', 'actual')->sum('amount');
+            $forecastIn  = (float) $slice->where('type', 'income')->where('status', 'forecast')->sum('amount');
+            $actualOut   = (float) $slice->where('type', 'expense')->where('status', 'actual')->sum('amount');
+            $forecastOut = (float) $slice->where('type', 'expense')->where('status', 'forecast')->sum('amount');
 
             $months[$key] = [
-                'label'   => $cursor->format('M Y'),
-                'income'  => $income,
-                'expense' => $expense,
-                'net'     => $income - $expense,
+                'label'       => $cursor->format('M Y'),
+                'actual_in'   => $actualIn,
+                'forecast_in' => $forecastIn,
+                'income'      => $actualIn + $forecastIn,
+                'actual_out'  => $actualOut,
+                'forecast_out'=> $forecastOut,
+                'expense'     => $actualOut + $forecastOut,
+                'net'         => ($actualIn + $forecastIn) - ($actualOut + $forecastOut),
             ];
             $cursor->addMonth();
+        }
+
+        // Daily running balance (all entries in horizon, chronological)
+        $daily   = [];
+        $balance = 0.0;
+        foreach ($entries as $entry) {
+            $signed  = $entry->type === 'income' ? (float) $entry->amount : -(float) $entry->amount;
+            $balance += $signed;
+            $daily[] = [
+                'date'        => $entry->entry_date->format('Y-m-d'),
+                'label'       => $entry->entry_date->format('d M Y'),
+                'description' => $entry->description,
+                'category'    => $entry->category,
+                'type'        => $entry->type,
+                'status'      => $entry->status,
+                'amount'      => (float) $entry->amount,
+                'balance'     => $balance,
+                'entry_id'    => $entry->id,
+            ];
         }
 
         $categories = CashFlowEntry::select('category')
@@ -47,7 +76,7 @@ class CashFlowController extends Controller
             ->orderBy('category')
             ->pluck('category');
 
-        return view('cash-flow.index', compact('entries', 'months', 'horizon', 'categories'));
+        return view('cash-flow.index', compact('entries', 'months', 'daily', 'horizon', 'viewMode', 'categories'));
     }
 
     public function store(Request $request): JsonResponse
@@ -57,6 +86,7 @@ class CashFlowController extends Controller
             'description' => ['required', 'string', 'max:255'],
             'type'        => ['required', 'in:income,expense'],
             'amount'      => ['required', 'numeric', 'min:0.01'],
+            'status'      => ['required', 'in:forecast,actual'],
             'category'    => ['nullable', 'string', 'max:100'],
             'notes'       => ['nullable', 'string', 'max:1000'],
         ]);
@@ -73,6 +103,7 @@ class CashFlowController extends Controller
             'description' => ['required', 'string', 'max:255'],
             'type'        => ['required', 'in:income,expense'],
             'amount'      => ['required', 'numeric', 'min:0.01'],
+            'status'      => ['required', 'in:forecast,actual'],
             'category'    => ['nullable', 'string', 'max:100'],
             'notes'       => ['nullable', 'string', 'max:1000'],
         ]);
@@ -87,13 +118,5 @@ class CashFlowController extends Controller
         $entry->delete();
 
         return response()->json(['success' => true]);
-    }
-
-    public function horizon(Request $request): RedirectResponse
-    {
-        $months = (int) $request->input('horizon', 12);
-        session(['cash_flow_horizon' => max(1, min(36, $months))]);
-
-        return redirect()->route('cash-flow.index');
     }
 }

@@ -12,6 +12,7 @@ class CashFlowEntry extends Model
         'category',
         'type',
         'amount',
+        'status',
         'notes',
     ];
 

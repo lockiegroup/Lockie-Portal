@@ -78,7 +78,6 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::post('/', [CashFlowController::class, 'store'])->name('store');
         Route::put('/{entry}', [CashFlowController::class, 'update'])->name('update');
         Route::delete('/{entry}', [CashFlowController::class, 'destroy'])->name('destroy');
-        Route::post('/settings/horizon', [CashFlowController::class, 'horizon'])->name('horizon');
     });
 
     // Admin — manage users
