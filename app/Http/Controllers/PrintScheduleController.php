@@ -136,10 +136,10 @@ class PrintScheduleController extends Controller
                     $key         = $guid . ':' . $lineNumber;
                     $seenKeys[$key] = true;
 
-                    $existing = PrintJob::where('unleashed_guid', $guid)->where('line_number', $lineNumber)->first();
+                    $existing = PrintJob::active()->where('unleashed_guid', $guid)->where('line_number', $lineNumber)->first();
 
                     if ($existing) {
-                        $existing->update([
+                        $update = [
                             'order_number'        => $orderNumber,
                             'order_date'          => $orderDate,
                             'customer_name'       => $customerName,
@@ -152,7 +152,15 @@ class PrintScheduleController extends Controller
                             'order_quantity'      => (int) ($line['OrderQuantity'] ?? 0),
                             'unleashed_status'    => $orderStatus,
                             'synced_at'           => now(),
-                        ]);
+                        ];
+
+                        // Update required_date from Unleashed only if user hasn't manually changed it
+                        if (!$existing->date_changed && $requiredDate) {
+                            $update['required_date']          = $requiredDate;
+                            $update['original_required_date'] = $requiredDate;
+                        }
+
+                        $existing->update($update);
                         $updated++;
                     } else {
                         PrintJob::create([
@@ -164,7 +172,7 @@ class PrintScheduleController extends Controller
                             'customer_ref'           => $customerRef ?: null,
                             'product_code'           => $productCode,
                             'product_description'    => $line['Product']['ProductDescription'] ?? null,
-                            'line_comment'           => $line['LineComment'] ?? null,
+                            'line_comment'           => $line['Comments'] ?? $line['LineComment'] ?? null,
                             'order_total'            => $orderTotal,
                             'line_total'             => (float) ($line['LineTotal'] ?? 0),
                             'order_quantity'         => (int) ($line['OrderQuantity'] ?? 0),
