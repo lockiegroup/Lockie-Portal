@@ -112,9 +112,10 @@
                                         <span class="text-slate-700 font-medium">{{ number_format($job->order_quantity) }}</span>
                                     </td>
                                     <td style="padding:10px 16px;color:#94a3b8;white-space:nowrap;vertical-align:top;">
-                                        {{ $job->archived_at->format('d M Y') }}
                                         @if($job->archive_reason === 'deleted')
-                                            <br><span style="font-size:0.65rem;background:#fef2f2;color:#dc2626;border:1px solid #fecaca;border-radius:4px;padding:1px 5px;white-space:nowrap;">Deleted from Unleashed</span>
+                                            <span style="font-size:0.65rem;background:#fef2f2;color:#dc2626;border:1px solid #fecaca;border-radius:4px;padding:1px 5px;white-space:nowrap;">Deleted from Unleashed</span>
+                                        @else
+                                            {{ $job->archived_at->format('d M Y') }}
                                         @endif
                                     </td>
                                 </tr>
