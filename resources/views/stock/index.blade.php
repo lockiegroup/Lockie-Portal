@@ -21,19 +21,23 @@
             <div id="stock-results" style="padding:2rem;text-align:center;color:#94a3b8;font-size:0.875rem;">Loading…</div>
         </div>
 
-        {{-- 12-month chart --}}
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden" style="padding:1.5rem;">
+        {{-- 12-month per-warehouse chart --}}
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200" style="padding:1.5rem;">
             <div style="margin-bottom:1.25rem;">
-                <h2 style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;">Stock Value — Rolling 12 Months</h2>
-                @php $hasHistory = collect($chartValues)->filter(fn($v) => $v !== null)->isNotEmpty(); @endphp
+                <h2 style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;">Stock Value by Warehouse — Rolling 12 Months</h2>
+                <p style="font-size:0.75rem;color:#cbd5e1;margin-top:3px;">First of each month snapshot from Unleashed.</p>
             </div>
+            @php $hasHistory = collect($warehouseValues)->flatMap(fn($v) => $v)->filter(fn($v) => $v !== null)->isNotEmpty(); @endphp
             @if($hasHistory)
-                <div style="position:relative;height:280px;">
+                {{-- Legend --}}
+                <div id="chart-legend" style="display:flex;flex-wrap:wrap;gap:8px 16px;margin-bottom:1rem;"></div>
+                <div style="position:relative;height:300px;">
                     <canvas id="stock-chart"></canvas>
                 </div>
             @else
                 <div style="padding:3rem 0;text-align:center;color:#94a3b8;font-size:0.875rem;">
-                    <p>No historical data yet — chart will populate as stock is loaded each day.</p>
+                    <p style="margin-bottom:0.5rem;">No historical data yet.</p>
+                    <p style="font-size:0.8125rem;color:#cbd5e1;">Run <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-family:monospace;">php artisan stock:backfill</code> on the server to populate the last 12 months, or data will accumulate automatically day by day.</p>
                 </div>
             @endif
         </div>
@@ -60,9 +64,9 @@
                 const rows = Object.entries(data.stockByWarehouse);
                 const total = rows.reduce((s, [, v]) => s + v.totalCost, 0);
                 const rowsHtml = rows.map(([name, v]) => `
-                    <tr style="border-top:1px solid #f1f5f9;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
-                        <td style="padding:12px 24px;font-size:0.875rem;color:#334155;">${name}</td>
-                        <td style="padding:12px 24px;font-size:0.875rem;font-weight:600;color:#1e293b;text-align:right;">${fmtGbp(v.totalCost)}</td>
+                    <tr onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
+                        <td style="padding:12px 24px;font-size:0.875rem;color:#334155;border-top:1px solid #f1f5f9;">${name}</td>
+                        <td style="padding:12px 24px;font-size:0.875rem;font-weight:600;color:#1e293b;text-align:right;border-top:1px solid #f1f5f9;">${fmtGbp(v.totalCost)}</td>
                     </tr>`).join('');
                 document.getElementById('stock-results').innerHTML = `
                     <table style="width:100%;border-collapse:collapse;">
@@ -91,34 +95,53 @@
 
     @if($hasHistory)
     (function () {
-        const labels = @json($chartLabels);
-        const values = @json($chartValues);
+        const COLOURS = ['#0ea5e9','#8b5cf6','#f59e0b','#10b981','#f43f5e','#6366f1','#ec4899','#14b8a6','#f97316','#84cc16'];
 
-        // Fill nulls with the previous known value for a continuous line
-        let last = null;
-        const filled = values.map(v => {
-            if (v !== null) { last = v; return v; }
-            return last;
+        const labels  = @json($chartLabels);
+        const rawData = @json($warehouseValues); // { warehouseName: [v1, v2, ...], ... }
+
+        const entries   = Object.entries(rawData);
+        const datasets  = entries.map(([name, values], i) => {
+            const colour = COLOURS[i % COLOURS.length];
+            // Forward-fill nulls so line is continuous
+            let last = null;
+            const filled = values.map(v => {
+                if (v !== null && v > 0) { last = v; return v; }
+                return last ?? null;
+            });
+            return {
+                label: name,
+                data: filled,
+                borderColor: colour,
+                backgroundColor: colour + '14',
+                borderWidth: 2,
+                pointRadius: 3,
+                pointHoverRadius: 5,
+                pointBackgroundColor: colour,
+                fill: false,
+                tension: 0.3,
+            };
         });
 
-        const ctx = document.getElementById('stock-chart').getContext('2d');
-        new Chart(ctx, {
+        // Custom legend
+        const legendEl = document.getElementById('chart-legend');
+        datasets.forEach(ds => {
+            const item = document.createElement('div');
+            item.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:0.75rem;color:#475569;cursor:pointer;';
+            item.innerHTML = `<span style="display:inline-block;width:24px;height:3px;background:${ds.borderColor};border-radius:2px;flex-shrink:0;"></span>${ds.label}`;
+            item.addEventListener('click', () => {
+                const meta = chart.getDatasetMeta(datasets.indexOf(ds));
+                meta.hidden = !meta.hidden;
+                item.style.opacity = meta.hidden ? '0.4' : '1';
+                chart.update();
+            });
+            legendEl.appendChild(item);
+        });
+
+        const ctx   = document.getElementById('stock-chart').getContext('2d');
+        const chart = new Chart(ctx, {
             type: 'line',
-            data: {
-                labels,
-                datasets: [{
-                    label: 'Total Stock Value',
-                    data: filled,
-                    borderColor: '#0ea5e9',
-                    backgroundColor: 'rgba(14,165,233,0.08)',
-                    borderWidth: 2,
-                    pointRadius: 4,
-                    pointBackgroundColor: '#0ea5e9',
-                    pointHoverRadius: 6,
-                    fill: true,
-                    tension: 0.3,
-                }]
-            },
+            data: { labels, datasets },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
@@ -127,7 +150,7 @@
                     legend: { display: false },
                     tooltip: {
                         callbacks: {
-                            label: ctx => ' ' + fmtGbp(ctx.parsed.y)
+                            label: ctx => ' ' + ctx.dataset.label + ': ' + fmtGbp(ctx.parsed.y)
                         }
                     }
                 },

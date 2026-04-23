@@ -24,31 +24,49 @@ class StockController extends Controller
 
     public function index(): View
     {
-        // Build rolling 12-month chart data (one point per month, last snapshot of each month)
         $cutoff = now()->startOfMonth()->subMonths(11);
 
         $snapshots = StockSnapshot::where('snapshot_date', '>=', $cutoff)
             ->orderBy('snapshot_date')
             ->get();
 
-        // Group by year-month, take last entry per month
+        // Group by year-month — prefer the snapshot closest to the 1st of each month
         $byMonth = [];
         foreach ($snapshots as $snap) {
             $key = $snap->snapshot_date->format('Y-m');
-            $byMonth[$key] = $snap->total_value;
+            // Keep the snapshot nearest the start of the month
+            if (!isset($byMonth[$key]) || $snap->snapshot_date->day < $byMonth[$key]->snapshot_date->day) {
+                $byMonth[$key] = $snap;
+            }
         }
 
-        // Build ordered labels + values for the last 12 months
+        // Collect all warehouse names seen across all snapshots (preserve insertion order)
+        $warehouseNames = [];
+        foreach ($byMonth as $snap) {
+            foreach (array_keys($snap->warehouse_data ?? []) as $name) {
+                $warehouseNames[$name] = true;
+            }
+        }
+        $warehouseNames = array_keys($warehouseNames);
+
+        // Build chart labels and per-warehouse value arrays
         $chartLabels = [];
-        $chartValues = [];
+        $warehouseValues = array_fill_keys($warehouseNames, []); // name => [month values...]
+
         for ($i = 11; $i >= 0; $i--) {
             $month = now()->startOfMonth()->subMonths($i);
             $key   = $month->format('Y-m');
             $chartLabels[] = $month->format('M Y');
-            $chartValues[] = $byMonth[$key] ?? null;
+            $snap = $byMonth[$key] ?? null;
+
+            foreach ($warehouseNames as $name) {
+                $warehouseValues[$name][] = $snap
+                    ? (float) ($snap->warehouse_data[$name]['totalCost'] ?? 0)
+                    : null;
+            }
         }
 
-        return view('stock.index', compact('chartLabels', 'chartValues'));
+        return view('stock.index', compact('chartLabels', 'warehouseValues'));
     }
 
     public function data(Request $request): JsonResponse

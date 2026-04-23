@@ -146,7 +146,7 @@ class UnleashedService
      * one page; Guid dedup stops if Unleashed repeats pages due to its pagination bug.
      * Returns ['Warehouse Name' => ['totalCost' => float, 'qty' => float], ...]
      */
-    public function fetchStockByWarehouse(): array
+    public function fetchStockByWarehouse(?string $asAt = null): array
     {
         // Get all warehouses
         $whData     = $this->get('Warehouses', ['pageSize' => 200, 'pageNumber' => 1]);
@@ -176,11 +176,15 @@ class UnleashedService
             do {
                 $pageRequests = [];
                 foreach ($active as $code) {
-                    $qs = http_build_query([
+                    $params = [
                         'warehouseCode' => $code,
                         'pageSize'      => 2000,
                         'pageNumber'    => $page,
-                    ]);
+                    ];
+                    if ($asAt !== null) {
+                        $params['asAtDate'] = $asAt;
+                    }
+                    $qs = http_build_query($params);
                     $pageRequests[$code] = [
                         'url'     => self::BASE_URL . '/StockOnHand?' . $qs,
                         'headers' => $this->headers($qs),
