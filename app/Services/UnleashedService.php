@@ -28,12 +28,12 @@ class UnleashedService
         ];
     }
 
-    public function get(string $endpoint, array $params = []): array
+    public function get(string $endpoint, array $params = [], int $timeout = 60): array
     {
         $queryString = http_build_query($params);
         $url = self::BASE_URL . '/' . $endpoint . ($queryString ? "?{$queryString}" : '');
 
-        $response = Http::timeout(30)
+        $response = Http::timeout($timeout)
             ->withHeaders($this->headers($queryString))
             ->get($url);
 

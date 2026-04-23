@@ -56,18 +56,32 @@ class BackfillPrintArchive extends Command
             $maxPages = 1;
 
             do {
-                try {
-                    $data = $service->get('SalesOrders', [
-                        'warehouseCode' => $a1Code,
-                        'orderStatus'   => $unleashedStatus,
-                        'pageSize'      => $pageSize,
-                        'pageNumber'    => $page,
-                    ]);
-                } catch (\Throwable $e) {
-                    $this->error("API error on page {$page}: " . $e->getMessage());
-                    $totalErrors++;
-                    break;
+                // Retry each page up to 3 times with exponential backoff
+                $data    = null;
+                $attempt = 0;
+                while ($attempt < 3) {
+                    try {
+                        $data = $service->get('SalesOrders', [
+                            'warehouseCode' => $a1Code,
+                            'orderStatus'   => $unleashedStatus,
+                            'pageSize'      => $pageSize,
+                            'pageNumber'    => $page,
+                        ], 90);
+                        break;
+                    } catch (\Throwable $e) {
+                        $attempt++;
+                        if ($attempt >= 3) {
+                            $this->error("API error on page {$page} after 3 attempts: " . $e->getMessage());
+                            $totalErrors++;
+                            break 2; // exit do-while
+                        }
+                        $wait = $attempt * 10;
+                        $this->warn("  Timeout on page {$page}, retrying in {$wait}s (attempt {$attempt}/3)…");
+                        sleep($wait);
+                    }
                 }
+
+                if ($data === null) break;
 
                 $maxPages = $data['Pagination']['NumberOfPages'] ?? 1;
                 $orders   = $data['Items'] ?? [];
