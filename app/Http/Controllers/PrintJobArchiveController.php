@@ -23,7 +23,7 @@ class PrintJobArchiveController extends Controller
                       ->orWhere('line_comment',        'like', '%' . $search . '%');
                 });
             })
-            ->orderByDesc('archived_at')
+            ->orderByRaw('COALESCE(despatched_at, order_date) DESC')
             ->paginate(30)
             ->withQueryString();
 
