@@ -51,9 +51,10 @@ class BackfillPrintArchive extends Command
             $this->newLine();
             $this->info("Processing {$unleashedStatus} orders page by page…");
 
-            $page     = 1;
-            $pageSize = 100; // smaller pages = lower memory per batch
-            $maxPages = 1;
+            $page      = 1;
+            $pageSize  = 100;
+            $maxPages  = 1;
+            $seenGuids = []; // dedup — Unleashed repeats pages when filtering by status
 
             do {
                 // Retry each page up to 3 times with exponential backoff
@@ -73,7 +74,7 @@ class BackfillPrintArchive extends Command
                         if ($attempt >= 3) {
                             $this->error("API error on page {$page} after 3 attempts: " . $e->getMessage());
                             $totalErrors++;
-                            break 2; // exit do-while
+                            break 2;
                         }
                         $wait = $attempt * 10;
                         $this->warn("  Timeout on page {$page}, retrying in {$wait}s (attempt {$attempt}/3)…");
@@ -86,11 +87,26 @@ class BackfillPrintArchive extends Command
                 $maxPages = $data['Pagination']['NumberOfPages'] ?? 1;
                 $orders   = $data['Items'] ?? [];
 
-                $this->line("  Page {$page}/{$maxPages} — " . count($orders) . " orders");
+                // Count new GUIDs on this page — if zero, Unleashed is repeating itself; stop.
+                $newOnPage = 0;
+                foreach ($orders as $o) {
+                    if (!isset($seenGuids[$o['Guid'] ?? ''])) {
+                        $newOnPage++;
+                    }
+                }
+
+                $this->line("  Page {$page}/{$maxPages} — " . count($orders) . " orders, {$newOnPage} new");
+
+                if ($newOnPage === 0) {
+                    $this->warn("  No new orders on page {$page} — Unleashed pagination ended early. Stopping.");
+                    break;
+                }
 
                 foreach ($orders as $order) {
                     $guid = $order['Guid'] ?? null;
                     if (!$guid) continue;
+                    if (isset($seenGuids[$guid])) continue; // skip duplicate
+                    $seenGuids[$guid] = true;
 
                     $orderNumber  = $order['OrderNumber'] ?? '';
                     $orderDate    = $service->parseDate($order['OrderDate'] ?? null);
@@ -160,7 +176,7 @@ class BackfillPrintArchive extends Command
                         $totalSaved++;
                     }
 
-                    unset($order, $lines); // free memory after each order
+                    unset($order, $lines);
                 }
 
                 unset($orders, $data);
@@ -170,7 +186,7 @@ class BackfillPrintArchive extends Command
 
             } while ($page <= $maxPages);
 
-            $this->info("{$unleashedStatus} done.");
+            $this->info("{$unleashedStatus} done. Unique orders seen: " . count($seenGuids));
         }
 
         $this->newLine();
