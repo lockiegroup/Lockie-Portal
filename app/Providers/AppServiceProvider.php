@@ -17,5 +17,6 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('print_settings', fn($user) => $user->hasPermission('print_settings'));
         Gate::define('envelope_settings', fn($user) => $user->hasPermission('envelope_settings'));
         Gate::define('cash_flow', fn($user) => $user->hasPermission('cash_flow'));
+        Gate::define('policy_settings', fn($user) => $user->hasPermission('policy_settings'));
     }
 }

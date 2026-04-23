@@ -15,6 +15,8 @@ use App\Http\Controllers\HealthSafety\SettingsController as HsSettingsController
 use App\Http\Controllers\PrintScheduleController;
 use App\Http\Controllers\PrintJobArchiveController;
 use App\Http\Controllers\CashFlowController;
+use App\Http\Controllers\PolicyController;
+use App\Http\Controllers\Admin\PolicyController as AdminPolicyController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn() => redirect()->route('login'));
@@ -81,6 +83,19 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::post('/opening-balance', [CashFlowController::class, 'updateOpeningBalance'])->name('opening-balance');
         Route::post('/categories', [CashFlowController::class, 'storeCategory'])->name('categories.store');
         Route::delete('/categories/{category}', [CashFlowController::class, 'destroyCategory'])->name('categories.destroy');
+    });
+
+    // Company Policies — all authenticated staff can view
+    Route::get('/policies', [PolicyController::class, 'index'])->name('policies.index');
+    Route::get('/policies/{policy}/download', [PolicyController::class, 'download'])->name('policies.download');
+
+    // Admin — policy settings
+    Route::middleware('can:policy_settings')->prefix('admin/policies')->name('admin.policies.')->group(function () {
+        Route::get('/', [AdminPolicyController::class, 'index'])->name('index');
+        Route::post('/', [AdminPolicyController::class, 'store'])->name('store');
+        Route::put('/{policy}', [AdminPolicyController::class, 'update'])->name('update');
+        Route::delete('/{policy}', [AdminPolicyController::class, 'destroy'])->name('destroy');
+        Route::post('/reorder', [AdminPolicyController::class, 'reorder'])->name('reorder');
     });
 
     // Admin — manage users
