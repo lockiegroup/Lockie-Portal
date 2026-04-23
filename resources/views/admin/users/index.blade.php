@@ -25,7 +25,8 @@
         @endif
 
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <table class="w-full text-sm">
+            <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+            <table class="w-full text-sm" style="min-width:640px;">
                 <thead>
                     <tr class="border-b border-slate-200 bg-slate-50">
                         <th class="text-left px-6 py-3 font-semibold text-slate-600">Name</th>
@@ -78,6 +79,7 @@
                     @endforeach
                 </tbody>
             </table>
+            </div>
         </div>
     </main>
 </x-layout>
