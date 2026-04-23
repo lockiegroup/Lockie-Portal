@@ -70,24 +70,17 @@
                     <table style="width:100%;border-collapse:collapse;font-size:0.8125rem;">
                         <thead>
                             <tr style="background:#f8fafc;border-bottom:1px solid #e2e8f0;">
-                                <th style="padding:10px 16px;text-align:left;font-weight:600;color:#64748b;white-space:nowrap;">Completed</th>
                                 <th style="padding:10px 16px;text-align:left;font-weight:600;color:#64748b;white-space:nowrap;">Order</th>
                                 <th style="padding:10px 16px;text-align:left;font-weight:600;color:#64748b;white-space:nowrap;">Customer</th>
                                 <th style="padding:10px 16px;text-align:left;font-weight:600;color:#64748b;white-space:nowrap;">Product</th>
                                 <th style="padding:10px 16px;text-align:left;font-weight:600;color:#64748b;">Print Data</th>
                                 <th style="padding:10px 16px;text-align:right;font-weight:600;color:#64748b;white-space:nowrap;">Packs</th>
-                                <th style="padding:10px 16px;text-align:left;font-weight:600;color:#64748b;white-space:nowrap;">Despatched</th>
+                                <th style="padding:10px 16px;text-align:left;font-weight:600;color:#64748b;white-space:nowrap;">Completed</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach($jobs as $job)
                                 <tr style="border-bottom:1px solid #f1f5f9;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
-                                    <td style="padding:10px 16px;color:#94a3b8;white-space:nowrap;vertical-align:top;">
-                                        {{ $job->archived_at->format('d M Y') }}
-                                        @if($job->archive_reason === 'deleted')
-                                            <br><span style="font-size:0.65rem;background:#fef2f2;color:#dc2626;border:1px solid #fecaca;border-radius:4px;padding:1px 5px;white-space:nowrap;">Deleted from Unleashed</span>
-                                        @endif
-                                    </td>
                                     <td style="padding:10px 16px;vertical-align:top;white-space:nowrap;">
                                         <span class="font-mono text-xs text-slate-500">{{ $job->order_number }}</span>
                                         @if($job->board && $job->board !== 'unplanned')
@@ -118,16 +111,10 @@
                                     <td style="padding:10px 16px;text-align:right;vertical-align:top;white-space:nowrap;">
                                         <span class="text-slate-700 font-medium">{{ number_format($job->order_quantity) }}</span>
                                     </td>
-                                    <td style="padding:10px 16px;vertical-align:top;white-space:nowrap;">
-                                        @if($job->despatched_at)
-                                            <span class="text-xs text-slate-600">{{ $job->despatched_at->format('d M Y') }}</span>
-                                        @elseif($job->required_date)
-                                            <span class="text-xs {{ $job->date_changed ? 'text-amber-600 font-medium' : 'text-slate-400 italic' }}">
-                                                {{ $job->required_date->format('d M Y') }}
-                                                <span style="font-size:0.65rem;color:#94a3b8;">(planned)</span>
-                                            </span>
-                                        @else
-                                            <span class="text-xs text-slate-300 italic">—</span>
+                                    <td style="padding:10px 16px;color:#94a3b8;white-space:nowrap;vertical-align:top;">
+                                        {{ $job->archived_at->format('d M Y') }}
+                                        @if($job->archive_reason === 'deleted')
+                                            <br><span style="font-size:0.65rem;background:#fef2f2;color:#dc2626;border:1px solid #fecaca;border-radius:4px;padding:1px 5px;white-space:nowrap;">Deleted from Unleashed</span>
                                         @endif
                                     </td>
                                 </tr>
