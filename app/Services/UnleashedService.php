@@ -290,11 +290,9 @@ class UnleashedService
 
         $orders = $this->paginate('SalesOrders', ['warehouseCode' => $a1Code], 500);
 
-        return array_values(array_filter($orders, function (array $order) {
-            // Pass Completed and Deleted through so the sync can archive them with reasons/dates
-            $status = $order['OrderStatus'] ?? '';
-            return !in_array($status, ['Backordered'], true);
-        }));
+        // Return all statuses — the sync handles Completed/Deleted archiving explicitly.
+        // Backordered (partially shipped) must stay active so remaining packs stay in the schedule.
+        return $orders;
     }
 
     /**

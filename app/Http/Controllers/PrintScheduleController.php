@@ -199,6 +199,21 @@ class PrintScheduleController extends Controller
 
                     $existing = PrintJob::active()->where('unleashed_guid', $guid)->where('line_number', $lineNumber)->first();
 
+                    // If not found as active, check if it was swept into the archive with no reason
+                    // (e.g. was Backordered and incorrectly treated as gone). Restore it rather than
+                    // creating a duplicate entry.
+                    if (!$existing) {
+                        $swept = PrintJob::where('unleashed_guid', $guid)
+                            ->where('line_number', $lineNumber)
+                            ->whereNotNull('archived_at')
+                            ->whereNull('archive_reason')
+                            ->first();
+                        if ($swept) {
+                            $swept->update(['archived_at' => null]);
+                            $existing = $swept->fresh();
+                        }
+                    }
+
                     if ($existing) {
                         $update = [
                             'order_number'        => $orderNumber,
