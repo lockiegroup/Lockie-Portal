@@ -17,6 +17,7 @@ use App\Http\Controllers\PrintJobArchiveController;
 use App\Http\Controllers\CashFlowController;
 use App\Http\Controllers\PolicyController;
 use App\Http\Controllers\Admin\PolicyController as AdminPolicyController;
+use App\Http\Controllers\Admin\ActivityLogController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn() => redirect()->route('login'));
@@ -98,9 +99,10 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::post('/reorder', [AdminPolicyController::class, 'reorder'])->name('reorder');
     });
 
-    // Admin — manage users
+    // Admin — manage users + activity log
     Route::middleware('can:manage_users')->group(function () {
         Route::resource('admin/users', UserController::class)->names('admin.users');
+        Route::get('admin/activity-log', ActivityLogController::class)->name('admin.activity-log');
     });
 
     // Admin — print schedule settings

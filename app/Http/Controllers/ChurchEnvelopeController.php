@@ -217,6 +217,11 @@ class ChurchEnvelopeController extends Controller
         $tmpFile = tempnam(sys_get_temp_dir(), 'envelopes_') . '.xlsx';
         (new Xlsx($spreadsheet))->save($tmpFile);
 
+        \App\Models\ActivityLog::record(
+            'envelope.generate',
+            "Generated church envelopes for {$request->input('church')} ({$request->input('num_weeks')} weeks)"
+        );
+
         return response()->download(
             $tmpFile,
             'church-envelopes-' . $startDate->format('Y') . '.xlsx',

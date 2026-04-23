@@ -37,6 +37,8 @@ class OtpController extends Controller
         $user = \Illuminate\Support\Facades\Auth::loginUsingId($userId);
         $user->update(['last_login_at' => now()]);
 
+        \App\Models\ActivityLog::record('auth.login', 'Logged in', $user->id);
+
         return redirect()->route('dashboard');
     }
 }

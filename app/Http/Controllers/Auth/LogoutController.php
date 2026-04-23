@@ -10,6 +10,8 @@ class LogoutController extends Controller
 {
     public function __invoke(Request $request)
     {
+        \App\Models\ActivityLog::record('auth.logout', 'Logged out');
+
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

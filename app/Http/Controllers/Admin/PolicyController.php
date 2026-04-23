@@ -40,6 +40,8 @@ class PolicyController extends Controller
             'sort_order'  => CompanyPolicy::max('sort_order') + 1,
         ]);
 
+        \App\Models\ActivityLog::record('policy.upload', "Uploaded policy: {$data['title']}");
+
         return back()->with('success', 'Policy uploaded successfully.');
     }
 
@@ -67,11 +69,15 @@ class PolicyController extends Controller
 
         $policy->update($updates);
 
+        \App\Models\ActivityLog::record('policy.update', "Updated policy: {$policy->title}");
+
         return back()->with('success', 'Policy updated.');
     }
 
     public function destroy(CompanyPolicy $policy)
     {
+        \App\Models\ActivityLog::record('policy.delete', "Deleted policy: {$policy->title}");
+
         Storage::delete($policy->file_path);
         $policy->delete();
 

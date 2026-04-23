@@ -120,6 +120,8 @@ class CashFlowController extends Controller
 
         $entry = CashFlowEntry::create($data);
 
+        \App\Models\ActivityLog::record('cashflow.entry_add', "Added cash flow entry: {$entry->description} (£" . number_format((float) $entry->amount, 2) . ')');
+
         return response()->json(['success' => true, 'id' => $entry->id]);
     }
 
@@ -147,6 +149,8 @@ class CashFlowController extends Controller
 
     public function destroy(CashFlowEntry $entry): JsonResponse
     {
+        \App\Models\ActivityLog::record('cashflow.entry_delete', "Deleted cash flow entry: {$entry->description}");
+
         $entry->delete();
         return response()->json(['success' => true]);
     }

@@ -21,6 +21,8 @@ class PolicyController extends Controller
     {
         abort_unless(Storage::exists($policy->file_path), 404);
 
+        \App\Models\ActivityLog::record('policy.download', "Downloaded policy: {$policy->title}");
+
         return Storage::download($policy->file_path, $policy->file_name);
     }
 }

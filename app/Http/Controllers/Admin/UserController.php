@@ -51,6 +51,8 @@ class UserController extends Controller
             'is_active'   => true,
         ]);
 
+        \App\Models\ActivityLog::record('users.create', "Created user: {$data['name']} ({$data['email']})");
+
         return redirect()->route('admin.users.index')->with('success', "{$data['name']} has been added.");
     }
 
@@ -92,6 +94,8 @@ class UserController extends Controller
 
         $user->save();
 
+        \App\Models\ActivityLog::record('users.update', "Updated user: {$user->name}");
+
         return redirect()->route('admin.users.index')->with('success', "{$user->name} has been updated.");
     }
 
@@ -100,6 +104,8 @@ class UserController extends Controller
         if ($user->id === auth()->id()) {
             return back()->with('error', 'You cannot delete your own account.');
         }
+        \App\Models\ActivityLog::record('users.delete', "Deleted user: {$user->name} ({$user->email})");
+
         $user->delete();
         return redirect()->route('admin.users.index')->with('success', 'User removed.');
     }

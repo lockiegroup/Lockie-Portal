@@ -275,6 +275,8 @@ class PrintScheduleController extends Controller
                 });
             }
 
+            \App\Models\ActivityLog::record('print.sync', "Synced print schedule ({$created} created, {$updated} updated)");
+
             return response()->json(['success' => true, 'created' => $created, 'updated' => $updated]);
         } catch (\Throwable $e) {
             return response()->json(['success' => false, 'error' => get_class($e) . ': ' . $e->getMessage()], 500);
@@ -294,6 +296,9 @@ class PrintScheduleController extends Controller
             'board'    => $board,
             'position' => $maxPosition + 1,
         ]);
+
+        $boardLabel = PrintJob::BOARDS[$board] ?? $board;
+        \App\Models\ActivityLog::record('print.board_move', "Moved {$job->order_number} to {$boardLabel}");
 
         return response()->json(['success' => true]);
     }
@@ -318,7 +323,10 @@ class PrintScheduleController extends Controller
             'quantity_completed' => ['required', 'integer', 'min:0', 'max:' . $job->order_quantity],
         ]);
 
-        $job->update(['quantity_completed' => $request->integer('quantity_completed')]);
+        $qty = $request->integer('quantity_completed');
+        $job->update(['quantity_completed' => $qty]);
+
+        \App\Models\ActivityLog::record('print.complete', "Updated completion on {$job->order_number}: {$qty} qty completed");
 
         return response()->json([
             'success'   => true,
@@ -373,6 +381,8 @@ class PrintScheduleController extends Controller
 
         $note->load('user');
 
+        \App\Models\ActivityLog::record('print.note_add', "Added note to {$job->order_number}");
+
         return response()->json([
             'success' => true,
             'note'    => [
@@ -389,6 +399,8 @@ class PrintScheduleController extends Controller
         abort_unless($note->print_job_id === $job->id, 404);
 
         $note->delete();
+
+        \App\Models\ActivityLog::record('print.note_delete', "Deleted note from {$job->order_number}");
 
         return response()->json(['success' => true]);
     }
