@@ -32,6 +32,7 @@
                         <th class="text-left px-6 py-3 font-semibold text-slate-600">Email</th>
                         <th class="text-left px-6 py-3 font-semibold text-slate-600">Role</th>
                         <th class="text-left px-6 py-3 font-semibold text-slate-600">Status</th>
+                        <th class="text-left px-6 py-3 font-semibold text-slate-600">Last Login</th>
                         <th class="px-6 py-3"></th>
                     </tr>
                 </thead>
@@ -53,6 +54,15 @@
                                 <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {{ $user->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700' }}">
                                     {{ $user->is_active ? 'Active' : 'Inactive' }}
                                 </span>
+                            </td>
+                            <td class="px-6 py-4 text-slate-500 text-sm">
+                                @if($user->last_login_at)
+                                    <span title="{{ $user->last_login_at->format('d M Y H:i') }}">
+                                        {{ $user->last_login_at->diffForHumans() }}
+                                    </span>
+                                @else
+                                    <span class="text-slate-300">Never</span>
+                                @endif
                             </td>
                             <td class="px-6 py-4 text-right flex items-center justify-end gap-3">
                                 <a href="{{ route('admin.users.edit', $user) }}" class="text-sky-600 hover:text-sky-800 font-medium">Edit</a>

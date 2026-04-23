@@ -34,7 +34,8 @@ class OtpController extends Controller
         session()->forget('otp_user_id');
         session(['otp_verified' => true]);
 
-        \Illuminate\Support\Facades\Auth::loginUsingId($userId);
+        $user = \Illuminate\Support\Facades\Auth::loginUsingId($userId);
+        $user->update(['last_login_at' => now()]);
 
         return redirect()->route('dashboard');
     }
