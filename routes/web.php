@@ -59,6 +59,7 @@ Route::middleware(['auth', 'otp'])->group(function () {
     Route::prefix('print-schedule')->name('print.')->group(function () {
         Route::get('/', [PrintScheduleController::class, 'index'])->name('index');
         Route::get('/archive', [PrintJobArchiveController::class, 'index'])->name('archive');
+        Route::get('/overview', [PrintScheduleController::class, 'overview'])->name('overview');
         Route::post('/sync', [PrintScheduleController::class, 'sync'])->name('sync');
         Route::post('/jobs/{job}/board', [PrintScheduleController::class, 'moveBoard'])->name('jobs.board');
         Route::post('/jobs/reorder', [PrintScheduleController::class, 'reorder'])->name('jobs.reorder');

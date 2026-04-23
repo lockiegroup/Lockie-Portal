@@ -104,6 +104,47 @@ class PrintScheduleController extends Controller
         return $date;
     }
 
+    public function overview(): View
+    {
+        $machines    = PrintJob::MACHINES;
+        $throughputs = $this->loadThroughputs();
+        $today       = now()->startOfDay();
+
+        $machineStats = [];
+        foreach ($machines as $machine) {
+            $jobs           = PrintJob::active()->where('board', $machine)->orderBy('position')->get();
+            $totalRemaining = $jobs->sum(fn($j) => $j->remaining_quantity);
+            $tp             = $throughputs[$machine] ?? 350;
+            $leadDays       = $tp > 0 ? round($totalRemaining / $tp, 1) : 0;
+
+            $lateCount  = 0;
+            $cumulative = 0;
+            foreach ($jobs as $job) {
+                $cumulative += $job->remaining_quantity;
+                if ($job->required_date && $tp > 0 && $cumulative > 0) {
+                    $estimated = $this->estimatedCompletion($today, $cumulative, $tp);
+                    if ($estimated->gt($job->required_date)) {
+                        $lateCount++;
+                    }
+                }
+            }
+
+            $machineStats[$machine] = [
+                'label'      => PrintJob::BOARDS[$machine],
+                'job_count'  => $jobs->count(),
+                'remaining'  => $totalRemaining,
+                'lead_days'  => $leadDays,
+                'throughput' => $tp,
+                'late_count' => $lateCount,
+            ];
+        }
+
+        $dashboardNotes = PrintScheduleSetting::getValue('dashboard_notes', '');
+        $lastSync       = PrintJob::active()->max('synced_at');
+
+        return view('print-schedule.overview', compact('machineStats', 'dashboardNotes', 'lastSync'));
+    }
+
     public function sync(): JsonResponse
     {
         try {

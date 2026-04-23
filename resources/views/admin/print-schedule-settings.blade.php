@@ -58,6 +58,20 @@
                 </div>
             </div>
 
+            {{-- Dashboard Notes --}}
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <div style="margin-bottom:1rem;">
+                    <h2 class="font-semibold text-slate-800">Schedule Overview — Manual Notes</h2>
+                    <p class="text-xs text-slate-400 mt-0.5">These notes appear on the Schedule Overview page below the machine breakdown. Use it for staff availability, upcoming maintenance, holidays, or other relevant information. Plain text; line breaks are preserved.</p>
+                </div>
+                <textarea name="dashboard_notes" rows="8"
+                    placeholder="e.g. Bank holiday Monday 26th — no production&#10;Auto 3 service scheduled Friday 30th&#10;New stock arriving Tuesday"
+                    style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:0.5rem;font-size:0.875rem;color:#1e293b;font-family:inherit;resize:vertical;box-sizing:border-box;outline:none;"
+                    onfocus="this.style.borderColor='#e11d48';this.style.boxShadow='0 0 0 3px rgba(225,29,72,0.1)'"
+                    onblur="this.style.borderColor='#cbd5e1';this.style.boxShadow='none'"
+                >{{ old('dashboard_notes', $settings['dashboard_notes']) }}</textarea>
+            </div>
+
             <button type="submit"
                 style="background:#1e293b;color:#fff;font-size:0.875rem;padding:10px 24px;border-radius:8px;border:none;cursor:pointer;font-weight:500;">
                 Save Settings

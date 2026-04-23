@@ -22,6 +22,13 @@
                     </span>
                 </p>
             </div>
+            <a href="{{ route('print.overview') }}"
+                style="background:#f1f5f9;color:#64748b;font-size:0.75rem;padding:5px 10px;border-radius:6px;border:1px solid #e2e8f0;display:inline-flex;align-items:center;gap:5px;text-decoration:none;white-space:nowrap;">
+                <svg style="width:12px;height:12px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+                </svg>
+                Overview
+            </a>
             <a href="{{ route('print.archive') }}"
                 style="background:#f1f5f9;color:#64748b;font-size:0.75rem;padding:5px 10px;border-radius:6px;border:1px solid #e2e8f0;display:inline-flex;align-items:center;gap:5px;text-decoration:none;white-space:nowrap;">
                 <svg style="width:12px;height:12px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -70,6 +77,7 @@
         <div id="search-results-info" style="display:none;background:#f8fafc;border:1px solid #e2e8f0;border-radius:0.75rem;padding:8px 16px;margin-bottom:1rem;font-size:0.875rem;color:#64748b;"></div>
 
         {{-- Tab bar --}}
+        <style>#tab-bar{scrollbar-width:none;-ms-overflow-style:none;}#tab-bar::-webkit-scrollbar{display:none;}</style>
         <div id="tab-bar" class="overflow-x-auto -mx-4 sm:mx-0 mb-6">
             <div class="flex min-w-max px-4 sm:px-0 gap-1 border-b border-slate-200 pb-0">
                 @foreach($boards as $key => $label)
