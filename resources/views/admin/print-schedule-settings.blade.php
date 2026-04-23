@@ -1,13 +1,5 @@
 <x-layout title="Print Schedule Settings — Lockie Portal">
 
-    <nav class="bg-slate-900 shadow-lg">
-        <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-            <a href="{{ route('dashboard') }}">
-                <img src="{{ asset('images/logo.png') }}" alt="Lockie Group" class="h-12 w-auto">
-            </a>
-            <a href="{{ route('dashboard') }}" class="text-slate-400 hover:text-white text-sm transition-colors">&#8592; Dashboard</a>
-        </div>
-    </nav>
 
     <main class="max-w-2xl mx-auto px-4 sm:px-6 py-8">
 

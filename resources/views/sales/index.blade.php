@@ -1,27 +1,4 @@
 <x-layout title="Sales Figures — Lockie Portal">
-    <nav class="bg-slate-900 shadow-lg">
-        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-            <div class="flex items-center gap-6">
-                <a href="{{ route('dashboard') }}">
-                    <img src="{{ asset('images/logo.png') }}" alt="Lockie Group" class="h-12 w-auto">
-                </a>
-                <div class="hidden sm:flex items-center gap-1">
-                    <a href="{{ route('dashboard') }}" class="text-slate-400 hover:text-white text-sm px-3 py-1 rounded-lg transition-colors">Dashboard</a>
-                    <span class="text-sky-400 font-medium text-sm px-3 py-1">Sales Figures</span>
-                </div>
-            </div>
-            <div class="flex items-center gap-4">
-                @if(auth()->user()->isAdmin())
-                    <a href="{{ route('admin.users.index') }}" class="text-slate-400 hover:text-white text-sm transition-colors">Manage Users</a>
-                @endif
-                <span class="text-slate-500 text-sm hidden sm:block">{{ auth()->user()->email }}</span>
-                <form action="{{ route('logout') }}" method="POST">
-                    @csrf
-                    <button class="text-slate-400 hover:text-white text-sm font-medium transition-colors">Sign out</button>
-                </form>
-            </div>
-        </div>
-    </nav>
 
     <main class="max-w-7xl mx-auto px-6 py-10">
 

@@ -1,17 +1,4 @@
 <x-layout title="Church Envelope Generator — Lockie Portal">
-    <nav class="bg-slate-900 shadow-lg">
-        <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-            <a href="{{ route('dashboard') }}">
-                <img src="{{ asset('images/logo.png') }}" alt="Lockie Group" class="h-12 w-auto">
-            </a>
-            <div style="display:flex;align-items:center;gap:16px;">
-                @if(Auth::user()->can('admin'))
-                    <a href="{{ route('admin.envelope-settings.index') }}" class="text-slate-400 hover:text-white text-sm transition-colors">&#9881; Settings</a>
-                @endif
-                <a href="{{ route('dashboard') }}" class="text-slate-400 hover:text-white text-sm transition-colors">← Dashboard</a>
-            </div>
-        </div>
-    </nav>
 
     <main class="max-w-2xl mx-auto px-6 py-10">
         <div class="mb-8">

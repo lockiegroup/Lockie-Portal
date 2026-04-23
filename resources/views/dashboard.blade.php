@@ -1,49 +1,4 @@
 <x-layout title="Dashboard — Lockie Portal">
-    <nav class="bg-slate-900 shadow-lg">
-        <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-            <a href="{{ route('dashboard') }}">
-                <img src="{{ asset('images/logo.png') }}" alt="Lockie Group" class="h-12 w-auto">
-            </a>
-            {{-- Desktop nav --}}
-            <div class="hidden sm:flex items-center gap-4">
-                @if(auth()->user()->isAdmin())
-                    <a href="{{ route('admin.users.index') }}" class="text-slate-400 hover:text-white text-sm transition-colors">Manage Users</a>
-                @endif
-                <span class="text-slate-500 text-sm">{{ auth()->user()->email }}</span>
-                <form action="{{ route('logout') }}" method="POST">
-                    @csrf
-                    <button class="text-slate-400 hover:text-white text-sm font-medium transition-colors">Sign out</button>
-                </form>
-            </div>
-            {{-- Mobile hamburger --}}
-            <button id="nav-toggle" class="sm:hidden text-slate-400 hover:text-white p-2 rounded-lg transition-colors" aria-label="Menu">
-                <svg id="nav-icon-open" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
-                <svg id="nav-icon-close" class="w-6 h-6 hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
-        </div>
-        {{-- Mobile dropdown --}}
-        <div id="nav-menu" class="hidden sm:hidden border-t border-slate-800 px-6 py-4 space-y-3">
-            <p class="text-slate-500 text-sm">{{ auth()->user()->email }}</p>
-            @if(auth()->user()->isAdmin())
-                <a href="{{ route('admin.users.index') }}" class="block text-white hover:text-slate-300 text-sm py-1 transition-colors">Manage Users</a>
-            @endif
-            <form action="{{ route('logout') }}" method="POST">
-                @csrf
-                <button class="text-slate-400 hover:text-white text-sm font-medium transition-colors">Sign out</button>
-            </form>
-        </div>
-    </nav>
-
-    <script>
-        document.getElementById('nav-toggle').addEventListener('click', function () {
-            const menu  = document.getElementById('nav-menu');
-            const open  = document.getElementById('nav-icon-open');
-            const close = document.getElementById('nav-icon-close');
-            const isHidden = menu.classList.toggle('hidden');
-            open.classList.toggle('hidden', !isHidden);
-            close.classList.toggle('hidden', isHidden);
-        });
-    </script>
 
     <main class="max-w-5xl mx-auto px-6 py-10">
         <div class="mb-8">
