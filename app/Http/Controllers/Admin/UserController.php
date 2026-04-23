@@ -18,24 +18,37 @@ class UserController extends Controller
 
     public function create()
     {
-        return view('admin.users.create');
+        $permissions = User::PERMISSIONS;
+        return view('admin.users.create', compact('permissions'));
     }
 
     public function store(Request $request)
     {
+        $isMaster = auth()->user()->isMaster();
+
         $data = $request->validate([
             'name'     => 'required|string|max:100',
             'email'    => 'required|email|unique:users,email',
-            'role'     => 'required|in:staff,admin',
+            'role'     => ['required', 'in:staff,admin' . ($isMaster ? ',master' : '')],
             'password' => ['required', Password::min(8)->mixedCase()->numbers()],
         ]);
 
+        $permissions = null;
+        if ($data['role'] === 'admin') {
+            $permissions = array_keys(array_filter(
+                User::PERMISSIONS,
+                fn($label, $key) => $request->boolean('perm_' . $key),
+                ARRAY_FILTER_USE_BOTH
+            ));
+        }
+
         User::create([
-            'name'      => $data['name'],
-            'email'     => strtolower($data['email']),
-            'role'      => $data['role'],
-            'password'  => Hash::make($data['password']),
-            'is_active' => true,
+            'name'        => $data['name'],
+            'email'       => strtolower($data['email']),
+            'role'        => $data['role'],
+            'permissions' => $permissions,
+            'password'    => Hash::make($data['password']),
+            'is_active'   => true,
         ]);
 
         return redirect()->route('admin.users.index')->with('success', "{$data['name']} has been added.");
@@ -43,22 +56,35 @@ class UserController extends Controller
 
     public function edit(User $user)
     {
-        return view('admin.users.edit', compact('user'));
+        $permissions = User::PERMISSIONS;
+        return view('admin.users.edit', compact('user', 'permissions'));
     }
 
     public function update(Request $request, User $user)
     {
+        $isMaster = auth()->user()->isMaster();
+
         $data = $request->validate([
-            'name'      => 'required|string|max:100',
-            'email'     => 'required|email|unique:users,email,' . $user->id,
-            'role'      => 'required|in:staff,admin',
-            'password'  => ['nullable', Password::min(8)->mixedCase()->numbers()],
+            'name'     => 'required|string|max:100',
+            'email'    => 'required|email|unique:users,email,' . $user->id,
+            'role'     => ['required', 'in:staff,admin' . ($isMaster ? ',master' : '')],
+            'password' => ['nullable', Password::min(8)->mixedCase()->numbers()],
         ]);
 
         $user->name      = $data['name'];
         $user->email     = strtolower($data['email']);
         $user->role      = $data['role'];
         $user->is_active = $request->boolean('is_active');
+
+        if ($data['role'] === 'admin') {
+            $user->permissions = array_keys(array_filter(
+                User::PERMISSIONS,
+                fn($label, $key) => $request->boolean('perm_' . $key),
+                ARRAY_FILTER_USE_BOTH
+            ));
+        } else {
+            $user->permissions = null;
+        }
 
         if (!empty($data['password'])) {
             $user->password = Hash::make($data['password']);

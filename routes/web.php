@@ -70,26 +70,28 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::delete('/jobs/{job}/notes/{note}', [PrintScheduleController::class, 'destroyNote'])->name('jobs.notes.destroy');
     });
 
-    // Admin only
-    Route::middleware('can:admin')->group(function () {
+    // Admin — manage users
+    Route::middleware('can:manage_users')->group(function () {
         Route::resource('admin/users', UserController::class)->names('admin.users');
+    });
 
-        Route::prefix('admin/print-schedule-settings')->name('admin.print-settings.')->group(function () {
-            Route::get('/', [PrintScheduleSettingController::class, 'index'])->name('index');
-            Route::post('/', [PrintScheduleSettingController::class, 'update'])->name('update');
-        });
+    // Admin — print schedule settings
+    Route::middleware('can:print_settings')->prefix('admin/print-schedule-settings')->name('admin.print-settings.')->group(function () {
+        Route::get('/', [PrintScheduleSettingController::class, 'index'])->name('index');
+        Route::post('/', [PrintScheduleSettingController::class, 'update'])->name('update');
+    });
 
-        Route::prefix('admin/envelope-settings')->name('admin.envelope-settings.')->group(function () {
-            Route::get('/', [EnvelopeSettingsController::class, 'index'])->name('index');
-            Route::post('/verses', [EnvelopeSettingsController::class, 'storeVerse'])->name('verses.store');
-            Route::put('/verses/{verse}', [EnvelopeSettingsController::class, 'updateVerse'])->name('verses.update');
-            Route::delete('/verses/{verse}', [EnvelopeSettingsController::class, 'destroyVerse'])->name('verses.destroy');
-            Route::post('/verses/reorder', [EnvelopeSettingsController::class, 'reorderVerses'])->name('verses.reorder');
-            Route::post('/spiral-path', [EnvelopeSettingsController::class, 'updateSpiralPath'])->name('spiral-path.update');
-            Route::post('/designs', [EnvelopeSettingsController::class, 'storeDesign'])->name('designs.store');
-            Route::put('/designs/{design}', [EnvelopeSettingsController::class, 'updateDesign'])->name('designs.update');
-            Route::delete('/designs/{design}', [EnvelopeSettingsController::class, 'destroyDesign'])->name('designs.destroy');
-            Route::post('/designs/reorder', [EnvelopeSettingsController::class, 'reorderDesigns'])->name('designs.reorder');
-        });
+    // Admin — envelope settings
+    Route::middleware('can:envelope_settings')->prefix('admin/envelope-settings')->name('admin.envelope-settings.')->group(function () {
+        Route::get('/', [EnvelopeSettingsController::class, 'index'])->name('index');
+        Route::post('/verses', [EnvelopeSettingsController::class, 'storeVerse'])->name('verses.store');
+        Route::put('/verses/{verse}', [EnvelopeSettingsController::class, 'updateVerse'])->name('verses.update');
+        Route::delete('/verses/{verse}', [EnvelopeSettingsController::class, 'destroyVerse'])->name('verses.destroy');
+        Route::post('/verses/reorder', [EnvelopeSettingsController::class, 'reorderVerses'])->name('verses.reorder');
+        Route::post('/spiral-path', [EnvelopeSettingsController::class, 'updateSpiralPath'])->name('spiral-path.update');
+        Route::post('/designs', [EnvelopeSettingsController::class, 'storeDesign'])->name('designs.store');
+        Route::put('/designs/{design}', [EnvelopeSettingsController::class, 'updateDesign'])->name('designs.update');
+        Route::delete('/designs/{design}', [EnvelopeSettingsController::class, 'destroyDesign'])->name('designs.destroy');
+        Route::post('/designs/reorder', [EnvelopeSettingsController::class, 'reorderDesigns'])->name('designs.reorder');
     });
 });

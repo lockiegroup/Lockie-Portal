@@ -10,7 +10,7 @@
     <div style="padding:14px 12px;border-bottom:1px solid #1e293b;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
         <a href="{{ route('dashboard') }}" style="display:flex;align-items:center;gap:10px;min-width:0;text-decoration:none;overflow:hidden;">
             <img src="{{ asset('images/logo.png') }}" alt="Lockie Group" style="height:30px;width:auto;flex-shrink:0;">
-            <span class="sb-label" style="color:white;font-weight:700;font-size:0.875rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Lockie Portal</span>
+            <span class="sb-label" style="color:white;font-weight:700;font-size:0.875rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Portal</span>
         </a>
         <button onclick="sbToggle()" title="Collapse sidebar"
             style="color:#475569;background:none;border:none;cursor:pointer;padding:6px;border-radius:6px;line-height:0;flex-shrink:0;transition:color 0.15s;"
@@ -78,19 +78,20 @@
 
         @if($isPrintSection)
         <div class="sb-sub-group">
-            <a href="{{ route('print.index') }}"
-               class="sb-sub-item{{ request()->routeIs('print.index') ? ' sb-active' : '' }}">Schedule</a>
             <a href="{{ route('print.overview') }}"
                class="sb-sub-item{{ request()->routeIs('print.overview') ? ' sb-active' : '' }}">Overview</a>
+            <a href="{{ route('print.index') }}"
+               class="sb-sub-item{{ request()->routeIs('print.index') ? ' sb-active' : '' }}">Schedule</a>
             <a href="{{ route('print.archive') }}"
                class="sb-sub-item{{ request()->routeIs('print.archive') ? ' sb-active' : '' }}">Archive</a>
         </div>
         @endif
 
-        @can('admin')
+        @canany(['manage_users', 'print_settings', 'envelope_settings'])
         <div style="height:1px;background:#1e293b;margin:10px 4px 8px;"></div>
         <p class="sb-section" style="font-size:0.625rem;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:0.1em;padding:0 10px;margin-bottom:6px;">Admin</p>
 
+        @can('manage_users')
         <a href="{{ route('admin.users.index') }}"
            class="sb-item{{ request()->routeIs('admin.users*') ? ' sb-active' : '' }}"
            data-tip="Manage Users">
@@ -100,7 +101,9 @@
             </svg>
             <span class="sb-label">Manage Users</span>
         </a>
+        @endcan
 
+        @can('print_settings')
         <a href="{{ route('admin.print-settings.index') }}"
            class="sb-item{{ request()->routeIs('admin.print-settings*') ? ' sb-active' : '' }}"
            data-tip="Print Settings">
@@ -110,7 +113,9 @@
             </svg>
             <span class="sb-label">Print Settings</span>
         </a>
+        @endcan
 
+        @can('envelope_settings')
         <a href="{{ route('admin.envelope-settings.index') }}"
            class="sb-item{{ request()->routeIs('admin.envelope-settings*') ? ' sb-active' : '' }}"
            data-tip="Envelope Settings">
@@ -121,6 +126,8 @@
             <span class="sb-label">Envelope Settings</span>
         </a>
         @endcan
+
+        @endcanany
 
     </nav>
 

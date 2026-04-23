@@ -41,9 +41,13 @@
                             <td class="px-6 py-4 font-medium text-slate-800">{{ $user->name }}</td>
                             <td class="px-6 py-4 text-slate-600">{{ $user->email }}</td>
                             <td class="px-6 py-4">
-                                <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {{ $user->role === 'admin' ? 'bg-sky-100 text-sky-700' : 'bg-slate-100 text-slate-600' }}">
-                                    {{ ucfirst($user->role) }}
-                                </span>
+                                @if($user->role === 'master')
+                                    <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;background:#f3e8ff;color:#7c3aed;">Master</span>
+                                @elseif($user->role === 'admin')
+                                    <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;background:#e0f2fe;color:#0369a1;">Admin</span>
+                                @else
+                                    <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:0.75rem;font-weight:600;background:#f1f5f9;color:#475569;">Staff</span>
+                                @endif
                             </td>
                             <td class="px-6 py-4">
                                 <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium {{ $user->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700' }}">

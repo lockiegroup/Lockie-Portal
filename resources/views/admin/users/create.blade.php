@@ -27,10 +27,31 @@
 
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1.5">Role</label>
-                    <select name="role" class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
-                        <option value="staff" {{ old('role') === 'staff' ? 'selected' : '' }}>Staff</option>
-                        <option value="admin" {{ old('role') === 'admin' ? 'selected' : '' }}>Admin</option>
+                    <select name="role" id="role-select"
+                        class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition"
+                        onchange="togglePermissions(this.value)">
+                        <option value="staff" {{ old('role') === 'staff' || !old('role') ? 'selected' : '' }}>Staff — basic access</option>
+                        <option value="admin" {{ old('role') === 'admin' ? 'selected' : '' }}>Admin — configurable access</option>
+                        @if(auth()->user()->isMaster())
+                            <option value="master" {{ old('role') === 'master' ? 'selected' : '' }}>Master — full access</option>
+                        @endif
                     </select>
+                </div>
+
+                {{-- Permissions (only shown for Admin role) --}}
+                <div id="permissions-section" style="{{ old('role') === 'admin' ? '' : 'display:none;' }}">
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Admin Permissions</label>
+                    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:0.625rem;padding:12px 16px;display:flex;flex-direction:column;gap:8px;">
+                        @foreach($permissions as $key => $label)
+                            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                                <input type="checkbox" name="perm_{{ $key }}" value="1"
+                                    style="width:16px;height:16px;accent-color:#0369a1;cursor:pointer;"
+                                    {{ old('perm_' . $key) ? 'checked' : '' }}>
+                                <span style="font-size:0.875rem;color:#334155;">{{ $label }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                    <p style="font-size:0.75rem;color:#94a3b8;margin-top:6px;">Select which admin sections this user can access.</p>
                 </div>
 
                 <div>
@@ -48,4 +69,10 @@
             </form>
         </div>
     </main>
+
+    <script>
+    function togglePermissions(role) {
+        document.getElementById('permissions-section').style.display = role === 'admin' ? '' : 'none';
+    }
+    </script>
 </x-layout>
