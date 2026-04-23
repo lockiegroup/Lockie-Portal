@@ -75,9 +75,10 @@ Route::middleware(['auth', 'otp'])->group(function () {
     // Cash Flow
     Route::middleware('can:cash_flow')->prefix('cash-flow')->name('cash-flow.')->group(function () {
         Route::get('/', [CashFlowController::class, 'index'])->name('index');
-        Route::post('/', [CashFlowController::class, 'store'])->name('store');
-        Route::put('/{entry}', [CashFlowController::class, 'update'])->name('update');
-        Route::delete('/{entry}', [CashFlowController::class, 'destroy'])->name('destroy');
+        Route::post('/cell', [CashFlowController::class, 'updateCell'])->name('cell');
+        Route::post('/opening-balance', [CashFlowController::class, 'updateOpeningBalance'])->name('opening-balance');
+        Route::post('/categories', [CashFlowController::class, 'storeCategory'])->name('categories.store');
+        Route::delete('/categories/{category}', [CashFlowController::class, 'destroyCategory'])->name('categories.destroy');
     });
 
     // Admin — manage users

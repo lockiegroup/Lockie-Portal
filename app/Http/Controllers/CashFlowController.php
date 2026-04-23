@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\CashFlowEntry;
+use App\Models\CashFlowCategory;
+use App\Models\CashFlowSetting;
+use App\Models\CashFlowWeekly;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -11,151 +14,114 @@ class CashFlowController extends Controller
 {
     public function index(Request $request): View
     {
-        $horizon      = (int) $request->input('horizon', session('cash_flow_horizon', 12));
-        $viewMode     = $request->input('view', session('cash_flow_view', 'monthly'));
-        $search       = trim($request->input('search', ''));
-        $statusFilter = $request->input('status', 'all');
-        $horizon      = max(1, min(36, $horizon));
+        $horizon = (int) $request->input('horizon', session('cf_horizon_weeks', 13));
+        $horizon = max(4, min(52, $horizon));
+        session(['cf_horizon_weeks' => $horizon]);
 
-        session(['cash_flow_horizon' => $horizon, 'cash_flow_view' => $viewMode]);
+        // Build week columns (always start from this Monday)
+        $weeks  = [];
+        $cursor = now()->startOfWeek(Carbon::MONDAY)->startOfDay();
+        for ($i = 0; $i < $horizon; $i++) {
+            $weeks[] = $cursor->copy();
+            $cursor->addWeek();
+        }
 
-        $from = now()->startOfMonth();
-        $to   = now()->addMonths($horizon - 1)->endOfMonth();
+        $weekKeys = array_map(fn($w) => $w->toDateString(), $weeks);
 
-        // All entries for summary/daily (unfiltered so balance is always correct)
-        $entries = CashFlowEntry::whereBetween('entry_date', [$from->toDateString(), $to->toDateString()])
-            ->orderBy('entry_date')
-            ->orderBy('id')
+        $categories = CashFlowCategory::orderBy('type')->orderBy('sort_order')->orderBy('id')->get();
+
+        // Load all weekly entries for this period keyed by [category_id][week_start]
+        $raw = CashFlowWeekly::whereBetween('week_start', [$weekKeys[0], $weekKeys[count($weekKeys) - 1]])
             ->get();
 
-        // Filtered entries for the entries table only
-        $filteredEntries = $entries->when($search !== '', function ($c) use ($search) {
-            $lower = strtolower($search);
-            return $c->filter(fn($e) =>
-                str_contains(strtolower($e->description), $lower) ||
-                str_contains(strtolower($e->category ?? ''), $lower) ||
-                str_contains(strtolower($e->notes ?? ''), $lower)
-            );
-        })->when($statusFilter !== 'all', fn($c) => $c->where('status', $statusFilter));
-
-        // Monthly summary (unfiltered)
-        $months = [];
-        $cursor = $from->copy();
-        while ($cursor->lte($to)) {
-            $key   = $cursor->format('Y-m');
-            $slice = $entries->filter(fn($e) => $e->entry_date->format('Y-m') === $key);
-
-            $actualIn    = (float) $slice->where('type', 'income')->where('status', 'actual')->sum('amount');
-            $forecastIn  = (float) $slice->where('type', 'income')->where('status', 'forecast')->sum('amount');
-            $actualOut   = (float) $slice->where('type', 'expense')->where('status', 'actual')->sum('amount');
-            $forecastOut = (float) $slice->where('type', 'expense')->where('status', 'forecast')->sum('amount');
-
-            $months[$key] = [
-                'label'        => $cursor->format('M Y'),
-                'actual_in'    => $actualIn,
-                'forecast_in'  => $forecastIn,
-                'income'       => $actualIn + $forecastIn,
-                'actual_out'   => $actualOut,
-                'forecast_out' => $forecastOut,
-                'expense'      => $actualOut + $forecastOut,
-                'net'          => ($actualIn + $forecastIn) - ($actualOut + $forecastOut),
-            ];
-            $cursor->addMonth();
+        $matrix = [];
+        foreach ($raw as $entry) {
+            $matrix[$entry->category_id][$entry->week_start->toDateString()] = $entry;
         }
 
-        // Daily view: every calendar day in horizon, running balance from all entries
-        $daily   = [];
-        $balance = 0.0;
-        $entryIndex = 0;
-        $entryList  = $entries->values();
-        $cursor     = $from->copy();
+        $openingBalance   = (float) CashFlowSetting::getValue('opening_balance', '0');
+        $incomeCategories = $categories->where('type', 'income')->values();
+        $expenseCategories = $categories->where('type', 'expense')->values();
 
-        while ($cursor->lte($to)) {
-            $day     = $cursor->format('Y-m-d');
-            $dayRows = [];
-
-            while ($entryIndex < $entryList->count() && $entryList[$entryIndex]->entry_date->format('Y-m-d') === $day) {
-                $e      = $entryList[$entryIndex];
-                $signed = $e->type === 'income' ? (float) $e->amount : -(float) $e->amount;
-                $balance += $signed;
-                $dayRows[] = [
-                    'entry_id'    => $e->id,
-                    'description' => $e->description,
-                    'category'    => $e->category,
-                    'type'        => $e->type,
-                    'status'      => $e->status,
-                    'amount'      => (float) $e->amount,
-                    'balance'     => $balance,
-                ];
-                $entryIndex++;
+        // Weekly totals and cascading balances
+        $weeklyCalc    = [];
+        $runningBalance = $openingBalance;
+        foreach ($weekKeys as $wd) {
+            $incomeTotal  = 0.0;
+            $expenseTotal = 0.0;
+            foreach ($incomeCategories as $cat) {
+                $incomeTotal += isset($matrix[$cat->id][$wd]) ? (float) $matrix[$cat->id][$wd]->amount : 0.0;
             }
-
-            $daily[] = [
-                'date'    => $day,
-                'label'   => $cursor->format('d M Y'),
-                'dow'     => $cursor->format('D'),
-                'rows'    => $dayRows,
-                'balance' => $balance,
-                'empty'   => empty($dayRows),
+            foreach ($expenseCategories as $cat) {
+                $expenseTotal += isset($matrix[$cat->id][$wd]) ? (float) $matrix[$cat->id][$wd]->amount : 0.0;
+            }
+            $closing = $runningBalance + $incomeTotal - $expenseTotal;
+            $weeklyCalc[$wd] = [
+                'opening'  => $runningBalance,
+                'income'   => $incomeTotal,
+                'expenses' => $expenseTotal,
+                'net'      => $incomeTotal - $expenseTotal,
+                'closing'  => $closing,
             ];
-
-            $cursor->addDay();
+            $runningBalance = $closing;
         }
-
-        $categories = CashFlowEntry::select('category')
-            ->whereNotNull('category')
-            ->where('category', '!=', '')
-            ->distinct()
-            ->orderBy('category')
-            ->pluck('category');
-
-        $queryParams = compact('horizon', 'search', 'statusFilter') + ['view' => $viewMode, 'status' => $statusFilter];
 
         return view('cash-flow.index', compact(
-            'entries', 'filteredEntries', 'months', 'daily',
-            'horizon', 'viewMode', 'search', 'statusFilter',
-            'categories', 'queryParams'
+            'weeks', 'weekKeys', 'categories',
+            'incomeCategories', 'expenseCategories',
+            'matrix', 'weeklyCalc', 'openingBalance', 'horizon'
         ));
     }
 
-    public function store(Request $request): JsonResponse
+    public function updateCell(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'entry_date'  => ['required', 'date'],
-            'description' => ['required', 'string', 'max:255'],
-            'type'        => ['required', 'in:income,expense'],
-            'amount'      => ['required', 'numeric', 'min:0.01'],
+            'category_id' => ['required', 'exists:cash_flow_categories,id'],
+            'week_start'  => ['required', 'date'],
+            'amount'      => ['nullable', 'numeric', 'min:0'],
             'status'      => ['required', 'in:forecast,actual'],
-            'category'    => ['nullable', 'string', 'max:100'],
-            'notes'       => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $entry = CashFlowEntry::create($data);
+        $amount = isset($data['amount']) && $data['amount'] !== '' ? (float) $data['amount'] : null;
 
-        return response()->json(['success' => true, 'id' => $entry->id]);
+        if ($amount === null || $amount == 0) {
+            CashFlowWeekly::where('category_id', $data['category_id'])
+                ->where('week_start', $data['week_start'])
+                ->delete();
+            return response()->json(['success' => true, 'amount' => null]);
+        }
+
+        CashFlowWeekly::updateOrCreate(
+            ['category_id' => $data['category_id'], 'week_start' => $data['week_start']],
+            ['amount' => $amount, 'status' => $data['status']]
+        );
+
+        return response()->json(['success' => true, 'amount' => $amount, 'status' => $data['status']]);
     }
 
-    public function update(Request $request, CashFlowEntry $entry): JsonResponse
+    public function updateOpeningBalance(Request $request): JsonResponse
     {
-        $data = $request->validate([
-            'entry_date'  => ['required', 'date'],
-            'description' => ['required', 'string', 'max:255'],
-            'type'        => ['required', 'in:income,expense'],
-            'amount'      => ['required', 'numeric', 'min:0.01'],
-            'status'      => ['required', 'in:forecast,actual'],
-            'category'    => ['nullable', 'string', 'max:100'],
-            'notes'       => ['nullable', 'string', 'max:1000'],
-        ]);
-
-        $entry->update($data);
-
+        $request->validate(['opening_balance' => ['required', 'numeric', 'min:0']]);
+        CashFlowSetting::setValue('opening_balance', $request->input('opening_balance'));
         return response()->json(['success' => true]);
     }
 
-    public function destroy(CashFlowEntry $entry): JsonResponse
+    public function storeCategory(Request $request): JsonResponse
     {
-        $entry->delete();
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:100'],
+            'type' => ['required', 'in:income,expense'],
+        ]);
 
+        $data['sort_order'] = CashFlowCategory::where('type', $data['type'])->max('sort_order') + 1;
+        $cat = CashFlowCategory::create($data);
+
+        return response()->json(['success' => true, 'id' => $cat->id, 'name' => $cat->name, 'type' => $cat->type]);
+    }
+
+    public function destroyCategory(CashFlowCategory $category): JsonResponse
+    {
+        $category->delete();
         return response()->json(['success' => true]);
     }
 }
