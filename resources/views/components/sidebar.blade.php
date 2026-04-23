@@ -10,7 +10,7 @@
     <div style="padding:14px 12px;border-bottom:1px solid #1e293b;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
         <a href="{{ route('dashboard') }}" style="display:flex;align-items:center;gap:10px;min-width:0;text-decoration:none;overflow:hidden;">
             <img src="{{ asset('images/logo.png') }}" alt="Lockie Group" style="height:30px;width:auto;flex-shrink:0;">
-            <span class="sb-label" style="color:white;font-weight:700;font-size:0.875rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Portal</span>
+            <span class="sb-label" style="color:white;font-weight:700;font-size:0.875rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Portal 1</span>
         </a>
         <button onclick="sbToggle()" title="Collapse sidebar"
             style="color:#475569;background:none;border:none;cursor:pointer;padding:6px;border-radius:6px;line-height:0;flex-shrink:0;transition:color 0.15s;"
