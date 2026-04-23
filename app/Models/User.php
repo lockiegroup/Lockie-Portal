@@ -14,6 +14,7 @@ class User extends Authenticatable
         'manage_users'      => 'Manage Users',
         'print_settings'    => 'Print Settings',
         'envelope_settings' => 'Envelope Settings',
+        'cash_flow'         => 'Cash Flow',
     ];
 
     protected $fillable = ['name', 'email', 'password', 'role', 'is_active', 'permissions'];

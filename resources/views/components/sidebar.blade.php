@@ -53,6 +53,18 @@
             <span class="sb-label">Stock Overview</span>
         </a>
 
+        @can('cash_flow')
+        <a href="{{ route('cash-flow.index') }}"
+           class="sb-item{{ request()->routeIs('cash-flow.*') ? ' sb-active' : '' }}"
+           data-tip="Cash Flow">
+            <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="1" x2="12" y2="23"/>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+            </svg>
+            <span class="sb-label">Cash Flow</span>
+        </a>
+        @endcan
+
         <div style="height:1px;background:#1e293b;margin:10px 4px 8px;"></div>
         <p class="sb-section" style="font-size:0.625rem;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:0.1em;padding:0 10px;margin-bottom:6px;">Operations</p>
 

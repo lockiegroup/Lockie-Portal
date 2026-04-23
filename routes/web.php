@@ -14,6 +14,7 @@ use App\Http\Controllers\HealthSafety\ActionController as HsActionController;
 use App\Http\Controllers\HealthSafety\SettingsController as HsSettingsController;
 use App\Http\Controllers\PrintScheduleController;
 use App\Http\Controllers\PrintJobArchiveController;
+use App\Http\Controllers\CashFlowController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn() => redirect()->route('login'));
@@ -69,6 +70,15 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::post('/jobs/{job}/date', [PrintScheduleController::class, 'updateDate'])->name('jobs.date');
         Route::post('/jobs/{job}/notes', [PrintScheduleController::class, 'storeNote'])->name('jobs.notes.store');
         Route::delete('/jobs/{job}/notes/{note}', [PrintScheduleController::class, 'destroyNote'])->name('jobs.notes.destroy');
+    });
+
+    // Cash Flow
+    Route::middleware('can:cash_flow')->prefix('cash-flow')->name('cash-flow.')->group(function () {
+        Route::get('/', [CashFlowController::class, 'index'])->name('index');
+        Route::post('/', [CashFlowController::class, 'store'])->name('store');
+        Route::put('/{entry}', [CashFlowController::class, 'update'])->name('update');
+        Route::delete('/{entry}', [CashFlowController::class, 'destroy'])->name('destroy');
+        Route::post('/settings/horizon', [CashFlowController::class, 'horizon'])->name('horizon');
     });
 
     // Admin — manage users
