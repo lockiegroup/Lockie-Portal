@@ -41,6 +41,7 @@ class PrintJob extends Model
         'unleashed_status',
         'synced_at',
         'archived_at',
+        'archive_reason',
     ];
 
     protected $casts = [

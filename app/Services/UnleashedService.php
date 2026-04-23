@@ -288,7 +288,7 @@ class UnleashedService
 
         return array_values(array_filter($orders, function (array $order) {
             $status = $order['OrderStatus'] ?? '';
-            return !in_array($status, ['Completed', 'Deleted'], true);
+            return $status !== 'Completed'; // Deleted orders are kept so the sync can flag them
         }));
     }
 

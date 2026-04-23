@@ -84,7 +84,9 @@
                                 <tr style="border-bottom:1px solid #f1f5f9;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
                                     <td style="padding:10px 16px;color:#94a3b8;white-space:nowrap;vertical-align:top;">
                                         {{ $job->archived_at->format('d M Y') }}
-                                        <br><span style="font-size:0.65rem;background:#fef2f2;color:#dc2626;border:1px solid #fecaca;border-radius:4px;padding:1px 5px;white-space:nowrap;">Removed from Unleashed</span>
+                                        @if($job->archive_reason === 'deleted')
+                                            <br><span style="font-size:0.65rem;background:#fef2f2;color:#dc2626;border:1px solid #fecaca;border-radius:4px;padding:1px 5px;white-space:nowrap;">Removed from Unleashed</span>
+                                        @endif
                                     </td>
                                     <td style="padding:10px 16px;vertical-align:top;white-space:nowrap;">
                                         <span class="font-mono text-xs text-slate-500">{{ $job->order_number }}</span>
