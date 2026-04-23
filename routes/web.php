@@ -97,6 +97,8 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::put('/{policy}', [AdminPolicyController::class, 'update'])->name('update');
         Route::delete('/{policy}', [AdminPolicyController::class, 'destroy'])->name('destroy');
         Route::post('/reorder', [AdminPolicyController::class, 'reorder'])->name('reorder');
+        Route::post('/categories', [AdminPolicyController::class, 'storeCategory'])->name('categories.store');
+        Route::delete('/categories/{category}', [AdminPolicyController::class, 'destroyCategory'])->name('categories.destroy');
     });
 
     // Admin — manage users + activity log

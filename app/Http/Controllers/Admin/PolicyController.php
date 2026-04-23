@@ -4,16 +4,17 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\CompanyPolicy;
+use App\Models\PolicyCategory;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class PolicyController extends Controller
 {
     public function index()
     {
-        $policies = CompanyPolicy::orderBy('sort_order')->orderBy('title')->get();
-        $categories = $policies->pluck('category')->filter()->unique()->sort()->values();
+        $policies   = CompanyPolicy::orderBy('sort_order')->orderBy('title')->get();
+        $categories = PolicyCategory::orderBy('sort_order')->orderBy('name')->get();
 
         return view('admin.policies.index', compact('policies', 'categories'));
     }
@@ -62,7 +63,7 @@ class PolicyController extends Controller
 
         if ($request->hasFile('file')) {
             Storage::delete($policy->file_path);
-            $file             = $request->file('file');
+            $file                 = $request->file('file');
             $updates['file_path'] = $file->store('policies');
             $updates['file_name'] = $file->getClientOriginalName();
         }
@@ -92,6 +93,23 @@ class PolicyController extends Controller
             CompanyPolicy::where('id', $id)->update(['sort_order' => $position]);
         }
 
+        return response()->json(['success' => true]);
+    }
+
+    public function storeCategory(Request $request): JsonResponse
+    {
+        $data = $request->validate(['name' => ['required', 'string', 'max:100', 'unique:policy_categories,name']]);
+        $cat  = PolicyCategory::create([
+            'name'       => $data['name'],
+            'sort_order' => PolicyCategory::max('sort_order') + 1,
+        ]);
+
+        return response()->json(['success' => true, 'id' => $cat->id, 'name' => $cat->name]);
+    }
+
+    public function destroyCategory(PolicyCategory $category): JsonResponse
+    {
+        $category->delete();
         return response()->json(['success' => true]);
     }
 }
