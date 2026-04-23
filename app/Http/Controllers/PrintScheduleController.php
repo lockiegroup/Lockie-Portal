@@ -127,8 +127,9 @@ class PrintScheduleController extends Controller
                 $orderStatus  = $order['OrderStatus'] ?? 'Open';
                 $requiredDate = $unleashed->parseDate($order['RequiredDate'] ?? null);
 
-                // If the order was deleted in Unleashed, archive its active lines with a reason flag
-                if ($orderStatus === 'Deleted') {
+                // Archive completed or deleted orders explicitly so we can capture reason/date
+                if (in_array($orderStatus, ['Completed', 'Deleted'], true)) {
+                    $completedDate = $unleashed->parseDate($order['CompletedDate'] ?? null);
                     foreach ($order['SalesOrderLines'] ?? [] as $lineIndex => $line) {
                         $productCode = $line['Product']['ProductCode'] ?? null;
                         if (empty($productCode)) continue;
@@ -137,7 +138,11 @@ class PrintScheduleController extends Controller
                         PrintJob::active()
                             ->where('unleashed_guid', $guid)
                             ->where('line_number', $lineNumber)
-                            ->update(['archived_at' => now(), 'archive_reason' => 'deleted']);
+                            ->update([
+                                'archived_at'    => now(),
+                                'archive_reason' => $orderStatus === 'Deleted' ? 'deleted' : 'completed',
+                                'despatched_at'  => $orderStatus === 'Completed' ? $completedDate : null,
+                            ]);
                     }
                     continue;
                 }

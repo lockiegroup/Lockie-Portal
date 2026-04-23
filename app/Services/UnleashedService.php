@@ -287,8 +287,9 @@ class UnleashedService
         $orders = $this->paginate('SalesOrders', ['warehouseCode' => $a1Code], 500);
 
         return array_values(array_filter($orders, function (array $order) {
+            // Pass Completed and Deleted through so the sync can archive them with reasons/dates
             $status = $order['OrderStatus'] ?? '';
-            return $status !== 'Completed'; // Deleted orders are kept so the sync can flag them
+            return !in_array($status, ['Backordered'], true);
         }));
     }
 

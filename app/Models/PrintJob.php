@@ -42,6 +42,7 @@ class PrintJob extends Model
         'synced_at',
         'archived_at',
         'archive_reason',
+        'despatched_at',
     ];
 
     protected $casts = [
@@ -57,6 +58,7 @@ class PrintJob extends Model
         'line_number'            => 'integer',
         'position'               => 'integer',
         'archived_at'            => 'datetime',
+        'despatched_at'          => 'date',
     ];
 
     public function scopeActive($query)
