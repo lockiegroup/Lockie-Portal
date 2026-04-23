@@ -11,21 +11,34 @@ class CashFlowController extends Controller
 {
     public function index(Request $request): View
     {
-        $horizon  = (int) $request->input('horizon', session('cash_flow_horizon', 12));
-        $viewMode = $request->input('view', session('cash_flow_view', 'monthly'));
-        $horizon  = max(1, min(36, $horizon));
+        $horizon      = (int) $request->input('horizon', session('cash_flow_horizon', 12));
+        $viewMode     = $request->input('view', session('cash_flow_view', 'monthly'));
+        $search       = trim($request->input('search', ''));
+        $statusFilter = $request->input('status', 'all');
+        $horizon      = max(1, min(36, $horizon));
 
         session(['cash_flow_horizon' => $horizon, 'cash_flow_view' => $viewMode]);
 
         $from = now()->startOfMonth();
         $to   = now()->addMonths($horizon - 1)->endOfMonth();
 
+        // All entries for summary/daily (unfiltered so balance is always correct)
         $entries = CashFlowEntry::whereBetween('entry_date', [$from->toDateString(), $to->toDateString()])
             ->orderBy('entry_date')
             ->orderBy('id')
             ->get();
 
-        // Monthly summary
+        // Filtered entries for the entries table only
+        $filteredEntries = $entries->when($search !== '', function ($c) use ($search) {
+            $lower = strtolower($search);
+            return $c->filter(fn($e) =>
+                str_contains(strtolower($e->description), $lower) ||
+                str_contains(strtolower($e->category ?? ''), $lower) ||
+                str_contains(strtolower($e->notes ?? ''), $lower)
+            );
+        })->when($statusFilter !== 'all', fn($c) => $c->where('status', $statusFilter));
+
+        // Monthly summary (unfiltered)
         $months = [];
         $cursor = $from->copy();
         while ($cursor->lte($to)) {
@@ -38,35 +51,55 @@ class CashFlowController extends Controller
             $forecastOut = (float) $slice->where('type', 'expense')->where('status', 'forecast')->sum('amount');
 
             $months[$key] = [
-                'label'       => $cursor->format('M Y'),
-                'actual_in'   => $actualIn,
-                'forecast_in' => $forecastIn,
-                'income'      => $actualIn + $forecastIn,
-                'actual_out'  => $actualOut,
-                'forecast_out'=> $forecastOut,
-                'expense'     => $actualOut + $forecastOut,
-                'net'         => ($actualIn + $forecastIn) - ($actualOut + $forecastOut),
+                'label'        => $cursor->format('M Y'),
+                'actual_in'    => $actualIn,
+                'forecast_in'  => $forecastIn,
+                'income'       => $actualIn + $forecastIn,
+                'actual_out'   => $actualOut,
+                'forecast_out' => $forecastOut,
+                'expense'      => $actualOut + $forecastOut,
+                'net'          => ($actualIn + $forecastIn) - ($actualOut + $forecastOut),
             ];
             $cursor->addMonth();
         }
 
-        // Daily running balance (all entries in horizon, chronological)
+        // Daily view: every calendar day in horizon, running balance from all entries
         $daily   = [];
         $balance = 0.0;
-        foreach ($entries as $entry) {
-            $signed  = $entry->type === 'income' ? (float) $entry->amount : -(float) $entry->amount;
-            $balance += $signed;
+        $entryIndex = 0;
+        $entryList  = $entries->values();
+        $cursor     = $from->copy();
+
+        while ($cursor->lte($to)) {
+            $day     = $cursor->format('Y-m-d');
+            $dayRows = [];
+
+            while ($entryIndex < $entryList->count() && $entryList[$entryIndex]->entry_date->format('Y-m-d') === $day) {
+                $e      = $entryList[$entryIndex];
+                $signed = $e->type === 'income' ? (float) $e->amount : -(float) $e->amount;
+                $balance += $signed;
+                $dayRows[] = [
+                    'entry_id'    => $e->id,
+                    'description' => $e->description,
+                    'category'    => $e->category,
+                    'type'        => $e->type,
+                    'status'      => $e->status,
+                    'amount'      => (float) $e->amount,
+                    'balance'     => $balance,
+                ];
+                $entryIndex++;
+            }
+
             $daily[] = [
-                'date'        => $entry->entry_date->format('Y-m-d'),
-                'label'       => $entry->entry_date->format('d M Y'),
-                'description' => $entry->description,
-                'category'    => $entry->category,
-                'type'        => $entry->type,
-                'status'      => $entry->status,
-                'amount'      => (float) $entry->amount,
-                'balance'     => $balance,
-                'entry_id'    => $entry->id,
+                'date'    => $day,
+                'label'   => $cursor->format('d M Y'),
+                'dow'     => $cursor->format('D'),
+                'rows'    => $dayRows,
+                'balance' => $balance,
+                'empty'   => empty($dayRows),
             ];
+
+            $cursor->addDay();
         }
 
         $categories = CashFlowEntry::select('category')
@@ -76,7 +109,13 @@ class CashFlowController extends Controller
             ->orderBy('category')
             ->pluck('category');
 
-        return view('cash-flow.index', compact('entries', 'months', 'daily', 'horizon', 'viewMode', 'categories'));
+        $queryParams = compact('horizon', 'search', 'statusFilter') + ['view' => $viewMode, 'status' => $statusFilter];
+
+        return view('cash-flow.index', compact(
+            'entries', 'filteredEntries', 'months', 'daily',
+            'horizon', 'viewMode', 'search', 'statusFilter',
+            'categories', 'queryParams'
+        ));
     }
 
     public function store(Request $request): JsonResponse
