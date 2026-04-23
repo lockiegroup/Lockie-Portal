@@ -8,13 +8,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class PrintJob extends Model
 {
     public const BOARDS = [
-        'unplanned' => 'Unplanned',
-        'call_off'  => 'Call Off',
-        'on_hold'   => 'On Hold',
-        'auto_1'    => 'Auto 1',
-        'auto_2'    => 'Auto 2',
-        'auto_3'    => 'Auto 3',
-        'baby'      => 'Baby',
+        'unplanned'          => 'Unplanned',
+        'call_off'           => 'Call Off',
+        'on_hold'            => 'On Hold',
+        'auto_1'             => 'Auto 1',
+        'auto_2'             => 'Auto 2',
+        'auto_3'             => 'Auto 3',
+        'baby'               => 'Baby',
+        'awaiting_despatch'  => 'Awaiting Despatch',
     ];
 
     public const MACHINES = ['auto_1', 'auto_2', 'auto_3', 'baby'];
