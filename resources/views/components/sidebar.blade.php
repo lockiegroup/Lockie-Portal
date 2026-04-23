@@ -43,6 +43,16 @@
             <span class="sb-label">Sales</span>
         </a>
 
+        <a href="{{ route('stock.index') }}"
+           class="sb-item{{ request()->routeIs('stock.*') ? ' sb-active' : '' }}"
+           data-tip="Stock Overview">
+            <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
+            </svg>
+            <span class="sb-label">Stock Overview</span>
+        </a>
+
         <div style="height:1px;background:#1e293b;margin:10px 4px 8px;"></div>
         <p class="sb-section" style="font-size:0.625rem;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:0.1em;padding:0 10px;margin-bottom:6px;">Operations</p>
 

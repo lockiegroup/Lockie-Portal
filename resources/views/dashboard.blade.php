@@ -52,6 +52,20 @@
                 <span class="text-xs font-medium text-violet-600 uppercase tracking-wide mt-auto">Open &rarr;</span>
             </a>
 
+            <a href="{{ route('stock.index') }}" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4 hover:shadow-md hover:border-slate-300 transition-all">
+                <div class="w-12 h-12 rounded-xl flex items-center justify-center bg-sky-50 text-sky-600">
+                    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="font-semibold text-slate-800">Stock Overview</h2>
+                    <p class="text-slate-500 text-sm mt-1">Monitor stock values by warehouse and track trends over time.</p>
+                </div>
+                <span class="text-xs font-medium text-sky-600 uppercase tracking-wide mt-auto">Open &rarr;</span>
+            </a>
+
             <a href="{{ route('print.index') }}" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4 hover:shadow-md hover:border-slate-300 transition-all">
                 <div class="w-12 h-12 rounded-xl flex items-center justify-center bg-rose-50 text-rose-600">
                     <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -67,73 +81,10 @@
 
         </div>
 
-        {{-- Stock On Hand widget --}}
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden" style="margin-top:3.5rem">
-            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-                <div>
-                    <h2 class="font-semibold text-slate-800">Stock On Hand</h2>
-                    <p class="text-slate-500 text-xs mt-0.5">Total cost value by warehouse</p>
-                </div>
-                <button id="stock-refresh" onclick="loadStock(true)" class="text-xs text-slate-400 hover:text-slate-700 transition-colors">↻ Refresh</button>
-            </div>
-            <div id="stock-results" class="px-6 py-8 text-center text-slate-400 text-sm">Loading…</div>
-        </div>
-
         <div class="mt-8 text-center">
             <span class="inline-block bg-slate-200 text-slate-600 text-xs font-medium px-3 py-1 rounded-full uppercase tracking-wide">
                 {{ auth()->user()->role }}
             </span>
         </div>
     </main>
-
-    <script>
-        const fmtGbp = n => '£' + new Intl.NumberFormat('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2}).format(n);
-
-        function loadStock(refresh = false) {
-            document.getElementById('stock-results').innerHTML = '<div class="py-4 text-slate-400 text-sm">Loading…</div>';
-            let url = '/stock/data';
-            if (refresh) url += '?refresh=1';
-            fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
-                .then(r => r.json())
-                .then(data => {
-                    if (!data.success) {
-                        document.getElementById('stock-results').innerHTML =
-                            `<div class="text-red-600 text-sm py-2">${data.error || 'Error loading stock data'}</div>`;
-                        return;
-                    }
-                    const rows = Object.entries(data.stockByWarehouse);
-                    const total = rows.reduce((s, [, v]) => s + v.totalCost, 0);
-                    const rowsHtml = rows.map(([name, v]) => `
-                        <tr class="border-t border-slate-100">
-                            <td class="py-3 text-sm text-slate-700">${name}</td>
-                            <td class="py-3 text-sm text-slate-500 text-right">${new Intl.NumberFormat('en-GB').format(Math.round(v.qty))}</td>
-                            <td class="py-3 text-sm font-medium text-slate-800 text-right">${fmtGbp(v.totalCost)}</td>
-                        </tr>`).join('');
-                    document.getElementById('stock-results').innerHTML = `
-                        <table class="w-full">
-                            <thead>
-                                <tr>
-                                    <th class="pb-2 text-xs font-medium text-slate-400 uppercase tracking-wide text-left">Warehouse</th>
-                                    <th class="pb-2 text-xs font-medium text-slate-400 uppercase tracking-wide text-right">Units on hand</th>
-                                    <th class="pb-2 text-xs font-medium text-slate-400 uppercase tracking-wide text-right">Stock value</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${rowsHtml}
-                                <tr class="border-t-2 border-slate-200">
-                                    <td class="pt-3 text-sm font-semibold text-slate-800">Total</td>
-                                    <td class="pt-3 text-sm text-slate-500 text-right"></td>
-                                    <td class="pt-3 text-sm font-bold text-slate-900 text-right">${fmtGbp(total)}</td>
-                                </tr>
-                            </tbody>
-                        </table>`;
-                })
-                .catch(() => {
-                    document.getElementById('stock-results').innerHTML =
-                        '<div class="text-red-600 text-sm py-2">Failed to load stock data.</div>';
-                });
-        }
-
-        loadStock();
-    </script>
 </x-layout>
