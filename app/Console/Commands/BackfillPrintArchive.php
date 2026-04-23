@@ -4,11 +4,14 @@ namespace App\Console\Commands;
 
 use App\Models\PrintJob;
 use App\Services\UnleashedService;
+use Carbon\Carbon;
 use Illuminate\Console\Command;
 
 class BackfillPrintArchive extends Command
 {
-    protected $signature   = 'print:backfill-archive {--dry-run : Show what would be imported without saving}';
+    protected $signature   = 'print:backfill-archive
+                                {--dry-run : Show what would be imported without saving}
+                                {--start=2015-01-01 : Earliest order date to fetch (YYYY-MM-DD)}';
     protected $description = 'Import all historical Completed and Deleted A1 orders from Unleashed into the print archive';
 
     public function handle(): int
@@ -16,7 +19,9 @@ class BackfillPrintArchive extends Command
         set_time_limit(0);
         ini_set('memory_limit', '256M');
 
-        $dry = $this->option('dry-run');
+        $dry   = $this->option('dry-run');
+        $start = Carbon::parse($this->option('start'))->startOfMonth();
+        $end   = Carbon::now()->endOfMonth();
 
         $service = new UnleashedService(
             config('services.unleashed.id'),
@@ -39,6 +44,7 @@ class BackfillPrintArchive extends Command
         }
 
         $this->info("A1 warehouse code: {$a1Code}");
+        $this->info("Date range: {$start->format('Y-m-d')} → {$end->format('Y-m-d')} (month by month)");
         if ($dry) {
             $this->warn('DRY RUN — nothing will be saved.');
         }
@@ -46,152 +52,164 @@ class BackfillPrintArchive extends Command
         $totalSaved   = 0;
         $totalSkipped = 0;
         $totalErrors  = 0;
+        $allSeenGuids = []; // global dedup across all months
 
-        $this->newLine();
-        $this->info("Fetching ALL A1 orders page by page (filtering by status in PHP)…");
+        $current = $start->copy();
 
-        $page      = 1;
-        $pageSize  = 200;
-        $maxPages  = 1;
-        $seenGuids = [];
+        while ($current->lte($end)) {
+            $monthStart = $current->format('Y-m-d');
+            $monthEnd   = $current->copy()->endOfMonth()->format('Y-m-d');
 
-        do {
-            // Retry each page up to 3 times with exponential backoff
-            $data    = null;
-            $attempt = 0;
-            while ($attempt < 3) {
-                try {
-                    $data = $service->get('SalesOrders', [
-                        'warehouseCode' => $a1Code,
-                        'pageSize'      => $pageSize,
-                        'pageNumber'    => $page,
-                    ], 90);
-                    break;
-                } catch (\Throwable $e) {
-                    $attempt++;
-                    if ($attempt >= 3) {
-                        $this->error("API error on page {$page} after 3 attempts: " . $e->getMessage());
-                        $totalErrors++;
-                        break 2;
-                    }
-                    $wait = $attempt * 10;
-                    $this->warn("  Timeout on page {$page}, retrying in {$wait}s (attempt {$attempt}/3)…");
-                    sleep($wait);
-                }
-            }
+            $this->newLine();
+            $this->line("<info>{$current->format('M Y')}</info> ({$monthStart} → {$monthEnd})");
 
-            if ($data === null) break;
+            $page      = 1;
+            $pageSize  = 200;
+            $maxPages  = 1;
+            $monthSeen = [];
 
-            $maxPages = $data['Pagination']['NumberOfPages'] ?? 1;
-            $orders   = $data['Items'] ?? [];
-
-            $newOnPage = 0;
-            foreach ($orders as $o) {
-                if (!isset($seenGuids[$o['Guid'] ?? ''])) $newOnPage++;
-            }
-
-            $this->line("  Page {$page}/{$maxPages} — " . count($orders) . " orders, {$newOnPage} new");
-
-            if ($newOnPage === 0) {
-                $this->warn("  No new orders — Unleashed pagination ended early. Stopping.");
-                break;
-            }
-
-            foreach ($orders as $order) {
-                $guid   = $order['Guid'] ?? null;
-                $status = $order['OrderStatus'] ?? '';
-
-                if (!$guid) continue;
-                if (isset($seenGuids[$guid])) continue;
-                $seenGuids[$guid] = true;
-
-                // Only archive Completed and Deleted orders
-                if (!in_array($status, ['Completed', 'Deleted'], true)) continue;
-
-                $reason       = $status === 'Deleted' ? 'deleted' : 'completed';
-                $orderNumber  = $order['OrderNumber'] ?? '';
-                $orderDate    = $service->parseDate($order['OrderDate'] ?? null);
-                $requiredDate = $service->parseDate($order['RequiredDate'] ?? null);
-                $customerName = $order['Customer']['CustomerName'] ?? '';
-                $customerRef  = trim($order['CustomerRef'] ?? $order['CustomerOrderNo'] ?? '');
-                $despatchedAt = $status === 'Completed'
-                    ? $service->parseDate($order['CompletedDate'] ?? null)
-                    : null;
-                $archivedAt   = $despatchedAt ?? now()->toDateString();
-
-                // Get lines — fall back to individual detail fetch if list omits them
-                $lines = $order['SalesOrderLines'] ?? [];
-                if (empty($lines)) {
+            do {
+                $data    = null;
+                $attempt = 0;
+                while ($attempt < 3) {
                     try {
-                        $details = $service->fetchSalesOrderDetails([$guid]);
-                        $lines   = ($details[$guid] ?? [])['SalesOrderLines'] ?? [];
+                        $data = $service->get('SalesOrders', [
+                            'warehouseCode' => $a1Code,
+                            'startDate'     => $monthStart,
+                            'endDate'       => $monthEnd,
+                            'pageSize'      => $pageSize,
+                            'pageNumber'    => $page,
+                        ], 90);
+                        break;
                     } catch (\Throwable $e) {
-                        $this->warn("  Could not fetch lines for {$orderNumber}: " . $e->getMessage());
-                        $totalErrors++;
-                        continue;
+                        $attempt++;
+                        if ($attempt >= 3) {
+                            $this->error("  API error on page {$page}: " . $e->getMessage());
+                            $totalErrors++;
+                            break 2;
+                        }
+                        $wait = $attempt * 10;
+                        $this->warn("  Timeout, retrying in {$wait}s…");
+                        sleep($wait);
                     }
                 }
 
-                foreach ($lines as $lineIndex => $line) {
-                    $productCode = $line['Product']['ProductCode'] ?? null;
-                    if (empty($productCode)) continue;
-                    if (str_contains(strtolower($productCode), 'a1-carriage')) continue;
+                if ($data === null) break;
 
-                    $lineNumber = (int) ($line['LineNumber'] ?? ($lineIndex + 1));
+                $maxPages = $data['Pagination']['NumberOfPages'] ?? 1;
+                $orders   = $data['Items'] ?? [];
 
-                    $exists = PrintJob::where('unleashed_guid', $guid)
-                        ->where('line_number', $lineNumber)
-                        ->whereNotNull('archived_at')
-                        ->exists();
-
-                    if ($exists) {
-                        $totalSkipped++;
-                        continue;
+                $newOnPage = 0;
+                foreach ($orders as $o) {
+                    $g = $o['Guid'] ?? '';
+                    if ($g && !isset($monthSeen[$g]) && !isset($allSeenGuids[$g])) {
+                        $newOnPage++;
                     }
-
-                    if (!$dry) {
-                        PrintJob::create([
-                            'unleashed_guid'         => $guid,
-                            'line_number'            => $lineNumber,
-                            'order_number'           => $orderNumber,
-                            'order_date'             => $orderDate,
-                            'customer_name'          => $customerName,
-                            'customer_ref'           => $customerRef ?: null,
-                            'product_code'           => $productCode,
-                            'product_description'    => $line['Product']['ProductDescription'] ?? null,
-                            'line_comment'           => $line['Comments'] ?? $line['LineComment'] ?? null,
-                            'order_quantity'         => (int) ($line['OrderQuantity'] ?? 0),
-                            'quantity_completed'     => 0,
-                            'required_date'          => $requiredDate,
-                            'original_required_date' => $requiredDate,
-                            'board'                  => 'unplanned',
-                            'position'               => 0,
-                            'unleashed_status'       => $status,
-                            'synced_at'              => now(),
-                            'archived_at'            => $archivedAt,
-                            'archive_reason'         => $reason,
-                            'despatched_at'          => $despatchedAt,
-                        ]);
-                    }
-
-                    $totalSaved++;
                 }
 
-                unset($order, $lines);
-            }
+                if ($newOnPage === 0 && $page > 1) {
+                    $this->line("  Page {$page}/{$maxPages} — repeated, stopping month.");
+                    break;
+                }
 
-            unset($orders, $data);
-            gc_collect_cycles();
+                $this->line("  Page {$page}/{$maxPages} — " . count($orders) . " orders, {$newOnPage} new");
 
-            $page++;
+                foreach ($orders as $order) {
+                    $guid   = $order['Guid'] ?? null;
+                    $status = $order['OrderStatus'] ?? '';
 
-        } while ($page <= $maxPages);
+                    if (!$guid) continue;
+                    if (isset($monthSeen[$guid]) || isset($allSeenGuids[$guid])) continue;
+                    $monthSeen[$guid]    = true;
+                    $allSeenGuids[$guid] = true;
 
-        $this->info("Done. Unique orders seen: " . count($seenGuids));
+                    if (!in_array($status, ['Completed', 'Deleted'], true)) continue;
+
+                    $reason       = $status === 'Deleted' ? 'deleted' : 'completed';
+                    $orderNumber  = $order['OrderNumber'] ?? '';
+                    $orderDate    = $service->parseDate($order['OrderDate'] ?? null);
+                    $requiredDate = $service->parseDate($order['RequiredDate'] ?? null);
+                    $customerName = $order['Customer']['CustomerName'] ?? '';
+                    $customerRef  = trim($order['CustomerRef'] ?? $order['CustomerOrderNo'] ?? '');
+                    $despatchedAt = $status === 'Completed'
+                        ? $service->parseDate($order['CompletedDate'] ?? null)
+                        : null;
+                    $archivedAt   = $despatchedAt ?? now()->toDateString();
+
+                    $lines = $order['SalesOrderLines'] ?? [];
+                    if (empty($lines)) {
+                        try {
+                            $details = $service->fetchSalesOrderDetails([$guid]);
+                            $lines   = ($details[$guid] ?? [])['SalesOrderLines'] ?? [];
+                        } catch (\Throwable $e) {
+                            $this->warn("  Could not fetch lines for {$orderNumber}: " . $e->getMessage());
+                            $totalErrors++;
+                            continue;
+                        }
+                    }
+
+                    foreach ($lines as $lineIndex => $line) {
+                        $productCode = $line['Product']['ProductCode'] ?? null;
+                        if (empty($productCode)) continue;
+                        if (str_contains(strtolower($productCode), 'a1-carriage')) continue;
+
+                        $lineNumber = (int) ($line['LineNumber'] ?? ($lineIndex + 1));
+
+                        $exists = PrintJob::where('unleashed_guid', $guid)
+                            ->where('line_number', $lineNumber)
+                            ->whereNotNull('archived_at')
+                            ->exists();
+
+                        if ($exists) {
+                            $totalSkipped++;
+                            continue;
+                        }
+
+                        if (!$dry) {
+                            PrintJob::create([
+                                'unleashed_guid'         => $guid,
+                                'line_number'            => $lineNumber,
+                                'order_number'           => $orderNumber,
+                                'order_date'             => $orderDate,
+                                'customer_name'          => $customerName,
+                                'customer_ref'           => $customerRef ?: null,
+                                'product_code'           => $productCode,
+                                'product_description'    => $line['Product']['ProductDescription'] ?? null,
+                                'line_comment'           => $line['Comments'] ?? $line['LineComment'] ?? null,
+                                'order_quantity'         => (int) ($line['OrderQuantity'] ?? 0),
+                                'quantity_completed'     => 0,
+                                'required_date'          => $requiredDate,
+                                'original_required_date' => $requiredDate,
+                                'board'                  => 'unplanned',
+                                'position'               => 0,
+                                'unleashed_status'       => $status,
+                                'synced_at'              => now(),
+                                'archived_at'            => $archivedAt,
+                                'archive_reason'         => $reason,
+                                'despatched_at'          => $despatchedAt,
+                            ]);
+                        }
+
+                        $totalSaved++;
+                    }
+
+                    unset($order, $lines);
+                }
+
+                unset($orders, $data);
+                gc_collect_cycles();
+
+                $page++;
+
+            } while ($page <= $maxPages);
+
+            $current->addMonth();
+        }
 
         $this->newLine();
         $action = $dry ? 'Would import' : 'Imported';
         $this->info("{$action}: {$totalSaved} | Already existed (skipped): {$totalSkipped} | Errors: {$totalErrors}");
+        $this->info("Total unique orders seen across all months: " . count($allSeenGuids));
 
         return $totalErrors > 0 ? self::FAILURE : self::SUCCESS;
     }
