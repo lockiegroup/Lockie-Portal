@@ -848,8 +848,9 @@
             if (res.ok) {
                 window.location.reload();
             } else {
+                const err = await res.json().catch(() => ({}));
                 btn.disabled = false; btn.textContent = 'Add Job';
-                alert('Could not add job. Please try again.');
+                alert('Error ' + res.status + ': ' + (err.message || JSON.stringify(err)));
             }
         });
 
