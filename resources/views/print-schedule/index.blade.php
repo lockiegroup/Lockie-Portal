@@ -879,6 +879,18 @@
             }
         };
 
+        window.deleteManualJob = async function (id, description) {
+            if (!confirm(`Permanently delete "${description}"?\n\nThis cannot be undone.`)) return;
+            const res = await fetch(`/print-schedule/jobs/${id}/manual-delete`, {
+                method : 'DELETE',
+                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+            });
+            if (res.ok) {
+                const card = document.getElementById('job-card-' + id);
+                if (card) card.remove();
+            }
+        };
+
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') { closeManualModal(); closeEditManualModal(); }
         });

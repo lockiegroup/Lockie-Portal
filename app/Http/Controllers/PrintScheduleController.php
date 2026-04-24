@@ -486,6 +486,18 @@ class PrintScheduleController extends Controller
         return response()->json(['success' => true]);
     }
 
+    public function deleteManual(PrintJob $job): JsonResponse
+    {
+        abort_unless($job->is_manual, 403);
+
+        $description = $job->product_description;
+        $job->delete();
+
+        \App\Models\ActivityLog::record('print.manual_archive', "Deleted manual job: {$description}");
+
+        return response()->json(['success' => true]);
+    }
+
     public function archiveManual(PrintJob $job): JsonResponse
     {
         abort_unless($job->is_manual, 403);
