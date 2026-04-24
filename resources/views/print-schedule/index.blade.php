@@ -740,59 +740,6 @@
                 .replace(/'/g, '&#039;');
         }
     })();
-        // ─── Manual job modal ─────────────────────────────────────────────
-        window.openManualModal = function() {
-            document.getElementById('manual-modal').style.display = 'flex';
-            document.getElementById('manual-description').focus();
-        };
-        window.closeManualModal = function() {
-            document.getElementById('manual-modal').style.display = 'none';
-            document.getElementById('manual-form').reset();
-        };
-
-        document.getElementById('manual-form').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const btn = document.getElementById('manual-submit');
-            btn.disabled = true; btn.textContent = 'Adding…';
-            const fd = new FormData(this);
-            const body = Object.fromEntries(fd.entries());
-            const res = await fetch('{{ route('print.jobs.manual.store') }}', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
-                body: JSON.stringify(body),
-            });
-            if (res.ok) {
-                window.location.reload();
-            } else {
-                btn.disabled = false; btn.textContent = 'Add Job';
-                alert('Could not add job. Please try again.');
-            }
-        });
-
-        window.completeManualJob = async function(id) {
-            if (!confirm('Mark this manual job as complete and archive it?')) return;
-            const res = await fetch(`/print-schedule/jobs/${id}/manual-complete`, {
-                method: 'POST',
-                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
-            });
-            if (res.ok) {
-                const card = document.getElementById('job-card-' + id);
-                if (card) card.remove();
-            }
-        };
-
-        window.archiveManualJob = async function(id) {
-            if (!confirm('Archive and remove this manual job?')) return;
-            const res = await fetch(`/print-schedule/jobs/${id}/manual-archive`, {
-                method: 'POST',
-                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
-            });
-            if (res.ok) {
-                const card = document.getElementById('job-card-' + id);
-                if (card) card.remove();
-            }
-        };
-    })();
     </script>
 
     {{-- Add Manual Job Modal --}}
@@ -872,5 +819,56 @@
             </form>
         </div>
     </div>
+
+    <script>
+    (function () {
+        const CSRF = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+
+        window.openManualModal = function () {
+            document.getElementById('manual-modal').style.display = 'flex';
+            document.getElementById('manual-description').focus();
+        };
+
+        window.closeManualModal = function () {
+            document.getElementById('manual-modal').style.display = 'none';
+            document.getElementById('manual-form').reset();
+        };
+
+        document.getElementById('manual-form').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const btn = document.getElementById('manual-submit');
+            btn.disabled = true; btn.textContent = 'Adding…';
+            const fd   = new FormData(this);
+            const body = Object.fromEntries(fd.entries());
+            const res  = await fetch('{{ route('print.jobs.manual.store') }}', {
+                method : 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+                body   : JSON.stringify(body),
+            });
+            if (res.ok) {
+                window.location.reload();
+            } else {
+                btn.disabled = false; btn.textContent = 'Add Job';
+                alert('Could not add job. Please try again.');
+            }
+        });
+
+        window.archiveManualJob = async function (id) {
+            if (!confirm('Archive and remove this manual job?')) return;
+            const res = await fetch(`/print-schedule/jobs/${id}/manual-archive`, {
+                method : 'POST',
+                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+            });
+            if (res.ok) {
+                const card = document.getElementById('job-card-' + id);
+                if (card) card.remove();
+            }
+        };
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeManualModal();
+        });
+    })();
+    </script>
 
 </x-layout>
