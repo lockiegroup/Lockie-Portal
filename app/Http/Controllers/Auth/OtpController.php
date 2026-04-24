@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\TrustedDevice;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class OtpController extends Controller
 {
@@ -38,6 +40,19 @@ class OtpController extends Controller
         $user->update(['last_login_at' => now()]);
 
         \App\Models\ActivityLog::record('auth.login', 'Logged in', $user->id);
+
+        if ($request->boolean('trust_device')) {
+            $plainToken = Str::random(64);
+            TrustedDevice::create([
+                'user_id'    => $user->id,
+                'token'      => hash('sha256', $plainToken),
+                'expires_at' => now()->addDays(30),
+            ]);
+            TrustedDevice::where('user_id', $user->id)->where('expires_at', '<', now())->delete();
+
+            return redirect()->route('dashboard')
+                ->withCookie(cookie('trusted_device', $plainToken, 60 * 24 * 30, '/', null, null, true));
+        }
 
         return redirect()->route('dashboard');
     }

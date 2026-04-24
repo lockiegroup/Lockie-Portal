@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\OtpCode;
+use App\Models\TrustedDevice;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -41,6 +43,23 @@ class LoginController extends Controller
 
         RateLimiter::clear($key);
         Auth::logout();
+
+        // Skip OTP if this browser has a valid trusted device token for this user
+        $cookieToken = $request->cookie('trusted_device');
+        if ($cookieToken) {
+            $device = TrustedDevice::where('user_id', $user->id)
+                ->where('token', hash('sha256', $cookieToken))
+                ->where('expires_at', '>', now())
+                ->first();
+
+            if ($device) {
+                Auth::loginUsingId($user->id);
+                $user->update(['last_login_at' => now()]);
+                ActivityLog::record('auth.login', 'Logged in (trusted device)', $user->id);
+                session(['otp_verified' => true]);
+                return redirect()->intended(route('dashboard'));
+            }
+        }
 
         $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
         OtpCode::where('user_id', $user->id)->where('used', false)->update(['used' => true]);
