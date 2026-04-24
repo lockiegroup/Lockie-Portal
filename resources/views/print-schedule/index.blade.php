@@ -39,6 +39,13 @@
                 Settings
             </a>
             @endcan
+            <button onclick="openManualModal()"
+                style="background:#16a34a;color:#fff;font-size:0.75rem;padding:5px 10px;border-radius:6px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;">
+                <svg style="width:12px;height:12px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                Manual Job
+            </button>
             <button id="sync-btn" onclick="triggerSync()"
                 style="background:#1e293b;color:#fff;font-size:0.75rem;padding:5px 10px;border-radius:6px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;">
                 <svg id="sync-icon" style="width:12px;height:12px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -733,5 +740,137 @@
                 .replace(/'/g, '&#039;');
         }
     })();
+        // ─── Manual job modal ─────────────────────────────────────────────
+        function openManualModal() {
+            document.getElementById('manual-modal').style.display = 'flex';
+            document.getElementById('manual-description').focus();
+        }
+        function closeManualModal() {
+            document.getElementById('manual-modal').style.display = 'none';
+            document.getElementById('manual-form').reset();
+        }
+
+        document.getElementById('manual-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('manual-submit');
+            btn.disabled = true; btn.textContent = 'Adding…';
+            const fd = new FormData(this);
+            const body = Object.fromEntries(fd.entries());
+            const res = await fetch('{{ route('print.jobs.manual.store') }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+                body: JSON.stringify(body),
+            });
+            if (res.ok) {
+                window.location.reload();
+            } else {
+                btn.disabled = false; btn.textContent = 'Add Job';
+                alert('Could not add job. Please try again.');
+            }
+        });
+
+        window.completeManualJob = async function(id) {
+            if (!confirm('Mark this manual job as complete and archive it?')) return;
+            const res = await fetch(`/print-schedule/jobs/${id}/manual-complete`, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+            });
+            if (res.ok) {
+                const card = document.getElementById('job-card-' + id);
+                if (card) card.remove();
+            }
+        };
+
+        window.archiveManualJob = async function(id) {
+            if (!confirm('Archive and remove this manual job?')) return;
+            const res = await fetch(`/print-schedule/jobs/${id}/manual-archive`, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+            });
+            if (res.ok) {
+                const card = document.getElementById('job-card-' + id);
+                if (card) card.remove();
+            }
+        };
+    })();
     </script>
+
+    {{-- Add Manual Job Modal --}}
+    <div id="manual-modal" style="display:none;position:fixed;inset:0;z-index:50;align-items:center;justify-content:center;padding:1rem;">
+        <div style="position:absolute;inset:0;background:rgba(15,23,42,0.45);" onclick="closeManualModal()"></div>
+        <div style="position:relative;background:#fff;border-radius:14px;padding:1.5rem;width:100%;max-width:460px;box-shadow:0 20px 60px rgba(0,0,0,0.15);max-height:90vh;overflow-y:auto;">
+            <h2 style="font-size:1rem;font-weight:700;color:#0f172a;margin:0 0 1.25rem;">Add Manual Job</h2>
+            <form id="manual-form">
+                @csrf
+
+                <div style="margin-bottom:1rem;">
+                    <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Description <span style="color:#dc2626;">*</span></label>
+                    <input type="text" id="manual-description" name="description" required placeholder="e.g. Business cards — 500 copies"
+                        style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
+                        onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem;">
+                    <div>
+                        <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Customer <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+                        <input type="text" name="customer_name" placeholder="Customer name"
+                            style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
+                            onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Ref <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+                        <input type="text" name="customer_ref" placeholder="Customer ref"
+                            style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
+                            onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                    </div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem;">
+                    <div>
+                        <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Order No. <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+                        <input type="text" name="order_number" placeholder="e.g. SO-1234"
+                            style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
+                            onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Quantity <span style="color:#dc2626;">*</span></label>
+                        <input type="number" name="quantity" required min="1" placeholder="0"
+                            style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
+                            onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                    </div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1.5rem;">
+                    <div>
+                        <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Delivery Date <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+                        <input type="date" name="required_date"
+                            style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
+                            onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Board <span style="color:#dc2626;">*</span></label>
+                        <select name="board" required
+                            style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;background:#fff;box-sizing:border-box;outline:none;"
+                            onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                            @foreach(App\Models\PrintJob::BOARDS as $key => $label)
+                            <option value="{{ $key }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display:flex;gap:0.5rem;">
+                    <button type="button" onclick="closeManualModal()"
+                        style="flex:1;padding:0.5rem;border:1px solid #e2e8f0;background:#f8fafc;color:#374151;font-size:0.875rem;font-weight:500;border-radius:8px;cursor:pointer;">
+                        Cancel
+                    </button>
+                    <button type="submit" id="manual-submit"
+                        style="flex:2;padding:0.5rem;background:#16a34a;color:#fff;font-size:0.875rem;font-weight:600;border-radius:8px;border:none;cursor:pointer;">
+                        Add Job
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 </x-layout>

@@ -73,6 +73,9 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::post('/jobs/{job}/date', [PrintScheduleController::class, 'updateDate'])->name('jobs.date');
         Route::post('/jobs/{job}/notes', [PrintScheduleController::class, 'storeNote'])->name('jobs.notes.store');
         Route::delete('/jobs/{job}/notes/{note}', [PrintScheduleController::class, 'destroyNote'])->name('jobs.notes.destroy');
+        Route::post('/manual', [PrintScheduleController::class, 'storeManual'])->name('jobs.manual.store');
+        Route::post('/jobs/{job}/manual-complete', [PrintScheduleController::class, 'completeManual'])->name('jobs.manual.complete');
+        Route::post('/jobs/{job}/manual-archive', [PrintScheduleController::class, 'archiveManual'])->name('jobs.manual.archive');
     });
 
     // Cash Flow

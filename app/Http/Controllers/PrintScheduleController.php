@@ -268,7 +268,7 @@ class PrintScheduleController extends Controller
             }
 
             if (!empty($seenKeys)) {
-                PrintJob::active()->get()->each(function ($job) use ($seenKeys) {
+                PrintJob::active()->where('is_manual', false)->get()->each(function ($job) use ($seenKeys) {
                     if (!isset($seenKeys[$job->unleashed_guid . ':' . $job->line_number])) {
                         $job->update(['archived_at' => now()]);
                     }
@@ -401,6 +401,66 @@ class PrintScheduleController extends Controller
         $note->delete();
 
         \App\Models\ActivityLog::record('print.note_delete', "Deleted note from {$job->order_number}");
+
+        return response()->json(['success' => true]);
+    }
+
+    public function storeManual(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'description'   => ['required', 'string', 'max:255'],
+            'customer_name' => ['nullable', 'string', 'max:255'],
+            'customer_ref'  => ['nullable', 'string', 'max:255'],
+            'order_number'  => ['nullable', 'string', 'max:100'],
+            'quantity'      => ['required', 'integer', 'min:1'],
+            'required_date' => ['nullable', 'date'],
+            'board'         => ['required', 'in:' . implode(',', array_keys(PrintJob::BOARDS))],
+        ]);
+
+        $job = PrintJob::create([
+            'product_description'    => $data['description'],
+            'customer_name'          => $data['customer_name'] ?? 'Manual',
+            'customer_ref'           => $data['customer_ref'] ?: null,
+            'order_number'           => $data['order_number'] ?: 'MANUAL',
+            'order_quantity'         => $data['quantity'],
+            'quantity_completed'     => 0,
+            'required_date'          => $data['required_date'] ?: null,
+            'original_required_date' => $data['required_date'] ?: null,
+            'board'                  => $data['board'],
+            'position'               => PrintJob::where('board', $data['board'])->max('position') + 1,
+            'is_manual'              => true,
+        ]);
+
+        \App\Models\ActivityLog::record('print.manual_add', "Added manual job: {$job->product_description}");
+
+        return response()->json(['success' => true, 'redirect' => route('print.index')]);
+    }
+
+    public function completeManual(PrintJob $job): JsonResponse
+    {
+        abort_unless($job->is_manual, 403);
+
+        $job->update([
+            'archived_at'    => now(),
+            'archive_reason' => 'completed',
+            'despatched_at'  => now()->toDateString(),
+        ]);
+
+        \App\Models\ActivityLog::record('print.manual_complete', "Completed manual job: {$job->product_description}");
+
+        return response()->json(['success' => true]);
+    }
+
+    public function archiveManual(PrintJob $job): JsonResponse
+    {
+        abort_unless($job->is_manual, 403);
+
+        $job->update([
+            'archived_at'    => now(),
+            'archive_reason' => 'deleted',
+        ]);
+
+        \App\Models\ActivityLog::record('print.manual_archive', "Archived manual job: {$job->product_description}");
 
         return response()->json(['success' => true]);
     }
