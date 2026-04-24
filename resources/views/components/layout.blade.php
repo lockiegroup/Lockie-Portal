@@ -61,6 +61,7 @@
         .sb-sub-item.sb-active { color: #fb7185; }
 
         .sb-icon { width: 17px; height: 17px; flex-shrink: 0; }
+        .sb-nav::-webkit-scrollbar { display: none; }
 
         /* ── Mobile ────────────────────────────────────────────── */
         @media (max-width: 767px) {

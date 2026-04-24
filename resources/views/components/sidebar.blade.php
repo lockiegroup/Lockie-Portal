@@ -22,7 +22,7 @@
     </div>
 
     {{-- Navigation --}}
-    <nav style="flex:1;padding:10px 8px;overflow-y:auto;overflow-x:hidden;">
+    <nav style="flex:1;padding:10px 8px;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;-ms-overflow-style:none;" class="sb-nav">
 
         <a href="{{ route('dashboard') }}"
            class="sb-item{{ request()->routeIs('dashboard') ? ' sb-active' : '' }}"
