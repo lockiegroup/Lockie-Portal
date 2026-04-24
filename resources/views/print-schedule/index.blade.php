@@ -76,7 +76,17 @@
         <div id="search-results-info" style="display:none;background:#f8fafc;border:1px solid #e2e8f0;border-radius:0.75rem;padding:8px 16px;margin-bottom:1rem;font-size:0.875rem;color:#64748b;"></div>
 
         {{-- Tab bar --}}
-        <style>#tab-bar{scrollbar-width:none;-ms-overflow-style:none;}#tab-bar::-webkit-scrollbar{display:none;}</style>
+        <style>
+            #tab-bar{scrollbar-width:none;-ms-overflow-style:none;}
+            #tab-bar::-webkit-scrollbar{display:none;}
+            #tab-bar-wrap::after{
+                content:'';position:absolute;right:0;top:0;bottom:0;width:48px;
+                background:linear-gradient(to right,transparent,#f1f5f9);
+                pointer-events:none;transition:opacity 0.2s;border-radius:0 4px 4px 0;
+            }
+            #tab-bar-wrap.at-end::after{opacity:0;}
+        </style>
+        <div id="tab-bar-wrap" style="position:relative;">
         <div id="tab-bar" class="overflow-x-auto -mx-4 sm:mx-0 mb-6">
             <div class="flex min-w-max px-4 sm:px-0 gap-1 border-b border-slate-200 pb-0">
                 @foreach($boards as $key => $label)
@@ -98,6 +108,7 @@
                 @endforeach
             </div>
         </div>
+        </div>{{-- /tab-bar-wrap --}}
 
         {{-- Board panes --}}
         @foreach($boards as $boardKey => $boardLabel)
@@ -259,6 +270,20 @@
         }
 
         window.switchTab = switchTab;
+
+        // ─── Tab bar scroll fade ───────────────────────────────────────────
+        (function () {
+            const bar  = document.getElementById('tab-bar');
+            const wrap = document.getElementById('tab-bar-wrap');
+            if (!bar || !wrap) return;
+            function updateFade() {
+                const atEnd = bar.scrollLeft + bar.clientWidth >= bar.scrollWidth - 4;
+                wrap.classList.toggle('at-end', atEnd);
+            }
+            bar.addEventListener('scroll', updateFade, { passive: true });
+            window.addEventListener('resize', updateFade);
+            updateFade();
+        })();
 
         // ─── Sync ─────────────────────────────────────────────────────────
         window.triggerSync = function (silent) {
