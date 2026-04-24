@@ -379,53 +379,28 @@ class UnleashedService
 
     /**
      * Fetch completed SalesInvoices from $startDate, aggregate qty sold by warehouse+product.
+     * The SalesInvoices list endpoint includes InvoiceLines, so one paginated pass is enough.
      * Returns: ['WH01' => ['PROD001' => 150.0, ...], ...]
      */
     public function fetchInvoicedSales(string $startDate): array
     {
-        // Get invoice list (no line data in list response)
+        $result = [];
+
         $invoices = $this->paginate('SalesInvoices', [
             'startDate'     => $startDate,
             'invoiceStatus' => 'Complete',
         ], 500);
 
-        if (empty($invoices)) {
-            return [];
-        }
+        foreach ($invoices as $invoice) {
+            $whCode = $invoice['Warehouse']['WarehouseCode'] ?? null;
+            if (!$whCode) continue;
 
-        // Batch-fetch invoice details (with InvoiceLines) in parallel
-        $guids = array_values(array_filter(array_column($invoices, 'Guid')));
-        $result = [];
-
-        foreach (array_chunk($guids, 50) as $batch) {
-            $responses = Http::pool(function ($pool) use ($batch) {
-                $calls = [];
-                foreach ($batch as $guid) {
-                    $qs      = http_build_query(['pageSize' => 1, 'pageNumber' => 1, 'guid' => $guid]);
-                    $calls[] = $pool->as($guid)
-                        ->timeout(30)
-                        ->withHeaders($this->headers($qs))
-                        ->get(self::BASE_URL . '/SalesInvoices?' . $qs);
-                }
-                return $calls;
-            });
-
-            foreach ($batch as $guid) {
-                $res = $responses[$guid] ?? null;
-                if (!$res || $res instanceof \Throwable || $res->failed()) continue;
-                $invoice = ($res->json()['Items'] ?? [])[0] ?? null;
-                if (!$invoice) continue;
-
-                $whCode = $invoice['Warehouse']['WarehouseCode'] ?? null;
-                if (!$whCode) continue;
-
-                foreach ($invoice['InvoiceLines'] ?? [] as $line) {
-                    $code = $line['Product']['ProductCode'] ?? null;
-                    if (!$code) continue;
-                    $qty = (float) ($line['InvoiceQuantity'] ?? 0);
-                    if ($qty <= 0) continue;
-                    $result[$whCode][$code] = ($result[$whCode][$code] ?? 0.0) + $qty;
-                }
+            foreach ($invoice['InvoiceLines'] ?? [] as $line) {
+                $code = $line['Product']['ProductCode'] ?? null;
+                if (!$code) continue;
+                $qty = (float) ($line['InvoiceQuantity'] ?? 0);
+                if ($qty <= 0) continue;
+                $result[$whCode][$code] = ($result[$whCode][$code] ?? 0.0) + $qty;
             }
         }
 

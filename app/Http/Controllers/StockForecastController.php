@@ -101,6 +101,7 @@ class StockForecastController extends Controller
 
     public function sync()
     {
+        set_time_limit(300);
         try {
             $count = $this->runSync();
             \App\Models\ActivityLog::record('stock_forecast.sync', "Synced stock forecast: {$count} rows updated");

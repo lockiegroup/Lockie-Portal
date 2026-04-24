@@ -238,7 +238,12 @@ function runSync() {
             'Accept': 'application/json',
         },
     })
-    .then(r => r.json())
+    .then(r => {
+        if (!r.ok && r.status !== 500) {
+            throw new Error('HTTP ' + r.status);
+        }
+        return r.json();
+    })
     .then(data => {
         if (data.success) {
             status.textContent = 'Synced just now (' + data.row_count + ' rows)';
@@ -251,8 +256,8 @@ function runSync() {
         }
         icon.style.animation = '';
     })
-    .catch(() => {
-        status.textContent = 'Sync failed — check connection.';
+    .catch(err => {
+        status.textContent = 'Sync failed: ' + (err.message || 'check connection');
         btn.disabled = false;
         btn.style.opacity = '1';
         btn.style.cursor  = 'pointer';
