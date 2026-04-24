@@ -18,7 +18,17 @@ class User extends Authenticatable
         'policy_settings'   => 'Policy Settings',
     ];
 
-    protected $fillable = ['name', 'email', 'password', 'role', 'is_active', 'permissions', 'last_login_at'];
+    const MODULES = [
+        'sales'          => 'Sales',
+        'stock'          => 'Stock Overview',
+        'health_safety'  => 'Health & Safety',
+        'envelopes'      => 'Church Envelopes',
+        'policies'       => 'Policies',
+        'print_schedule' => 'Print Schedule',
+        'cash_flow'      => 'Cash Flow',
+    ];
+
+    protected $fillable = ['name', 'email', 'password', 'role', 'is_active', 'permissions', 'modules', 'last_login_at'];
     protected $hidden   = ['password', 'remember_token'];
 
     protected function casts(): array
@@ -27,6 +37,7 @@ class User extends Authenticatable
             'password'      => 'hashed',
             'is_active'     => 'boolean',
             'permissions'   => 'array',
+            'modules'       => 'array',
             'last_login_at' => 'datetime',
         ];
     }
@@ -47,16 +58,32 @@ class User extends Authenticatable
             return true;
         }
 
-        if ($this->role !== 'admin') {
-            return false;
+        if ($this->isAdmin()) {
+            // Existing admins with no permissions set get full access (backward compat)
+            return $this->permissions === null || in_array($permission, $this->permissions, true);
         }
 
-        // Existing admins with no permissions set get full access (backward compat)
-        if ($this->permissions === null) {
+        // Staff can access cash_flow if it's enabled as a module for them
+        if ($permission === 'cash_flow') {
+            return $this->hasModule('cash_flow');
+        }
+
+        return false;
+    }
+
+    public function hasModule(string $module): bool
+    {
+        // Admins and masters always have full module access
+        if ($this->isAdmin()) {
             return true;
         }
 
-        return in_array($permission, $this->permissions, true);
+        // null means all modules visible (default for existing staff)
+        if ($this->modules === null) {
+            return true;
+        }
+
+        return in_array($module, $this->modules, true);
     }
 
     public function otpCodes()

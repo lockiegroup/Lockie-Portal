@@ -19,7 +19,8 @@ class UserController extends Controller
     public function create()
     {
         $permissions = User::PERMISSIONS;
-        return view('admin.users.create', compact('permissions'));
+        $modules     = User::MODULES;
+        return view('admin.users.create', compact('permissions', 'modules'));
     }
 
     public function store(Request $request)
@@ -34,12 +35,20 @@ class UserController extends Controller
         ]);
 
         $permissions = null;
+        $modules     = null;
         if ($data['role'] === 'admin') {
             $permissions = array_keys(array_filter(
                 User::PERMISSIONS,
                 fn($label, $key) => $request->boolean('perm_' . $key),
                 ARRAY_FILTER_USE_BOTH
             ));
+        } elseif ($data['role'] === 'staff') {
+            $checked = array_keys(array_filter(
+                User::MODULES,
+                fn($label, $key) => $request->boolean('mod_' . $key),
+                ARRAY_FILTER_USE_BOTH
+            ));
+            $modules = count($checked) === count(User::MODULES) ? null : $checked;
         }
 
         User::create([
@@ -47,6 +56,7 @@ class UserController extends Controller
             'email'       => strtolower($data['email']),
             'role'        => $data['role'],
             'permissions' => $permissions,
+            'modules'     => $modules,
             'password'    => Hash::make($data['password']),
             'is_active'   => true,
         ]);
@@ -59,7 +69,8 @@ class UserController extends Controller
     public function edit(User $user)
     {
         $permissions = User::PERMISSIONS;
-        return view('admin.users.edit', compact('user', 'permissions'));
+        $modules     = User::MODULES;
+        return view('admin.users.edit', compact('user', 'permissions', 'modules'));
     }
 
     public function update(Request $request, User $user)
@@ -84,8 +95,18 @@ class UserController extends Controller
                 fn($label, $key) => $request->boolean('perm_' . $key),
                 ARRAY_FILTER_USE_BOTH
             ));
+            $user->modules = null;
+        } elseif ($data['role'] === 'staff') {
+            $user->permissions = null;
+            $checked = array_keys(array_filter(
+                User::MODULES,
+                fn($label, $key) => $request->boolean('mod_' . $key),
+                ARRAY_FILTER_USE_BOTH
+            ));
+            $user->modules = count($checked) === count(User::MODULES) ? null : $checked;
         } else {
             $user->permissions = null;
+            $user->modules     = null;
         }
 
         if (!empty($data['password'])) {

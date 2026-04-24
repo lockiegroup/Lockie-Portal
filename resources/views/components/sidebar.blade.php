@@ -34,6 +34,7 @@
             <span class="sb-label">Dashboard</span>
         </a>
 
+        @if($user->hasModule('sales'))
         <a href="{{ route('sales') }}"
            class="sb-item{{ request()->routeIs('sales*') ? ' sb-active' : '' }}"
            data-tip="Sales">
@@ -42,7 +43,9 @@
             </svg>
             <span class="sb-label">Sales</span>
         </a>
+        @endif
 
+        @if($user->hasModule('stock'))
         <a href="{{ route('stock.index') }}"
            class="sb-item{{ request()->routeIs('stock.*') ? ' sb-active' : '' }}"
            data-tip="Stock Overview">
@@ -52,6 +55,7 @@
             </svg>
             <span class="sb-label">Stock Overview</span>
         </a>
+        @endif
 
         @can('cash_flow')
         <a href="{{ route('cash-flow.index') }}"
@@ -68,6 +72,7 @@
         <div style="height:1px;background:#1e293b;margin:10px 4px 8px;"></div>
         <p class="sb-section" style="font-size:0.625rem;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:0.1em;padding:0 10px;margin-bottom:6px;">Operations</p>
 
+        @if($user->hasModule('health_safety'))
         <a href="{{ route('hs.actions.index') }}"
            class="sb-item{{ request()->routeIs('hs.*') ? ' sb-active' : '' }}"
            data-tip="Health &amp; Safety">
@@ -76,7 +81,9 @@
             </svg>
             <span class="sb-label">Health &amp; Safety</span>
         </a>
+        @endif
 
+        @if($user->hasModule('envelopes'))
         <a href="{{ route('church-envelopes.index') }}"
            class="sb-item{{ request()->routeIs('church-envelopes.*') ? ' sb-active' : '' }}"
            data-tip="Church Envelopes">
@@ -86,7 +93,9 @@
             </svg>
             <span class="sb-label">Church Envelopes</span>
         </a>
+        @endif
 
+        @if($user->hasModule('policies'))
         <a href="{{ route('policies.index') }}"
            class="sb-item{{ request()->routeIs('policies.*') ? ' sb-active' : '' }}"
            data-tip="Policies">
@@ -98,7 +107,9 @@
             </svg>
             <span class="sb-label">Policies</span>
         </a>
+        @endif
 
+        @if($user->hasModule('print_schedule'))
         <a href="{{ route('print.index') }}"
            class="sb-item{{ $isPrintSection ? ' sb-active' : '' }}"
            data-tip="Print Schedule">
@@ -119,6 +130,7 @@
             <a href="{{ route('print.archive') }}"
                class="sb-sub-item{{ request()->routeIs('print.archive') ? ' sb-active' : '' }}">Archive</a>
         </div>
+        @endif
         @endif
 
         @canany(['manage_users', 'print_settings', 'envelope_settings', 'policy_settings', 'cash_flow'])

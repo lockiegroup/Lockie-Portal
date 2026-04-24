@@ -54,6 +54,22 @@
                     <p style="font-size:0.75rem;color:#94a3b8;margin-top:6px;">Select which admin sections this user can access.</p>
                 </div>
 
+                {{-- Module visibility (only shown for Staff role) --}}
+                <div id="modules-section" style="{{ !old('role') || old('role') === 'staff' ? '' : 'display:none;' }}">
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Module Access</label>
+                    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:0.625rem;padding:12px 16px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                        @foreach($modules as $key => $label)
+                            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                                <input type="checkbox" name="mod_{{ $key }}" value="1"
+                                    style="width:16px;height:16px;accent-color:#16a34a;cursor:pointer;"
+                                    {{ old('mod_' . $key) !== null ? (old('mod_' . $key) ? 'checked' : '') : 'checked' }}>
+                                <span style="font-size:0.875rem;color:#334155;">{{ $label }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                    <p style="font-size:0.75rem;color:#94a3b8;margin-top:6px;">Untick any modules this staff member should not see.</p>
+                </div>
+
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1.5">Temporary password</label>
                     <input type="password" name="password" required
@@ -72,7 +88,8 @@
 
     <script>
     function togglePermissions(role) {
-        document.getElementById('permissions-section').style.display = role === 'admin' ? '' : 'none';
+        document.getElementById('permissions-section').style.display = role === 'admin'  ? '' : 'none';
+        document.getElementById('modules-section').style.display     = role === 'staff'  ? '' : 'none';
     }
     </script>
 </x-layout>
