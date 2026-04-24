@@ -38,7 +38,7 @@
                         <th style="padding:0.75rem 1rem;text-align:left;font-weight:700;color:#374151;">Title</th>
                         <th style="padding:0.75rem 1rem;text-align:left;font-weight:700;color:#374151;">Category</th>
                         <th style="padding:0.75rem 1rem;text-align:left;font-weight:700;color:#374151;">File</th>
-                        <th style="padding:0.75rem 1rem;text-align:left;font-weight:700;color:#374151;">Uploaded</th>
+                        <th style="padding:0.75rem 1rem;text-align:left;font-weight:700;color:#374151;white-space:nowrap;">Last Reviewed</th>
                         <th style="padding:0.75rem 1rem;"></th>
                     </tr>
                 </thead>
@@ -63,9 +63,21 @@
                                 {{ Str::limit($policy->file_name, 30) }}
                             </a>
                         </td>
-                        <td style="padding:0.75rem 1rem;color:#94a3b8;font-size:0.78rem;white-space:nowrap;">{{ $policy->created_at->format('d M Y') }}</td>
+                        <td style="padding:0.75rem 1rem;font-size:0.78rem;white-space:nowrap;">
+                            @if($policy->last_reviewed_at)
+                                @php $overdue = $policy->last_reviewed_at->lt(now()->subYear()); @endphp
+                                <span style="color:{{ $overdue ? '#b91c1c' : '#16a34a' }};font-weight:600;">
+                                    {{ $policy->last_reviewed_at->format('d M Y') }}
+                                </span>
+                                @if($overdue)
+                                <span style="display:block;font-size:0.7rem;color:#b91c1c;">Review overdue</span>
+                                @endif
+                            @else
+                                <span style="color:#f59e0b;font-weight:600;">Not set</span>
+                            @endif
+                        </td>
                         <td style="padding:0.75rem 1rem;text-align:right;white-space:nowrap;">
-                            <button onclick="openEditModal({{ $policy->id }}, {{ json_encode($policy->title) }}, {{ json_encode($policy->category) }}, {{ json_encode($policy->description) }})"
+                            <button onclick="openEditModal({{ $policy->id }}, {{ json_encode($policy->title) }}, {{ json_encode($policy->category) }}, {{ json_encode($policy->description) }}, {{ json_encode($policy->last_reviewed_at?->format('Y-m-d')) }})"
                                 style="background:none;border:1px solid #e2e8f0;border-radius:6px;padding:4px 10px;font-size:0.75rem;font-weight:500;color:#374151;cursor:pointer;margin-right:4px;"
                                 onmouseover="this.style.borderColor='#94a3b8'" onmouseout="this.style.borderColor='#e2e8f0'">
                                 Edit
@@ -129,6 +141,14 @@
                         onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'"></textarea>
                 </div>
 
+                <div style="margin-bottom:1rem;">
+                    <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Last Reviewed <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+                    <input type="date" name="last_reviewed_at"
+                        style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
+                        onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                    <p style="font-size:0.72rem;color:#94a3b8;margin:4px 0 0;">The date this policy was last checked and confirmed up to date.</p>
+                </div>
+
                 <div style="margin-bottom:1.5rem;">
                     <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">PDF File <span style="color:#dc2626;">*</span></label>
                     <input type="file" name="file" accept=".pdf" required
@@ -185,6 +205,13 @@
                     <textarea id="edit-description" name="description" rows="2"
                         style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;resize:vertical;"
                         onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'"></textarea>
+                </div>
+
+                <div style="margin-bottom:1rem;">
+                    <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Last Reviewed <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+                    <input type="date" id="edit-reviewed" name="last_reviewed_at"
+                        style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
+                        onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
                 </div>
 
                 <div style="margin-bottom:1.5rem;">
@@ -254,10 +281,11 @@
     function openUploadModal()  { document.getElementById('upload-modal').style.display = 'flex'; }
     function closeUploadModal() { document.getElementById('upload-modal').style.display = 'none'; }
 
-    function openEditModal(id, title, category, description) {
+    function openEditModal(id, title, category, description, reviewedAt) {
         document.getElementById('edit-form').action = `/admin/policies/${id}`;
         document.getElementById('edit-title').value       = title || '';
         document.getElementById('edit-description').value = description || '';
+        document.getElementById('edit-reviewed').value    = reviewedAt || '';
         const sel = document.getElementById('edit-category');
         sel.value = category || '';
         document.getElementById('edit-modal').style.display = 'flex';

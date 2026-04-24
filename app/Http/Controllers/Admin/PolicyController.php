@@ -22,10 +22,11 @@ class PolicyController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'title'       => ['required', 'string', 'max:255'],
-            'category'    => ['nullable', 'string', 'max:100'],
-            'description' => ['nullable', 'string', 'max:1000'],
-            'file'        => ['required', 'file', 'mimes:pdf', 'max:20480'],
+            'title'            => ['required', 'string', 'max:255'],
+            'category'         => ['nullable', 'string', 'max:100'],
+            'description'      => ['nullable', 'string', 'max:1000'],
+            'last_reviewed_at' => ['nullable', 'date'],
+            'file'             => ['required', 'file', 'mimes:pdf', 'max:20480'],
         ]);
 
         $file     = $request->file('file');
@@ -33,12 +34,13 @@ class PolicyController extends Controller
         $fileName = $file->getClientOriginalName();
 
         CompanyPolicy::create([
-            'title'       => $data['title'],
-            'category'    => $data['category'] ?: null,
-            'description' => $data['description'] ?: null,
-            'file_name'   => $fileName,
-            'file_path'   => $stored,
-            'sort_order'  => CompanyPolicy::max('sort_order') + 1,
+            'title'            => $data['title'],
+            'category'         => $data['category'] ?: null,
+            'description'      => $data['description'] ?: null,
+            'last_reviewed_at' => $data['last_reviewed_at'] ?: null,
+            'file_name'        => $fileName,
+            'file_path'        => $stored,
+            'sort_order'       => CompanyPolicy::max('sort_order') + 1,
         ]);
 
         \App\Models\ActivityLog::record('policy.upload', "Uploaded policy: {$data['title']}");
@@ -49,16 +51,18 @@ class PolicyController extends Controller
     public function update(Request $request, CompanyPolicy $policy)
     {
         $data = $request->validate([
-            'title'       => ['required', 'string', 'max:255'],
-            'category'    => ['nullable', 'string', 'max:100'],
-            'description' => ['nullable', 'string', 'max:1000'],
-            'file'        => ['nullable', 'file', 'mimes:pdf', 'max:20480'],
+            'title'            => ['required', 'string', 'max:255'],
+            'category'         => ['nullable', 'string', 'max:100'],
+            'description'      => ['nullable', 'string', 'max:1000'],
+            'last_reviewed_at' => ['nullable', 'date'],
+            'file'             => ['nullable', 'file', 'mimes:pdf', 'max:20480'],
         ]);
 
         $updates = [
-            'title'       => $data['title'],
-            'category'    => $data['category'] ?: null,
-            'description' => $data['description'] ?: null,
+            'title'            => $data['title'],
+            'category'         => $data['category'] ?: null,
+            'description'      => $data['description'] ?: null,
+            'last_reviewed_at' => $data['last_reviewed_at'] ?: null,
         ];
 
         if ($request->hasFile('file')) {

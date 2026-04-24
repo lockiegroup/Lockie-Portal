@@ -13,5 +13,10 @@ class CompanyPolicy extends Model
         'file_name',
         'file_path',
         'sort_order',
+        'last_reviewed_at',
+    ];
+
+    protected $casts = [
+        'last_reviewed_at' => 'date',
     ];
 }

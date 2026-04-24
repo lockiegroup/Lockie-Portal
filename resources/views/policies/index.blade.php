@@ -39,6 +39,9 @@
                             @if($policy->description)
                             <p style="font-size:0.78rem;color:#64748b;margin:0.1rem 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ $policy->description }}</p>
                             @endif
+                            @if($policy->last_reviewed_at)
+                            <p style="font-size:0.72rem;color:#94a3b8;margin:0.2rem 0 0;">Last reviewed: {{ $policy->last_reviewed_at->format('d M Y') }}</p>
+                            @endif
                         </div>
                         <div style="flex-shrink:0;color:#94a3b8;">
                             <svg style="width:16px;height:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
