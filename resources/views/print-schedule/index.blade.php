@@ -741,14 +741,14 @@
         }
     })();
         // ─── Manual job modal ─────────────────────────────────────────────
-        function openManualModal() {
+        window.openManualModal = function() {
             document.getElementById('manual-modal').style.display = 'flex';
             document.getElementById('manual-description').focus();
-        }
-        function closeManualModal() {
+        };
+        window.closeManualModal = function() {
             document.getElementById('manual-modal').style.display = 'none';
             document.getElementById('manual-form').reset();
-        }
+        };
 
         document.getElementById('manual-form').addEventListener('submit', async function(e) {
             e.preventDefault();
