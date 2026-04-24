@@ -750,11 +750,26 @@
             <form id="manual-form">
                 @csrf
 
+                <div style="display:grid;grid-template-columns:1fr 2fr;gap:0.75rem;margin-bottom:1rem;">
+                    <div>
+                        <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Product Code <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+                        <input type="text" name="product_code" placeholder="e.g. A1-BLU380"
+                            style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
+                            onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Product Description <span style="color:#dc2626;">*</span></label>
+                        <input type="text" id="manual-description" name="product_description" required placeholder="e.g. Metal Detectable Cable Ties"
+                            style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
+                            onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                    </div>
+                </div>
+
                 <div style="margin-bottom:1rem;">
-                    <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Description <span style="color:#dc2626;">*</span></label>
-                    <input type="text" id="manual-description" name="description" required placeholder="e.g. Business cards — 500 copies"
-                        style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
-                        onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                    <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Print Data <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+                    <textarea name="line_comment" rows="3" placeholder="e.g. PRINTED  LALLEMAND&#10;(Print 35mm FROM LOCKING HEAD)&#10;BLOCK  TYPE"
+                        style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.8rem;font-family:monospace;box-sizing:border-box;outline:none;resize:vertical;"
+                        onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'"></textarea>
                 </div>
 
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem;">
@@ -772,7 +787,7 @@
                     </div>
                 </div>
 
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem;">
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem;margin-bottom:1.5rem;">
                     <div>
                         <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Order No. <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
                         <input type="text" name="order_number" placeholder="e.g. SO-1234"
@@ -785,25 +800,23 @@
                             style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
                             onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
                     </div>
-                </div>
-
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1.5rem;">
                     <div>
                         <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Delivery Date <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
                         <input type="date" name="required_date"
                             style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
                             onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
                     </div>
-                    <div>
-                        <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Board <span style="color:#dc2626;">*</span></label>
-                        <select name="board" required
-                            style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;background:#fff;box-sizing:border-box;outline:none;"
-                            onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
-                            @foreach(App\Models\PrintJob::BOARDS as $key => $label)
-                            <option value="{{ $key }}">{{ $label }}</option>
-                            @endforeach
-                        </select>
-                    </div>
+                </div>
+
+                <div style="margin-bottom:1.5rem;">
+                    <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Board <span style="color:#dc2626;">*</span></label>
+                    <select name="board" required
+                        style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;background:#fff;box-sizing:border-box;outline:none;"
+                        onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                        @foreach(App\Models\PrintJob::BOARDS as $key => $label)
+                        <option value="{{ $key }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
                 </div>
 
                 <div style="display:flex;gap:0.5rem;">

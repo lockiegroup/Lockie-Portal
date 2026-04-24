@@ -408,18 +408,22 @@ class PrintScheduleController extends Controller
     public function storeManual(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'description'   => ['required', 'string', 'max:255'],
-            'customer_name' => ['nullable', 'string', 'max:255'],
-            'customer_ref'  => ['nullable', 'string', 'max:255'],
-            'order_number'  => ['nullable', 'string', 'max:100'],
-            'quantity'      => ['required', 'integer', 'min:1'],
-            'required_date' => ['nullable', 'date'],
-            'board'         => ['required', 'in:' . implode(',', array_keys(PrintJob::BOARDS))],
+            'product_code'        => ['nullable', 'string', 'max:100'],
+            'product_description' => ['required', 'string', 'max:255'],
+            'line_comment'        => ['nullable', 'string', 'max:2000'],
+            'customer_name'       => ['nullable', 'string', 'max:255'],
+            'customer_ref'        => ['nullable', 'string', 'max:255'],
+            'order_number'        => ['nullable', 'string', 'max:100'],
+            'quantity'            => ['required', 'integer', 'min:1'],
+            'required_date'       => ['nullable', 'date'],
+            'board'               => ['required', 'in:' . implode(',', array_keys(PrintJob::BOARDS))],
         ]);
 
         $job = PrintJob::create([
-            'product_description'    => $data['description'],
-            'customer_name'          => $data['customer_name'] ?? 'Manual',
+            'product_code'           => $data['product_code'] ?: null,
+            'product_description'    => $data['product_description'],
+            'line_comment'           => $data['line_comment'] ?: null,
+            'customer_name'          => $data['customer_name'] ?: 'Manual',
             'customer_ref'           => $data['customer_ref'] ?: null,
             'order_number'           => $data['order_number'] ?: 'MANUAL',
             'order_quantity'         => $data['quantity'],
