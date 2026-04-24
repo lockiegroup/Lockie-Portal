@@ -63,18 +63,8 @@
                                 {{ Str::limit($policy->file_name, 30) }}
                             </a>
                         </td>
-                        <td style="padding:0.75rem 1rem;font-size:0.78rem;white-space:nowrap;">
-                            @if($policy->last_reviewed_at)
-                                @php $overdue = $policy->last_reviewed_at->lt(now()->subYear()); @endphp
-                                <span style="color:{{ $overdue ? '#b91c1c' : '#16a34a' }};font-weight:600;">
-                                    {{ $policy->last_reviewed_at->format('d M Y') }}
-                                </span>
-                                @if($overdue)
-                                <span style="display:block;font-size:0.7rem;color:#b91c1c;">Review overdue</span>
-                                @endif
-                            @else
-                                <span style="color:#f59e0b;font-weight:600;">Not set</span>
-                            @endif
+                        <td style="padding:0.75rem 1rem;font-size:0.78rem;white-space:nowrap;color:#64748b;">
+                            {{ $policy->last_reviewed_at ? $policy->last_reviewed_at->format('d M Y') : '—' }}
                         </td>
                         <td style="padding:0.75rem 1rem;text-align:right;white-space:nowrap;">
                             <button onclick="openEditModal({{ $policy->id }}, {{ json_encode($policy->title) }}, {{ json_encode($policy->category) }}, {{ json_encode($policy->description) }}, {{ json_encode($policy->last_reviewed_at?->format('Y-m-d')) }})"
