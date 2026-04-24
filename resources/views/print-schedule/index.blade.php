@@ -867,7 +867,134 @@
         };
 
         document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape') closeManualModal();
+            if (e.key === 'Escape') { closeManualModal(); closeEditManualModal(); }
+        });
+    })();
+    </script>
+
+    {{-- Edit Manual Job Modal --}}
+    <div id="edit-manual-modal" style="display:none;position:fixed;inset:0;z-index:50;align-items:center;justify-content:center;padding:1rem;">
+        <div style="position:absolute;inset:0;background:rgba(15,23,42,0.45);" onclick="closeEditManualModal()"></div>
+        <div style="position:relative;background:#fff;border-radius:14px;padding:1.5rem;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,0.15);max-height:90vh;overflow-y:auto;">
+            <h2 style="font-size:1rem;font-weight:700;color:#0f172a;margin:0 0 1.25rem;">Edit Manual Job</h2>
+            <form id="edit-manual-form">
+
+                <div style="display:grid;grid-template-columns:1fr 2fr;gap:0.75rem;margin-bottom:1rem;">
+                    <div>
+                        <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Product Code <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+                        <input type="text" id="edit-product-code" name="product_code" placeholder="e.g. A1-BLU380"
+                            style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
+                            onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Product Description <span style="color:#dc2626;">*</span></label>
+                        <input type="text" id="edit-product-description" name="product_description" required placeholder="e.g. Metal Detectable Cable Ties"
+                            style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
+                            onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                    </div>
+                </div>
+
+                <div style="margin-bottom:1rem;">
+                    <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Print Data <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+                    <textarea id="edit-line-comment" name="line_comment" rows="3" placeholder="e.g. PRINTED  LALLEMAND&#10;(Print 35mm FROM LOCKING HEAD)&#10;BLOCK  TYPE"
+                        style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.8rem;font-family:monospace;box-sizing:border-box;outline:none;resize:vertical;"
+                        onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'"></textarea>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem;">
+                    <div>
+                        <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Customer <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+                        <input type="text" id="edit-customer-name" name="customer_name" placeholder="Customer name"
+                            style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
+                            onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Ref <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+                        <input type="text" id="edit-customer-ref" name="customer_ref" placeholder="Customer ref"
+                            style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
+                            onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                    </div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem;margin-bottom:1.5rem;">
+                    <div>
+                        <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Order No. <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+                        <input type="text" id="edit-order-number" name="order_number" placeholder="e.g. SO-1234"
+                            style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
+                            onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Quantity <span style="color:#dc2626;">*</span></label>
+                        <input type="number" id="edit-quantity" name="order_quantity" required min="1" placeholder="0"
+                            style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
+                            onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Delivery Date <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+                        <input type="date" id="edit-required-date" name="required_date"
+                            style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
+                            onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                    </div>
+                </div>
+
+                <div style="display:flex;gap:0.5rem;">
+                    <button type="button" onclick="closeEditManualModal()"
+                        style="flex:1;padding:0.5rem;border:1px solid #e2e8f0;background:#f8fafc;color:#374151;font-size:0.875rem;font-weight:500;border-radius:8px;cursor:pointer;">
+                        Cancel
+                    </button>
+                    <button type="submit" id="edit-manual-submit"
+                        style="flex:2;padding:0.5rem;background:#1d4ed8;color:#fff;font-size:0.875rem;font-weight:600;border-radius:8px;border:none;cursor:pointer;">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    (function () {
+        const CSRF = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+        let editJobId = null;
+
+        window.openEditManualModal = function (id, productCode, productDescription, lineComment, customerName, customerRef, orderNumber, quantity, requiredDate) {
+            editJobId = id;
+            document.getElementById('edit-product-code').value        = productCode || '';
+            document.getElementById('edit-product-description').value = productDescription || '';
+            document.getElementById('edit-line-comment').value        = lineComment || '';
+            document.getElementById('edit-customer-name').value       = (customerName === 'Manual' ? '' : customerName) || '';
+            document.getElementById('edit-customer-ref').value        = customerRef || '';
+            document.getElementById('edit-order-number').value        = (orderNumber === 'MANUAL' ? '' : orderNumber) || '';
+            document.getElementById('edit-quantity').value            = quantity || '';
+            document.getElementById('edit-required-date').value       = requiredDate || '';
+            document.getElementById('edit-manual-modal').style.display = 'flex';
+            document.getElementById('edit-product-description').focus();
+        };
+
+        window.closeEditManualModal = function () {
+            document.getElementById('edit-manual-modal').style.display = 'none';
+            document.getElementById('edit-manual-form').reset();
+            editJobId = null;
+        };
+
+        document.getElementById('edit-manual-form').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            if (!editJobId) return;
+            const btn = document.getElementById('edit-manual-submit');
+            btn.disabled = true; btn.textContent = 'Saving…';
+            const fd   = new FormData(this);
+            const body = Object.fromEntries(fd.entries());
+            const res  = await fetch(`/print-schedule/jobs/${editJobId}/manual-update`, {
+                method : 'PUT',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+                body   : JSON.stringify(body),
+            });
+            if (res.ok) {
+                window.location.reload();
+            } else {
+                const err = await res.json().catch(() => ({}));
+                btn.disabled = false; btn.textContent = 'Save Changes';
+                alert('Error ' + res.status + ': ' + (err.message || JSON.stringify(err)));
+            }
         });
     })();
     </script>

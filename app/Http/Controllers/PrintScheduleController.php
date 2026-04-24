@@ -451,6 +451,37 @@ class PrintScheduleController extends Controller
         return response()->json(['success' => true]);
     }
 
+    public function updateManual(Request $request, PrintJob $job): JsonResponse
+    {
+        abort_unless($job->is_manual, 403);
+
+        $data = $request->validate([
+            'product_code'        => ['nullable', 'string', 'max:100'],
+            'product_description' => ['required', 'string', 'max:255'],
+            'line_comment'        => ['nullable', 'string', 'max:2000'],
+            'customer_name'       => ['nullable', 'string', 'max:255'],
+            'customer_ref'        => ['nullable', 'string', 'max:255'],
+            'order_number'        => ['nullable', 'string', 'max:100'],
+            'order_quantity'      => ['required', 'integer', 'min:1'],
+            'required_date'       => ['nullable', 'date'],
+        ]);
+
+        $job->update([
+            'product_code'        => $data['product_code'] ?: null,
+            'product_description' => $data['product_description'],
+            'line_comment'        => $data['line_comment'] ?: null,
+            'customer_name'       => $data['customer_name'] ?: 'Manual',
+            'customer_ref'        => $data['customer_ref'] ?: null,
+            'order_number'        => $data['order_number'] ?: 'MANUAL',
+            'order_quantity'      => $data['order_quantity'],
+            'required_date'       => $data['required_date'] ?: null,
+        ]);
+
+        \App\Models\ActivityLog::record('print.manual_add', "Edited manual job: {$job->product_description}");
+
+        return response()->json(['success' => true]);
+    }
+
     public function archiveManual(PrintJob $job): JsonResponse
     {
         abort_unless($job->is_manual, 403);

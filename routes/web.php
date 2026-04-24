@@ -74,6 +74,7 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::post('/jobs/{job}/notes', [PrintScheduleController::class, 'storeNote'])->name('jobs.notes.store');
         Route::delete('/jobs/{job}/notes/{note}', [PrintScheduleController::class, 'destroyNote'])->name('jobs.notes.destroy');
         Route::post('/manual', [PrintScheduleController::class, 'storeManual'])->name('jobs.manual.store');
+        Route::put('/jobs/{job}/manual-update', [PrintScheduleController::class, 'updateManual'])->name('jobs.manual.update');
         Route::post('/jobs/{job}/manual-complete', [PrintScheduleController::class, 'completeManual'])->name('jobs.manual.complete');
         Route::post('/jobs/{job}/manual-archive', [PrintScheduleController::class, 'archiveManual'])->name('jobs.manual.archive');
     });

@@ -248,8 +248,17 @@
     {{-- Manual job actions --}}
     @if($job->is_manual)
     <div style="display:flex;gap:8px;margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid #f1f5f9;">
+        <button onclick="openEditManualModal({{ $job->id }}, {{ json_encode($job->product_code) }}, {{ json_encode($job->product_description) }}, {{ json_encode($job->line_comment) }}, {{ json_encode($job->customer_name) }}, {{ json_encode($job->customer_ref) }}, {{ json_encode($job->order_number) }}, {{ $job->order_quantity }}, '{{ $job->required_date ? $job->required_date->format('Y-m-d') : '' }}')"
+            style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:6px 10px;background:#eff6ff;color:#1d4ed8;font-size:0.75rem;font-weight:600;border-radius:8px;border:1px solid #bfdbfe;cursor:pointer;"
+            onmouseover="this.style.background='#dbeafe'" onmouseout="this.style.background='#eff6ff'">
+            <svg style="width:12px;height:12px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+            Edit
+        </button>
         <button onclick="archiveManualJob({{ $job->id }})"
-            style="width:100%;display:flex;align-items:center;justify-content:center;gap:5px;padding:6px 10px;background:#f8fafc;color:#64748b;font-size:0.75rem;font-weight:600;border-radius:8px;border:1px solid #e2e8f0;cursor:pointer;"
+            style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:6px 10px;background:#f8fafc;color:#64748b;font-size:0.75rem;font-weight:600;border-radius:8px;border:1px solid #e2e8f0;cursor:pointer;"
             onmouseover="this.style.borderColor='#94a3b8'" onmouseout="this.style.borderColor='#e2e8f0'">
             <svg style="width:12px;height:12px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>
