@@ -120,82 +120,92 @@ class StockForecastController extends Controller
 
     private function runSync(): int
     {
+        $now = now();
+        $ts  = $now->toDateTimeString();
+
         // 1. Warehouses
-        $whData     = $this->unleashed->get('Warehouses', ['pageSize' => 200, 'pageNumber' => 1]);
         $warehouses = [];
-        foreach ($whData['Items'] ?? [] as $wh) {
+        foreach ($this->unleashed->get('Warehouses', ['pageSize' => 200, 'pageNumber' => 1])['Items'] ?? [] as $wh) {
             $code = $wh['WarehouseCode'] ?? '';
-            $name = $wh['WarehouseName'] ?? $code;
-            if ($code) $warehouses[$code] = $name;
+            if ($code) $warehouses[$code] = $wh['WarehouseName'] ?? $code;
         }
 
-        // 2. Products → upsert, build code→id map
-        $products = $this->unleashed->fetchProducts();
-        $codeToId = [];
-        foreach ($products as $p) {
+        // 2. Products — bulk upsert, then load code→id map in one query
+        $rawProducts = $this->unleashed->fetchProducts();
+        $productRows = [];
+        foreach ($rawProducts as $p) {
             $guid = $p['Guid'] ?? null;
             $code = $p['ProductCode'] ?? null;
             if (!$guid || !$code) continue;
-            $fp = ForecastProduct::updateOrCreate(
-                ['guid' => $guid],
-                [
-                    'product_code'  => $code,
-                    'product_name'  => $p['ProductDescription'] ?? $code,
-                    'supplier_name' => $p['DefaultSupplier']['SupplierName'] ?? null,
-                ]
-            );
-            $codeToId[$code] = $fp->id;
+            $productRows[] = [
+                'guid'          => $guid,
+                'product_code'  => $code,
+                'product_name'  => $p['ProductDescription'] ?? $code,
+                'supplier_name' => $p['DefaultSupplier']['SupplierName'] ?? null,
+                'created_at'    => $ts,
+                'updated_at'    => $ts,
+            ];
         }
+        foreach (array_chunk($productRows, 500) as $chunk) {
+            ForecastProduct::upsert($chunk, ['guid'], ['product_code', 'product_name', 'supplier_name', 'updated_at']);
+        }
+        $codeToId = ForecastProduct::pluck('id', 'product_code')->toArray();
 
-        // 3. Open POs → aggregated remaining qty + earliest date per product code
+        // 3. Open POs
         $poData = $this->unleashed->fetchOpenPurchaseOrders();
 
-        // 4. All sales invoices from last 90 days, aggregated by warehouse+product
-        $startDate  = now()->subDays(90)->format('Y-m-d');
-        $allSales   = $this->unleashed->fetchInvoicedSales($startDate);
+        // 4. Sales — last 90 days (parallel paginate handles all at once)
+        $allSales = $this->unleashed->fetchInvoicedSales($now->copy()->subDays(90)->format('Y-m-d'));
 
-        // 5. Per-warehouse stock on hand → upsert forecast_lines
-        $rowCount = 0;
-        foreach ($warehouses as $code => $warehouseName) {
-            $stockItems = $this->unleashed->paginate('StockOnHand', [
-                'warehouseCode' => $code,
-            ], 2000);
+        // 5. Stock on hand — all warehouses fetched in parallel
+        $whRequests = [];
+        foreach ($warehouses as $code => $name) {
+            $whRequests[$code] = ['StockOnHand', ['warehouseCode' => $code]];
+        }
+        $allStock = $this->unleashed->parallelPaginate($whRequests, 2000);
 
+        // 6. Build forecast_lines rows and bulk upsert
+        $lineRows = [];
+        foreach ($warehouses as $whCode => $whName) {
             $stockByCode = [];
-            foreach ($stockItems as $item) {
-                $pcode = $item['ProductCode'] ?? null;
-                if (!$pcode) continue;
-                $stockByCode[$pcode] = ($stockByCode[$pcode] ?? 0.0) + (float) ($item['QtyOnHand'] ?? 0);
+            foreach ($allStock[$whCode] ?? [] as $item) {
+                $c = $item['ProductCode'] ?? null;
+                if ($c) $stockByCode[$c] = ($stockByCode[$c] ?? 0.0) + (float) ($item['QtyOnHand'] ?? 0);
             }
-
-            $salesByCode = $allSales[$code] ?? [];
+            $salesByCode = $allSales[$whCode] ?? [];
             $allCodes    = array_unique(array_merge(array_keys($stockByCode), array_keys($salesByCode)));
 
-            foreach ($allCodes as $pcode) {
-                $productId = $codeToId[$pcode] ?? null;
+            foreach ($allCodes as $code) {
+                $productId = $codeToId[$code] ?? null;
                 if (!$productId) continue;
 
-                $qty    = $stockByCode[$pcode] ?? 0.0;
-                $sold   = $salesByCode[$pcode] ?? 0.0;
-                $poInfo = $poData[$pcode] ?? ['qty' => 0.0, 'date' => null];
+                $qty    = $stockByCode[$code] ?? 0.0;
+                $sold   = $salesByCode[$code] ?? 0.0;
+                $poInfo = $poData[$code] ?? ['qty' => 0.0, 'date' => null];
 
                 if ($qty <= 0 && $poInfo['qty'] <= 0 && $sold <= 0) continue;
 
-                ForecastLine::updateOrCreate(
-                    ['product_id' => $productId, 'warehouse_code' => $code],
-                    [
-                        'warehouse_name'   => $warehouseName,
-                        'qty_on_hand'      => $qty,
-                        'qty_incoming'     => $poInfo['qty'],
-                        'po_expected_date' => $poInfo['date'],
-                        'qty_sold_90d'     => $sold,
-                        'last_synced_at'   => now(),
-                    ]
-                );
-                $rowCount++;
+                $lineRows[] = [
+                    'product_id'       => $productId,
+                    'warehouse_code'   => $whCode,
+                    'warehouse_name'   => $whName,
+                    'qty_on_hand'      => $qty,
+                    'qty_incoming'     => $poInfo['qty'],
+                    'po_expected_date' => $poInfo['date'],
+                    'qty_sold_90d'     => $sold,
+                    'last_synced_at'   => $ts,
+                ];
             }
         }
 
-        return $rowCount;
+        foreach (array_chunk($lineRows, 500) as $chunk) {
+            ForecastLine::upsert(
+                $chunk,
+                ['product_id', 'warehouse_code'],
+                ['warehouse_name', 'qty_on_hand', 'qty_incoming', 'po_expected_date', 'qty_sold_90d', 'last_synced_at']
+            );
+        }
+
+        return count($lineRows);
     }
 }
