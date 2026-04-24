@@ -25,7 +25,6 @@ class User extends Authenticatable
         'envelopes'      => 'Church Envelopes',
         'policies'       => 'Policies',
         'print_schedule' => 'Print Schedule',
-        'cash_flow'      => 'Cash Flow',
     ];
 
     protected $fillable = ['name', 'email', 'password', 'role', 'is_active', 'permissions', 'modules', 'last_login_at'];
@@ -49,7 +48,7 @@ class User extends Authenticatable
 
     public function isAdmin(): bool
     {
-        return $this->role === 'admin' || $this->role === 'master';
+        return $this->role === 'master';
     }
 
     public function hasPermission(string $permission): bool
@@ -58,27 +57,16 @@ class User extends Authenticatable
             return true;
         }
 
-        if ($this->isAdmin()) {
-            // Existing admins with no permissions set get full access (backward compat)
-            return $this->permissions === null || in_array($permission, $this->permissions, true);
-        }
-
-        // Staff can access cash_flow if it's enabled as a module for them
-        if ($permission === 'cash_flow') {
-            return $this->hasModule('cash_flow');
-        }
-
-        return false;
+        return in_array($permission, $this->permissions ?? [], true);
     }
 
     public function hasModule(string $module): bool
     {
-        // Admins and masters always have full module access
-        if ($this->isAdmin()) {
+        if ($this->isMaster()) {
             return true;
         }
 
-        // null means all modules visible (default for existing staff)
+        // null means all modules visible (default for existing/new staff)
         if ($this->modules === null) {
             return true;
         }

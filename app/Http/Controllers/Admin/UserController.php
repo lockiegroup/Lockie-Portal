@@ -30,19 +30,18 @@ class UserController extends Controller
         $data = $request->validate([
             'name'     => 'required|string|max:100',
             'email'    => 'required|email|unique:users,email',
-            'role'     => ['required', 'in:staff,admin' . ($isMaster ? ',master' : '')],
+            'role'     => ['required', 'in:staff' . ($isMaster ? ',master' : '')],
             'password' => ['required', Password::min(8)->mixedCase()->numbers()],
         ]);
 
         $permissions = null;
         $modules     = null;
-        if ($data['role'] === 'admin') {
+        if ($data['role'] === 'staff') {
             $permissions = array_keys(array_filter(
                 User::PERMISSIONS,
                 fn($label, $key) => $request->boolean('perm_' . $key),
                 ARRAY_FILTER_USE_BOTH
             ));
-        } elseif ($data['role'] === 'staff') {
             $checked = array_keys(array_filter(
                 User::MODULES,
                 fn($label, $key) => $request->boolean('mod_' . $key),
@@ -80,7 +79,7 @@ class UserController extends Controller
         $data = $request->validate([
             'name'     => 'required|string|max:100',
             'email'    => 'required|email|unique:users,email,' . $user->id,
-            'role'     => ['required', 'in:staff,admin' . ($isMaster ? ',master' : '')],
+            'role'     => ['required', 'in:staff' . ($isMaster ? ',master' : '')],
             'password' => ['nullable', Password::min(8)->mixedCase()->numbers()],
         ]);
 
@@ -89,15 +88,12 @@ class UserController extends Controller
         $user->role      = $data['role'];
         $user->is_active = $request->boolean('is_active');
 
-        if ($data['role'] === 'admin') {
+        if ($data['role'] === 'staff') {
             $user->permissions = array_keys(array_filter(
                 User::PERMISSIONS,
                 fn($label, $key) => $request->boolean('perm_' . $key),
                 ARRAY_FILTER_USE_BOTH
             ));
-            $user->modules = null;
-        } elseif ($data['role'] === 'staff') {
-            $user->permissions = null;
             $checked = array_keys(array_filter(
                 User::MODULES,
                 fn($label, $key) => $request->boolean('mod_' . $key),
@@ -105,6 +101,7 @@ class UserController extends Controller
             ));
             $user->modules = count($checked) === count(User::MODULES) ? null : $checked;
         } else {
+            // master — no restrictions needed
             $user->permissions = null;
             $user->modules     = null;
         }
