@@ -238,11 +238,8 @@ class PrintScheduleController extends Controller
                             $update['original_required_date'] = $requiredDate;
                         }
 
-                        $existing->fill($update);
-                        if ($existing->isDirty(array_keys(array_diff_key($update, ['synced_at' => true])))) {
-                            $updated++;
-                        }
-                        $existing->save();
+                        $existing->update($update);
+                        $updated++;
                     } else {
                         PrintJob::create([
                             'unleashed_guid'         => $guid,
