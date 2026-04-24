@@ -57,6 +57,17 @@
         </a>
         @endif
 
+        @can('stock_forecast')
+        <a href="{{ route('stock-forecast.index') }}"
+           class="sb-item{{ request()->routeIs('stock-forecast.*') ? ' sb-active' : '' }}"
+           data-tip="Stock Forecast">
+            <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+            <span class="sb-label">Stock Forecast</span>
+        </a>
+        @endcan
+
         @can('cash_flow')
         <a href="{{ route('cash-flow.index') }}"
            class="sb-item{{ request()->routeIs('cash-flow.*') ? ' sb-active' : '' }}"
@@ -133,7 +144,7 @@
         @endif
         @endif
 
-        @canany(['manage_users', 'print_settings', 'envelope_settings', 'policy_settings', 'cash_flow'])
+        @canany(['manage_users', 'print_settings', 'envelope_settings', 'policy_settings', 'cash_flow', 'supplier_settings'])
         <div style="height:1px;background:#1e293b;margin:10px 4px 8px;"></div>
         <p class="sb-section" style="font-size:0.625rem;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:0.1em;padding:0 10px;margin-bottom:6px;">Admin</p>
 
@@ -194,6 +205,17 @@
                 <polyline points="22,6 12,13 2,6"/>
             </svg>
             <span class="sb-label">Envelope Settings</span>
+        </a>
+        @endcan
+
+        @can('supplier_settings')
+        <a href="{{ route('admin.supplier-settings.index') }}"
+           class="sb-item{{ request()->routeIs('admin.supplier-settings*') ? ' sb-active' : '' }}"
+           data-tip="Supplier Settings">
+            <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><rect x="2" y="8" width="20" height="12" rx="2"/>
+            </svg>
+            <span class="sb-label">Supplier Settings</span>
         </a>
         @endcan
 

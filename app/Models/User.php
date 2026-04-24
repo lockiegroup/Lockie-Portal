@@ -16,11 +16,13 @@ class User extends Authenticatable
         'envelope_settings' => 'Envelope Settings',
         'cash_flow'         => 'Cash Flow',
         'policy_settings'   => 'Policy Settings',
+        'supplier_settings' => 'Supplier Settings',
     ];
 
     const MODULES = [
         'sales'          => 'Sales',
         'stock'          => 'Stock Overview',
+        'stock_forecast' => 'Stock Forecast',
         'health_safety'  => 'Health & Safety',
         'envelopes'      => 'Church Envelopes',
         'policies'       => 'Policies',

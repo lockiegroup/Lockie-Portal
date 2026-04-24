@@ -18,6 +18,8 @@ use App\Http\Controllers\CashFlowController;
 use App\Http\Controllers\PolicyController;
 use App\Http\Controllers\Admin\PolicyController as AdminPolicyController;
 use App\Http\Controllers\Admin\ActivityLogController;
+use App\Http\Controllers\Admin\SupplierSettingsController;
+use App\Http\Controllers\StockForecastController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn() => redirect()->route('login'));
@@ -104,6 +106,19 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::post('/reorder', [AdminPolicyController::class, 'reorder'])->name('reorder');
         Route::post('/categories', [AdminPolicyController::class, 'storeCategory'])->name('categories.store');
         Route::delete('/categories/{category}', [AdminPolicyController::class, 'destroyCategory'])->name('categories.destroy');
+    });
+
+    // Stock Forecast
+    Route::middleware('can:stock_forecast')->group(function () {
+        Route::get('/stock-forecast', [StockForecastController::class, 'index'])->name('stock-forecast.index');
+        Route::post('/stock-forecast/sync', [StockForecastController::class, 'sync'])->name('stock-forecast.sync');
+        Route::patch('/stock-forecast/lines/{line}/lead-time', [StockForecastController::class, 'updateLeadTime'])->name('stock-forecast.lead-time');
+    });
+
+    // Admin — supplier settings
+    Route::middleware('can:supplier_settings')->group(function () {
+        Route::get('/admin/supplier-settings', [SupplierSettingsController::class, 'index'])->name('admin.supplier-settings.index');
+        Route::post('/admin/supplier-settings', [SupplierSettingsController::class, 'update'])->name('admin.supplier-settings.update');
     });
 
     // Admin — manage users + activity log

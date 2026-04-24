@@ -333,6 +333,106 @@ class UnleashedService
     }
 
     /**
+     * Fetch all products from Unleashed.
+     */
+    public function fetchProducts(): array
+    {
+        return $this->paginate('Products', [], 500);
+    }
+
+    /**
+     * Fetch open purchase orders and aggregate remaining qty + earliest due date per ProductCode.
+     * Returns: ['PROD001' => ['qty' => 50.0, 'date' => '2026-05-15'], ...]
+     */
+    public function fetchOpenPurchaseOrders(): array
+    {
+        $results = $this->parallelPaginate([
+            'placed'     => ['PurchaseOrders', ['orderStatus' => 'Placed']],
+            'receiving'  => ['PurchaseOrders', ['orderStatus' => 'Receiving']],
+            'parked'     => ['PurchaseOrders', ['orderStatus' => 'Parked']],
+        ], 200);
+
+        $all = array_merge($results['placed'], $results['receiving'], $results['parked']);
+
+        $aggregated = [];
+        foreach ($all as $po) {
+            $dueDate = $this->parseDate($po['RequiredDate'] ?? null);
+            foreach ($po['PurchaseOrderLines'] ?? [] as $line) {
+                $code      = $line['Product']['ProductCode'] ?? null;
+                if (!$code) continue;
+                $remaining = ((float) ($line['OrderQuantity'] ?? 0)) - ((float) ($line['ReceivedQuantity'] ?? 0));
+                if ($remaining <= 0) continue;
+                if (!isset($aggregated[$code])) {
+                    $aggregated[$code] = ['qty' => 0.0, 'date' => null];
+                }
+                $aggregated[$code]['qty'] += $remaining;
+                if ($dueDate !== null) {
+                    if ($aggregated[$code]['date'] === null || $dueDate < $aggregated[$code]['date']) {
+                        $aggregated[$code]['date'] = $dueDate;
+                    }
+                }
+            }
+        }
+
+        return $aggregated;
+    }
+
+    /**
+     * Fetch completed SalesInvoices from $startDate, aggregate qty sold by warehouse+product.
+     * Returns: ['WH01' => ['PROD001' => 150.0, ...], ...]
+     */
+    public function fetchInvoicedSales(string $startDate): array
+    {
+        // Get invoice list (no line data in list response)
+        $invoices = $this->paginate('SalesInvoices', [
+            'startDate'     => $startDate,
+            'invoiceStatus' => 'Complete',
+        ], 500);
+
+        if (empty($invoices)) {
+            return [];
+        }
+
+        // Batch-fetch invoice details (with InvoiceLines) in parallel
+        $guids = array_values(array_filter(array_column($invoices, 'Guid')));
+        $result = [];
+
+        foreach (array_chunk($guids, 50) as $batch) {
+            $responses = Http::pool(function ($pool) use ($batch) {
+                $calls = [];
+                foreach ($batch as $guid) {
+                    $qs      = http_build_query(['pageSize' => 1, 'pageNumber' => 1, 'guid' => $guid]);
+                    $calls[] = $pool->as($guid)
+                        ->timeout(30)
+                        ->withHeaders($this->headers($qs))
+                        ->get(self::BASE_URL . '/SalesInvoices?' . $qs);
+                }
+                return $calls;
+            });
+
+            foreach ($batch as $guid) {
+                $res = $responses[$guid] ?? null;
+                if (!$res || $res instanceof \Throwable || $res->failed()) continue;
+                $invoice = ($res->json()['Items'] ?? [])[0] ?? null;
+                if (!$invoice) continue;
+
+                $whCode = $invoice['Warehouse']['WarehouseCode'] ?? null;
+                if (!$whCode) continue;
+
+                foreach ($invoice['InvoiceLines'] ?? [] as $line) {
+                    $code = $line['Product']['ProductCode'] ?? null;
+                    if (!$code) continue;
+                    $qty = (float) ($line['InvoiceQuantity'] ?? 0);
+                    if ($qty <= 0) continue;
+                    $result[$whCode][$code] = ($result[$whCode][$code] ?? 0.0) + $qty;
+                }
+            }
+        }
+
+        return $result;
+    }
+
+    /**
      * Fetch warehouse names for specific order numbers in parallel batches.
      * Returns ['SO-00012345' => 'JW Products', ...]
      */
