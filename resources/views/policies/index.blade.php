@@ -1,5 +1,10 @@
 <x-layout title="Company Policies — Lockie Portal">
 
+    <style>
+        .policy-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:0.625rem; }
+        @media(max-width:600px){ .policy-grid { grid-template-columns:1fr; } }
+    </style>
+
     <main style="max-width:900px;margin:0 auto;padding:2rem 1rem;">
 
         <div style="margin-bottom:2rem;">
@@ -19,7 +24,7 @@
             @foreach($grouped as $category => $policies)
             <div style="margin-bottom:2.25rem;">
                 <h2 style="font-size:0.7rem;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 0.875rem;padding-bottom:0.5rem;border-bottom:1px solid #f1f5f9;">{{ $category }}</h2>
-                <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:0.625rem;">
+                <div class="policy-grid">
                     @foreach($policies as $policy)
                     <a href="{{ route('policies.download', $policy) }}"
                        target="_blank"
