@@ -38,7 +38,7 @@
                         <th style="padding:0.75rem 1rem;text-align:left;font-weight:700;color:#374151;">Title</th>
                         <th style="padding:0.75rem 1rem;text-align:left;font-weight:700;color:#374151;">Category</th>
                         <th style="padding:0.75rem 1rem;text-align:left;font-weight:700;color:#374151;">File</th>
-                        <th style="padding:0.75rem 1rem;text-align:left;font-weight:700;color:#374151;white-space:nowrap;">Last Reviewed</th>
+                        <th style="padding:0.75rem 1rem;text-align:left;font-weight:700;color:#374151;white-space:nowrap;">Last Updated</th>
                         <th style="padding:0.75rem 1rem;"></th>
                     </tr>
                 </thead>
@@ -132,7 +132,7 @@
                 </div>
 
                 <div style="margin-bottom:1rem;">
-                    <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Last Reviewed <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+                    <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Last Updated <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
                     <input type="date" name="last_reviewed_at"
                         style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
                         onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
@@ -198,7 +198,7 @@
                 </div>
 
                 <div style="margin-bottom:1rem;">
-                    <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Last Reviewed <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+                    <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Last Updated <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
                     <input type="date" id="edit-reviewed" name="last_reviewed_at"
                         style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
                         onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
