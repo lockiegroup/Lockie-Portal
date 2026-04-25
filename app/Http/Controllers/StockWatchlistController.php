@@ -186,10 +186,10 @@ class StockWatchlistController extends Controller
     public function downloadItems(StockWatchlistCategory $category)
     {
         $items = $category->items()->orderBy('position')->get();
-        $csv   = "Product Code,Product Name\n";
+        $csv   = "Product Code,Price\n";
         foreach ($items as $item) {
-            $name = str_replace('"', '""', $item->product_name ?? '');
-            $csv .= "\"{$item->product_code}\",\"{$name}\"\n";
+            $price = $item->unit_price > 0 ? number_format((float)$item->unit_price, 2, '.', '') : '';
+            $csv  .= "\"{$item->product_code}\",\"{$price}\"\n";
         }
         $filename = preg_replace('/[^a-z0-9]+/', '-', strtolower($category->name)) . '-products.csv';
         return response($csv, 200, [
@@ -212,6 +212,7 @@ class StockWatchlistController extends Controller
         $headers   = array_map('trim', str_getcsv($firstLine, $delimiter));
         $colMap    = array_flip(array_map('strtolower', $headers));
         $codeCol   = $colMap['product code'] ?? $colMap['product_code'] ?? 0;
+        $priceCol  = $colMap['price'] ?? null;
 
         $added = 0;
         foreach (array_slice($lines, 1) as $line) {
@@ -221,10 +222,18 @@ class StockWatchlistController extends Controller
             $code = strtoupper(trim($row[$codeCol] ?? ''));
             if (!$code) continue;
 
+            $price = ($priceCol !== null && isset($row[$priceCol]))
+                ? (float) preg_replace('/[^0-9.]/', '', $row[$priceCol])
+                : null;
+
             if (!StockWatchlistItem::where('product_code', $code)->exists()) {
-                $pos = (StockWatchlistItem::where('category_id', $category->id)->max('position') ?? 0) + 1;
-                $category->items()->create(['product_code' => $code, 'position' => $pos]);
+                $pos  = (StockWatchlistItem::where('category_id', $category->id)->max('position') ?? 0) + 1;
+                $data = ['product_code' => $code, 'position' => $pos];
+                if ($price !== null && $price > 0) $data['unit_price'] = $price;
+                $category->items()->create($data);
                 $added++;
+            } elseif ($price !== null && $price > 0) {
+                StockWatchlistItem::where('product_code', $code)->update(['unit_price' => $price]);
             }
         }
 

@@ -40,8 +40,8 @@
 .sw-badge-low  { background: #fef9c3; color: #854d0e; }
 .sw-badge-out  { background: #fee2e2; color: #991b1b; }
 .sw-badge-disc { background: #f1f5f9; color: #94a3b8; }
-.sw-disc-row td { opacity: 0.55; }
-.sw-disc-row:hover td { opacity: 0.75; }
+.sw-disc-row td { background: #fff5f5; color: #991b1b; }
+.sw-disc-row:hover td { background: #fee2e2; }
 .sw-add-row td { background: #fafafa; }
 .btn-del {
     background: none; border: none; cursor: pointer;
