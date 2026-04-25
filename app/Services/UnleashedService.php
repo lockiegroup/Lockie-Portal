@@ -461,4 +461,42 @@ class UnleashedService
 
         return $results;
     }
+
+    /**
+     * Batch-fetch SubTotal for a list of sales order numbers in parallel.
+     * Returns ['SO-00012345' => 150.0, ...]
+     */
+    public function fetchSalesOrderTotals(array $orderNumbers, int $batchSize = 50): array
+    {
+        $results = [];
+
+        foreach (array_chunk($orderNumbers, $batchSize) as $batch) {
+            $responses = Http::pool(function ($pool) use ($batch) {
+                $calls = [];
+                foreach ($batch as $num) {
+                    $qs = http_build_query([
+                        'pageSize'    => 1,
+                        'pageNumber'  => 1,
+                        'orderNumber' => $num,
+                    ]);
+                    $calls[] = $pool->as($num)
+                        ->timeout(30)
+                        ->withHeaders($this->headers($qs))
+                        ->get(self::BASE_URL . '/SalesOrders?' . $qs);
+                }
+                return $calls;
+            });
+
+            foreach ($batch as $num) {
+                $res = $responses[$num] ?? null;
+                if (!$res || $res instanceof \Throwable || $res->failed()) continue;
+                $order = ($res->json()['Items'] ?? [])[0] ?? null;
+                if ($order) {
+                    $results[$num] = (float) ($order['SubTotal'] ?? 0);
+                }
+            }
+        }
+
+        return $results;
+    }
 }

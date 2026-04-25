@@ -153,8 +153,14 @@ class PrintScheduleSyncService
 
     private function syncAssemblies(UnleashedService $unleashed, int &$created, int &$updated): void
     {
-        $assemblies   = $unleashed->fetchAssemblies();
-        $seenKeys     = [];
+        $assemblies = $unleashed->fetchAssemblies();
+        $seenKeys   = [];
+
+        // Batch-fetch SO totals for all linked sales orders in one parallel round-trip
+        $soNumbers = array_values(array_unique(array_filter(
+            array_column(array_map(fn($a) => ['SalesOrderNumber' => $a['SalesOrderNumber'] ?? null], $assemblies), 'SalesOrderNumber')
+        )));
+        $soTotals = !empty($soNumbers) ? $unleashed->fetchSalesOrderTotals($soNumbers) : [];
 
         foreach ($assemblies as $assembly) {
             $guid = $assembly['Guid'] ?? null;
@@ -171,6 +177,7 @@ class PrintScheduleSyncService
             $assemblyDate       = $unleashed->parseDate($assembly['AssemblyDate'] ?? null);
             $comments           = $assembly['Comments'] ?? null;
             $soNumber           = $assembly['SalesOrderNumber'] ?? null;
+            $soTotal            = $soNumber ? ($soTotals[$soNumber] ?? 0) : 0;
 
             $key            = $guid . ':1';
             $seenKeys[$key] = true;
@@ -189,6 +196,7 @@ class PrintScheduleSyncService
                     'product_description' => $productDescription,
                     'line_comment'        => $comments,
                     'order_quantity'      => $assembledQty,
+                    'order_total'         => $soTotal,
                     'unleashed_status'    => $assemblyStatus,
                     'synced_at'           => now(),
                 ];
@@ -209,7 +217,7 @@ class PrintScheduleSyncService
                     'product_code'           => $productCode,
                     'product_description'    => $productDescription,
                     'line_comment'           => $comments,
-                    'order_total'            => 0,
+                    'order_total'            => $soTotal,
                     'line_total'             => 0,
                     'order_quantity'         => $assembledQty,
                     'quantity_completed'     => 0,

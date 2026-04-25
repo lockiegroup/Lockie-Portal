@@ -91,7 +91,7 @@
     {{-- Row 4: Order total · packs · required date --}}
     <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;margin-bottom:0.75rem;font-size:0.875rem;color:#475569;">
         <span>
-            <span class="text-xs text-slate-400">Total Net Price: </span>
+            <span class="text-xs text-slate-400">{{ str_starts_with($job->order_number, 'ASM-') ? 'SO Value:' : 'Total Net Price:' }} </span>
             <span class="font-medium text-slate-700">&pound;{{ number_format((float)$job->order_total, 2) }}</span>
         </span>
         <span>
