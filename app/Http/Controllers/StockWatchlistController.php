@@ -152,6 +152,7 @@ class StockWatchlistController extends Controller
             $year  = (int) $dt->format('Y');
             $month = (int) $dt->format('n');
 
+            $monthly[$code][$year][$month] = ($monthly[$code][$year][$month] ?? 0) + $qty;
             $rowsProcessed++;
 
             if (count($debugRows) < 10) {
