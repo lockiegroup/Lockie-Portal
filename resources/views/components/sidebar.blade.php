@@ -1,7 +1,11 @@
 @php
-    $isPrintSection = request()->routeIs('print.*');
-    $user           = auth()->user();
-    $initials       = $user ? strtoupper(mb_substr($user->name ?? $user->email, 0, 2)) : '??';
+    $isPrintSection     = request()->routeIs('print.*');
+    $isWatchlistSection = request()->routeIs('stock-watchlist.*');
+    $user               = auth()->user();
+    $initials           = $user ? strtoupper(mb_substr($user->name ?? $user->email, 0, 2)) : '??';
+    $watchlistCategories = ($user && $user->can('stock_ordering'))
+        ? \App\Models\StockWatchlistCategory::orderBy('position')->get(['id', 'name'])
+        : collect();
 @endphp
 
 <aside id="sidebar">
@@ -58,14 +62,37 @@
         @endif
 
 @can('stock_ordering')
+        @if($watchlistCategories->count() > 1)
+        <button onclick="toggleWatchlist()" id="watchlist-toggle"
+            class="sb-item{{ $isWatchlistSection ? ' sb-active' : '' }}"
+            style="width:100%;background:none;border:none;cursor:pointer;font-family:inherit;text-align:left;"
+            data-tip="Stock Watchlist">
+            <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/>
+            </svg>
+            <span class="sb-label" style="flex:1;">Stock Watchlist</span>
+            <svg id="watchlist-chevron" class="sb-label" style="width:13px;height:13px;flex-shrink:0;transition:transform 0.2s;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="6 9 12 15 18 9"/>
+            </svg>
+        </button>
+        <div id="watchlist-sub" class="sb-label sb-sub-group" style="display:none;">
+            <a href="{{ route('stock-watchlist.index') }}"
+               class="sb-sub-item{{ $isWatchlistSection ? ' sb-active' : '' }}">All</a>
+            @foreach($watchlistCategories as $cat)
+            <a href="{{ route('stock-watchlist.index') }}#cat-{{ $cat->id }}"
+               class="sb-sub-item">{{ $cat->name }}</a>
+            @endforeach
+        </div>
+        @else
         <a href="{{ route('stock-watchlist.index') }}"
-           class="sb-item{{ request()->routeIs('stock-watchlist.*') ? ' sb-active' : '' }}"
+           class="sb-item{{ $isWatchlistSection ? ' sb-active' : '' }}"
            data-tip="Stock Watchlist">
             <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/>
             </svg>
             <span class="sb-label">Stock Watchlist</span>
         </a>
+        @endif
         @endcan
 
         @can('cash_flow')
@@ -253,6 +280,28 @@
     window.sbToggle       = function () { localStorage.setItem(KEY, localStorage.getItem(KEY) === '1' ? '0' : '1'); apply(); };
     window.sbMobileToggle = function () { document.body.classList.toggle('sb-open'); };
     apply();
+
+    // Stock Watchlist accordion
+    var isWatchlist = {{ $isWatchlistSection ? 'true' : 'false' }};
+    var watchlistOpen = isWatchlist || localStorage.getItem('watchlist_open') === '1';
+    window.toggleWatchlist = function () {
+        var sub = document.getElementById('watchlist-sub');
+        var ch  = document.getElementById('watchlist-chevron');
+        if (!sub) return;
+        var nowOpen = sub.style.display !== 'none';
+        sub.style.display = nowOpen ? 'none' : 'block';
+        if (ch) ch.style.transform = nowOpen ? '' : 'rotate(180deg)';
+        localStorage.setItem('watchlist_open', nowOpen ? '0' : '1');
+    };
+    (function () {
+        var sub = document.getElementById('watchlist-sub');
+        var ch  = document.getElementById('watchlist-chevron');
+        if (!sub) return;
+        if (watchlistOpen) {
+            sub.style.display = 'block';
+            if (ch) ch.style.transform = 'rotate(180deg)';
+        }
+    })();
 
     // Print Schedule accordion
     var isPrint = {{ $isPrintSection ? 'true' : 'false' }};

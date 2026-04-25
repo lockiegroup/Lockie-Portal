@@ -139,7 +139,7 @@
                 </thead>
                 @forelse($categories as $cat)
                     {{-- Category header --}}
-                    <tbody>
+                    <tbody id="cat-{{ $cat->id }}">
                         <tr class="sw-cat-row" data-cat-id="{{ $cat->id }}">
                             <td colspan="{{ 15 + count($years) }}">
                                 <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
