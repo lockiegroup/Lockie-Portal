@@ -333,6 +333,25 @@ class UnleashedService
     }
 
     /**
+     * Fetch all non-completed assemblies from Unleashed (all warehouses).
+     * Fetches Open, Parked, and In Progress statuses in parallel.
+     */
+    public function fetchAssemblies(): array
+    {
+        $results = $this->parallelPaginate([
+            'open'        => ['Assemblies', ['assemblyStatus' => 'Open']],
+            'parked'      => ['Assemblies', ['assemblyStatus' => 'Parked']],
+            'in_progress' => ['Assemblies', ['assemblyStatus' => 'In Progress']],
+        ], 200);
+
+        return array_merge(
+            $results['open'] ?? [],
+            $results['parked'] ?? [],
+            $results['in_progress'] ?? [],
+        );
+    }
+
+    /**
      * Fetch all products from Unleashed.
      */
     public function fetchProducts(): array
