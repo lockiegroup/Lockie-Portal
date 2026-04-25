@@ -338,20 +338,14 @@ class UnleashedService
      */
     public function fetchAssemblies(): array
     {
-        $statuses = ['Open', 'Parked', 'In Progress'];
-        $items    = [];
+        // Fetch all assemblies without status filter, then exclude completed/deleted in PHP.
+        // Unleashed's assemblyStatus query param may not filter as expected.
+        $all = $this->paginate('Assemblies', [], 200);
 
-        foreach ($statuses as $status) {
-            $page = 1;
-            do {
-                $data     = $this->get('Assemblies', ['assemblyStatus' => $status, 'pageSize' => 200, 'pageNumber' => $page]);
-                $items    = array_merge($items, $data['Items'] ?? []);
-                $maxPages = $data['Pagination']['NumberOfPages'] ?? 1;
-                $page++;
-            } while ($page <= $maxPages);
-        }
-
-        return $items;
+        return array_filter($all, function ($a) {
+            $status = strtolower($a['AssemblyStatus'] ?? '');
+            return !in_array($status, ['complete', 'deleted'], true);
+        });
     }
 
     /**
