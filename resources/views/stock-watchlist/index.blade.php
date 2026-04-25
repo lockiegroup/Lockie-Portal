@@ -112,7 +112,6 @@
                         <th>On Hand</th>
                         <th>Alloc'd</th>
                         <th>On Order</th>
-                        <th>PO Date</th>
                         <th>Required</th>
                         <th>To Order</th>
                         <th>Price (£)</th>
@@ -126,7 +125,7 @@
                 @forelse($categories as $cat)
                     {{-- Category header row --}}
                     <tr class="sw-cat-row" data-cat-id="{{ $cat->id }}">
-                        <td colspan="{{ 16 + count($years) }}">
+                        <td colspan="{{ 15 + count($years) }}">
                             {{ $cat->name }}
                             <span style="font-weight:400;font-size:0.7rem;color:#94a3b8;margin-left:8px;">
                                 ({{ $cat->items->count() }} {{ $cat->items->count() === 1 ? 'product' : 'products' }})
@@ -141,7 +140,6 @@
                         $onHand    = $stock ? (float)$stock->qty_on_hand : null;
                         $allocated = $stock ? (float)$stock->qty_allocated : 0;
                         $onOrder   = $stock ? (float)$stock->qty_on_order : 0;
-                        $poDate    = $stock?->po_expected_date;
                         $avgMo     = $item->avg_monthly;
                         $reqQty    = $item->required_qty;
                         $toOrder   = (float)($item->to_order_qty ?? 0);
@@ -195,9 +193,6 @@
                         <td class="sw-num" style="color:#0891b2;">
                             {{ $onOrder > 0 ? number_format($onOrder, 0) : '—' }}
                         </td>
-                        <td style="color:#64748b;font-size:0.75rem;">
-                            {{ $poDate ? \Carbon\Carbon::parse($poDate)->format('d/m/y') : '—' }}
-                        </td>
                         <td class="sw-num" style="{{ $reqQty > 0 ? 'color:#b45309;font-weight:700;' : 'color:#94a3b8;' }}">
                             {{ $reqQty > 0 ? number_format($reqQty, 0) : '—' }}
                         </td>
@@ -236,7 +231,7 @@
 
                     {{-- Add product row --}}
                     <tr class="sw-add-row">
-                        <td colspan="{{ 16 + count($years) }}" style="padding:6px 10px;">
+                        <td colspan="{{ 15 + count($years) }}" style="padding:6px 10px;">
                             <form style="display:inline-flex;gap:8px;align-items:center;"
                                 onsubmit="addItem(event, {{ $cat->id }}, this)">
                                 <input type="text" name="product_code" placeholder="Product code…"
@@ -253,7 +248,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="{{ 16 + count($years) }}" style="padding:2rem;text-align:center;color:#94a3b8;">
+                    <tr><td colspan="{{ 15 + count($years) }}" style="padding:2rem;text-align:center;color:#94a3b8;">
                         No categories yet. Click <strong>Manage Categories</strong> to add one.
                     </td></tr>
                 @endforelse
