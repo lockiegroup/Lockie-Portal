@@ -260,21 +260,22 @@
                                 data-field="to_order"
                                 value="{{ $toOrder > 0 ? (int)$toOrder : '' }}"
                                 placeholder="{{ $reqQty > 0 ? $reqQty : '0' }}"
-                                onblur="saveField({{ $item->id }}, 'to_order_qty', this.value)"
+                                onblur="saveField({{ $item->id }}, 'to_order_qty', this.value); recalcTotal(this.closest('tr'))"
                                 onkeydown="if(event.key==='Enter')this.blur()">
                         </td>
                         <td>
                             <input type="number" class="sw-input" min="0" step="0.01"
+                                data-field="unit_price"
                                 value="{{ $price > 0 ? number_format($price, 2, '.', '') : '' }}"
                                 placeholder="0.00"
-                                onblur="saveField({{ $item->id }}, 'unit_price', this.value)"
+                                onblur="saveField({{ $item->id }}, 'unit_price', this.value); recalcTotal(this.closest('tr'))"
                                 onkeydown="if(event.key==='Enter')this.blur()">
                         </td>
                         <td class="sw-num sw-total" data-amount="{{ $total > 0 ? number_format($total, 2, '.', '') : '' }}" data-currency="{{ $cat->currency ?? '£' }}" style="font-weight:600;"></td>
                         <td><span class="sw-badge {{ $badgeClass }}">{{ $badgeText }}</span></td>
                         <td style="text-align:center;">
                             <input type="checkbox" {{ $item->discontinued ? 'checked' : '' }}
-                                onchange="saveField({{ $item->id }}, 'discontinued', this.checked ? 1 : 0)"
+                                onchange="toggleDiscontinued(this, {{ $item->id }})"
                                 style="width:14px;height:14px;cursor:pointer;accent-color:#6366f1;">
                         </td>
                     </tr>
@@ -515,12 +516,45 @@ function saveField(itemId, field, value) {
 
 // ── Required → To Order ───────────────────────────────────────────────────────
 function copyRequired(cell, itemId, reqQty) {
-    const input = cell.closest('tr').querySelector('input[data-field="to_order"]');
+    const row   = cell.closest('tr');
+    const input = row.querySelector('input[data-field="to_order"]');
     if (!input) return;
     input.value = reqQty;
     saveField(itemId, 'to_order_qty', reqQty);
+    recalcTotal(row);
     input.classList.add('sw-flash');
     setTimeout(() => input.classList.remove('sw-flash'), 800);
+}
+
+// ── Recalc total cell ─────────────────────────────────────────────────────────
+function recalcTotal(row) {
+    const toOrder = parseFloat(row.querySelector('[data-field="to_order"]')?.value) || 0;
+    const price   = parseFloat(row.querySelector('[data-field="unit_price"]')?.value) || 0;
+    const total   = toOrder * price;
+    const cell    = row.querySelector('.sw-total');
+    if (!cell) return;
+    cell.dataset.amount = total > 0 ? total.toFixed(2) : '';
+    renderTotal(cell);
+}
+
+// ── Discontinued toggle ───────────────────────────────────────────────────────
+function toggleDiscontinued(checkbox, itemId) {
+    const isDisc = checkbox.checked;
+    const row    = checkbox.closest('tr');
+    row.classList.toggle('sw-disc-row', isDisc);
+    const badge = row.querySelector('.sw-badge');
+    if (badge) {
+        if (isDisc) {
+            badge.dataset.savedClass = badge.className;
+            badge.dataset.savedText  = badge.textContent.trim();
+            badge.className   = 'sw-badge sw-badge-disc';
+            badge.textContent = 'Discontinued';
+        } else if (badge.dataset.savedClass) {
+            badge.className   = badge.dataset.savedClass;
+            badge.textContent = badge.dataset.savedText;
+        }
+    }
+    saveField(itemId, 'discontinued', isDisc ? 1 : 0);
 }
 
 // ── Currency (per category) ───────────────────────────────────────────────────
