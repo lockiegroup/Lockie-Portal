@@ -135,45 +135,37 @@ class StockWatchlistSyncService
         $startDate = now()->subMonths(25)->startOfMonth()->format('Y-m-d');
 
         $monthly = [];
-        $page    = 1;
-        $seen    = [];
 
-        do {
-            $data     = $unleashed->get('SalesInvoices', [
-                'invoiceStatus' => 'Complete',
-                'startDate'     => $startDate,
-                'pageSize'      => 500,
-                'pageNumber'    => $page,
-            ]);
-            $items    = $data['Items'] ?? [];
-            $maxPages = $data['Pagination']['NumberOfPages'] ?? 1;
+        // Use SalesOrders (Complete + Invoiced) — matches what Unleashed shows in Sales Enquiry
+        $raw = $unleashed->parallelPaginate([
+            'complete' => ['SalesOrders', ['orderStatus' => 'Complete', 'startDate' => $startDate]],
+            'invoiced' => ['SalesOrders', ['orderStatus' => 'Invoiced', 'startDate' => $startDate]],
+        ], 200);
 
-            foreach ($items as $invoice) {
-                $guid = $invoice['Guid'] ?? null;
-                if ($guid !== null && isset($seen[$guid])) continue;
-                if ($guid !== null) $seen[$guid] = true;
+        $seen = [];
+        foreach (array_merge($raw['complete'], $raw['invoiced']) as $order) {
+            $guid = $order['Guid'] ?? null;
+            if ($guid !== null && isset($seen[$guid])) continue;
+            if ($guid !== null) $seen[$guid] = true;
 
-                $rawDate = $invoice['InvoiceDate'] ?? $invoice['CreatedOn'] ?? null;
-                $parsed  = $unleashed->parseDate($rawDate);
-                if (!$parsed) continue;
+            $rawDate = $order['CompletedDate'] ?? $order['OrderDate'] ?? $order['CreatedOn'] ?? null;
+            $parsed  = $unleashed->parseDate($rawDate);
+            if (!$parsed) continue;
 
-                $dt    = Carbon::parse($parsed);
-                $year  = $dt->year;
-                $month = $dt->month;
+            $dt    = Carbon::parse($parsed);
+            $year  = $dt->year;
+            $month = $dt->month;
 
-                foreach ($invoice['InvoiceLines'] ?? [] as $line) {
-                    $code = $line['Product']['ProductCode'] ?? null;
-                    if (!$code || !in_array($code, $productCodes)) continue;
+            foreach ($order['SalesOrderLines'] ?? [] as $line) {
+                $code = $line['Product']['ProductCode'] ?? null;
+                if (!$code || !in_array($code, $productCodes)) continue;
 
-                    $qty = (float) ($line['InvoiceQuantity'] ?? 0);
-                    if ($qty <= 0) continue;
+                $qty = (float) ($line['OrderQuantity'] ?? 0);
+                if ($qty <= 0) continue;
 
-                    $monthly[$code][$year][$month] = ($monthly[$code][$year][$month] ?? 0) + $qty;
-                }
+                $monthly[$code][$year][$month] = ($monthly[$code][$year][$month] ?? 0) + $qty;
             }
-
-            $page++;
-        } while ($page <= $maxPages);
+        }
 
         // Flatten and bulk-upsert
         $rows = [];
