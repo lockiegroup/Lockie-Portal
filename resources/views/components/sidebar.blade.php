@@ -57,18 +57,7 @@
         </a>
         @endif
 
-        @can('stock_forecast')
-        <a href="{{ route('stock-forecast.index') }}"
-           class="sb-item{{ request()->routeIs('stock-forecast.*') ? ' sb-active' : '' }}"
-           data-tip="Stock Forecast">
-            <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-            </svg>
-            <span class="sb-label">Stock Forecast</span>
-        </a>
-        @endcan
-
-        @can('stock_ordering')
+@can('stock_ordering')
         <a href="{{ route('stock-watchlist.index') }}"
            class="sb-item{{ request()->routeIs('stock-watchlist.*') ? ' sb-active' : '' }}"
            data-tip="Stock Watchlist">

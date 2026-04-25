@@ -19,7 +19,6 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('cash_flow', fn($user) => $user->hasPermission('cash_flow'));
         Gate::define('policy_settings', fn($user) => $user->hasPermission('policy_settings'));
         Gate::define('supplier_settings', fn($user) => $user->hasPermission('supplier_settings'));
-        Gate::define('stock_forecast', fn($user) => $user->isMaster() || $user->hasModule('stock_forecast'));
         Gate::define('stock_ordering', fn($user) => $user->isMaster() || $user->hasModule('stock_ordering'));
     }
 }

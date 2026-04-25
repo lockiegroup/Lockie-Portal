@@ -19,7 +19,6 @@ use App\Http\Controllers\PolicyController;
 use App\Http\Controllers\Admin\PolicyController as AdminPolicyController;
 use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\SupplierSettingsController;
-use App\Http\Controllers\StockForecastController;
 use App\Http\Controllers\StockWatchlistController;
 use Illuminate\Support\Facades\Route;
 
@@ -107,13 +106,6 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::post('/reorder', [AdminPolicyController::class, 'reorder'])->name('reorder');
         Route::post('/categories', [AdminPolicyController::class, 'storeCategory'])->name('categories.store');
         Route::delete('/categories/{category}', [AdminPolicyController::class, 'destroyCategory'])->name('categories.destroy');
-    });
-
-    // Stock Forecast
-    Route::middleware('can:stock_forecast')->group(function () {
-        Route::get('/stock-forecast', [StockForecastController::class, 'index'])->name('stock-forecast.index');
-        Route::post('/stock-forecast/sync', [StockForecastController::class, 'sync'])->name('stock-forecast.sync');
-        Route::patch('/stock-forecast/lines/{line}/lead-time', [StockForecastController::class, 'updateLeadTime'])->name('stock-forecast.lead-time');
     });
 
     // Stock Watchlist
