@@ -14,13 +14,19 @@ class PrintScheduleSyncService
             config('services.unleashed.key'),
         );
 
-        $created = 0;
-        $updated = 0;
+        $created  = 0;
+        $updated  = 0;
+        $warnings = [];
 
         $this->syncSalesOrders($unleashed, $created, $updated);
-        $this->syncAssemblies($unleashed, $created, $updated);
 
-        return ['created' => $created, 'updated' => $updated];
+        try {
+            $this->syncAssemblies($unleashed, $created, $updated);
+        } catch (\RuntimeException $e) {
+            $warnings[] = 'Assemblies skipped: ' . $e->getMessage();
+        }
+
+        return ['created' => $created, 'updated' => $updated, 'warnings' => $warnings];
     }
 
     private function syncSalesOrders(UnleashedService $unleashed, int &$created, int &$updated): void

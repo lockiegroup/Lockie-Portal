@@ -309,6 +309,9 @@
                 if (data.success) {
                     lastSyncTs = Math.floor(Date.now() / 1000);
                     updateLastSynced();
+                    if (!silent && data.warnings && data.warnings.length > 0) {
+                        alert('Sync completed with warnings:\n\n' + data.warnings.join('\n'));
+                    }
                     window.location.reload();
                 } else {
                     if (!silent) alert('Sync failed: ' + (data.error || JSON.stringify(data)));

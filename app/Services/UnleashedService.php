@@ -338,29 +338,17 @@ class UnleashedService
      */
     public function fetchAssemblies(): array
     {
-        // Fetch each status separately so one failure doesn't block the others.
-        // The Assemblies endpoint requires the Assemblies module to be enabled
-        // for the API user in Unleashed — returns 403 if not permitted.
         $statuses = ['Open', 'Parked', 'In Progress'];
         $items    = [];
 
         foreach ($statuses as $status) {
-            try {
-                $page = 1;
-                do {
-                    $data      = $this->get('Assemblies', ['assemblyStatus' => $status, 'pageSize' => 200, 'pageNumber' => $page]);
-                    $items     = array_merge($items, $data['Items'] ?? []);
-                    $maxPages  = $data['Pagination']['NumberOfPages'] ?? 1;
-                    $page++;
-                } while ($page <= $maxPages);
-            } catch (\RuntimeException $e) {
-                // If Unleashed returns 403/404 for this status, skip it rather
-                // than aborting the whole sync.
-                if (str_contains($e->getMessage(), '(403)') || str_contains($e->getMessage(), '(404)') || str_contains($e->getMessage(), '(405)')) {
-                    continue;
-                }
-                throw $e;
-            }
+            $page = 1;
+            do {
+                $data     = $this->get('Assemblies', ['assemblyStatus' => $status, 'pageSize' => 200, 'pageNumber' => $page]);
+                $items    = array_merge($items, $data['Items'] ?? []);
+                $maxPages = $data['Pagination']['NumberOfPages'] ?? 1;
+                $page++;
+            } while ($page <= $maxPages);
         }
 
         return $items;
