@@ -16,7 +16,6 @@ class User extends Authenticatable
         'envelope_settings' => 'Envelope Settings',
         'cash_flow'         => 'Cash Flow',
         'policy_settings'   => 'Policy Settings',
-        'supplier_settings' => 'Supplier Settings',
     ];
 
     const MODULES = [

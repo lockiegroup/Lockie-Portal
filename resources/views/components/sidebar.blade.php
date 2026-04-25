@@ -146,7 +146,7 @@
         </div>
         @endif
 
-        @canany(['manage_users', 'print_settings', 'envelope_settings', 'policy_settings', 'cash_flow', 'supplier_settings'])
+        @canany(['manage_users', 'print_settings', 'envelope_settings', 'policy_settings', 'cash_flow'])
         <div style="height:1px;background:#1e293b;margin:10px 4px 8px;"></div>
         <p class="sb-section" style="font-size:0.625rem;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:0.1em;padding:0 10px;margin-bottom:6px;">Admin</p>
 
@@ -210,16 +210,6 @@
         </a>
         @endcan
 
-        @can('supplier_settings')
-        <a href="{{ route('admin.supplier-settings.index') }}"
-           class="sb-item{{ request()->routeIs('admin.supplier-settings*') ? ' sb-active' : '' }}"
-           data-tip="Supplier Settings">
-            <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><rect x="2" y="8" width="20" height="12" rx="2"/>
-            </svg>
-            <span class="sb-label">Supplier Settings</span>
-        </a>
-        @endcan
 
         @endcanany
 

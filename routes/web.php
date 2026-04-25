@@ -18,7 +18,6 @@ use App\Http\Controllers\CashFlowController;
 use App\Http\Controllers\PolicyController;
 use App\Http\Controllers\Admin\PolicyController as AdminPolicyController;
 use App\Http\Controllers\Admin\ActivityLogController;
-use App\Http\Controllers\Admin\SupplierSettingsController;
 use App\Http\Controllers\StockWatchlistController;
 use Illuminate\Support\Facades\Route;
 
@@ -121,13 +120,7 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::delete('/items/{item}', [StockWatchlistController::class, 'destroyItem'])->name('items.destroy');
     });
 
-    // Admin — supplier settings
-    Route::middleware('can:supplier_settings')->group(function () {
-        Route::get('/admin/supplier-settings', [SupplierSettingsController::class, 'index'])->name('admin.supplier-settings.index');
-        Route::post('/admin/supplier-settings', [SupplierSettingsController::class, 'update'])->name('admin.supplier-settings.update');
-    });
-
-    // Admin — manage users + activity log
+// Admin — manage users + activity log
     Route::middleware('can:manage_users')->group(function () {
         Route::resource('admin/users', UserController::class)->names('admin.users');
         Route::get('admin/activity-log', ActivityLogController::class)->name('admin.activity-log');
