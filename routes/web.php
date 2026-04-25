@@ -116,6 +116,7 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::patch('/categories/{category}', [StockWatchlistController::class, 'updateCategory'])->name('categories.update');
         Route::delete('/categories/{category}', [StockWatchlistController::class, 'destroyCategory'])->name('categories.destroy');
         Route::post('/categories/{category}/items', [StockWatchlistController::class, 'storeItem'])->name('items.store');
+        Route::post('/items/reorder', [StockWatchlistController::class, 'reorderItems'])->name('items.reorder');
         Route::patch('/items/{item}', [StockWatchlistController::class, 'updateItem'])->name('items.update');
         Route::delete('/items/{item}', [StockWatchlistController::class, 'destroyItem'])->name('items.destroy');
     });

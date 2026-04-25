@@ -49,6 +49,12 @@
     line-height:0; transition: color 0.15s;
 }
 .btn-del:hover { color: #ef4444; }
+.sw-drag-handle {
+    color: #cbd5e1; cursor: grab; padding: 0 6px; text-align: center;
+    transition: color 0.15s;
+}
+.sw-drag-handle:active { cursor: grabbing; }
+.sw-drag-handle:hover { color: #94a3b8; }
 .btn-ghost {
     background: none; border: 1px solid #e2e8f0; color: #64748b;
     padding: 5px 12px; border-radius: 6px; font-size: 0.8rem;
@@ -106,6 +112,7 @@
             <table class="sw-table">
                 <thead>
                     <tr>
+                        <th style="width:24px;"></th>
                         <th style="text-align:left;min-width:110px;">Code</th>
                         <th style="text-align:left;min-width:180px;">Description</th>
                         <th style="text-align:left;min-width:140px;">Notes</th>
@@ -126,19 +133,21 @@
                         <th></th>
                     </tr>
                 </thead>
-                <tbody>
                 @forelse($categories as $cat)
-                    {{-- Category header row --}}
-                    <tr class="sw-cat-row" data-cat-id="{{ $cat->id }}">
-                        <td colspan="{{ 15 + count($years) }}">
-                            {{ $cat->name }}
-                            <span style="font-weight:400;font-size:0.7rem;color:#94a3b8;margin-left:8px;">
-                                ({{ $cat->items->count() }} {{ $cat->items->count() === 1 ? 'product' : 'products' }})
-                            </span>
-                        </td>
-                    </tr>
+                    {{-- Category header --}}
+                    <tbody>
+                        <tr class="sw-cat-row" data-cat-id="{{ $cat->id }}">
+                            <td colspan="{{ 16 + count($years) }}">
+                                {{ $cat->name }}
+                                <span style="font-weight:400;font-size:0.7rem;color:#94a3b8;margin-left:8px;">
+                                    ({{ $cat->items->count() }} {{ $cat->items->count() === 1 ? 'product' : 'products' }})
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
 
-                    {{-- Product rows --}}
+                    {{-- Sortable item rows --}}
+                    <tbody class="sw-sortable" id="sortable-cat-{{ $cat->id }}" data-cat-id="{{ $cat->id }}">
                     @foreach($cat->items as $item)
                     @php
                         $stock     = $item->stock;
@@ -151,7 +160,6 @@
                         $price     = (float)($item->unit_price ?? 0);
                         $total     = $toOrder * $price;
 
-                        // Status badge
                         if ($item->discontinued) {
                             $badgeClass = 'sw-badge-disc'; $badgeText = 'Discontinued';
                         } elseif ($onHand === null) {
@@ -164,7 +172,14 @@
                             $badgeClass = 'sw-badge-ok'; $badgeText = 'OK';
                         }
                     @endphp
-                    <tr class="{{ $item->discontinued ? 'sw-disc-row' : '' }}" data-item-id="{{ $item->id }}">
+                    <tr class="{{ $item->discontinued ? 'sw-disc-row' : '' }}" data-id="{{ $item->id }}">
+                        <td class="sw-drag-handle">
+                            <svg style="width:14px;height:14px;" viewBox="0 0 24 24" fill="currentColor">
+                                <circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/>
+                                <circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/>
+                                <circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/>
+                            </svg>
+                        </td>
                         <td style="font-weight:600;color:#0f172a;">{{ $item->product_code }}</td>
                         <td style="color:#475569;max-width:200px;overflow:hidden;text-overflow:ellipsis;" title="{{ $item->product_name }}">
                             {{ $item->product_name ?? '—' }}
@@ -233,31 +248,35 @@
                         </td>
                     </tr>
                     @endforeach
+                    </tbody>
 
                     {{-- Add product row --}}
-                    <tr class="sw-add-row">
-                        <td colspan="{{ 15 + count($years) }}" style="padding:6px 10px;">
-                            <form style="display:inline-flex;gap:8px;align-items:center;"
-                                onsubmit="addItem(event, {{ $cat->id }}, this)">
-                                <input type="text" name="product_code" placeholder="Product code…"
-                                    style="border:1px solid #e2e8f0;border-radius:6px;padding:4px 10px;font-size:0.8rem;color:#334155;width:160px;text-transform:uppercase;"
-                                    oninput="this.value=this.value.toUpperCase()" required>
-                                <input type="number" name="lead_time_months" placeholder="Lead (mo)"
-                                    style="border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px;font-size:0.8rem;color:#334155;width:90px;"
-                                    min="1" max="120" value="3">
-                                <button type="submit"
-                                    style="padding:4px 14px;background:#0f172a;color:white;border:none;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;">
-                                    + Add
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
+                    <tbody>
+                        <tr class="sw-add-row">
+                            <td colspan="{{ 16 + count($years) }}" style="padding:6px 10px;">
+                                <form style="display:inline-flex;gap:8px;align-items:center;"
+                                    onsubmit="addItem(event, {{ $cat->id }}, this)">
+                                    <input type="text" name="product_code" placeholder="Product code…"
+                                        style="border:1px solid #e2e8f0;border-radius:6px;padding:4px 10px;font-size:0.8rem;color:#334155;width:160px;text-transform:uppercase;"
+                                        oninput="this.value=this.value.toUpperCase()" required>
+                                    <input type="number" name="lead_time_months" placeholder="Lead (mo)"
+                                        style="border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px;font-size:0.8rem;color:#334155;width:90px;"
+                                        min="1" max="120" value="3">
+                                    <button type="submit"
+                                        style="padding:4px 14px;background:#0f172a;color:white;border:none;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;">
+                                        + Add
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    </tbody>
                 @empty
-                    <tr><td colspan="{{ 15 + count($years) }}" style="padding:2rem;text-align:center;color:#94a3b8;">
-                        No categories yet. Click <strong>Manage Categories</strong> to add one.
-                    </td></tr>
+                    <tbody>
+                        <tr><td colspan="{{ 16 + count($years) }}" style="padding:2rem;text-align:center;color:#94a3b8;">
+                            No categories yet. Click <strong>Manage Categories</strong> to add one.
+                        </td></tr>
+                    </tbody>
                 @endforelse
-                </tbody>
             </table>
         </div>
     </div>
@@ -482,6 +501,27 @@ function importSalesFile(input) {
 function escHtml(str) {
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+// ── Reorder ───────────────────────────────────────────────────────────────────
+function saveItemOrder(tbody) {
+    const ids = [...tbody.querySelectorAll('tr[data-id]')].map(r => r.dataset.id);
+    fetch('{{ route("stock-watchlist.items.reorder") }}', {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ ids }),
+    });
+}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script>
+document.querySelectorAll('.sw-sortable').forEach(tbody => {
+    Sortable.create(tbody, {
+        handle: '.sw-drag-handle',
+        animation: 150,
+        onEnd() { saveItemOrder(tbody); },
+    });
+});
 </script>
 
 <style>
