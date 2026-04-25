@@ -531,7 +531,7 @@ function copyRequired(cell) {
 }
 
 function fillAllRequired() {
-    const cells = [...document.querySelectorAll('.sw-req-click')];
+    const cells = [...document.querySelectorAll('.sw-req-click')].filter(c => !c.closest('tr').classList.contains('sw-disc-row'));
     if (!cells.length) return;
     if (!confirm(`Fill To Order for all ${cells.length} product(s) that need ordering? This will overwrite any existing To Order values.`)) return;
     cells.forEach(cell => copyRequired(cell));
