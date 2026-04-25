@@ -332,6 +332,12 @@ class StockWatchlistController extends Controller
         return response()->json(['ok' => true]);
     }
 
+    public function clearOrders()
+    {
+        StockWatchlistItem::query()->update(['to_order_qty' => null]);
+        return response()->json(['ok' => true]);
+    }
+
     public function destroyItem(StockWatchlistItem $item)
     {
         $item->delete();

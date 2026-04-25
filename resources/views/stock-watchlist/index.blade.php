@@ -97,17 +97,18 @@
                 @endif
             </span>
             <button class="btn-ghost" onclick="openCatModal()">Manage Categories</button>
+            <button class="btn-ghost" onclick="clearAllToOrder()" style="color:#dc2626;border-color:#fca5a5;">Clear To Order</button>
             <div style="display:flex;align-items:center;gap:4px;">
                 <button class="btn-ghost" onclick="document.getElementById('sales-import-input').click()">
                     Import Sales CSV
                 </button>
-                <input type="text" id="sales-find" placeholder="Find…" title="Find in product code"
+                <input type="text" id="sales-find" placeholder="Find…" title="Find in product code (saved automatically)"
                     style="width:70px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 7px;font-size:0.78rem;color:#334155;text-transform:uppercase;"
-                    oninput="this.value=this.value.toUpperCase()">
+                    oninput="this.value=this.value.toUpperCase(); saveFindReplace()">
                 <span style="font-size:0.75rem;color:#94a3b8;">→</span>
-                <input type="text" id="sales-replace" placeholder="Replace…" title="Replace with"
+                <input type="text" id="sales-replace" placeholder="Replace…" title="Replace with (saved automatically)"
                     style="width:70px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 7px;font-size:0.78rem;color:#334155;text-transform:uppercase;"
-                    oninput="this.value=this.value.toUpperCase()">
+                    oninput="this.value=this.value.toUpperCase(); saveFindReplace()">
             </div>
             <input type="file" id="sales-import-input" accept=".csv,.tsv,.txt" style="display:none"
                 onchange="importSalesFile(this)">
@@ -645,6 +646,35 @@ function saveCatCurrency(catId, sym) {
     if (subTotal) { subTotal.dataset.currency = sym; renderTotal(subTotal); }
 }
 document.querySelectorAll('.sw-total').forEach(renderTotal);
+
+// ── Find/Replace persistence ──────────────────────────────────────────────────
+function saveFindReplace() {
+    localStorage.setItem('sw_find',    document.getElementById('sales-find').value);
+    localStorage.setItem('sw_replace', document.getElementById('sales-replace').value);
+}
+(function restoreFindReplace() {
+    const f = localStorage.getItem('sw_find');
+    const r = localStorage.getItem('sw_replace');
+    if (f) document.getElementById('sales-find').value    = f;
+    if (r) document.getElementById('sales-replace').value = r;
+})();
+
+// ── Clear To Order ────────────────────────────────────────────────────────────
+function clearAllToOrder() {
+    if (!confirm('Clear all To Order quantities across every category?')) return;
+    fetch('{{ route("stock-watchlist.items.clear-orders") }}', {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+    })
+    .then(r => r.json())
+    .then(d => {
+        if (!d.ok) { alert('Failed to clear orders'); return; }
+        document.querySelectorAll('input[data-field="to_order"]').forEach(input => {
+            input.value = '';
+            recalcTotal(input.closest('tr'));
+        });
+    });
+}
 
 // ── Sales CSV Import ──────────────────────────────────────────────────────────
 function importSalesFile(input) {
