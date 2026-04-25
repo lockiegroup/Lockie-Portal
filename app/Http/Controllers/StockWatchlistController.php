@@ -149,7 +149,7 @@ class StockWatchlistController extends Controller
         set_time_limit(300);
         try {
             $result = (new StockWatchlistSyncService())->run();
-            return response()->json(['ok' => true, 'products' => $result['products']]);
+            return response()->json(['ok' => true, 'products' => $result['products'], 'debug' => $result['stock']]);
         } catch (\Throwable $e) {
             \Log::error('StockWatchlist sync failed', ['error' => $e->getMessage()]);
             return response()->json(['ok' => false, 'error' => $e->getMessage()], 500);

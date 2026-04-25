@@ -37,14 +37,14 @@ class StockWatchlistSyncService
             throw new \RuntimeException('JW Products warehouse not found in Unleashed');
         }
 
-        $this->syncStock($unleashed, $productCodes, $jwCode);
+        $stockMap = $this->syncStock($unleashed, $productCodes, $jwCode);
         $this->syncSalesHistory($unleashed, $productCodes);
         $this->syncProductNames();
 
-        return ['products' => count($productCodes)];
+        return ['products' => count($productCodes), 'stock' => $stockMap];
     }
 
-    private function syncStock(UnleashedService $unleashed, array $productCodes, string $jwCode): void
+    private function syncStock(UnleashedService $unleashed, array $productCodes, string $jwCode): array
     {
         // JW Products is a separate Unleashed sub-account — the unfiltered
         // StockOnHand endpoint doesn't include it. Fetch each warehouse explicitly
@@ -96,6 +96,8 @@ class StockWatchlistSyncService
                 ]
             );
         }
+
+        return ['found' => $stockMap, 'warehouses_checked' => $warehouseCodes];
     }
 
     private function fetchPoData(UnleashedService $unleashed, array $productCodes): array
