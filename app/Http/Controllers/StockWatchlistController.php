@@ -214,7 +214,10 @@ class StockWatchlistController extends Controller
         $codeCol   = $colMap['product code'] ?? $colMap['product_code'] ?? 0;
         $priceCol  = $colMap['price'] ?? null;
 
-        $added = 0;
+        $added    = 0;
+        $updated  = 0;
+        $position = 1;
+
         foreach (array_slice($lines, 1) as $line) {
             $line = trim($line);
             if ($line === '') continue;
@@ -226,18 +229,26 @@ class StockWatchlistController extends Controller
                 ? (float) preg_replace('/[^0-9.]/', '', $row[$priceCol])
                 : null;
 
-            if (!StockWatchlistItem::where('product_code', $code)->exists()) {
-                $pos  = (StockWatchlistItem::where('category_id', $category->id)->max('position') ?? 0) + 1;
-                $data = ['product_code' => $code, 'position' => $pos];
+            $existing = StockWatchlistItem::where('product_code', $code)
+                ->where('category_id', $category->id)
+                ->first();
+
+            if ($existing) {
+                $updateData = ['position' => $position];
+                if ($price !== null && $price > 0) $updateData['unit_price'] = $price;
+                $existing->update($updateData);
+                $updated++;
+            } elseif (!StockWatchlistItem::where('product_code', $code)->exists()) {
+                $data = ['product_code' => $code, 'position' => $position];
                 if ($price !== null && $price > 0) $data['unit_price'] = $price;
                 $category->items()->create($data);
                 $added++;
-            } elseif ($price !== null && $price > 0) {
-                StockWatchlistItem::where('product_code', $code)->update(['unit_price' => $price]);
             }
+
+            $position++;
         }
 
-        return response()->json(['ok' => true, 'added' => $added]);
+        return response()->json(['ok' => true, 'added' => $added, 'updated' => $updated]);
     }
 
     public function destroyCategory(StockWatchlistCategory $category)

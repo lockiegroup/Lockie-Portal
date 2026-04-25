@@ -452,7 +452,7 @@ function importCatItems(catId, input) {
     .then(r => r.json())
     .then(d => {
         if (d.ok) {
-            alert(`Imported ${d.added} product(s). Page will reload.`);
+            alert(`Import complete: ${d.added} added, ${d.updated} updated. Page will reload.`);
             location.reload();
         } else {
             alert('Import failed: ' + (d.error || 'Unknown error'));
