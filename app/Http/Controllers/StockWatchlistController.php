@@ -77,35 +77,40 @@ class StockWatchlistController extends Controller
     {
         $request->validate(['file' => 'required|file|max:20480']);
 
-        $path   = $request->file('file')->getRealPath();
-        $handle = fopen($path, 'r');
-        if (!$handle) {
-            return response()->json(['error' => 'Could not read file'], 422);
-        }
+        $content = file_get_contents($request->file('file')->getRealPath());
+        // Strip UTF-8 BOM if present
+        $content = ltrim($content, "\xEF\xBB\xBF");
+        // Normalise line endings
+        $content = str_replace("\r\n", "\n", str_replace("\r", "\n", $content));
 
-        // Detect tab or comma delimiter from first line
-        $firstLine = fgets($handle);
-        rewind($handle);
+        $lines     = explode("\n", trim($content));
+        $firstLine = $lines[0] ?? '';
         $delimiter = str_contains($firstLine, "\t") ? "\t" : ',';
 
         // Parse header row
-        $rawHeaders = fgetcsv($handle, 0, $delimiter);
-        $headers    = array_map('trim', $rawHeaders ?? []);
-        $colMap     = array_flip($headers);
+        $headers = str_getcsv($firstLine, $delimiter);
+        $headers = array_map('trim', $headers);
+        $colMap  = array_flip($headers);
 
         $codeCol = $colMap['Product Code'] ?? null;
         $dateCol = $colMap['Order Date']   ?? null;
         $qtyCol  = $colMap['Quantity']     ?? null;
 
         if ($codeCol === null || $dateCol === null || $qtyCol === null) {
-            fclose($handle);
-            return response()->json(['error' => 'File must contain columns: Product Code, Order Date, Quantity'], 422);
+            return response()->json([
+                'error'   => 'File must contain columns: Product Code, Order Date, Quantity',
+                'found'   => $headers,
+            ], 422);
         }
 
         $watchlistCodes = StockWatchlistItem::pluck('product_code')->all();
         $monthly        = [];
 
-        while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
+        foreach (array_slice($lines, 1) as $line) {
+            $line = trim($line);
+            if ($line === '') continue;
+            $row = str_getcsv($line, $delimiter);
+
             $code    = strtoupper(trim($row[$codeCol] ?? ''));
             $rawDate = trim($row[$dateCol] ?? '');
             $qty     = (float) ($row[$qtyCol] ?? 0);
@@ -122,8 +127,6 @@ class StockWatchlistController extends Controller
 
             $monthly[$code][$year][$month] = ($monthly[$code][$year][$month] ?? 0) + $qty;
         }
-
-        fclose($handle);
 
         $rows = [];
         foreach ($monthly as $code => $years) {
