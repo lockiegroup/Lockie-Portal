@@ -139,7 +139,7 @@
                         <th>On Hand</th>
                         <th>Alloc'd</th>
                         <th>On Order</th>
-                        <th>Required<br><small style="font-weight:400;opacity:0.7;">click→order</small></th>
+                        <th style="cursor:pointer;user-select:none;" onclick="fillAllRequired()" title="Fill all To Order from Required">Required<br><small style="font-weight:400;opacity:0.7;">click→order</small></th>
                         <th>To Order</th>
                         <th>Price</th>
                         <th id="total-header">Total</th>
@@ -252,7 +252,8 @@
                         </td>
                         <td class="sw-num {{ $reqQty > 0 ? 'sw-req-click' : '' }}"
                             style="{{ $reqQty > 0 ? 'color:#b45309;font-weight:700;' : 'color:#94a3b8;' }}"
-                            @if($reqQty > 0) onclick="copyRequired(this, {{ $item->id }}, {{ $reqQty }})" title="Click to copy to To Order" @endif>
+                            data-item-id="{{ $item->id }}" data-req-qty="{{ $reqQty }}"
+                            @if($reqQty > 0) onclick="copyRequired(this)" title="Click to copy to To Order" @endif>
                             {{ $reqQty > 0 ? number_format($reqQty, 0) : '—' }}
                         </td>
                         <td>
@@ -515,7 +516,10 @@ function saveField(itemId, field, value) {
 }
 
 // ── Required → To Order ───────────────────────────────────────────────────────
-function copyRequired(cell, itemId, reqQty) {
+function copyRequired(cell) {
+    const itemId = cell.dataset.itemId;
+    const reqQty = parseInt(cell.dataset.reqQty, 10);
+    if (!itemId || !reqQty) return;
     const row   = cell.closest('tr');
     const input = row.querySelector('input[data-field="to_order"]');
     if (!input) return;
@@ -524,6 +528,13 @@ function copyRequired(cell, itemId, reqQty) {
     recalcTotal(row);
     input.classList.add('sw-flash');
     setTimeout(() => input.classList.remove('sw-flash'), 800);
+}
+
+function fillAllRequired() {
+    const cells = [...document.querySelectorAll('.sw-req-click')];
+    if (!cells.length) return;
+    if (!confirm(`Fill To Order for all ${cells.length} product(s) that need ordering? This will overwrite any existing To Order values.`)) return;
+    cells.forEach(cell => copyRequired(cell));
 }
 
 // ── Recalc total cell ─────────────────────────────────────────────────────────
