@@ -283,6 +283,41 @@
                     @endforeach
                     </tbody>
 
+                    {{-- Subtotal row --}}
+                    @php
+                        $subYearly   = [];
+                        foreach ($years as $yr) {
+                            $subYearly[$yr] = $cat->items->sum(fn($i) => $i->yearly[$yr] ?? 0);
+                        }
+                        $subAvg     = $cat->items->sum(fn($i) => $i->avg_monthly);
+                        $subOnHand  = $cat->items->sum(fn($i) => $i->stock ? (float)$i->stock->qty_on_hand : 0);
+                        $subAllocd  = $cat->items->sum(fn($i) => $i->stock ? (float)$i->stock->qty_allocated : 0);
+                        $subOnOrder = $cat->items->sum(fn($i) => $i->stock ? (float)$i->stock->qty_on_order : 0);
+                        $subReq     = $cat->items->sum(fn($i) => $i->required_qty);
+                        $subToOrder = $cat->items->sum(fn($i) => (float)($i->to_order_qty ?? 0));
+                        $subTotal   = $cat->items->sum(fn($i) => (float)($i->to_order_qty ?? 0) * (float)($i->unit_price ?? 0));
+                    @endphp
+                    <tbody>
+                        <tr id="subtotal-cat-{{ $cat->id }}" style="font-weight:700;background:#f1f5f9;border-top:2px solid #e2e8f0;">
+                            <td></td>
+                            <td style="font-size:0.7rem;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Subtotal</td>
+                            <td></td>
+                            @foreach($years as $yr)
+                            <td class="sw-num">{{ $subYearly[$yr] > 0 ? number_format($subYearly[$yr], 0) : '—' }}</td>
+                            @endforeach
+                            <td class="sw-num">{{ $subAvg > 0 ? number_format($subAvg, 1) : '—' }}</td>
+                            <td class="sw-num">{{ $subOnHand > 0 ? number_format($subOnHand, 0) : '—' }}</td>
+                            <td class="sw-num">{{ $subAllocd > 0 ? number_format($subAllocd, 0) : '—' }}</td>
+                            <td class="sw-num">{{ $subOnOrder > 0 ? number_format($subOnOrder, 0) : '—' }}</td>
+                            <td class="sw-num">{{ $subReq > 0 ? number_format($subReq, 0) : '—' }}</td>
+                            <td class="sw-num sw-sub-toorder">{{ $subToOrder > 0 ? number_format($subToOrder, 0) : '—' }}</td>
+                            <td></td>
+                            <td class="sw-num sw-sub-total" data-currency="{{ $cat->currency ?? '£' }}" data-amount="{{ $subTotal > 0 ? number_format($subTotal, 2, '.', '') : '' }}"></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+
                     {{-- Add product row --}}
                     <tbody>
                         <tr class="sw-add-row">
@@ -546,7 +581,33 @@ function recalcTotal(row) {
     if (!cell) return;
     cell.dataset.amount = total > 0 ? total.toFixed(2) : '';
     renderTotal(cell);
+    const catId = row.closest('.sw-sortable')?.dataset.catId;
+    if (catId) updateCatSubtotal(catId);
 }
+
+// ── Category subtotal row ─────────────────────────────────────────────────────
+function updateCatSubtotal(catId) {
+    const tbody  = document.getElementById(`sortable-cat-${catId}`);
+    const subRow = document.getElementById(`subtotal-cat-${catId}`);
+    if (!tbody || !subRow) return;
+
+    let toOrderSum = 0, totalSum = 0;
+    tbody.querySelectorAll('tr[data-id]').forEach(row => {
+        toOrderSum += parseFloat(row.querySelector('[data-field="to_order"]')?.value) || 0;
+        totalSum   += parseFloat(row.querySelector('.sw-total')?.dataset.amount) || 0;
+    });
+
+    const subToOrder = subRow.querySelector('.sw-sub-toorder');
+    const subTotal   = subRow.querySelector('.sw-sub-total');
+    if (subToOrder) subToOrder.textContent = toOrderSum > 0 ? toOrderSum.toLocaleString('en-GB', {maximumFractionDigits:0}) : '—';
+    if (subTotal) {
+        subTotal.dataset.amount = totalSum > 0 ? totalSum.toFixed(2) : '';
+        renderTotal(subTotal);
+    }
+}
+
+// Initialise all subtotal totals on load
+document.querySelectorAll('.sw-sortable').forEach(tbody => updateCatSubtotal(tbody.dataset.catId));
 
 // ── Discontinued toggle ───────────────────────────────────────────────────────
 function toggleDiscontinued(checkbox, itemId) {
@@ -580,6 +641,8 @@ function saveCatCurrency(catId, sym) {
         td.dataset.currency = sym;
         renderTotal(td);
     });
+    const subTotal = document.querySelector(`#subtotal-cat-${catId} .sw-sub-total`);
+    if (subTotal) { subTotal.dataset.currency = sym; renderTotal(subTotal); }
 }
 document.querySelectorAll('.sw-total').forEach(renderTotal);
 
