@@ -339,9 +339,9 @@ class UnleashedService
     public function fetchAssemblies(): array
     {
         $results = $this->parallelPaginate([
-            'open'        => ['Assemblies', ['assemblyStatus' => 'Open']],
-            'parked'      => ['Assemblies', ['assemblyStatus' => 'Parked']],
-            'in_progress' => ['Assemblies', ['assemblyStatus' => 'In Progress']],
+            'open'        => ['AssemblyOrders', ['assemblyStatus' => 'Open']],
+            'parked'      => ['AssemblyOrders', ['assemblyStatus' => 'Parked']],
+            'in_progress' => ['AssemblyOrders', ['assemblyStatus' => 'In Progress']],
         ], 200);
 
         return array_merge(
