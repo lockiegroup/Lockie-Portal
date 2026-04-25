@@ -76,13 +76,15 @@ class StockWatchlistSyncService
             } while ($page <= $maxPages);
         }
 
-        // For products not found in any warehouse (stock with no warehouse assigned),
-        // fall back to a direct productCode lookup which returns the aggregate row.
-        $missing = array_diff($productCodes, array_keys($stockMap));
-        foreach ($missing as $code) {
+        // For any product not found across warehouses, or found with 0 on-hand,
+        // also try a direct productCode lookup — this catches stock that is recorded
+        // without a warehouse assignment (WarehouseCode empty in Unleashed).
+        foreach ($productCodes as $code) {
+            if (isset($stockMap[$code]) && $stockMap[$code]['on_hand'] > 0) continue;
+
             $data = $unleashed->get('StockOnHand', ['productCode' => $code, 'pageSize' => 10]);
             $item = $data['Items'][0] ?? null;
-            if ($item) {
+            if ($item && (float)($item['QtyOnHand'] ?? 0) > 0) {
                 $stockMap[$code] = [
                     'name'      => $item['ProductDescription'] ?? null,
                     'on_hand'   => (float)($item['QtyOnHand']    ?? 0),
