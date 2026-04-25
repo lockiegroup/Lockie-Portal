@@ -76,6 +76,21 @@ class StockWatchlistSyncService
             } while ($page <= $maxPages);
         }
 
+        // For products not found in any warehouse (stock with no warehouse assigned),
+        // fall back to a direct productCode lookup which returns the aggregate row.
+        $missing = array_diff($productCodes, array_keys($stockMap));
+        foreach ($missing as $code) {
+            $data = $unleashed->get('StockOnHand', ['productCode' => $code, 'pageSize' => 10]);
+            $item = $data['Items'][0] ?? null;
+            if ($item) {
+                $stockMap[$code] = [
+                    'name'      => $item['ProductDescription'] ?? null,
+                    'on_hand'   => (float)($item['QtyOnHand']    ?? 0),
+                    'allocated' => (float)($item['AllocatedQty'] ?? $item['AllocatedQuantity'] ?? 0),
+                ];
+            }
+        }
+
         // Fetch open PO data for watchlist products
         $poMap = $this->fetchPoData($unleashed, $productCodes);
 
