@@ -560,9 +560,10 @@ function importSalesFile(input) {
     })
     .then(r => r.json())
     .then(d => {
+        console.log('Sales import result:', d);
         if (d.ok) {
-            status.textContent = `Imported ${d.months} month-rows for ${d.products} product(s)`;
-            setTimeout(() => location.reload(), 800);
+            status.textContent = `Imported ${d.months} month-rows for ${d.products} product(s) (${d.rows_processed} rows matched, ${d.rows_skipped} skipped)`;
+            setTimeout(() => location.reload(), 1500);
         } else {
             alert('Import failed: ' + (d.error || 'Unknown error'));
             status.textContent = '';

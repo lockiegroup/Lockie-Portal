@@ -124,6 +124,9 @@ class StockWatchlistController extends Controller
 
         $watchlistCodes = StockWatchlistItem::pluck('product_code')->all();
         $monthly        = [];
+        $debugRows      = [];
+        $rowsProcessed  = 0;
+        $rowsSkipped    = 0;
 
         foreach (array_slice($lines, 1) as $line) {
             $line = trim($line);
@@ -132,23 +135,28 @@ class StockWatchlistController extends Controller
 
             $code    = strtoupper(trim($row[$codeCol] ?? ''));
             $rawDate = trim($row[$dateCol] ?? '');
-            $qty     = (float) ($row[$qtyCol] ?? 0);
+            // Strip thousands commas and currency symbols before parsing
+            $qty     = (float) str_replace([',', '£', '$', '€'], '', $row[$qtyCol] ?? 0);
 
             if ($find !== '' && str_contains($code, $find)) {
                 $code = str_replace($find, $replace, $code);
             }
 
-            if (!$code || !$rawDate || $qty <= 0) continue;
-            if (!in_array($code, $watchlistCodes)) continue;
+            if (!$code || !$rawDate || $qty <= 0) { $rowsSkipped++; continue; }
+            if (!in_array($code, $watchlistCodes))  { $rowsSkipped++; continue; }
 
             $dt = \DateTime::createFromFormat('d/m/Y', $rawDate)
                ?: \DateTime::createFromFormat('Y-m-d', $rawDate);
-            if (!$dt) continue;
+            if (!$dt) { $rowsSkipped++; continue; }
 
             $year  = (int) $dt->format('Y');
             $month = (int) $dt->format('n');
 
-            $monthly[$code][$year][$month] = ($monthly[$code][$year][$month] ?? 0) + $qty;
+            $rowsProcessed++;
+
+            if (count($debugRows) < 10) {
+                $debugRows[] = ['code' => $code, 'date' => $rawDate, 'qty' => $qty, 'year' => $year, 'month' => $month];
+            }
         }
 
         $rows = [];
@@ -164,7 +172,15 @@ class StockWatchlistController extends Controller
             DB::table('stock_watchlist_sales')->upsert($chunk, ['product_code', 'year', 'month'], ['qty_sold']);
         }
 
-        return response()->json(['ok' => true, 'products' => count($monthly), 'months' => count($rows)]);
+        return response()->json([
+            'ok'             => true,
+            'products'       => count($monthly),
+            'months'         => count($rows),
+            'rows_processed' => $rowsProcessed,
+            'rows_skipped'   => $rowsSkipped,
+            'headers'        => $headers,
+            'sample'         => $debugRows,
+        ]);
     }
 
     public function sync()
