@@ -36,7 +36,7 @@
                 </div>
 
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                    @foreach(['auto_1' => 'Auto 1', 'auto_2' => 'Auto 2', 'auto_3' => 'Auto 3', 'baby' => 'Baby', 'laser' => 'Laser', 'coditherm' => 'Coditherm'] as $key => $label)
+                    @foreach(['auto_1' => 'Auto 1', 'auto_2' => 'Auto 2', 'auto_3' => 'Auto 3', 'baby' => 'Baby'] as $key => $label)
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ $label }}</label>
                             <div style="display:flex;align-items:center;gap:8px;">

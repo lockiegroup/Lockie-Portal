@@ -17,10 +17,12 @@ class PrintJob extends Model
         'baby'               => 'Baby',
         'laser'              => 'Laser',
         'coditherm'          => 'Coditherm',
+        'sleeves'            => 'Sleeves',
+        'other'              => 'Other',
         'awaiting_despatch'  => 'Awaiting Despatch',
     ];
 
-    public const MACHINES = ['auto_1', 'auto_2', 'auto_3', 'baby', 'laser', 'coditherm'];
+    public const MACHINES = ['auto_1', 'auto_2', 'auto_3', 'baby'];
 
     protected $fillable = [
         'unleashed_guid',
