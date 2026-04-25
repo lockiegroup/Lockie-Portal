@@ -7,7 +7,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class StockWatchlistCategory extends Model
 {
-    protected $fillable = ['name', 'position'];
+    protected $fillable = ['name', 'position', 'lead_time_months'];
+
+    protected $casts = ['lead_time_months' => 'integer'];
 
     public function items(): HasMany
     {

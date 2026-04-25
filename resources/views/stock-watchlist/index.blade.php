@@ -116,7 +116,6 @@
                         <th style="text-align:left;min-width:110px;">Code</th>
                         <th style="text-align:left;min-width:180px;">Description</th>
                         <th style="text-align:left;min-width:140px;">Notes</th>
-                        <th>Lead<br><small style="font-weight:400;opacity:0.7;">(mo)</small></th>
                         @foreach($years as $yr)
                             <th>{{ $yr }}<br><small style="font-weight:400;opacity:0.7;">units</small></th>
                         @endforeach
@@ -137,11 +136,34 @@
                     {{-- Category header --}}
                     <tbody>
                         <tr class="sw-cat-row" data-cat-id="{{ $cat->id }}">
-                            <td colspan="{{ 16 + count($years) }}">
-                                {{ $cat->name }}
-                                <span style="font-weight:400;font-size:0.7rem;color:#94a3b8;margin-left:8px;">
-                                    ({{ $cat->items->count() }} {{ $cat->items->count() === 1 ? 'product' : 'products' }})
-                                </span>
+                            <td colspan="{{ 15 + count($years) }}">
+                                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                                    <div>
+                                        {{ $cat->name }}
+                                        <span style="font-weight:400;font-size:0.7rem;color:#94a3b8;margin-left:8px;">
+                                            ({{ $cat->items->count() }} {{ $cat->items->count() === 1 ? 'product' : 'products' }})
+                                        </span>
+                                    </div>
+                                    <div style="display:flex;align-items:center;gap:14px;">
+                                        <label style="display:flex;align-items:center;gap:5px;font-weight:400;font-size:0.72rem;color:#64748b;text-transform:none;letter-spacing:0;cursor:default;">
+                                            Lead time:
+                                            <input type="number" min="1" max="120"
+                                                value="{{ $cat->lead_time_months ?? 3 }}"
+                                                style="width:42px;border:1px solid #cbd5e1;border-radius:4px;padding:1px 4px;font-size:0.75rem;font-weight:600;color:#0f172a;text-transform:none;text-align:center;"
+                                                onblur="saveCatField({{ $cat->id }}, 'lead_time_months', this.value)"
+                                                onkeydown="if(event.key==='Enter')this.blur()">
+                                            months
+                                        </label>
+                                        <a href="{{ route('stock-watchlist.items.download', $cat) }}"
+                                            style="font-weight:500;font-size:0.72rem;color:#3b82f6;text-decoration:none;text-transform:none;letter-spacing:0;"
+                                            title="Download product list as CSV">↓ Export CSV</a>
+                                        <button onclick="document.getElementById('cat-import-{{ $cat->id }}').click()"
+                                            style="background:none;border:none;font-weight:500;font-size:0.72rem;color:#3b82f6;cursor:pointer;padding:0;text-transform:none;letter-spacing:0;"
+                                            title="Import product codes from CSV">↑ Import CSV</button>
+                                        <input type="file" id="cat-import-{{ $cat->id }}" accept=".csv,.txt" style="display:none"
+                                            onchange="importCatItems({{ $cat->id }}, this)">
+                                    </div>
+                                </div>
                             </td>
                         </tr>
                     </tbody>
@@ -189,12 +211,6 @@
                                 value="{{ $item->info }}"
                                 placeholder="Add notes…"
                                 onblur="saveField({{ $item->id }}, 'info', this.value)"
-                                onkeydown="if(event.key==='Enter')this.blur()">
-                        </td>
-                        <td>
-                            <input type="number" class="sw-input" style="width:50px;"
-                                value="{{ $item->lead_time_months ?? 3 }}" min="1" max="120"
-                                onblur="saveField({{ $item->id }}, 'lead_time_months', this.value)"
                                 onkeydown="if(event.key==='Enter')this.blur()">
                         </td>
                         @foreach($years as $yr)
@@ -253,7 +269,7 @@
                     {{-- Add product row --}}
                     <tbody>
                         <tr class="sw-add-row">
-                            <td colspan="{{ 16 + count($years) }}" style="padding:6px 10px;">
+                            <td colspan="{{ 15 + count($years) }}" style="padding:6px 10px;">
                                 <form style="display:inline-flex;gap:8px;align-items:center;"
                                     onsubmit="addItem(event, {{ $cat->id }}, this)">
                                     <input type="text" name="product_code" placeholder="Product code…"
@@ -272,7 +288,7 @@
                     </tbody>
                 @empty
                     <tbody>
-                        <tr><td colspan="{{ 16 + count($years) }}" style="padding:2rem;text-align:center;color:#94a3b8;">
+                        <tr><td colspan="{{ 15 + count($years) }}" style="padding:2rem;text-align:center;color:#94a3b8;">
                             No categories yet. Click <strong>Manage Categories</strong> to add one.
                         </td></tr>
                     </tbody>
@@ -404,6 +420,40 @@ function renameCategory(input) {
         body: JSON.stringify({ name }),
     })
     .then(r => { if (r.ok) input.defaultValue = name; else alert('Failed to rename'); });
+}
+
+function saveCatField(id, field, value) {
+    fetch(`/stock-watchlist/categories/${id}`, {
+        method: 'PATCH',
+        headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ [field]: value }),
+    });
+}
+
+function importCatItems(catId, input) {
+    const file = input.files[0];
+    if (!file) return;
+    input.value = '';
+
+    const form = new FormData();
+    form.append('file', file);
+    form.append('_token', csrfToken);
+
+    fetch(`/stock-watchlist/categories/${catId}/items/import`, {
+        method: 'POST',
+        headers: { 'Accept': 'application/json' },
+        body: form,
+    })
+    .then(r => r.json())
+    .then(d => {
+        if (d.ok) {
+            alert(`Imported ${d.added} product(s). Page will reload.`);
+            location.reload();
+        } else {
+            alert('Import failed: ' + (d.error || 'Unknown error'));
+        }
+    })
+    .catch(() => alert('Import request failed.'));
 }
 
 function deleteCategory(id, btn) {

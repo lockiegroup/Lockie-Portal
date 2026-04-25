@@ -32,7 +32,8 @@ class StockWatchlistController extends Controller
             });
 
         $categories->each(function ($cat) use ($stockMap, $salesMap, $years, $now) {
-            $cat->items->each(function ($item) use ($stockMap, $salesMap, $years, $now) {
+            $lead = max(1, (int)($cat->lead_time_months ?? 3));
+            $cat->items->each(function ($item) use ($stockMap, $salesMap, $years, $now, $lead) {
                 $code  = $item->product_code;
                 $stock = $stockMap[$code] ?? null;
                 $item->stock = $stock;
@@ -58,7 +59,6 @@ class StockWatchlistController extends Controller
                 $item->avg_monthly = $totalQty / 24;
 
                 // Required = max(0, lead_months * avg_monthly - available)
-                $lead      = max(1, (int)($item->lead_time_months ?? 3));
                 $onHand    = $stock ? (float)$stock->qty_on_hand : 0;
                 $allocated = $stock ? (float)$stock->qty_allocated : 0;
                 $onOrder   = $stock ? (float)$stock->qty_on_order : 0;
@@ -166,9 +166,60 @@ class StockWatchlistController extends Controller
 
     public function updateCategory(Request $request, StockWatchlistCategory $category)
     {
-        $data = $request->validate(['name' => 'required|string|max:255']);
+        $data = $request->validate([
+            'name'             => 'sometimes|required|string|max:255',
+            'lead_time_months' => 'sometimes|integer|min:1|max:120',
+        ]);
         $category->update($data);
         return response()->json($category);
+    }
+
+    public function downloadItems(StockWatchlistCategory $category)
+    {
+        $items = $category->items()->orderBy('position')->get();
+        $csv   = "Product Code,Product Name\n";
+        foreach ($items as $item) {
+            $name = str_replace('"', '""', $item->product_name ?? '');
+            $csv .= "\"{$item->product_code}\",\"{$name}\"\n";
+        }
+        $filename = preg_replace('/[^a-z0-9]+/', '-', strtolower($category->name)) . '-products.csv';
+        return response($csv, 200, [
+            'Content-Type'        => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ]);
+    }
+
+    public function importItems(Request $request, StockWatchlistCategory $category)
+    {
+        $request->validate(['file' => 'required|file|max:5120']);
+
+        $content = file_get_contents($request->file('file')->getRealPath());
+        $content = ltrim($content, "\xEF\xBB\xBF");
+        $content = str_replace("\r\n", "\n", str_replace("\r", "\n", $content));
+        $lines   = explode("\n", trim($content));
+
+        $firstLine = $lines[0] ?? '';
+        $delimiter = str_contains($firstLine, "\t") ? "\t" : ',';
+        $headers   = array_map('trim', str_getcsv($firstLine, $delimiter));
+        $colMap    = array_flip(array_map('strtolower', $headers));
+        $codeCol   = $colMap['product code'] ?? $colMap['product_code'] ?? 0;
+
+        $added = 0;
+        foreach (array_slice($lines, 1) as $line) {
+            $line = trim($line);
+            if ($line === '') continue;
+            $row  = str_getcsv($line, $delimiter);
+            $code = strtoupper(trim($row[$codeCol] ?? ''));
+            if (!$code) continue;
+
+            if (!StockWatchlistItem::where('product_code', $code)->exists()) {
+                $pos = (StockWatchlistItem::where('category_id', $category->id)->max('position') ?? 0) + 1;
+                $category->items()->create(['product_code' => $code, 'position' => $pos]);
+                $added++;
+            }
+        }
+
+        return response()->json(['ok' => true, 'added' => $added]);
     }
 
     public function destroyCategory(StockWatchlistCategory $category)
