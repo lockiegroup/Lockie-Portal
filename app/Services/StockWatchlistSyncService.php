@@ -138,8 +138,8 @@ class StockWatchlistSyncService
 
         // Use SalesOrders (Complete + Invoiced) — matches what Unleashed shows in Sales Enquiry
         $raw = $unleashed->parallelPaginate([
-            'complete' => ['SalesOrders', ['orderStatus' => 'Complete', 'startDate' => $startDate]],
-            'invoiced' => ['SalesOrders', ['orderStatus' => 'Invoiced', 'startDate' => $startDate]],
+            'complete' => ['SalesOrders', ['orderStatus' => 'Completed', 'startDate' => $startDate]],
+            'invoiced' => ['SalesOrders', ['orderStatus' => 'Invoiced',  'startDate' => $startDate]],
         ], 200);
 
         $seen = [];
