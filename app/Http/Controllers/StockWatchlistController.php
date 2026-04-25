@@ -169,8 +169,13 @@ class StockWatchlistController extends Controller
             }
         }
 
+        // Delete existing records for imported products so stale months don't persist
+        if (!empty($monthly)) {
+            DB::table('stock_watchlist_sales')->whereIn('product_code', array_keys($monthly))->delete();
+        }
+
         foreach (array_chunk($rows, 200) as $chunk) {
-            DB::table('stock_watchlist_sales')->upsert($chunk, ['product_code', 'year', 'month'], ['qty_sold']);
+            DB::table('stock_watchlist_sales')->insert($chunk);
         }
 
         return response()->json([
