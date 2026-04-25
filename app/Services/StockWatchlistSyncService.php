@@ -47,9 +47,10 @@ class StockWatchlistSyncService
     private function syncStock(UnleashedService $unleashed, array $productCodes, string $jwCode): void
     {
         // Fetch stock across ALL warehouses and sum quantities per product
+        // Note: no Guid deduplication — the Guid is the product Guid (same across
+        // all warehouses), so each row is a distinct warehouse+product record.
         $stockMap = []; // [code => ['name'=>, 'on_hand'=>, 'allocated'=>]]
         $page     = 1;
-        $seen     = [];
 
         do {
             $data     = $unleashed->get('StockOnHand', ['pageSize' => 500, 'pageNumber' => $page]);
@@ -57,10 +58,6 @@ class StockWatchlistSyncService
             $maxPages = $data['Pagination']['NumberOfPages'] ?? 1;
 
             foreach ($items as $item) {
-                $guid = $item['Guid'] ?? null;
-                if ($guid !== null && isset($seen[$guid])) continue;
-                if ($guid !== null) $seen[$guid] = true;
-
                 $code = $item['ProductCode'] ?? null;
                 if (!$code || !in_array($code, $productCodes)) continue;
 
