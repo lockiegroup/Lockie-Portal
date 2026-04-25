@@ -618,7 +618,7 @@ async function saveOpeningBalance() {
     const resp = await fetch('/cash-flow/opening-balance', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
-        body: JSON.stringify({ amount }),
+        body: JSON.stringify({ opening_balance: amount }),
     });
     if (resp.ok) {
         window.location.reload();

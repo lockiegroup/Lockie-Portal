@@ -157,7 +157,7 @@ class CashFlowController extends Controller
 
     public function updateOpeningBalance(Request $request): JsonResponse
     {
-        $request->validate(['opening_balance' => ['required', 'numeric', 'min:0']]);
+        $request->validate(['opening_balance' => ['required', 'numeric']]);
         CashFlowSetting::setValue('opening_balance', $request->input('opening_balance'));
         return response()->json(['success' => true]);
     }
