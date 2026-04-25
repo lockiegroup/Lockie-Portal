@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\ActivityLog;
 use App\Models\PrintJob;
 use App\Services\UnleashedService;
 use Illuminate\Console\Command;
@@ -17,100 +18,126 @@ class SyncPrintJobs extends Command
             config('services.unleashed.id'),
             config('services.unleashed.key')
         );
-        $orders  = $unleashed->fetchA1PrintingOrders();
+
+        $orders   = $unleashed->fetchA1PrintingOrders();
         $seenKeys = [];
         $created  = 0;
         $updated  = 0;
 
         foreach ($orders as $order) {
             $guid         = $order['Guid'] ?? null;
+            if (!$guid) continue;
+
             $orderNumber  = $order['OrderNumber'] ?? '';
+            $orderDate    = $unleashed->parseDate($order['OrderDate'] ?? null);
             $customerName = $order['Customer']['CustomerName'] ?? '';
-            $orderTotal   = $order['Total'] ?? $order['SubTotal'] ?? 0;
+            $customerRef  = trim($order['CustomerRef'] ?? $order['CustomerOrderNo'] ?? '');
+            $orderTotal   = (float) ($order['SubTotal'] ?? 0);
             $orderStatus  = $order['OrderStatus'] ?? 'Open';
             $requiredDate = $unleashed->parseDate($order['RequiredDate'] ?? null);
-            $lines        = $order['SalesOrderLines'] ?? [];
 
-            if (!$guid) {
+            if (in_array($orderStatus, ['Completed', 'Deleted'], true)) {
+                $completedDate = $unleashed->parseDate($order['CompletedDate'] ?? null);
+                foreach ($order['SalesOrderLines'] ?? [] as $lineIndex => $line) {
+                    $productCode = $line['Product']['ProductCode'] ?? null;
+                    if (empty($productCode)) continue;
+                    if (str_contains(strtolower($productCode), 'a1-carriage')) continue;
+                    if (str_starts_with(strtoupper($productCode), 'H-')) continue;
+                    $lineNumber = (int) ($line['LineNumber'] ?? ($lineIndex + 1));
+                    PrintJob::active()
+                        ->where('unleashed_guid', $guid)
+                        ->where('line_number', $lineNumber)
+                        ->update([
+                            'archived_at'    => now(),
+                            'archive_reason' => $orderStatus === 'Deleted' ? 'deleted' : 'completed',
+                            'despatched_at'  => $orderStatus === 'Completed' ? $completedDate : null,
+                        ]);
+                }
                 continue;
             }
 
-            foreach ($lines as $lineIndex => $line) {
+            foreach ($order['SalesOrderLines'] ?? [] as $lineIndex => $line) {
                 $productCode = $line['Product']['ProductCode'] ?? null;
-
                 if (empty($productCode)) continue;
                 if (str_contains(strtolower($productCode), 'a1-carriage')) continue;
+                if (str_starts_with(strtoupper($productCode), 'H-')) continue;
 
-                $lineNumber         = (int) ($line['LineNumber'] ?? ($lineIndex + 1));
-                $productDescription = $line['Product']['ProductDescription'] ?? null;
-                $lineComment        = $line['Comments'] ?? $line['LineComment'] ?? null;
-                $lineTotal          = (float) ($line['LineTotal'] ?? 0);
-                $orderQuantity      = (int) ($line['OrderQuantity'] ?? 0);
-                $key                = $guid . ':' . $lineNumber;
-                $seenKeys[$key]     = true;
+                $lineNumber     = (int) ($line['LineNumber'] ?? ($lineIndex + 1));
+                $key            = $guid . ':' . $lineNumber;
+                $seenKeys[$key] = true;
 
-                $existing = PrintJob::where('unleashed_guid', $guid)
-                    ->where('line_number', $lineNumber)
-                    ->first();
+                $existing = PrintJob::active()->where('unleashed_guid', $guid)->where('line_number', $lineNumber)->first();
+
+                if (!$existing) {
+                    $swept = PrintJob::where('unleashed_guid', $guid)
+                        ->where('line_number', $lineNumber)
+                        ->whereNotNull('archived_at')
+                        ->whereNull('archive_reason')
+                        ->first();
+                    if ($swept) {
+                        $swept->update(['archived_at' => null]);
+                        $existing = $swept->fresh();
+                    }
+                }
 
                 if ($existing) {
-                    // Update only Unleashed-owned fields; preserve board, position, quantity_completed, required_date
-                    $existing->update([
-                        'order_number'       => $orderNumber,
-                        'customer_name'      => $customerName,
-                        'product_code'       => $productCode,
-                        'product_description'=> $productDescription,
-                        'line_comment'       => $lineComment,
-                        'order_total'        => $orderTotal,
-                        'line_total'         => $lineTotal,
-                        'order_quantity'     => $orderQuantity,
-                        'unleashed_status'   => $orderStatus,
-                        'synced_at'          => now(),
-                    ]);
+                    $update = [
+                        'order_number'        => $orderNumber,
+                        'order_date'          => $orderDate,
+                        'customer_name'       => $customerName,
+                        'customer_ref'        => $customerRef ?: null,
+                        'product_code'        => $productCode,
+                        'product_description' => $line['Product']['ProductDescription'] ?? null,
+                        'line_comment'        => $line['Comments'] ?? $line['LineComment'] ?? null,
+                        'order_total'         => $orderTotal,
+                        'line_total'          => (float) ($line['LineTotal'] ?? 0),
+                        'order_quantity'      => (int) ($line['OrderQuantity'] ?? 0),
+                        'unleashed_status'    => $orderStatus,
+                        'synced_at'           => now(),
+                    ];
+                    if (!$existing->date_changed && $requiredDate) {
+                        $update['required_date']          = $requiredDate;
+                        $update['original_required_date'] = $requiredDate;
+                    }
+                    $existing->update($update);
                     $updated++;
                 } else {
-                    // Get max position for unplanned board
-                    $maxPosition = PrintJob::where('board', 'unplanned')->max('position') ?? 0;
-
                     PrintJob::create([
-                        'unleashed_guid'       => $guid,
-                        'line_number'          => $lineNumber,
-                        'order_number'         => $orderNumber,
-                        'customer_name'        => $customerName,
-                        'product_code'         => $productCode,
-                        'product_description'  => $productDescription,
-                        'line_comment'         => $lineComment,
-                        'order_total'          => $orderTotal,
-                        'line_total'           => $lineTotal,
-                        'order_quantity'       => $orderQuantity,
-                        'quantity_completed'   => 0,
-                        'required_date'        => $requiredDate,
+                        'unleashed_guid'         => $guid,
+                        'line_number'            => $lineNumber,
+                        'order_number'           => $orderNumber,
+                        'order_date'             => $orderDate,
+                        'customer_name'          => $customerName,
+                        'customer_ref'           => $customerRef ?: null,
+                        'product_code'           => $productCode,
+                        'product_description'    => $line['Product']['ProductDescription'] ?? null,
+                        'line_comment'           => $line['Comments'] ?? $line['LineComment'] ?? null,
+                        'order_total'            => $orderTotal,
+                        'line_total'             => (float) ($line['LineTotal'] ?? 0),
+                        'order_quantity'         => (int) ($line['OrderQuantity'] ?? 0),
+                        'quantity_completed'     => 0,
+                        'required_date'          => $requiredDate,
                         'original_required_date' => $requiredDate,
-                        'board'                => 'unplanned',
-                        'position'             => $maxPosition + 9999,
-                        'unleashed_status'     => $orderStatus,
-                        'synced_at'            => now(),
+                        'board'                  => 'unplanned',
+                        'position'               => PrintJob::where('board', 'unplanned')->max('position') + 1,
+                        'unleashed_status'       => $orderStatus,
+                        'synced_at'              => now(),
                     ]);
                     $created++;
                 }
             }
         }
 
-        // Remove jobs that were not seen in this sync (completed/deleted in Unleashed)
         if (!empty($seenKeys)) {
-            $allJobs = PrintJob::all();
-            $deleted = 0;
-            foreach ($allJobs as $job) {
-                $key = $job->unleashed_guid . ':' . $job->line_number;
-                if (!isset($seenKeys[$key])) {
-                    $job->delete();
-                    $deleted++;
+            PrintJob::active()->where('is_manual', false)->get()->each(function ($job) use ($seenKeys) {
+                if (!isset($seenKeys[$job->unleashed_guid . ':' . $job->line_number])) {
+                    $job->update(['archived_at' => now()]);
                 }
-            }
-            $this->info("Sync complete: {$created} created, {$updated} updated, {$deleted} removed.");
-        } else {
-            $this->info("Sync complete: {$created} created, {$updated} updated. (No A1 orders found — no deletions performed.)");
+            });
         }
+
+        ActivityLog::record('print.sync', "Scheduled sync: {$created} created, {$updated} updated");
+        $this->info("Synced: {$created} created, {$updated} updated.");
 
         return self::SUCCESS;
     }
