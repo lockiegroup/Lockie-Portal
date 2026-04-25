@@ -463,10 +463,10 @@ class UnleashedService
     }
 
     /**
-     * Batch-fetch SalesOrderLines for a list of order numbers in parallel.
-     * Returns ['SO-00012345' => [['Product' => ['ProductCode' => ...], 'LineTotal' => ...], ...], ...]
+     * Batch-fetch SO lines and RequiredDate for a list of order numbers in parallel.
+     * Returns ['SO-00012345' => ['lines' => [...], 'requiredDate' => '...'], ...]
      */
-    public function fetchSalesOrderLines(array $orderNumbers, int $batchSize = 50): array
+    public function fetchSalesOrderData(array $orderNumbers, int $batchSize = 50): array
     {
         $results = [];
 
@@ -492,7 +492,10 @@ class UnleashedService
                 if (!$res || $res instanceof \Throwable || $res->failed()) continue;
                 $order = ($res->json()['Items'] ?? [])[0] ?? null;
                 if ($order) {
-                    $results[$num] = $order['SalesOrderLines'] ?? [];
+                    $results[$num] = [
+                        'lines'        => $order['SalesOrderLines'] ?? [],
+                        'requiredDate' => $order['RequiredDate'] ?? null,
+                    ];
                 }
             }
         }

@@ -160,7 +160,7 @@ class PrintScheduleSyncService
         $soNumbers = array_values(array_unique(array_filter(
             array_column(array_map(fn($a) => ['SalesOrderNumber' => $a['SalesOrderNumber'] ?? null], $assemblies), 'SalesOrderNumber')
         )));
-        $soLines = !empty($soNumbers) ? $unleashed->fetchSalesOrderLines($soNumbers) : [];
+        $soData = !empty($soNumbers) ? $unleashed->fetchSalesOrderData($soNumbers) : [];
 
         foreach ($assemblies as $assembly) {
             $guid = $assembly['Guid'] ?? null;
@@ -176,16 +176,20 @@ class PrintScheduleSyncService
             $assembleBy         = $unleashed->parseDate($assembly['AssembleBy'] ?? null);
             $assemblyDate       = $unleashed->parseDate($assembly['AssemblyDate'] ?? null);
             $comments           = $assembly['Comments'] ?? null;
-            $soNumber  = $assembly['SalesOrderNumber'] ?? null;
-            $soTotal   = 0.0;
-            if ($soNumber && isset($soLines[$soNumber])) {
-                foreach ($soLines[$soNumber] as $line) {
+            $soNumber      = $assembly['SalesOrderNumber'] ?? null;
+            $soTotal       = 0.0;
+            $soRequiredDate = null;
+            if ($soNumber && isset($soData[$soNumber])) {
+                foreach ($soData[$soNumber]['lines'] as $line) {
                     if (($line['Product']['ProductCode'] ?? null) === $productCode) {
                         $soTotal = (float) ($line['LineTotal'] ?? 0);
                         break;
                     }
                 }
+                $soRequiredDate = $unleashed->parseDate($soData[$soNumber]['requiredDate'] ?? null);
             }
+
+            $requiredDate = $soRequiredDate ?? $assembleBy;
 
             $key            = $guid . ':1';
             $seenKeys[$key] = true;
@@ -208,9 +212,9 @@ class PrintScheduleSyncService
                     'unleashed_status'    => $assemblyStatus,
                     'synced_at'           => now(),
                 ];
-                if (!$existing->date_changed && $assembleBy) {
-                    $update['required_date']          = $assembleBy;
-                    $update['original_required_date'] = $assembleBy;
+                if (!$existing->date_changed && $requiredDate) {
+                    $update['required_date']          = $requiredDate;
+                    $update['original_required_date'] = $requiredDate;
                 }
                 $existing->update($update);
                 $updated++;
@@ -229,8 +233,8 @@ class PrintScheduleSyncService
                     'line_total'             => 0,
                     'order_quantity'         => $assembledQty,
                     'quantity_completed'     => 0,
-                    'required_date'          => $assembleBy,
-                    'original_required_date' => $assembleBy,
+                    'required_date'          => $requiredDate,
+                    'original_required_date' => $requiredDate,
                     'board'                  => 'unplanned',
                     'position'               => PrintJob::where('board', 'unplanned')->max('position') + 1,
                     'unleashed_status'       => $assemblyStatus,
