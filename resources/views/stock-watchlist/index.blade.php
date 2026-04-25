@@ -79,6 +79,11 @@
             <p style="font-size:0.875rem;color:#64748b;margin:0;">
                 JW Products stock ordering tracker — sales history, on-hand levels, and order quantities.
             </p>
+            @if($salesFrom)
+            <p style="font-size:0.78rem;color:#94a3b8;margin:4px 0 0;">
+                Sales data: {{ $salesFrom }} – {{ $salesTo }}
+            </p>
+            @endif
         </div>
         <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;flex-wrap:wrap;">
             <span id="sync-status" style="font-size:0.8rem;color:#94a3b8;">
