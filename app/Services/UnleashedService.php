@@ -463,10 +463,10 @@ class UnleashedService
     }
 
     /**
-     * Batch-fetch SubTotal for a list of sales order numbers in parallel.
-     * Returns ['SO-00012345' => 150.0, ...]
+     * Batch-fetch SalesOrderLines for a list of order numbers in parallel.
+     * Returns ['SO-00012345' => [['Product' => ['ProductCode' => ...], 'LineTotal' => ...], ...], ...]
      */
-    public function fetchSalesOrderTotals(array $orderNumbers, int $batchSize = 50): array
+    public function fetchSalesOrderLines(array $orderNumbers, int $batchSize = 50): array
     {
         $results = [];
 
@@ -492,7 +492,7 @@ class UnleashedService
                 if (!$res || $res instanceof \Throwable || $res->failed()) continue;
                 $order = ($res->json()['Items'] ?? [])[0] ?? null;
                 if ($order) {
-                    $results[$num] = (float) ($order['SubTotal'] ?? 0);
+                    $results[$num] = $order['SalesOrderLines'] ?? [];
                 }
             }
         }

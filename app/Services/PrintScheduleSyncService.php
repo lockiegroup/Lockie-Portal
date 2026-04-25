@@ -160,7 +160,7 @@ class PrintScheduleSyncService
         $soNumbers = array_values(array_unique(array_filter(
             array_column(array_map(fn($a) => ['SalesOrderNumber' => $a['SalesOrderNumber'] ?? null], $assemblies), 'SalesOrderNumber')
         )));
-        $soTotals = !empty($soNumbers) ? $unleashed->fetchSalesOrderTotals($soNumbers) : [];
+        $soLines = !empty($soNumbers) ? $unleashed->fetchSalesOrderLines($soNumbers) : [];
 
         foreach ($assemblies as $assembly) {
             $guid = $assembly['Guid'] ?? null;
@@ -176,8 +176,16 @@ class PrintScheduleSyncService
             $assembleBy         = $unleashed->parseDate($assembly['AssembleBy'] ?? null);
             $assemblyDate       = $unleashed->parseDate($assembly['AssemblyDate'] ?? null);
             $comments           = $assembly['Comments'] ?? null;
-            $soNumber           = $assembly['SalesOrderNumber'] ?? null;
-            $soTotal            = $soNumber ? ($soTotals[$soNumber] ?? 0) : 0;
+            $soNumber  = $assembly['SalesOrderNumber'] ?? null;
+            $soTotal   = 0.0;
+            if ($soNumber && isset($soLines[$soNumber])) {
+                foreach ($soLines[$soNumber] as $line) {
+                    if (($line['Product']['ProductCode'] ?? null) === $productCode) {
+                        $soTotal = (float) ($line['LineTotal'] ?? 0);
+                        break;
+                    }
+                }
+            }
 
             $key            = $guid . ':1';
             $seenKeys[$key] = true;
