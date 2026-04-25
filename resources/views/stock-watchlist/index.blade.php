@@ -126,10 +126,10 @@
                 @forelse($categories as $cat)
                     {{-- Category header row --}}
                     <tr class="sw-cat-row" data-cat-id="{{ $cat->id }}">
-                        <td colspan="{{ 15 + count($years) }}">
+                        <td colspan="{{ 16 + count($years) }}">
                             {{ $cat->name }}
                             <span style="font-weight:400;font-size:0.7rem;color:#94a3b8;margin-left:8px;">
-                                ({{ $cat->items->count() }} {{ Str::plural('product', $cat->items->count()) }})
+                                ({{ $cat->items->count() }} {{ $cat->items->count() === 1 ? 'product' : 'products' }})
                             </span>
                         </td>
                     </tr>
@@ -236,7 +236,7 @@
 
                     {{-- Add product row --}}
                     <tr class="sw-add-row">
-                        <td colspan="{{ 15 + count($years) }}" style="padding:6px 10px;">
+                        <td colspan="{{ 16 + count($years) }}" style="padding:6px 10px;">
                             <form style="display:inline-flex;gap:8px;align-items:center;"
                                 onsubmit="addItem(event, {{ $cat->id }}, this)">
                                 <input type="text" name="product_code" placeholder="Product code…"
@@ -253,7 +253,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="{{ 15 + count($years) }}" style="padding:2rem;text-align:center;color:#94a3b8;">
+                    <tr><td colspan="{{ 16 + count($years) }}" style="padding:2rem;text-align:center;color:#94a3b8;">
                         No categories yet. Click <strong>Manage Categories</strong> to add one.
                     </td></tr>
                 @endforelse
