@@ -46,30 +46,35 @@ class StockWatchlistSyncService
 
     private function syncStock(UnleashedService $unleashed, array $productCodes, string $jwCode): void
     {
-        // Fetch stock across ALL warehouses and sum quantities per product
-        // Note: no Guid deduplication — the Guid is the product Guid (same across
-        // all warehouses), so each row is a distinct warehouse+product record.
+        // JW Products is a separate Unleashed sub-account — the unfiltered
+        // StockOnHand endpoint doesn't include it. Fetch each warehouse explicitly
+        // and sum quantities so we capture stock from all locations.
+        $whData = $unleashed->get('Warehouses', ['pageSize' => 200, 'pageNumber' => 1]);
+        $warehouseCodes = array_column($whData['Items'] ?? [], 'WarehouseCode');
+
         $stockMap = []; // [code => ['name'=>, 'on_hand'=>, 'allocated'=>]]
-        $page     = 1;
 
-        do {
-            $data     = $unleashed->get('StockOnHand', ['pageSize' => 500, 'pageNumber' => $page]);
-            $items    = $data['Items'] ?? [];
-            $maxPages = $data['Pagination']['NumberOfPages'] ?? 1;
+        foreach ($warehouseCodes as $wh) {
+            $page = 1;
+            do {
+                $data     = $unleashed->get('StockOnHand', ['warehouseCode' => $wh, 'pageSize' => 500, 'pageNumber' => $page]);
+                $items    = $data['Items'] ?? [];
+                $maxPages = $data['Pagination']['NumberOfPages'] ?? 1;
 
-            foreach ($items as $item) {
-                $code = $item['ProductCode'] ?? null;
-                if (!$code || !in_array($code, $productCodes)) continue;
+                foreach ($items as $item) {
+                    $code = $item['ProductCode'] ?? null;
+                    if (!$code || !in_array($code, $productCodes)) continue;
 
-                if (!isset($stockMap[$code])) {
-                    $stockMap[$code] = ['name' => $item['ProductDescription'] ?? null, 'on_hand' => 0.0, 'allocated' => 0.0];
+                    if (!isset($stockMap[$code])) {
+                        $stockMap[$code] = ['name' => $item['ProductDescription'] ?? null, 'on_hand' => 0.0, 'allocated' => 0.0];
+                    }
+                    $stockMap[$code]['on_hand']   += (float) ($item['QtyOnHand']         ?? 0);
+                    $stockMap[$code]['allocated'] += (float) ($item['AllocatedQuantity']  ?? 0);
                 }
-                $stockMap[$code]['on_hand']   += (float) ($item['QtyOnHand']        ?? 0);
-                $stockMap[$code]['allocated'] += (float) ($item['AllocatedQuantity'] ?? 0);
-            }
 
-            $page++;
-        } while ($page <= $maxPages);
+                $page++;
+            } while ($page <= $maxPages);
+        }
 
         // Fetch open PO data for watchlist products
         $poMap = $this->fetchPoData($unleashed, $productCodes);
