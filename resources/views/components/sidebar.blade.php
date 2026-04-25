@@ -121,19 +121,22 @@
         @endif
 
         @if($user->hasModule('print_schedule'))
-        <a href="{{ route('print.index') }}"
-           class="sb-item{{ $isPrintSection ? ' sb-active' : '' }}"
-           data-tip="Print Schedule">
+        <button onclick="togglePrint()" id="print-toggle"
+            class="sb-item{{ $isPrintSection ? ' sb-active' : '' }}"
+            style="width:100%;background:none;border:none;cursor:pointer;font-family:inherit;text-align:left;"
+            data-tip="Print Schedule">
             <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="6 9 6 2 18 2 18 9"/>
                 <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
                 <rect x="6" y="14" width="12" height="8"/>
             </svg>
-            <span class="sb-label">Print Schedule</span>
-        </a>
+            <span class="sb-label" style="flex:1;">Print Schedule</span>
+            <svg id="print-chevron" class="sb-label" style="width:13px;height:13px;flex-shrink:0;transition:transform 0.2s;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="6 9 12 15 18 9"/>
+            </svg>
+        </button>
 
-        @if($isPrintSection)
-        <div class="sb-sub-group">
+        <div id="print-sub" class="sb-label sb-sub-group" style="display:none;">
             <a href="{{ route('print.overview') }}"
                class="sb-sub-item{{ request()->routeIs('print.overview') ? ' sb-active' : '' }}">Overview</a>
             <a href="{{ route('print.index') }}"
@@ -141,7 +144,6 @@
             <a href="{{ route('print.archive') }}"
                class="sb-sub-item{{ request()->routeIs('print.archive') ? ' sb-active' : '' }}">Archive</a>
         </div>
-        @endif
         @endif
 
         @canany(['manage_users', 'print_settings', 'envelope_settings', 'policy_settings', 'cash_flow', 'supplier_settings'])
@@ -261,5 +263,28 @@
     window.sbToggle       = function () { localStorage.setItem(KEY, localStorage.getItem(KEY) === '1' ? '0' : '1'); apply(); };
     window.sbMobileToggle = function () { document.body.classList.toggle('sb-open'); };
     apply();
+
+    // Print Schedule accordion
+    var isPrint = {{ $isPrintSection ? 'true' : 'false' }};
+    var printOpen = isPrint || localStorage.getItem('print_open') === '1';
+    window.togglePrint = function () {
+        var sub = document.getElementById('print-sub');
+        var ch  = document.getElementById('print-chevron');
+        if (!sub) return;
+        var nowOpen = sub.style.display !== 'none';
+        sub.style.display = nowOpen ? 'none' : 'block';
+        if (ch) ch.style.transform = nowOpen ? '' : 'rotate(180deg)';
+        localStorage.setItem('print_open', nowOpen ? '0' : '1');
+    };
+    // Apply initial state
+    (function () {
+        var sub = document.getElementById('print-sub');
+        var ch  = document.getElementById('print-chevron');
+        if (!sub) return;
+        if (printOpen) {
+            sub.style.display = 'block';
+            if (ch) ch.style.transform = 'rotate(180deg)';
+        }
+    })();
 })();
 </script>
