@@ -37,14 +37,15 @@ class StockWatchlistController extends Controller
                 $item->stock = $stock;
 
                 // Yearly totals for display columns
-                $item->yearly = [];
+                $yearly = [];
                 foreach ($years as $yr) {
                     $total = 0;
                     foreach ($salesMap[$code][$yr] ?? [] as $qty) {
                         $total += $qty;
                     }
-                    $item->yearly[$yr] = $total;
+                    $yearly[$yr] = $total;
                 }
+                $item->yearly = $yearly;
 
                 // Rolling 24-month average (previous 24 complete months)
                 $totalQty = 0;
