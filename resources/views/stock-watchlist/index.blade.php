@@ -83,6 +83,11 @@
                 @endif
             </span>
             <button class="btn-ghost" onclick="openCatModal()">Manage Categories</button>
+            <button class="btn-ghost" onclick="document.getElementById('sales-import-input').click()">
+                Import Sales CSV
+            </button>
+            <input type="file" id="sales-import-input" accept=".csv,.tsv,.txt" style="display:none"
+                onchange="importSalesFile(this)">
             <button id="sync-btn" onclick="runSync()"
                 style="display:flex;align-items:center;gap:7px;padding:8px 16px;background:#0f172a;color:white;border:none;border-radius:8px;font-size:0.875rem;font-weight:600;cursor:pointer;transition:background 0.15s;"
                 onmouseover="this.style.background='#1e293b'" onmouseout="this.style.background='#0f172a'">
@@ -441,6 +446,37 @@ function deleteItem(itemId, btn) {
             alert('Failed to delete');
         }
     });
+}
+
+// ── Sales CSV Import ──────────────────────────────────────────────────────────
+function importSalesFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    input.value = '';
+
+    const status = document.getElementById('sync-status');
+    status.textContent = 'Importing…';
+
+    const form = new FormData();
+    form.append('file', file);
+    form.append('_token', csrfToken);
+
+    fetch('{{ route("stock-watchlist.import-sales") }}', {
+        method: 'POST',
+        headers: { 'Accept': 'application/json' },
+        body: form,
+    })
+    .then(r => r.json())
+    .then(d => {
+        if (d.ok) {
+            status.textContent = `Imported ${d.months} month-rows for ${d.products} product(s)`;
+            setTimeout(() => location.reload(), 800);
+        } else {
+            alert('Import failed: ' + (d.error || 'Unknown error'));
+            status.textContent = '';
+        }
+    })
+    .catch(() => { alert('Import request failed.'); status.textContent = ''; });
 }
 
 function escHtml(str) {

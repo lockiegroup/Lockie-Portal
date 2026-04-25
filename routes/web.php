@@ -120,6 +120,7 @@ Route::middleware(['auth', 'otp'])->group(function () {
     Route::middleware('can:stock_ordering')->prefix('stock-watchlist')->name('stock-watchlist.')->group(function () {
         Route::get('/', [StockWatchlistController::class, 'index'])->name('index');
         Route::post('/sync', [StockWatchlistController::class, 'sync'])->name('sync');
+        Route::post('/import-sales', [StockWatchlistController::class, 'importSales'])->name('import-sales');
         Route::post('/categories', [StockWatchlistController::class, 'storeCategory'])->name('categories.store');
         Route::patch('/categories/{category}', [StockWatchlistController::class, 'updateCategory'])->name('categories.update');
         Route::delete('/categories/{category}', [StockWatchlistController::class, 'destroyCategory'])->name('categories.destroy');

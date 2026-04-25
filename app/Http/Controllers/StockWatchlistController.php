@@ -9,6 +9,7 @@ use App\Models\StockWatchlistStock;
 use App\Services\StockWatchlistSyncService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class StockWatchlistController extends Controller
 {
@@ -70,6 +71,74 @@ class StockWatchlistController extends Controller
         $syncedAt = StockWatchlistStock::max('synced_at');
 
         return view('stock-watchlist.index', compact('categories', 'years', 'syncedAt'));
+    }
+
+    public function importSales(Request $request)
+    {
+        $request->validate(['file' => 'required|file|max:20480']);
+
+        $path   = $request->file('file')->getRealPath();
+        $handle = fopen($path, 'r');
+        if (!$handle) {
+            return response()->json(['error' => 'Could not read file'], 422);
+        }
+
+        // Detect tab or comma delimiter from first line
+        $firstLine = fgets($handle);
+        rewind($handle);
+        $delimiter = str_contains($firstLine, "\t") ? "\t" : ',';
+
+        // Parse header row
+        $rawHeaders = fgetcsv($handle, 0, $delimiter);
+        $headers    = array_map('trim', $rawHeaders ?? []);
+        $colMap     = array_flip($headers);
+
+        $codeCol = $colMap['Product Code'] ?? null;
+        $dateCol = $colMap['Order Date']   ?? null;
+        $qtyCol  = $colMap['Quantity']     ?? null;
+
+        if ($codeCol === null || $dateCol === null || $qtyCol === null) {
+            fclose($handle);
+            return response()->json(['error' => 'File must contain columns: Product Code, Order Date, Quantity'], 422);
+        }
+
+        $watchlistCodes = StockWatchlistItem::pluck('product_code')->all();
+        $monthly        = [];
+
+        while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
+            $code    = strtoupper(trim($row[$codeCol] ?? ''));
+            $rawDate = trim($row[$dateCol] ?? '');
+            $qty     = (float) ($row[$qtyCol] ?? 0);
+
+            if (!$code || !$rawDate || $qty <= 0) continue;
+            if (!in_array($code, $watchlistCodes)) continue;
+
+            $dt = \DateTime::createFromFormat('d/m/Y', $rawDate)
+               ?: \DateTime::createFromFormat('Y-m-d', $rawDate);
+            if (!$dt) continue;
+
+            $year  = (int) $dt->format('Y');
+            $month = (int) $dt->format('n');
+
+            $monthly[$code][$year][$month] = ($monthly[$code][$year][$month] ?? 0) + $qty;
+        }
+
+        fclose($handle);
+
+        $rows = [];
+        foreach ($monthly as $code => $years) {
+            foreach ($years as $year => $months) {
+                foreach ($months as $month => $qty) {
+                    $rows[] = ['product_code' => $code, 'year' => $year, 'month' => $month, 'qty_sold' => $qty];
+                }
+            }
+        }
+
+        foreach (array_chunk($rows, 200) as $chunk) {
+            DB::table('stock_watchlist_sales')->upsert($chunk, ['product_code', 'year', 'month'], ['qty_sold']);
+        }
+
+        return response()->json(['ok' => true, 'products' => count($monthly), 'months' => count($rows)]);
     }
 
     public function sync()
