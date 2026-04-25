@@ -83,10 +83,12 @@ class PrintScheduleController extends Controller
     private function loadThroughputs(): array
     {
         return [
-            'auto_1' => (int) PrintScheduleSetting::getValue('throughput_auto_1', '350'),
-            'auto_2' => (int) PrintScheduleSetting::getValue('throughput_auto_2', '350'),
-            'auto_3' => (int) PrintScheduleSetting::getValue('throughput_auto_3', '350'),
-            'baby'   => (int) PrintScheduleSetting::getValue('throughput_baby',   '180'),
+            'auto_1'    => (int) PrintScheduleSetting::getValue('throughput_auto_1',    '350'),
+            'auto_2'    => (int) PrintScheduleSetting::getValue('throughput_auto_2',    '350'),
+            'auto_3'    => (int) PrintScheduleSetting::getValue('throughput_auto_3',    '350'),
+            'baby'      => (int) PrintScheduleSetting::getValue('throughput_baby',      '180'),
+            'laser'     => (int) PrintScheduleSetting::getValue('throughput_laser',     '100'),
+            'coditherm' => (int) PrintScheduleSetting::getValue('throughput_coditherm', '100'),
         ];
     }
 
