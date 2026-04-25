@@ -148,11 +148,17 @@ class PrintScheduleController extends Controller
 
     public function sync(): JsonResponse
     {
+        set_time_limit(300);
+
         try {
             ['created' => $created, 'updated' => $updated, 'warnings' => $warnings] = (new PrintScheduleSyncService)->run();
             \App\Models\ActivityLog::record('print.sync', "Synced print schedule ({$created} created, {$updated} updated)");
             return response()->json(['success' => true, 'created' => $created, 'updated' => $updated, 'warnings' => $warnings]);
         } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Print sync failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             return response()->json(['success' => false, 'error' => get_class($e) . ': ' . $e->getMessage()], 500);
         }
     }
