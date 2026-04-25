@@ -46,13 +46,13 @@ class StockWatchlistSyncService
 
     private function syncStock(UnleashedService $unleashed, array $productCodes, string $jwCode): void
     {
-        // Fetch all JW Products stock in one paginated pass, filter to watchlist in PHP
-        $stockMap = [];
+        // Fetch stock across ALL warehouses and sum quantities per product
+        $stockMap = []; // [code => ['name'=>, 'on_hand'=>, 'allocated'=>]]
         $page     = 1;
         $seen     = [];
 
         do {
-            $data     = $unleashed->get('StockOnHand', ['warehouseCode' => $jwCode, 'pageSize' => 500, 'pageNumber' => $page]);
+            $data     = $unleashed->get('StockOnHand', ['pageSize' => 500, 'pageNumber' => $page]);
             $items    = $data['Items'] ?? [];
             $maxPages = $data['Pagination']['NumberOfPages'] ?? 1;
 
@@ -62,9 +62,13 @@ class StockWatchlistSyncService
                 if ($guid !== null) $seen[$guid] = true;
 
                 $code = $item['ProductCode'] ?? null;
-                if ($code && in_array($code, $productCodes)) {
-                    $stockMap[$code] = $item;
+                if (!$code || !in_array($code, $productCodes)) continue;
+
+                if (!isset($stockMap[$code])) {
+                    $stockMap[$code] = ['name' => $item['ProductDescription'] ?? null, 'on_hand' => 0.0, 'allocated' => 0.0];
                 }
+                $stockMap[$code]['on_hand']   += (float) ($item['QtyOnHand']        ?? 0);
+                $stockMap[$code]['allocated'] += (float) ($item['AllocatedQuantity'] ?? 0);
             }
 
             $page++;
@@ -75,18 +79,18 @@ class StockWatchlistSyncService
 
         $now = now();
         foreach ($productCodes as $code) {
-            $item = $stockMap[$code] ?? null;
-            $po   = $poMap[$code]   ?? null;
+            $s  = $stockMap[$code] ?? null;
+            $po = $poMap[$code]    ?? null;
 
             StockWatchlistStock::updateOrCreate(
                 ['product_code' => $code],
                 [
-                    'product_name'    => $item['ProductDescription'] ?? null,
-                    'qty_on_hand'     => (float) ($item['QtyOnHand']        ?? 0),
-                    'qty_allocated'   => (float) ($item['AllocatedQuantity'] ?? 0),
-                    'qty_on_order'    => $po ? $po['qty']  : 0,
-                    'po_expected_date' => $po ? $po['date'] : null,
-                    'synced_at'       => $now,
+                    'product_name'     => $s  ? $s['name']      : null,
+                    'qty_on_hand'      => $s  ? $s['on_hand']   : 0,
+                    'qty_allocated'    => $s  ? $s['allocated']  : 0,
+                    'qty_on_order'     => $po ? $po['qty']       : 0,
+                    'po_expected_date' => $po ? $po['date']      : null,
+                    'synced_at'        => $now,
                 ]
             );
         }
