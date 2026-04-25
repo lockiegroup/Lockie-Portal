@@ -98,17 +98,29 @@
             </span>
             <button class="btn-ghost" onclick="openCatModal()">Manage Categories</button>
             <button class="btn-ghost" onclick="clearAllToOrder()" style="color:#dc2626;border-color:#fca5a5;">Clear To Order</button>
-            <div style="display:flex;align-items:center;gap:4px;">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
                 <button class="btn-ghost" onclick="document.getElementById('sales-import-input').click()">
                     Import Sales CSV
                 </button>
-                <input type="text" id="sales-find" placeholder="Find…" title="Find in product code (saved automatically)"
-                    style="width:70px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 7px;font-size:0.78rem;color:#334155;text-transform:uppercase;"
-                    oninput="this.value=this.value.toUpperCase(); saveFindReplace()">
-                <span style="font-size:0.75rem;color:#94a3b8;">→</span>
-                <input type="text" id="sales-replace" placeholder="Replace…" title="Replace with (saved automatically)"
-                    style="width:70px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 7px;font-size:0.78rem;color:#334155;text-transform:uppercase;"
-                    oninput="this.value=this.value.toUpperCase(); saveFindReplace()">
+                {{-- Saved substitution chips --}}
+                @foreach($substitutions as $sub)
+                <span id="sub-{{ $sub->id }}" style="display:inline-flex;align-items:center;gap:4px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:20px;padding:2px 8px 2px 10px;font-size:0.75rem;color:#334155;font-family:monospace;">
+                    {{ $sub->find }} → {{ $sub->replace }}
+                    <button onclick="deleteSubstitution({{ $sub->id }})" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:0.9rem;padding:0 2px;line-height:1;" title="Remove">&times;</button>
+                </span>
+                @endforeach
+                <button class="btn-ghost" onclick="document.getElementById('sub-add-form').style.display='flex'" style="font-size:0.75rem;padding:3px 10px;">+ Add Rule</button>
+                <span id="sub-add-form" style="display:none;align-items:center;gap:4px;">
+                    <input type="text" id="sub-find" placeholder="Find…"
+                        style="width:65px;border:1px solid #e2e8f0;border-radius:6px;padding:3px 6px;font-size:0.78rem;text-transform:uppercase;"
+                        oninput="this.value=this.value.toUpperCase()">
+                    <span style="font-size:0.75rem;color:#94a3b8;">→</span>
+                    <input type="text" id="sub-replace" placeholder="Replace…"
+                        style="width:65px;border:1px solid #e2e8f0;border-radius:6px;padding:3px 6px;font-size:0.78rem;text-transform:uppercase;"
+                        oninput="this.value=this.value.toUpperCase()">
+                    <button class="btn-ghost" onclick="addSubstitution()" style="font-size:0.75rem;padding:3px 10px;">Save</button>
+                    <button class="btn-ghost" onclick="document.getElementById('sub-add-form').style.display='none'" style="font-size:0.75rem;padding:3px 8px;">✕</button>
+                </span>
             </div>
             <input type="file" id="sales-import-input" accept=".csv,.tsv,.txt" style="display:none"
                 onchange="importSalesFile(this)">
@@ -647,17 +659,38 @@ function saveCatCurrency(catId, sym) {
 }
 document.querySelectorAll('.sw-total').forEach(renderTotal);
 
-// ── Find/Replace persistence ──────────────────────────────────────────────────
-function saveFindReplace() {
-    localStorage.setItem('sw_find',    document.getElementById('sales-find').value);
-    localStorage.setItem('sw_replace', document.getElementById('sales-replace').value);
+// ── Code substitutions ────────────────────────────────────────────────────────
+function addSubstitution() {
+    const find    = document.getElementById('sub-find').value.trim().toUpperCase();
+    const replace = document.getElementById('sub-replace').value.trim().toUpperCase();
+    if (!find || !replace) return;
+    fetch('{{ route("stock-watchlist.substitutions.store") }}', {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ find, replace }),
+    })
+    .then(r => r.json())
+    .then(sub => {
+        const chip = document.createElement('span');
+        chip.id = `sub-${sub.id}`;
+        chip.style.cssText = 'display:inline-flex;align-items:center;gap:4px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:20px;padding:2px 8px 2px 10px;font-size:0.75rem;color:#334155;font-family:monospace;';
+        chip.innerHTML = `${escHtml(sub.find)} → ${escHtml(sub.replace)} <button onclick="deleteSubstitution(${sub.id})" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:0.9rem;padding:0 2px;line-height:1;" title="Remove">&times;</button>`;
+        document.getElementById('sub-add-form').before(chip);
+        document.getElementById('sub-find').value = '';
+        document.getElementById('sub-replace').value = '';
+        document.getElementById('sub-add-form').style.display = 'none';
+    })
+    .catch(() => alert('Failed to save substitution'));
 }
-(function restoreFindReplace() {
-    const f = localStorage.getItem('sw_find');
-    const r = localStorage.getItem('sw_replace');
-    if (f) document.getElementById('sales-find').value    = f;
-    if (r) document.getElementById('sales-replace').value = r;
-})();
+
+function deleteSubstitution(id) {
+    fetch(`/stock-watchlist/substitutions/${id}`, {
+        method: 'DELETE',
+        headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+    })
+    .then(r => r.json())
+    .then(d => { if (d.ok) document.getElementById(`sub-${id}`)?.remove(); });
+}
 
 // ── Clear To Order ────────────────────────────────────────────────────────────
 function clearAllToOrder() {
@@ -688,8 +721,6 @@ function importSalesFile(input) {
     const form = new FormData();
     form.append('file', file);
     form.append('_token', csrfToken);
-    form.append('find',    document.getElementById('sales-find')?.value.trim() || '');
-    form.append('replace', document.getElementById('sales-replace')?.value.trim() || '');
 
     fetch('{{ route("stock-watchlist.import-sales") }}', {
         method: 'POST',

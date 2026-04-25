@@ -6,6 +6,7 @@ use App\Models\StockWatchlistCategory;
 use App\Models\StockWatchlistItem;
 use App\Models\StockWatchlistSale;
 use App\Models\StockWatchlistStock;
+use App\Models\StockWatchlistSubstitution;
 use App\Services\StockWatchlistSyncService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -86,7 +87,9 @@ class StockWatchlistController extends Controller
             $salesTo   = Carbon::createFromDate((int)substr($salesRange->max_ym, 0, 4), (int)substr($salesRange->max_ym, 4, 2), 1)->format('M Y');
         }
 
-        return view('stock-watchlist.index', compact('categories', 'years', 'syncedAt', 'salesFrom', 'salesTo'));
+        $substitutions = StockWatchlistSubstitution::orderBy('id')->get();
+
+        return view('stock-watchlist.index', compact('categories', 'years', 'syncedAt', 'salesFrom', 'salesTo', 'substitutions'));
     }
 
     public function importSales(Request $request)
@@ -119,8 +122,10 @@ class StockWatchlistController extends Controller
             ], 422);
         }
 
-        $find    = strtoupper(trim($request->input('find', '')));
-        $replace = strtoupper(trim($request->input('replace', '')));
+        $substitutions  = StockWatchlistSubstitution::all()->map(fn($s) => [
+            'find'    => strtoupper($s->find),
+            'replace' => strtoupper($s->replace),
+        ])->all();
 
         $watchlistCodes = StockWatchlistItem::pluck('product_code')->all();
         $monthly        = [];
@@ -138,8 +143,10 @@ class StockWatchlistController extends Controller
             // Strip thousands commas and currency symbols before parsing
             $qty     = (float) str_replace([',', '£', '$', '€'], '', $row[$qtyCol] ?? 0);
 
-            if ($find !== '' && str_contains($code, $find)) {
-                $code = str_replace($find, $replace, $code);
+            foreach ($substitutions as $sub) {
+                if (str_contains($code, $sub['find'])) {
+                    $code = str_replace($sub['find'], $sub['replace'], $code);
+                }
             }
 
             if (!$code || !$rawDate || $qty <= 0) { $rowsSkipped++; continue; }
@@ -329,6 +336,22 @@ class StockWatchlistController extends Controller
         ]);
 
         $item->update(array_filter($data, fn($v) => $v !== null));
+        return response()->json(['ok' => true]);
+    }
+
+    public function storeSubstitution(Request $request)
+    {
+        $data = $request->validate(['find' => 'required|string|max:100', 'replace' => 'required|string|max:100']);
+        $sub  = StockWatchlistSubstitution::create([
+            'find'    => strtoupper(trim($data['find'])),
+            'replace' => strtoupper(trim($data['replace'])),
+        ]);
+        return response()->json($sub);
+    }
+
+    public function destroySubstitution(StockWatchlistSubstitution $substitution)
+    {
+        $substitution->delete();
         return response()->json(['ok' => true]);
     }
 
