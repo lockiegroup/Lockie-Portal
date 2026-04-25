@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class StockWatchlistStock extends Model
 {
+    protected $table = 'stock_watchlist_stock';
+
     public $timestamps = false;
 
     protected $fillable = [
