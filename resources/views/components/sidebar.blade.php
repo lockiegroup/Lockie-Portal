@@ -68,6 +68,17 @@
         </a>
         @endcan
 
+        @can('stock_ordering')
+        <a href="{{ route('stock-watchlist.index') }}"
+           class="sb-item{{ request()->routeIs('stock-watchlist.*') ? ' sb-active' : '' }}"
+           data-tip="Stock Watchlist">
+            <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/>
+            </svg>
+            <span class="sb-label">Stock Watchlist</span>
+        </a>
+        @endcan
+
         @can('cash_flow')
         <a href="{{ route('cash-flow.index') }}"
            class="sb-item{{ request()->routeIs('cash-flow.*') ? ' sb-active' : '' }}"

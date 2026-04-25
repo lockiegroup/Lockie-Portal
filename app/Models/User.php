@@ -22,7 +22,8 @@ class User extends Authenticatable
     const MODULES = [
         'sales'          => 'Sales',
         'stock'          => 'Stock Overview',
-        'stock_forecast' => 'Stock Forecast',
+        'stock_forecast'  => 'Stock Forecast',
+        'stock_ordering'  => 'Stock Watchlist',
         'health_safety'  => 'Health & Safety',
         'envelopes'      => 'Church Envelopes',
         'policies'       => 'Policies',

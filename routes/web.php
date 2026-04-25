@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\PolicyController as AdminPolicyController;
 use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\SupplierSettingsController;
 use App\Http\Controllers\StockForecastController;
+use App\Http\Controllers\StockWatchlistController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn() => redirect()->route('login'));
@@ -113,6 +114,18 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::get('/stock-forecast', [StockForecastController::class, 'index'])->name('stock-forecast.index');
         Route::post('/stock-forecast/sync', [StockForecastController::class, 'sync'])->name('stock-forecast.sync');
         Route::patch('/stock-forecast/lines/{line}/lead-time', [StockForecastController::class, 'updateLeadTime'])->name('stock-forecast.lead-time');
+    });
+
+    // Stock Watchlist
+    Route::middleware('can:stock_ordering')->prefix('stock-watchlist')->name('stock-watchlist.')->group(function () {
+        Route::get('/', [StockWatchlistController::class, 'index'])->name('index');
+        Route::post('/sync', [StockWatchlistController::class, 'sync'])->name('sync');
+        Route::post('/categories', [StockWatchlistController::class, 'storeCategory'])->name('categories.store');
+        Route::patch('/categories/{category}', [StockWatchlistController::class, 'updateCategory'])->name('categories.update');
+        Route::delete('/categories/{category}', [StockWatchlistController::class, 'destroyCategory'])->name('categories.destroy');
+        Route::post('/categories/{category}/items', [StockWatchlistController::class, 'storeItem'])->name('items.store');
+        Route::patch('/items/{item}', [StockWatchlistController::class, 'updateItem'])->name('items.update');
+        Route::delete('/items/{item}', [StockWatchlistController::class, 'destroyItem'])->name('items.destroy');
     });
 
     // Admin — supplier settings

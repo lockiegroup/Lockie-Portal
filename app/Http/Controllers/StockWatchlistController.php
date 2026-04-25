@@ -1,0 +1,150 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\StockWatchlistCategory;
+use App\Models\StockWatchlistItem;
+use App\Models\StockWatchlistSale;
+use App\Models\StockWatchlistStock;
+use App\Services\StockWatchlistSyncService;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+
+class StockWatchlistController extends Controller
+{
+    public function index()
+    {
+        $now   = Carbon::now();
+        $years = [(int)$now->year - 3, (int)$now->year - 2, (int)$now->year - 1, (int)$now->year];
+
+        $categories   = StockWatchlistCategory::with(['items' => fn($q) => $q->orderBy('position')])->orderBy('position')->get();
+        $productCodes = $categories->flatMap(fn($c) => $c->items->pluck('product_code'))->unique()->values()->all();
+
+        $stockMap = StockWatchlistStock::whereIn('product_code', $productCodes)->get()->keyBy('product_code');
+
+        $salesMap = [];
+        StockWatchlistSale::whereIn('product_code', $productCodes)
+            ->whereIn('year', array_merge($years, [(int)$now->year - 4])) // extra year for rolling 24m
+            ->get()
+            ->each(function ($s) use (&$salesMap) {
+                $salesMap[$s->product_code][$s->year][$s->month] = (float)$s->qty_sold;
+            });
+
+        $categories->each(function ($cat) use ($stockMap, $salesMap, $years, $now) {
+            $cat->items->each(function ($item) use ($stockMap, $salesMap, $years, $now) {
+                $code  = $item->product_code;
+                $stock = $stockMap[$code] ?? null;
+                $item->stock = $stock;
+
+                // Yearly totals for display columns
+                $item->yearly = [];
+                foreach ($years as $yr) {
+                    $total = 0;
+                    foreach ($salesMap[$code][$yr] ?? [] as $qty) {
+                        $total += $qty;
+                    }
+                    $item->yearly[$yr] = $total;
+                }
+
+                // Rolling 24-month average (previous 24 complete months)
+                $totalQty = 0;
+                $cutoff   = $now->copy()->startOfMonth();
+                for ($i = 1; $i <= 24; $i++) {
+                    $dt        = $cutoff->copy()->subMonths($i);
+                    $totalQty += $salesMap[$code][$dt->year][$dt->month] ?? 0;
+                }
+                $item->avg_monthly = $totalQty / 24;
+
+                // Required = max(0, lead_months * avg_monthly - available)
+                $lead      = max(1, (int)($item->lead_time_months ?? 3));
+                $onHand    = $stock ? (float)$stock->qty_on_hand : 0;
+                $allocated = $stock ? (float)$stock->qty_allocated : 0;
+                $onOrder   = $stock ? (float)$stock->qty_on_order : 0;
+                $available = ($onHand - $allocated) + $onOrder;
+                $needed    = $item->avg_monthly * $lead;
+                $item->required_qty = max(0, (int)ceil($needed - $available));
+            });
+        });
+
+        $syncedAt = StockWatchlistStock::max('synced_at');
+
+        return view('stock-watchlist.index', compact('categories', 'years', 'syncedAt'));
+    }
+
+    public function sync()
+    {
+        set_time_limit(300);
+        try {
+            $result = (new StockWatchlistSyncService())->run();
+            return response()->json(['ok' => true, 'products' => $result['products']]);
+        } catch (\Throwable $e) {
+            \Log::error('StockWatchlist sync failed', ['error' => $e->getMessage()]);
+            return response()->json(['ok' => false, 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function storeCategory(Request $request)
+    {
+        $data = $request->validate(['name' => 'required|string|max:255']);
+        $pos  = (StockWatchlistCategory::max('position') ?? 0) + 1;
+        $cat  = StockWatchlistCategory::create(['name' => $data['name'], 'position' => $pos]);
+        return response()->json($cat);
+    }
+
+    public function updateCategory(Request $request, StockWatchlistCategory $category)
+    {
+        $data = $request->validate(['name' => 'required|string|max:255']);
+        $category->update($data);
+        return response()->json($category);
+    }
+
+    public function destroyCategory(StockWatchlistCategory $category)
+    {
+        $category->items()->delete();
+        $category->delete();
+        return response()->json(['ok' => true]);
+    }
+
+    public function storeItem(Request $request, StockWatchlistCategory $category)
+    {
+        $data = $request->validate([
+            'product_code'     => 'required|string|max:100',
+            'lead_time_months' => 'nullable|integer|min:1|max:120',
+        ]);
+
+        $code = strtoupper(trim($data['product_code']));
+
+        if (StockWatchlistItem::where('product_code', $code)->exists()) {
+            return response()->json(['error' => 'Product code already in watchlist'], 422);
+        }
+
+        $pos  = (StockWatchlistItem::where('category_id', $category->id)->max('position') ?? 0) + 1;
+        $item = $category->items()->create([
+            'product_code'     => $code,
+            'lead_time_months' => $data['lead_time_months'] ?? 3,
+            'position'         => $pos,
+        ]);
+
+        return response()->json($item);
+    }
+
+    public function updateItem(Request $request, StockWatchlistItem $item)
+    {
+        $data = $request->validate([
+            'lead_time_months' => 'nullable|integer|min:1|max:120',
+            'unit_price'       => 'nullable|numeric|min:0',
+            'to_order_qty'     => 'nullable|numeric|min:0',
+            'info'             => 'nullable|string|max:1000',
+            'discontinued'     => 'nullable|boolean',
+        ]);
+
+        $item->update(array_filter($data, fn($v) => $v !== null));
+        return response()->json(['ok' => true]);
+    }
+
+    public function destroyItem(StockWatchlistItem $item)
+    {
+        $item->delete();
+        return response()->json(['ok' => true]);
+    }
+}
