@@ -342,10 +342,10 @@ class UnleashedService
         // Unleashed's assemblyStatus query param may not filter as expected.
         $all = $this->paginate('Assemblies', [], 200);
 
-        return array_filter($all, function ($a) {
+        return array_values(array_filter($all, function ($a) {
             $status = strtolower($a['AssemblyStatus'] ?? '');
-            return !in_array($status, ['complete', 'deleted'], true);
-        });
+            return !in_array($status, ['completed', 'deleted'], true);
+        }));
     }
 
     /**

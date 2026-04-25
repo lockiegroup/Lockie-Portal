@@ -162,15 +162,15 @@ class PrintScheduleSyncService
 
             $assemblyNumber     = $assembly['AssemblyNumber'] ?? '';
             $assemblyStatus     = $assembly['AssemblyStatus'] ?? 'Open';
-            $productCode        = $assembly['ProductCode'] ?? null;
+            $productCode        = $assembly['Product']['ProductCode'] ?? null;
             if (!$productCode) continue;
 
-            $productDescription = $assembly['ProductDescription'] ?? null;
-            $assembledQty       = (int) ($assembly['AssembledQuantity'] ?? 0);
+            $productDescription = $assembly['Product']['ProductDescription'] ?? null;
+            $assembledQty       = (int) ($assembly['Quantity'] ?? 0);
             $assembleBy         = $unleashed->parseDate($assembly['AssembleBy'] ?? null);
             $assemblyDate       = $unleashed->parseDate($assembly['AssemblyDate'] ?? null);
             $comments           = $assembly['Comments'] ?? null;
-            $soNumber           = $assembly['SalesOrder']['OrderNumber'] ?? null;
+            $soNumber           = $assembly['SalesOrderNumber'] ?? null;
 
             $key            = $guid . ':1';
             $seenKeys[$key] = true;
