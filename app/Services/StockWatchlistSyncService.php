@@ -38,7 +38,7 @@ class StockWatchlistSyncService
         }
 
         $this->syncStock($unleashed, $productCodes, $jwCode);
-        $this->syncSalesHistory($unleashed, $productCodes, $jwCode);
+        $this->syncSalesHistory($unleashed, $productCodes);
         $this->syncProductNames();
 
         return ['products' => count($productCodes)];
@@ -129,7 +129,7 @@ class StockWatchlistSyncService
         return $results;
     }
 
-    private function syncSalesHistory(UnleashedService $unleashed, array $productCodes, string $jwCode): void
+    private function syncSalesHistory(UnleashedService $unleashed, array $productCodes): void
     {
         // Pull 25 months to ensure we always have full previous 24 calendar months
         $startDate = now()->subMonths(25)->startOfMonth()->format('Y-m-d');
@@ -140,7 +140,6 @@ class StockWatchlistSyncService
 
         do {
             $data     = $unleashed->get('SalesInvoices', [
-                'warehouseCode' => $jwCode,
                 'invoiceStatus' => 'Complete',
                 'startDate'     => $startDate,
                 'pageSize'      => 500,
