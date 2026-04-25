@@ -75,40 +75,37 @@
         {{-- Search results info (shown when searching) --}}
         <div id="search-results-info" style="display:none;background:#f8fafc;border:1px solid #e2e8f0;border-radius:0.75rem;padding:8px 16px;margin-bottom:1rem;font-size:0.875rem;color:#64748b;"></div>
 
-        {{-- Tab bar --}}
-        <style>
-            #tab-bar{scrollbar-width:none;-ms-overflow-style:none;}
-            #tab-bar::-webkit-scrollbar{display:none;}
-            #tab-bar-wrap::after{
-                content:'';position:absolute;right:0;top:0;bottom:0;width:48px;
-                background:linear-gradient(to right,transparent,#f1f5f9);
-                pointer-events:none;transition:opacity 0.2s;border-radius:0 4px 4px 0;
-            }
-            #tab-bar-wrap.at-end::after{opacity:0;}
-        </style>
-        <div id="tab-bar-wrap" style="position:relative;">
-        <div id="tab-bar" class="overflow-x-auto -mx-4 sm:mx-0 mb-6">
-            <div class="flex min-w-max px-4 sm:px-0 gap-1 border-b border-slate-200 pb-0">
-                @foreach($boards as $key => $label)
-                    <button
-                        class="tab-btn px-4 py-2.5 text-sm font-medium rounded-t-lg border-b-2 transition-colors whitespace-nowrap -mb-px
-                            {{ $loop->first ? 'active-tab border-rose-600 text-rose-600 bg-white' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50' }}"
-                        data-board="{{ $key }}"
-                        onclick="switchTab('{{ $key }}')">
-                        {{ $label }}
-                        @if(isset($boardJobs[$key]) && $boardJobs[$key]->count() > 0)
-                            <span class="ml-1.5 inline-flex items-center justify-center w-5 h-5 text-xs rounded-full
-                                {{ $loop->first ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600' }}"
-                                id="tab-count-{{ $key }}">{{ $boardJobs[$key]->count() }}</span>
-                        @else
-                            <span class="ml-1.5 inline-flex items-center justify-center w-5 h-5 text-xs rounded-full bg-slate-100 text-slate-400"
-                                id="tab-count-{{ $key }}">0</span>
-                        @endif
-                    </button>
-                @endforeach
-            </div>
+        {{-- Tab bar — two rows --}}
+        @php
+            $planningBoards    = array_intersect_key($boards, array_flip(['unplanned','call_off','on_hold','awaiting_despatch']));
+            $productionBoards  = array_diff_key($boards, $planningBoards);
+            $firstBoardKey     = array_key_first($boards);
+        @endphp
+        <div class="mb-6 space-y-0">
+            @foreach(['Planning' => $planningBoards, 'Production' => $productionBoards] as $rowLabel => $rowBoards)
+                <div>
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:0;">
+                        <span style="font-size:0.65rem;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:#94a3b8;white-space:nowrap;padding-bottom:2px;">{{ $rowLabel }}</span>
+                        <div style="flex:1;height:1px;background:#e2e8f0;"></div>
+                    </div>
+                    <div style="display:flex;flex-wrap:wrap;gap:2px;border-bottom:1px solid #e2e8f0;margin-bottom:4px;">
+                        @foreach($rowBoards as $key => $label)
+                            @php $isFirst = $key === $firstBoardKey; @endphp
+                            <button
+                                class="tab-btn px-4 py-2 text-sm font-medium rounded-t-lg border-b-2 transition-colors whitespace-nowrap -mb-px
+                                    {{ $isFirst ? 'active-tab border-rose-600 text-rose-600 bg-white' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50' }}"
+                                data-board="{{ $key }}"
+                                onclick="switchTab('{{ $key }}')">
+                                {{ $label }}
+                                <span class="ml-1.5 inline-flex items-center justify-center w-5 h-5 text-xs rounded-full
+                                    {{ $isFirst ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600' }}"
+                                    id="tab-count-{{ $key }}">{{ $boardJobs[$key]->count() }}</span>
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
+            @endforeach
         </div>
-        </div>{{-- /tab-bar-wrap --}}
 
         {{-- Board panes --}}
         @foreach($boards as $boardKey => $boardLabel)
@@ -271,19 +268,6 @@
 
         window.switchTab = switchTab;
 
-        // ─── Tab bar scroll fade ───────────────────────────────────────────
-        (function () {
-            const bar  = document.getElementById('tab-bar');
-            const wrap = document.getElementById('tab-bar-wrap');
-            if (!bar || !wrap) return;
-            function updateFade() {
-                const atEnd = bar.scrollLeft + bar.clientWidth >= bar.scrollWidth - 4;
-                wrap.classList.toggle('at-end', atEnd);
-            }
-            bar.addEventListener('scroll', updateFade, { passive: true });
-            window.addEventListener('resize', updateFade);
-            updateFade();
-        })();
 
         // ─── Sync ─────────────────────────────────────────────────────────
         window.triggerSync = function (silent) {
