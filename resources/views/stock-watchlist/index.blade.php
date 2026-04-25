@@ -15,6 +15,9 @@
     color: #334155; text-align: right; vertical-align: middle;
 }
 .sw-table td:first-child, .sw-table td:nth-child(2) { text-align: left; }
+.sw-req-click { cursor: pointer; text-decoration: underline dotted #b45309; }
+.sw-req-click:hover { background: #fef3c7; border-radius: 3px; }
+.sw-flash { background: #dcfce7 !important; transition: background 0.6s; }
 .sw-cat-row td {
     background: #f8fafc; color: #0f172a; font-weight: 700;
     font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em;
@@ -40,8 +43,8 @@
 .sw-badge-low  { background: #fef9c3; color: #854d0e; }
 .sw-badge-out  { background: #fee2e2; color: #991b1b; }
 .sw-badge-disc { background: #f1f5f9; color: #94a3b8; }
-.sw-disc-row td { background: #fff5f5; color: #991b1b; }
-.sw-disc-row:hover td { background: #fee2e2; }
+.sw-disc-row td { background: #fecaca; color: #7f1d1d; }
+.sw-disc-row:hover td { background: #fca5a5; }
 .sw-add-row td { background: #fafafa; }
 .btn-del {
     background: none; border: none; cursor: pointer;
@@ -86,6 +89,17 @@
             @endif
         </div>
         <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;flex-wrap:wrap;">
+            <label style="display:flex;align-items:center;gap:5px;font-size:0.8rem;color:#64748b;">
+                Currency:
+                <select id="currency-select" onchange="setCurrency(this.value)"
+                    style="border:1px solid #e2e8f0;border-radius:6px;padding:3px 6px;font-size:0.8rem;color:#334155;background:white;">
+                    <option value="£">£ GBP</option>
+                    <option value="$">$ USD</option>
+                    <option value="€">€ EUR</option>
+                    <option value="AU$">AU$</option>
+                    <option value="NZ$">NZ$</option>
+                </select>
+            </label>
             <span id="sync-status" style="font-size:0.8rem;color:#94a3b8;">
                 @if($syncedAt)
                     Last synced {{ \Carbon\Carbon::parse($syncedAt)->diffForHumans() }}
@@ -119,7 +133,6 @@
                     <tr>
                         <th style="width:24px;"></th>
                         <th style="text-align:left;min-width:110px;">Code</th>
-                        <th style="text-align:left;min-width:180px;">Description</th>
                         <th style="text-align:left;min-width:140px;">Notes</th>
                         @foreach($years as $yr)
                             <th>{{ $yr }}<br><small style="font-weight:400;opacity:0.7;">units</small></th>
@@ -128,20 +141,19 @@
                         <th>On Hand</th>
                         <th>Alloc'd</th>
                         <th>On Order</th>
-                        <th>Required</th>
+                        <th>Required<br><small style="font-weight:400;opacity:0.7;">click→order</small></th>
                         <th>To Order</th>
-                        <th>Price (£)</th>
-                        <th>Total (£)</th>
+                        <th>Price</th>
+                        <th id="total-header">Total</th>
                         <th>Status</th>
                         <th>Disc</th>
-                        <th></th>
                     </tr>
                 </thead>
                 @forelse($categories as $cat)
                     {{-- Category header --}}
                     <tbody id="cat-{{ $cat->id }}">
                         <tr class="sw-cat-row" data-cat-id="{{ $cat->id }}">
-                            <td colspan="{{ 15 + count($years) }}">
+                            <td colspan="{{ 13 + count($years) }}">
                                 <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
                                     <div>
                                         {{ $cat->name }}
@@ -152,12 +164,12 @@
                                     <div style="display:flex;align-items:center;gap:14px;">
                                         <label style="display:flex;align-items:center;gap:5px;font-weight:400;font-size:0.72rem;color:#64748b;text-transform:none;letter-spacing:0;cursor:default;">
                                             Lead time:
-                                            <input type="number" min="1" max="120"
-                                                value="{{ $cat->lead_time_months ?? 3 }}"
-                                                style="width:42px;border:1px solid #cbd5e1;border-radius:4px;padding:1px 4px;font-size:0.75rem;font-weight:600;color:#0f172a;text-transform:none;text-align:center;"
-                                                onblur="saveCatField({{ $cat->id }}, 'lead_time_months', this.value)"
+                                            <input type="number" min="1" max="3650"
+                                                value="{{ $cat->lead_time_days ?? 30 }}"
+                                                style="width:48px;border:1px solid #cbd5e1;border-radius:4px;padding:1px 4px;font-size:0.75rem;font-weight:600;color:#0f172a;text-transform:none;text-align:center;"
+                                                onblur="saveCatField({{ $cat->id }}, 'lead_time_days', this.value)"
                                                 onkeydown="if(event.key==='Enter')this.blur()">
-                                            months
+                                            days
                                         </label>
                                         <a href="{{ route('stock-watchlist.items.download', $cat) }}"
                                             style="font-weight:500;font-size:0.72rem;color:#3b82f6;text-decoration:none;text-transform:none;letter-spacing:0;"
@@ -208,9 +220,6 @@
                             </svg>
                         </td>
                         <td style="font-weight:600;color:#0f172a;">{{ $item->product_code }}</td>
-                        <td style="color:#475569;max-width:200px;overflow:hidden;text-overflow:ellipsis;" title="{{ $item->product_name }}">
-                            {{ $item->product_name ?? '—' }}
-                        </td>
                         <td>
                             <input type="text" class="info-input"
                                 value="{{ $item->info }}"
@@ -234,11 +243,14 @@
                         <td class="sw-num" style="color:#0891b2;">
                             {{ $onOrder > 0 ? number_format($onOrder, 0) : '—' }}
                         </td>
-                        <td class="sw-num" style="{{ $reqQty > 0 ? 'color:#b45309;font-weight:700;' : 'color:#94a3b8;' }}">
+                        <td class="sw-num {{ $reqQty > 0 ? 'sw-req-click' : '' }}"
+                            style="{{ $reqQty > 0 ? 'color:#b45309;font-weight:700;' : 'color:#94a3b8;' }}"
+                            @if($reqQty > 0) onclick="copyRequired(this, {{ $item->id }}, {{ $reqQty }})" title="Click to copy to To Order" @endif>
                             {{ $reqQty > 0 ? number_format($reqQty, 0) : '—' }}
                         </td>
                         <td>
                             <input type="number" class="sw-input" min="0" step="1"
+                                data-field="to_order"
                                 value="{{ $toOrder > 0 ? (int)$toOrder : '' }}"
                                 placeholder="{{ $reqQty > 0 ? $reqQty : '0' }}"
                                 onblur="saveField({{ $item->id }}, 'to_order_qty', this.value)"
@@ -251,21 +263,12 @@
                                 onblur="saveField({{ $item->id }}, 'unit_price', this.value)"
                                 onkeydown="if(event.key==='Enter')this.blur()">
                         </td>
-                        <td class="sw-num" style="font-weight:600;">
-                            {{ $total > 0 ? '£'.number_format($total, 2) : '—' }}
-                        </td>
+                        <td class="sw-num sw-total" data-amount="{{ $total > 0 ? number_format($total, 2, '.', '') : '' }}" style="font-weight:600;"></td>
                         <td><span class="sw-badge {{ $badgeClass }}">{{ $badgeText }}</span></td>
                         <td style="text-align:center;">
                             <input type="checkbox" {{ $item->discontinued ? 'checked' : '' }}
                                 onchange="saveField({{ $item->id }}, 'discontinued', this.checked ? 1 : 0)"
                                 style="width:14px;height:14px;cursor:pointer;accent-color:#6366f1;">
-                        </td>
-                        <td style="text-align:center;">
-                            <button class="btn-del" onclick="deleteItem({{ $item->id }}, this)" title="Remove product">
-                                <svg style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
-                                </svg>
-                            </button>
                         </td>
                     </tr>
                     @endforeach
@@ -274,7 +277,7 @@
                     {{-- Add product row --}}
                     <tbody>
                         <tr class="sw-add-row">
-                            <td colspan="{{ 15 + count($years) }}" style="padding:6px 10px;">
+                            <td colspan="{{ 13 + count($years) }}" style="padding:6px 10px;">
                                 <form style="display:inline-flex;gap:8px;align-items:center;"
                                     onsubmit="addItem(event, {{ $cat->id }}, this)">
                                     <input type="text" name="product_code" placeholder="Product code…"
@@ -293,7 +296,7 @@
                     </tbody>
                 @empty
                     <tbody>
-                        <tr><td colspan="{{ 15 + count($years) }}" style="padding:2rem;text-align:center;color:#94a3b8;">
+                        <tr><td colspan="{{ 13 + count($years) }}" style="padding:2rem;text-align:center;color:#94a3b8;">
                             No categories yet. Click <strong>Manage Categories</strong> to add one.
                         </td></tr>
                     </tbody>
@@ -503,24 +506,35 @@ function saveField(itemId, field, value) {
     .then(r => { if (!r.ok) console.warn(`Failed to save ${field} on item ${itemId}`); });
 }
 
-function deleteItem(itemId, btn) {
-    if (!confirm('Remove this product from the watchlist?')) return;
-    fetch(`/stock-watchlist/items/${itemId}`, {
-        method: 'DELETE',
-        headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
-    })
-    .then(r => r.json())
-    .then(d => {
-        if (d.ok) {
-            const row = btn.closest('tr');
-            row.style.opacity = '0';
-            row.style.transition = 'opacity 0.2s';
-            setTimeout(() => { row.remove(); }, 200);
-        } else {
-            alert('Failed to delete');
-        }
-    });
+// ── Required → To Order ───────────────────────────────────────────────────────
+function copyRequired(cell, itemId, reqQty) {
+    const input = cell.closest('tr').querySelector('input[data-field="to_order"]');
+    if (!input) return;
+    input.value = reqQty;
+    saveField(itemId, 'to_order_qty', reqQty);
+    input.classList.add('sw-flash');
+    setTimeout(() => input.classList.remove('sw-flash'), 800);
 }
+
+// ── Currency ──────────────────────────────────────────────────────────────────
+function setCurrency(sym) {
+    localStorage.setItem('sw_currency', sym);
+    applyCurrency(sym);
+}
+function applyCurrency(sym) {
+    document.querySelectorAll('.sw-total').forEach(td => {
+        const amt = td.dataset.amount;
+        td.textContent = amt ? sym + Number(amt).toLocaleString('en-GB', {minimumFractionDigits:2, maximumFractionDigits:2}) : '—';
+    });
+    const hdr = document.getElementById('total-header');
+    if (hdr) hdr.textContent = 'Total (' + sym + ')';
+}
+(function initCurrency() {
+    const saved = localStorage.getItem('sw_currency') || '£';
+    const sel = document.getElementById('currency-select');
+    if (sel) sel.value = saved;
+    applyCurrency(saved);
+})();
 
 // ── Sales CSV Import ──────────────────────────────────────────────────────────
 function importSalesFile(input) {
