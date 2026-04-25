@@ -119,6 +119,9 @@ class StockWatchlistController extends Controller
             ], 422);
         }
 
+        $find    = strtoupper(trim($request->input('find', '')));
+        $replace = strtoupper(trim($request->input('replace', '')));
+
         $watchlistCodes = StockWatchlistItem::pluck('product_code')->all();
         $monthly        = [];
 
@@ -130,6 +133,10 @@ class StockWatchlistController extends Controller
             $code    = strtoupper(trim($row[$codeCol] ?? ''));
             $rawDate = trim($row[$dateCol] ?? '');
             $qty     = (float) ($row[$qtyCol] ?? 0);
+
+            if ($find !== '' && str_contains($code, $find)) {
+                $code = str_replace($find, $replace, $code);
+            }
 
             if (!$code || !$rawDate || $qty <= 0) continue;
             if (!in_array($code, $watchlistCodes)) continue;
@@ -185,6 +192,7 @@ class StockWatchlistController extends Controller
         $data = $request->validate([
             'name'             => 'sometimes|required|string|max:255',
             'lead_time_days' => 'sometimes|integer|min:1|max:3650',
+            'currency'       => 'sometimes|string|max:5',
         ]);
         $category->update($data);
         return response()->json($category);

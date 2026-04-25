@@ -89,17 +89,6 @@
             @endif
         </div>
         <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;flex-wrap:wrap;">
-            <label style="display:flex;align-items:center;gap:5px;font-size:0.8rem;color:#64748b;">
-                Currency:
-                <select id="currency-select" onchange="setCurrency(this.value)"
-                    style="border:1px solid #e2e8f0;border-radius:6px;padding:3px 6px;font-size:0.8rem;color:#334155;background:white;">
-                    <option value="£">£ GBP</option>
-                    <option value="$">$ USD</option>
-                    <option value="€">€ EUR</option>
-                    <option value="AU$">AU$</option>
-                    <option value="NZ$">NZ$</option>
-                </select>
-            </label>
             <span id="sync-status" style="font-size:0.8rem;color:#94a3b8;">
                 @if($syncedAt)
                     Last synced {{ \Carbon\Carbon::parse($syncedAt)->diffForHumans() }}
@@ -108,9 +97,18 @@
                 @endif
             </span>
             <button class="btn-ghost" onclick="openCatModal()">Manage Categories</button>
-            <button class="btn-ghost" onclick="document.getElementById('sales-import-input').click()">
-                Import Sales CSV
-            </button>
+            <div style="display:flex;align-items:center;gap:4px;">
+                <button class="btn-ghost" onclick="document.getElementById('sales-import-input').click()">
+                    Import Sales CSV
+                </button>
+                <input type="text" id="sales-find" placeholder="Find…" title="Find in product code"
+                    style="width:70px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 7px;font-size:0.78rem;color:#334155;text-transform:uppercase;"
+                    oninput="this.value=this.value.toUpperCase()">
+                <span style="font-size:0.75rem;color:#94a3b8;">→</span>
+                <input type="text" id="sales-replace" placeholder="Replace…" title="Replace with"
+                    style="width:70px;border:1px solid #e2e8f0;border-radius:6px;padding:4px 7px;font-size:0.78rem;color:#334155;text-transform:uppercase;"
+                    oninput="this.value=this.value.toUpperCase()">
+            </div>
             <input type="file" id="sales-import-input" accept=".csv,.tsv,.txt" style="display:none"
                 onchange="importSalesFile(this)">
             <button id="sync-btn" onclick="runSync()"
@@ -170,6 +168,15 @@
                                                 onblur="saveCatField({{ $cat->id }}, 'lead_time_days', this.value)"
                                                 onkeydown="if(event.key==='Enter')this.blur()">
                                             days
+                                        </label>
+                                        <label style="display:flex;align-items:center;gap:5px;font-weight:400;font-size:0.72rem;color:#64748b;text-transform:none;letter-spacing:0;cursor:default;">
+                                            Currency:
+                                            <select onchange="saveCatCurrency({{ $cat->id }}, this.value)"
+                                                style="border:1px solid #cbd5e1;border-radius:4px;padding:1px 4px;font-size:0.75rem;font-weight:600;color:#0f172a;background:white;">
+                                                @foreach(['£','$','€','AU$','NZ$'] as $cur)
+                                                <option value="{{ $cur }}" {{ ($cat->currency ?? '£') === $cur ? 'selected' : '' }}>{{ $cur }}</option>
+                                                @endforeach
+                                            </select>
                                         </label>
                                         <a href="{{ route('stock-watchlist.items.download', $cat) }}"
                                             style="font-weight:500;font-size:0.72rem;color:#3b82f6;text-decoration:none;text-transform:none;letter-spacing:0;"
@@ -263,7 +270,7 @@
                                 onblur="saveField({{ $item->id }}, 'unit_price', this.value)"
                                 onkeydown="if(event.key==='Enter')this.blur()">
                         </td>
-                        <td class="sw-num sw-total" data-amount="{{ $total > 0 ? number_format($total, 2, '.', '') : '' }}" style="font-weight:600;"></td>
+                        <td class="sw-num sw-total" data-amount="{{ $total > 0 ? number_format($total, 2, '.', '') : '' }}" data-currency="{{ $cat->currency ?? '£' }}" style="font-weight:600;"></td>
                         <td><span class="sw-badge {{ $badgeClass }}">{{ $badgeText }}</span></td>
                         <td style="text-align:center;">
                             <input type="checkbox" {{ $item->discontinued ? 'checked' : '' }}
@@ -516,25 +523,20 @@ function copyRequired(cell, itemId, reqQty) {
     setTimeout(() => input.classList.remove('sw-flash'), 800);
 }
 
-// ── Currency ──────────────────────────────────────────────────────────────────
-function setCurrency(sym) {
-    localStorage.setItem('sw_currency', sym);
-    applyCurrency(sym);
+// ── Currency (per category) ───────────────────────────────────────────────────
+function renderTotal(td) {
+    const amt = td.dataset.amount;
+    const sym = td.dataset.currency || '£';
+    td.textContent = amt ? sym + Number(amt).toLocaleString('en-GB', {minimumFractionDigits:2, maximumFractionDigits:2}) : '—';
 }
-function applyCurrency(sym) {
-    document.querySelectorAll('.sw-total').forEach(td => {
-        const amt = td.dataset.amount;
-        td.textContent = amt ? sym + Number(amt).toLocaleString('en-GB', {minimumFractionDigits:2, maximumFractionDigits:2}) : '—';
+function saveCatCurrency(catId, sym) {
+    saveCatField(catId, 'currency', sym);
+    document.querySelectorAll(`#sortable-cat-${catId} .sw-total`).forEach(td => {
+        td.dataset.currency = sym;
+        renderTotal(td);
     });
-    const hdr = document.getElementById('total-header');
-    if (hdr) hdr.textContent = 'Total (' + sym + ')';
 }
-(function initCurrency() {
-    const saved = localStorage.getItem('sw_currency') || '£';
-    const sel = document.getElementById('currency-select');
-    if (sel) sel.value = saved;
-    applyCurrency(saved);
-})();
+document.querySelectorAll('.sw-total').forEach(renderTotal);
 
 // ── Sales CSV Import ──────────────────────────────────────────────────────────
 function importSalesFile(input) {
@@ -548,6 +550,8 @@ function importSalesFile(input) {
     const form = new FormData();
     form.append('file', file);
     form.append('_token', csrfToken);
+    form.append('find',    document.getElementById('sales-find')?.value.trim() || '');
+    form.append('replace', document.getElementById('sales-replace')?.value.trim() || '');
 
     fetch('{{ route("stock-watchlist.import-sales") }}', {
         method: 'POST',
