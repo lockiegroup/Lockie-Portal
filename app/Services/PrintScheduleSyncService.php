@@ -51,7 +51,7 @@ class PrintScheduleSyncService
                 foreach ($order['SalesOrderLines'] ?? [] as $lineIndex => $line) {
                     $productCode = $line['Product']['ProductCode'] ?? null;
                     if (empty($productCode)) continue;
-                    if (str_contains(strtolower($productCode), 'a1-carriage')) continue;
+                    if (str_contains(strtolower($productCode), 'carriage')) continue;
                     if (str_starts_with(strtoupper($productCode), 'H-')) continue;
                     $lineNumber = (int) ($line['LineNumber'] ?? ($lineIndex + 1));
                     PrintJob::active()
@@ -69,7 +69,7 @@ class PrintScheduleSyncService
             foreach ($order['SalesOrderLines'] ?? [] as $lineIndex => $line) {
                 $productCode = $line['Product']['ProductCode'] ?? null;
                 if (empty($productCode)) continue;
-                if (str_contains(strtolower($productCode), 'a1-carriage')) continue;
+                if (str_contains(strtolower($productCode), 'carriage')) continue;
                 if (str_starts_with(strtoupper($productCode), 'H-')) continue;
 
                 $lineNumber     = (int) ($line['LineNumber'] ?? ($lineIndex + 1));
