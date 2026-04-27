@@ -148,19 +148,23 @@ class PrintScheduleController extends Controller
 
     public function sync(): JsonResponse
     {
-        set_time_limit(300);
-
-        try {
-            ['created' => $created, 'updated' => $updated, 'warnings' => $warnings] = (new PrintScheduleSyncService)->run();
-            \App\Models\ActivityLog::record('print.sync', "Synced print schedule ({$created} created, {$updated} updated)");
-            return response()->json(['success' => true, 'created' => $created, 'updated' => $updated, 'warnings' => $warnings]);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('Print sync failed', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-            return response()->json(['success' => false, 'error' => get_class($e) . ': ' . $e->getMessage()], 500);
+        $current = \Illuminate\Support\Facades\Cache::get('print_sync_status', []);
+        if (($current['status'] ?? '') === 'running') {
+            return response()->json(['queued' => true, 'already_running' => true]);
         }
+
+        \Illuminate\Support\Facades\Cache::put('print_sync_status', ['status' => 'running', 'at' => now()->toIso8601String()], 600);
+
+        $artisan = PHP_BINARY . ' ' . base_path('artisan');
+        exec("nohup {$artisan} print:sync > /dev/null 2>&1 &");
+
+        return response()->json(['queued' => true]);
+    }
+
+    public function syncStatus(): JsonResponse
+    {
+        $status = \Illuminate\Support\Facades\Cache::get('print_sync_status', ['status' => 'idle']);
+        return response()->json($status);
     }
 
     public function moveBoard(Request $request, PrintJob $job): JsonResponse

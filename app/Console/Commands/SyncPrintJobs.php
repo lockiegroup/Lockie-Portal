@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\ActivityLog;
 use App\Services\PrintScheduleSyncService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 
 class SyncPrintJobs extends Command
 {
@@ -13,9 +14,27 @@ class SyncPrintJobs extends Command
 
     public function handle(): int
     {
-        ['created' => $created, 'updated' => $updated] = (new PrintScheduleSyncService)->run();
-        ActivityLog::record('print.sync', "Scheduled sync: {$created} created, {$updated} updated");
-        $this->info("Synced: {$created} created, {$updated} updated.");
-        return self::SUCCESS;
+        Cache::put('print_sync_status', ['status' => 'running', 'at' => now()->toIso8601String()], 600);
+
+        try {
+            ['created' => $created, 'updated' => $updated] = (new PrintScheduleSyncService)->run();
+            ActivityLog::record('print.sync', "Scheduled sync: {$created} created, {$updated} updated");
+            Cache::put('print_sync_status', [
+                'status'  => 'done',
+                'created' => $created,
+                'updated' => $updated,
+                'at'      => now()->toIso8601String(),
+            ], 600);
+            $this->info("Synced: {$created} created, {$updated} updated.");
+            return self::SUCCESS;
+        } catch (\Throwable $e) {
+            Cache::put('print_sync_status', [
+                'status' => 'failed',
+                'error'  => $e->getMessage(),
+                'at'     => now()->toIso8601String(),
+            ], 600);
+            $this->error($e->getMessage());
+            return self::FAILURE;
+        }
     }
 }

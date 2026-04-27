@@ -270,6 +270,35 @@
 
 
         // ─── Sync ─────────────────────────────────────────────────────────
+        let syncPollTimer = null;
+
+        function syncDone(silent, data) {
+            const btn   = document.getElementById('sync-btn');
+            const label = document.getElementById('sync-label');
+            const icon  = document.getElementById('sync-icon');
+            if (data && data.status === 'failed') {
+                if (!silent) alert('Sync failed: ' + (data.error || 'Unknown error'));
+                btn.disabled = false; label.textContent = 'Sync'; icon.classList.remove('animate-spin');
+            } else {
+                lastSyncTs = Math.floor(Date.now() / 1000);
+                updateLastSynced();
+                window.location.reload();
+            }
+        }
+
+        function pollSyncStatus(silent) {
+            fetch('{{ route("print.sync.status") }}', { headers: { 'Accept': 'application/json' } })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status === 'done' || data.status === 'failed') {
+                        clearInterval(syncPollTimer);
+                        syncPollTimer = null;
+                        syncDone(silent, data);
+                    }
+                })
+                .catch(() => {});
+        }
+
         window.triggerSync = function (silent) {
             const btn   = document.getElementById('sync-btn');
             const label = document.getElementById('sync-label');
@@ -282,33 +311,18 @@
                 method:  'POST',
                 headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
             })
-            .then(r => r.text())
-            .then(text => {
-                let data;
-                try { data = JSON.parse(text); } catch(e) {
-                    if (!silent) alert('Sync failed (non-JSON response):\n' + text.substring(0, 500));
-                    btn.disabled = false; label.textContent = 'Sync'; icon.classList.remove('animate-spin');
-                    return;
-                }
-                if (data.success) {
-                    lastSyncTs = Math.floor(Date.now() / 1000);
-                    updateLastSynced();
-                    if (!silent && data.warnings && data.warnings.length > 0) {
-                        alert('Sync completed with warnings:\n\n' + data.warnings.join('\n'));
-                    }
-                    window.location.reload();
+            .then(r => r.json())
+            .then(data => {
+                if (data.queued) {
+                    // Poll every 4 seconds until done
+                    syncPollTimer = setInterval(() => pollSyncStatus(silent), 4000);
                 } else {
-                    if (!silent) alert('Sync failed: ' + (data.error || JSON.stringify(data)));
-                    btn.disabled = false;
-                    label.textContent = 'Sync';
-                    icon.classList.remove('animate-spin');
+                    btn.disabled = false; label.textContent = 'Sync'; icon.classList.remove('animate-spin');
                 }
             })
             .catch(e => {
                 if (!silent) alert('Sync request failed: ' + e.message);
-                btn.disabled = false;
-                label.textContent = 'Sync';
-                icon.classList.remove('animate-spin');
+                btn.disabled = false; label.textContent = 'Sync'; icon.classList.remove('animate-spin');
             });
         };
 
