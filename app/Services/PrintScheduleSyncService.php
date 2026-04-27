@@ -153,6 +153,16 @@ class PrintScheduleSyncService
         // print:fix-archive-labels --include-completed cron corrects any that were deleted.
         $all = $unleashed->paginateFast('Assemblies', ['assemblyStatus' => 'Parked'], 200);
 
+        // Only process assemblies for A1 Printing, JW Products, or Hammond & Harper warehouses.
+        $allowedCodes = $unleashed->fetchPrintWarehouseCodes();
+        if (!empty($allowedCodes)) {
+            $all = array_values(array_filter($all, function ($a) use ($allowedCodes) {
+                $src  = $a['SourceWarehouse']['WarehouseCode'] ?? null;
+                $dest = $a['DestinationWarehouse']['WarehouseCode'] ?? null;
+                return in_array($src, $allowedCodes, true) || in_array($dest, $allowedCodes, true);
+            }));
+        }
+
         // Pre-fetch all active assembly jobs into memory — avoids one DB query per assembly
         $activeJobs = PrintJob::active()
             ->where('is_manual', false)

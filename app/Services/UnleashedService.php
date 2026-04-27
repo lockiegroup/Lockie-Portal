@@ -336,6 +336,29 @@ class UnleashedService
     }
 
     /**
+     * Return the warehouse codes for A1 Printing, JW Products, and Hammond & Harper.
+     * Cached for 1 hour — warehouse names rarely change.
+     */
+    public function fetchPrintWarehouseCodes(): array
+    {
+        return Cache::remember('unleashed_print_warehouse_codes', 3600, function () {
+            $whData = $this->get('Warehouses', ['pageSize' => 200, 'pageNumber' => 1]);
+            $codes  = [];
+            foreach ($whData['Items'] ?? [] as $wh) {
+                $name = strtolower($wh['WarehouseName'] ?? '');
+                $code = $wh['WarehouseCode'] ?? null;
+                if (!$code) continue;
+                if (str_contains($name, 'a1') ||
+                    str_contains($name, 'jw') ||
+                    str_contains($name, 'hammond')) {
+                    $codes[] = $code;
+                }
+            }
+            return $codes;
+        });
+    }
+
+    /**
      * Fetch full SalesOrder details (including SalesOrderLines) by GUID in parallel.
      * The paginated list endpoint omits line data; individual GETs include it.
      * Returns ['guid' => $orderArray, ...]
