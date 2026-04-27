@@ -349,8 +349,7 @@ class UnleashedService
                 $code = $wh['WarehouseCode'] ?? null;
                 if (!$code) continue;
                 if (str_contains($name, 'a1') ||
-                    str_contains($name, 'jw') ||
-                    str_contains($name, 'hammond')) {
+                    str_contains($name, 'jw')) {
                     $codes[] = $code;
                 }
             }
