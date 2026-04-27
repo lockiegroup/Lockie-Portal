@@ -338,14 +338,8 @@ class UnleashedService
      */
     public function fetchAssemblies(): array
     {
-        // Fetch all assemblies without status filter, then exclude completed/deleted in PHP.
-        // Unleashed's assemblyStatus query param may not filter as expected.
-        $all = $this->paginate('Assemblies', [], 200);
-
-        return array_values(array_filter($all, function ($a) {
-            $status = strtolower($a['AssemblyStatus'] ?? '');
-            return !in_array($status, ['completed', 'deleted'], true);
-        }));
+        // Return all statuses so the sync service can distinguish completed (→ archive) from deleted (→ hard delete).
+        return $this->paginate('Assemblies', [], 200);
     }
 
     /**

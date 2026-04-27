@@ -166,19 +166,36 @@ class PrintScheduleSyncService
             $guid = $assembly['Guid'] ?? null;
             if (!$guid) continue;
 
-            $assemblyNumber     = $assembly['AssemblyNumber'] ?? '';
-            $assemblyStatus     = $assembly['AssemblyStatus'] ?? 'Open';
-            $productCode        = $assembly['Product']['ProductCode'] ?? null;
+            $assemblyNumber = $assembly['AssemblyNumber'] ?? '';
+            $assemblyStatus = $assembly['AssemblyStatus'] ?? 'Open';
+            $productCode    = $assembly['Product']['ProductCode'] ?? null;
             if (!$productCode) continue;
+
+            $existing = PrintJob::active()
+                ->where('unleashed_guid', $guid)
+                ->where('line_number', 1)
+                ->first();
+
+            // Deleted → hard delete and move on
+            if (strtolower($assemblyStatus) === 'deleted') {
+                $existing?->delete();
+                continue;
+            }
+
+            // Completed → archive and move on
+            if (strtolower($assemblyStatus) === 'completed') {
+                $existing?->update(['archived_at' => now(), 'archive_reason' => 'completed']);
+                continue;
+            }
 
             $productDescription = $assembly['Product']['ProductDescription'] ?? null;
             $assembledQty       = (int) ($assembly['Quantity'] ?? 0);
             $assembleBy         = $unleashed->parseDate($assembly['AssembleBy'] ?? null);
             $assemblyDate       = $unleashed->parseDate($assembly['AssemblyDate'] ?? null);
             $comments           = $assembly['Comments'] ?? null;
-            $soNumber      = $assembly['SalesOrderNumber'] ?? null;
-            $soTotal       = 0.0;
-            $soRequiredDate = null;
+            $soNumber           = $assembly['SalesOrderNumber'] ?? null;
+            $soTotal            = 0.0;
+            $soRequiredDate     = null;
             if ($soNumber && isset($soData[$soNumber])) {
                 foreach ($soData[$soNumber]['lines'] as $line) {
                     if (($line['Product']['ProductCode'] ?? null) === $productCode) {
@@ -189,15 +206,8 @@ class PrintScheduleSyncService
                 $soRequiredDate = $unleashed->parseDate($soData[$soNumber]['requiredDate'] ?? null);
             }
 
-            $requiredDate = $soRequiredDate ?? $assembleBy;
-
-            $key            = $guid . ':1';
-            $seenKeys[$key] = true;
-
-            $existing = PrintJob::active()
-                ->where('unleashed_guid', $guid)
-                ->where('line_number', 1)
-                ->first();
+            $requiredDate   = $soRequiredDate ?? $assembleBy;
+            $seenKeys[$guid . ':1'] = true;
 
             if ($existing) {
                 $update = [
@@ -242,19 +252,6 @@ class PrintScheduleSyncService
                 ]);
                 $created++;
             }
-        }
-
-        // Remove assemblies that are no longer active in Unleashed (deleted or completed)
-        if (!empty($seenKeys)) {
-            PrintJob::active()
-                ->where('is_manual', false)
-                ->where('order_number', 'like', 'ASM-%')
-                ->get()
-                ->each(function ($job) use ($seenKeys) {
-                    if (!isset($seenKeys[$job->unleashed_guid . ':' . $job->line_number])) {
-                        $job->delete();
-                    }
-                });
         }
     }
 }
