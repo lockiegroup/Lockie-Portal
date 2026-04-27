@@ -160,18 +160,6 @@ class PrintScheduleSyncService
                 ->where('line_number', 1)
                 ->first();
 
-            // Deleted → hard delete and move on
-            if (strtolower($assemblyStatus) === 'deleted') {
-                $existing?->delete();
-                continue;
-            }
-
-            // Completed → archive and move on
-            if (strtolower($assemblyStatus) === 'completed') {
-                $existing?->update(['archived_at' => now(), 'archive_reason' => 'completed']);
-                continue;
-            }
-
             $productDescription = $assembly['Product']['ProductDescription'] ?? null;
             $assembledQty       = (int) ($assembly['Quantity'] ?? 0);
             $assembleBy         = $unleashed->parseDate($assembly['AssembleBy'] ?? null);

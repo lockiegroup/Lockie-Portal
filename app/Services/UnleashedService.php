@@ -342,6 +342,15 @@ class UnleashedService
         }));
     }
 
+    /**
+     * Fetch all assemblies including historical completed/deleted ones.
+     * Use only for recovery/backfill — can be slow with large history.
+     */
+    public function fetchAllAssemblies(): array
+    {
+        return $this->paginate('Assemblies', [], 200);
+    }
+
     public function fetchAssemblyByGuid(string $guid): ?array
     {
         $data = $this->get('Assemblies', ['guid' => $guid, 'pageSize' => 1]);
