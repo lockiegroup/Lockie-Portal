@@ -253,5 +253,24 @@ class PrintScheduleSyncService
                 $created++;
             }
         }
+
+        // Handle assemblies no longer in the active list — look up each by GUID to distinguish
+        // completed (→ archive) from deleted (→ hard delete)
+        if (!empty($seenKeys)) {
+            PrintJob::active()
+                ->where('is_manual', false)
+                ->where('order_number', 'like', 'ASM-%')
+                ->get()
+                ->each(function ($job) use ($seenKeys, $unleashed) {
+                    if (isset($seenKeys[$job->unleashed_guid . ':' . $job->line_number])) return;
+                    $assembly = $unleashed->fetchAssemblyByGuid($job->unleashed_guid);
+                    $status   = strtolower($assembly['AssemblyStatus'] ?? 'deleted');
+                    if ($status === 'completed') {
+                        $job->update(['archived_at' => now(), 'archive_reason' => 'completed']);
+                    } else {
+                        $job->delete();
+                    }
+                });
+        }
     }
 }

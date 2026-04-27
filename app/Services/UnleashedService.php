@@ -28,7 +28,7 @@ class UnleashedService
         ];
     }
 
-    public function get(string $endpoint, array $params = [], int $timeout = 60): array
+    public function get(string $endpoint, array $params = [], int $timeout = 120): array
     {
         $queryString = http_build_query($params);
         $url = self::BASE_URL . '/' . $endpoint . ($queryString ? "?{$queryString}" : '');
@@ -288,13 +288,7 @@ class UnleashedService
 
         if (!$a1Code) return [];
 
-        // Fetch only Open and Backordered — completed/deleted orders are handled by the
-        // sweep in syncSalesOrders which archives any active job no longer in the results.
-        // This avoids paging through thousands of historical completed orders.
-        $open       = $this->paginate('SalesOrders', ['warehouseCode' => $a1Code, 'orderStatus' => 'Open'], 200);
-        $backorder  = $this->paginate('SalesOrders', ['warehouseCode' => $a1Code, 'orderStatus' => 'Backordered'], 200);
-
-        return array_merge($open, $backorder);
+        return $this->paginate('SalesOrders', ['warehouseCode' => $a1Code], 200);
     }
 
     /**
@@ -340,8 +334,18 @@ class UnleashedService
      */
     public function fetchAssemblies(): array
     {
-        // Return all statuses so the sync service can distinguish completed (→ archive) from deleted (→ hard delete).
-        return $this->paginate('Assemblies', [], 200);
+        // Fetch only active assemblies to avoid paging through all historical records.
+        // Completed/deleted are identified by individual GUID lookup when they disappear.
+        $all = $this->paginate('Assemblies', [], 200);
+        return array_values(array_filter($all, function ($a) {
+            return !in_array(strtolower($a['AssemblyStatus'] ?? ''), ['completed', 'deleted'], true);
+        }));
+    }
+
+    public function fetchAssemblyByGuid(string $guid): ?array
+    {
+        $data = $this->get('Assemblies', ['guid' => $guid, 'pageSize' => 1]);
+        return $data['Items'][0] ?? null;
     }
 
     /**
