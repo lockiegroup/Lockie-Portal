@@ -148,9 +148,10 @@ class PrintScheduleSyncService
 
     private function syncAssemblies(UnleashedService $unleashed, int &$created, int &$updated): void
     {
-        // Fetch ALL assemblies including completed/deleted so their status is authoritative
-        // and we never need an expensive per-GUID lookup to tell completed from deleted.
-        $all = $unleashed->paginateFast('Assemblies', [], 200);
+        // assemblyStatus=Parked returns all open assemblies including custom statuses.
+        // Assemblies that vanish from this list are archived as 'completed'; the daily
+        // print:fix-archive-labels --include-completed cron corrects any that were deleted.
+        $all = $unleashed->paginateFast('Assemblies', ['assemblyStatus' => 'Parked'], 200);
 
         // Pre-fetch all active assembly jobs into memory — avoids one DB query per assembly
         $activeJobs = PrintJob::active()
@@ -162,12 +163,9 @@ class PrintScheduleSyncService
 
         $maxPosition = PrintJob::where('board', 'unplanned')->max('position') ?? 0;
 
-        // Batch-fetch SO data only for active assemblies
-        $activeAssemblies = array_filter($all, fn($a) =>
-            !in_array(strtolower($a['AssemblyStatus'] ?? ''), ['completed', 'deleted'], true)
-        );
+        // Batch-fetch SO data for all active assemblies
         $soNumbers = array_values(array_unique(array_filter(
-            array_column(array_map(fn($a) => ['SalesOrderNumber' => $a['SalesOrderNumber'] ?? null], $activeAssemblies), 'SalesOrderNumber')
+            array_column(array_map(fn($a) => ['SalesOrderNumber' => $a['SalesOrderNumber'] ?? null], $all), 'SalesOrderNumber')
         )));
         $soData = !empty($soNumbers) ? $unleashed->fetchSalesOrderData($soNumbers) : [];
 
@@ -184,18 +182,6 @@ class PrintScheduleSyncService
 
             $seenGuids[$guid] = true;
             $existing         = $activeJobs->get($guid);
-
-            // Deleted → hard delete
-            if (strtolower($assemblyStatus) === 'deleted') {
-                $existing?->delete();
-                continue;
-            }
-
-            // Completed → archive
-            if (strtolower($assemblyStatus) === 'completed') {
-                $existing?->update(['archived_at' => now(), 'archive_reason' => 'completed']);
-                continue;
-            }
 
             $productDescription = $assembly['Product']['ProductDescription'] ?? null;
             $assembledQty       = (int) ($assembly['Quantity'] ?? 0);
@@ -265,10 +251,11 @@ class PrintScheduleSyncService
         }
 
         // Sweep using the pre-fetched collection — no extra DB query needed.
-        // Anything active in our DB that wasn't in the Unleashed list at all → deleted.
+        // Anything active in our DB that wasn't in the active Unleashed list → archive as
+        // 'completed' for now; the daily fix-archive-labels cron will relabel deleted ones.
         foreach ($activeJobs as $jobGuid => $job) {
             if (isset($seenGuids[$jobGuid])) continue;
-            $job->update(['archived_at' => now(), 'archive_reason' => 'deleted']);
+            $job->update(['archived_at' => now(), 'archive_reason' => 'completed']);
         }
     }
 }

@@ -74,7 +74,7 @@ class FixArchiveLabels extends Command
         $this->info('Fetching full assembly list from Unleashed...');
 
         // Fetch ALL assemblies — completed ones appear here, deleted ones don't
-        $all            = $unleashed->paginate('Assemblies', [], 200);
+        $all            = $unleashed->paginateFast('Assemblies', [], 200);
         $unleashedGuids = array_flip(array_filter(array_column($all, 'Guid')));
 
         $fixed = 0;

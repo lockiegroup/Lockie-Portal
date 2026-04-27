@@ -13,3 +13,6 @@ Schedule::command('hs:send-reminders')->dailyAt('08:00');
 
 // Sync A1 print jobs from Unleashed every 30 minutes
 Schedule::command('print:sync')->everyThirtyMinutes();
+
+// Nightly reconciliation: correct assembly archive labels (completed vs deleted)
+Schedule::command('print:fix-archive-labels', ['--include-completed'])->dailyAt('02:00');
