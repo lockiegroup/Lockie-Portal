@@ -45,6 +45,7 @@ class RecoverAssemblies extends Command
             $assemblyNumber = $assembly['AssemblyNumber'] ?? '';
             $productCode    = $assembly['Product']['ProductCode'] ?? null;
             if (!$productCode) continue;
+            if (str_starts_with(strtoupper($productCode), 'H-')) continue;
 
             $exists = PrintJob::where('unleashed_guid', $guid)
                 ->where('line_number', 1)
