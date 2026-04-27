@@ -139,7 +139,7 @@ class PrintScheduleSyncService
     {
         // Fetch ALL assemblies including completed/deleted so their status is authoritative
         // and we never need an expensive per-GUID lookup to tell completed from deleted.
-        $all      = $unleashed->paginate('Assemblies', [], 200);
+        $all      = $unleashed->paginateFast('Assemblies', [], 200);
         $seenGuids = [];
 
         // Batch-fetch SO data only for active assemblies

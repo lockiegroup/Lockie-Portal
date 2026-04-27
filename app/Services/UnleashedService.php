@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 class UnleashedService
@@ -59,6 +60,49 @@ class UnleashedService
             $maxPages = $data['Pagination']['NumberOfPages'] ?? 1;
             $page++;
         } while ($page <= $maxPages);
+
+        return $items;
+    }
+
+    /**
+     * Fetch all pages in parallel: page 1 sequentially to get the total,
+     * then all remaining pages in a single parallel HTTP pool batch.
+     * Uses GUID dedup to guard against Unleashed's repeated-page bug.
+     */
+    public function paginateFast(string $endpoint, array $params = [], int $pageSize = 200): array
+    {
+        $first    = $this->get($endpoint, array_merge($params, ['pageSize' => $pageSize, 'pageNumber' => 1]));
+        $maxPages = $first['Pagination']['NumberOfPages'] ?? 1;
+        $items    = $first['Items'] ?? [];
+        $seen     = array_flip(array_filter(array_column($items, 'Guid')));
+
+        if ($maxPages <= 1) {
+            return $items;
+        }
+
+        $pages     = range(2, $maxPages);
+        $responses = Http::pool(function ($pool) use ($endpoint, $params, $pageSize, $pages) {
+            $calls = [];
+            foreach ($pages as $page) {
+                $qs      = http_build_query(array_merge($params, ['pageSize' => $pageSize, 'pageNumber' => $page]));
+                $calls[] = $pool->as($page)
+                    ->timeout(30)
+                    ->withHeaders($this->headers($qs))
+                    ->get(self::BASE_URL . '/' . $endpoint . '?' . $qs);
+            }
+            return $calls;
+        });
+
+        foreach ($pages as $page) {
+            $res = $responses[$page] ?? null;
+            if (!$res || $res instanceof \Throwable || $res->failed()) continue;
+            foreach ($res->json()['Items'] ?? [] as $item) {
+                $guid = $item['Guid'] ?? null;
+                if ($guid !== null && isset($seen[$guid])) continue;
+                if ($guid !== null) $seen[$guid] = true;
+                $items[] = $item;
+            }
+        }
 
         return $items;
     }
@@ -276,19 +320,19 @@ class UnleashedService
      */
     public function fetchA1PrintingOrders(): array
     {
-        // Find A1 Printing warehouse code to filter at API level (avoids fetching all orders)
-        $whData = $this->get('Warehouses', ['pageSize' => 200, 'pageNumber' => 1]);
-        $a1Code = null;
-        foreach ($whData['Items'] ?? [] as $wh) {
-            if (str_contains(strtolower($wh['WarehouseName'] ?? ''), 'a1')) {
-                $a1Code = $wh['WarehouseCode'];
-                break;
+        $a1Code = Cache::remember('unleashed_a1_warehouse_code', 3600, function () {
+            $whData = $this->get('Warehouses', ['pageSize' => 200, 'pageNumber' => 1]);
+            foreach ($whData['Items'] ?? [] as $wh) {
+                if (str_contains(strtolower($wh['WarehouseName'] ?? ''), 'a1')) {
+                    return $wh['WarehouseCode'];
+                }
             }
-        }
+            return null;
+        });
 
         if (!$a1Code) return [];
 
-        return $this->paginate('SalesOrders', ['warehouseCode' => $a1Code], 200);
+        return $this->paginateFast('SalesOrders', ['warehouseCode' => $a1Code], 200);
     }
 
     /**
