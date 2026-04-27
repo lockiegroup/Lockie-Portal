@@ -288,11 +288,13 @@ class UnleashedService
 
         if (!$a1Code) return [];
 
-        $orders = $this->paginate('SalesOrders', ['warehouseCode' => $a1Code], 500);
+        // Fetch only Open and Backordered — completed/deleted orders are handled by the
+        // sweep in syncSalesOrders which archives any active job no longer in the results.
+        // This avoids paging through thousands of historical completed orders.
+        $open       = $this->paginate('SalesOrders', ['warehouseCode' => $a1Code, 'orderStatus' => 'Open'], 200);
+        $backorder  = $this->paginate('SalesOrders', ['warehouseCode' => $a1Code, 'orderStatus' => 'Backordered'], 200);
 
-        // Return all statuses — the sync handles Completed/Deleted archiving explicitly.
-        // Backordered (partially shipped) must stay active so remaining packs stay in the schedule.
-        return $orders;
+        return array_merge($open, $backorder);
     }
 
     /**
