@@ -68,6 +68,7 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::get('/overview', [PrintScheduleController::class, 'overview'])->name('overview');
         Route::post('/sync', [PrintScheduleController::class, 'sync'])->name('sync');
         Route::get('/sync/status', [PrintScheduleController::class, 'syncStatus'])->name('sync.status');
+        Route::post('/jobs/{job}/unarchive', [PrintScheduleController::class, 'unarchive'])->name('jobs.unarchive');
         Route::post('/jobs/{job}/board', [PrintScheduleController::class, 'moveBoard'])->name('jobs.board');
         Route::post('/jobs/reorder', [PrintScheduleController::class, 'reorder'])->name('jobs.reorder');
         Route::post('/jobs/{job}/complete', [PrintScheduleController::class, 'partComplete'])->name('jobs.complete');

@@ -167,6 +167,12 @@ class PrintScheduleController extends Controller
         return response()->json($status);
     }
 
+    public function unarchive(\App\Models\PrintJob $job): JsonResponse
+    {
+        $job->update(['archived_at' => null, 'archive_reason' => null, 'despatched_at' => null]);
+        return response()->json(['ok' => true]);
+    }
+
     public function moveBoard(Request $request, PrintJob $job): JsonResponse
     {
         $request->validate([
