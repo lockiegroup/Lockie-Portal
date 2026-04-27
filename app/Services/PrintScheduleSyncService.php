@@ -137,16 +137,21 @@ class PrintScheduleSyncService
 
     private function syncAssemblies(UnleashedService $unleashed, int &$created, int &$updated): void
     {
-        $assemblies = $unleashed->fetchAssemblies();
-        $seenKeys   = [];
+        // Fetch ALL assemblies including completed/deleted so their status is authoritative
+        // and we never need an expensive per-GUID lookup to tell completed from deleted.
+        $all      = $unleashed->paginate('Assemblies', [], 200);
+        $seenGuids = [];
 
-        // Batch-fetch SO totals for all linked sales orders in one parallel round-trip
+        // Batch-fetch SO data only for active assemblies
+        $activeAssemblies = array_filter($all, fn($a) =>
+            !in_array(strtolower($a['AssemblyStatus'] ?? ''), ['completed', 'deleted'], true)
+        );
         $soNumbers = array_values(array_unique(array_filter(
-            array_column(array_map(fn($a) => ['SalesOrderNumber' => $a['SalesOrderNumber'] ?? null], $assemblies), 'SalesOrderNumber')
+            array_column(array_map(fn($a) => ['SalesOrderNumber' => $a['SalesOrderNumber'] ?? null], $activeAssemblies), 'SalesOrderNumber')
         )));
         $soData = !empty($soNumbers) ? $unleashed->fetchSalesOrderData($soNumbers) : [];
 
-        foreach ($assemblies as $assembly) {
+        foreach ($all as $assembly) {
             $guid = $assembly['Guid'] ?? null;
             if (!$guid) continue;
 
@@ -155,18 +160,20 @@ class PrintScheduleSyncService
             $productCode    = $assembly['Product']['ProductCode'] ?? null;
             if (!$productCode) continue;
 
+            $seenGuids[$guid] = true;
+
             $existing = PrintJob::active()
                 ->where('unleashed_guid', $guid)
                 ->where('line_number', 1)
                 ->first();
 
-            // Deleted → hard delete and move on
+            // Deleted → hard delete
             if (strtolower($assemblyStatus) === 'deleted') {
                 $existing?->delete();
                 continue;
             }
 
-            // Completed → archive and move on
+            // Completed → archive
             if (strtolower($assemblyStatus) === 'completed') {
                 $existing?->update(['archived_at' => now(), 'archive_reason' => 'completed']);
                 continue;
@@ -190,8 +197,7 @@ class PrintScheduleSyncService
                 $soRequiredDate = $unleashed->parseDate($soData[$soNumber]['requiredDate'] ?? null);
             }
 
-            $requiredDate   = $soRequiredDate ?? $assembleBy;
-            $seenKeys[$guid . ':1'] = true;
+            $requiredDate = $soRequiredDate ?? $assembleBy;
 
             if ($existing) {
                 $update = [
@@ -238,19 +244,16 @@ class PrintScheduleSyncService
             }
         }
 
-        // Handle assemblies no longer in the active list — look up each by GUID to distinguish
-        // completed (→ archive) from deleted (→ hard delete)
-        if (!empty($seenKeys)) {
+        // Any active job not present in the Unleashed response at all → archive as deleted.
+        // No GUID lookup needed — the full paginated list is already authoritative.
+        if (!empty($seenGuids)) {
             PrintJob::active()
                 ->where('is_manual', false)
                 ->where('order_number', 'like', 'ASM-%')
                 ->get()
-                ->each(function ($job) use ($seenKeys, $unleashed) {
-                    if (isset($seenKeys[$job->unleashed_guid . ':' . $job->line_number])) return;
-                    $assembly = $unleashed->fetchAssemblyByGuid($job->unleashed_guid);
-                    $status   = $assembly !== null ? strtolower($assembly['AssemblyStatus'] ?? '') : 'deleted';
-                    $reason   = $status === 'completed' ? 'completed' : 'deleted';
-                    $job->update(['archived_at' => now(), 'archive_reason' => $reason]);
+                ->each(function ($job) use ($seenGuids) {
+                    if (isset($seenGuids[$job->unleashed_guid])) return;
+                    $job->update(['archived_at' => now(), 'archive_reason' => 'deleted']);
                 });
         }
     }
