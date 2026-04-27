@@ -8,27 +8,36 @@ use Illuminate\Console\Command;
 
 class FixArchiveLabels extends Command
 {
-    protected $signature   = 'print:fix-archive-labels';
-    protected $description = 'Fix archived assembly jobs that are missing a deletion/completion label';
+    protected $signature   = 'print:fix-archive-labels
+                                {--include-completed : Also check assemblies already labelled completed — relabels to deleted if gone from Unleashed}';
+    protected $description = 'Fix archived assembly jobs that are missing or have an incorrect deletion/completion label';
 
     public function handle(): int
     {
-        $jobs = PrintJob::whereNotNull('archived_at')
-            ->whereNull('archive_reason')
+        $includeCompleted = $this->option('include-completed');
+
+        $query = PrintJob::whereNotNull('archived_at')
             ->where('order_number', 'like', 'ASM-%')
-            ->where('is_manual', false)
-            ->get();
+            ->where('is_manual', false);
+
+        if ($includeCompleted) {
+            $query->where(function ($q) {
+                $q->whereNull('archive_reason')
+                  ->orWhere('archive_reason', 'completed');
+            });
+        } else {
+            $query->whereNull('archive_reason');
+        }
+
+        $jobs = $query->get();
 
         if ($jobs->isEmpty()) {
-            $this->info('No unlabelled archived assemblies found.');
-            return 0;
+            $this->info('No assemblies to check.');
+            return self::SUCCESS;
         }
 
-        $this->info("Found {$jobs->count()} unlabelled archived assembly job(s).");
-
-        if (!$this->confirm('Look up each one in Unleashed and set the correct label?')) {
-            return 0;
-        }
+        $label = $includeCompleted ? 'unlabelled or completed' : 'unlabelled';
+        $this->info("Found {$jobs->count()} {$label} archived assembly job(s).");
 
         $unleashed = new UnleashedService(
             config('services.unleashed.id'),
@@ -37,15 +46,20 @@ class FixArchiveLabels extends Command
 
         $fixed = 0;
         foreach ($jobs as $job) {
-            $assembly = $unleashed->fetchAssemblyByGuid($job->unleashed_guid);
-            $status   = $assembly !== null ? strtolower($assembly['AssemblyStatus'] ?? '') : 'deleted';
-            $reason   = $status === 'completed' ? 'completed' : 'deleted';
-            $job->update(['archive_reason' => $reason]);
-            $this->line("  {$job->order_number} ({$job->unleashed_guid}) → {$reason}");
+            $assembly  = $unleashed->fetchAssemblyByGuid($job->unleashed_guid);
+            $status    = $assembly !== null ? strtolower($assembly['AssemblyStatus'] ?? '') : 'deleted';
+            $newReason = $status === 'completed' ? 'completed' : 'deleted';
+
+            if ($job->archive_reason === $newReason) {
+                continue; // already correct
+            }
+
+            $job->update(['archive_reason' => $newReason]);
+            $this->line("  {$job->order_number} ({$job->unleashed_guid}) → {$newReason}");
             $fixed++;
         }
 
         $this->info("Done. {$fixed} job(s) updated.");
-        return 0;
+        return self::SUCCESS;
     }
 }
