@@ -244,7 +244,7 @@ class PrintScheduleSyncService
             }
         }
 
-        // Archive assemblies that have since been completed or deleted in Unleashed
+        // Remove assemblies that are no longer active in Unleashed (deleted or completed)
         if (!empty($seenKeys)) {
             PrintJob::active()
                 ->where('is_manual', false)
@@ -252,10 +252,7 @@ class PrintScheduleSyncService
                 ->get()
                 ->each(function ($job) use ($seenKeys) {
                     if (!isset($seenKeys[$job->unleashed_guid . ':' . $job->line_number])) {
-                        $job->update([
-                            'archived_at'    => now(),
-                            'archive_reason' => 'completed',
-                        ]);
+                        $job->delete();
                     }
                 });
         }
