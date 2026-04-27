@@ -31,8 +31,7 @@ class PrintScheduleSyncService
 
     private function syncSalesOrders(UnleashedService $unleashed, int &$created, int &$updated): void
     {
-        $orders   = $unleashed->fetchA1PrintingOrders();
-        $seenKeys = [];
+        $orders = $unleashed->fetchA1PrintingOrders();
 
         foreach ($orders as $order) {
             $guid = $order['Guid'] ?? null;
@@ -72,11 +71,8 @@ class PrintScheduleSyncService
                 if (str_contains(strtolower($productCode), 'carriage')) continue;
                 if (str_starts_with(strtoupper($productCode), 'H-')) continue;
 
-                $lineNumber     = (int) ($line['LineNumber'] ?? ($lineIndex + 1));
-                $key            = $guid . ':' . $lineNumber;
-                $seenKeys[$key] = true;
-
-                $existing = PrintJob::active()->where('unleashed_guid', $guid)->where('line_number', $lineNumber)->first();
+                $lineNumber = (int) ($line['LineNumber'] ?? ($lineIndex + 1));
+                $existing   = PrintJob::active()->where('unleashed_guid', $guid)->where('line_number', $lineNumber)->first();
 
                 if (!$existing) {
                     $swept = PrintJob::where('unleashed_guid', $guid)
@@ -136,18 +132,6 @@ class PrintScheduleSyncService
                     $created++;
                 }
             }
-        }
-
-        if (!empty($seenKeys)) {
-            PrintJob::active()
-                ->where('is_manual', false)
-                ->where('order_number', 'not like', 'ASM-%')
-                ->get()
-                ->each(function ($job) use ($seenKeys) {
-                    if (!isset($seenKeys[$job->unleashed_guid . ':' . $job->line_number])) {
-                        $job->update(['archived_at' => now()]);
-                    }
-                });
         }
     }
 
