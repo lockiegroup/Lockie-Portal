@@ -224,13 +224,12 @@ class PrintScheduleSyncService
                 ->where('is_manual', false)
                 ->where('order_number', 'like', 'ASM-%')
                 ->get()
-                ->each(function ($job) use ($seenKeys) {
-                    if (!isset($seenKeys[$job->unleashed_guid . ':' . $job->line_number])) {
-                        $job->update([
-                            'archived_at'    => now(),
-                            'archive_reason' => 'completed',
-                        ]);
-                    }
+                ->each(function ($job) use ($seenKeys, $unleashed) {
+                    if (isset($seenKeys[$job->unleashed_guid . ':' . $job->line_number])) return;
+                    $assembly = $unleashed->fetchAssemblyByGuid($job->unleashed_guid);
+                    $status   = $assembly !== null ? strtolower($assembly['AssemblyStatus'] ?? '') : 'deleted';
+                    $reason   = $status === 'completed' ? 'completed' : 'deleted';
+                    $job->update(['archived_at' => now(), 'archive_reason' => $reason]);
                 });
         }
     }
