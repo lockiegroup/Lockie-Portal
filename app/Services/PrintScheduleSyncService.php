@@ -33,6 +33,16 @@ class PrintScheduleSyncService
     {
         $orders = $unleashed->fetchA1PrintingOrders();
 
+        // Pre-fetch all active SO jobs into memory — avoids one DB query per order line
+        $activeJobs  = PrintJob::active()
+            ->where('is_manual', false)
+            ->where('order_number', 'not like', 'ASM-%')
+            ->whereNotNull('unleashed_guid')
+            ->get()
+            ->keyBy(fn($j) => $j->unleashed_guid . ':' . $j->line_number);
+
+        $maxPosition = PrintJob::where('board', 'unplanned')->max('position') ?? 0;
+
         foreach ($orders as $order) {
             $guid = $order['Guid'] ?? null;
             if (!$guid) continue;
@@ -72,7 +82,7 @@ class PrintScheduleSyncService
                 if (str_starts_with(strtoupper($productCode), 'H-')) continue;
 
                 $lineNumber = (int) ($line['LineNumber'] ?? ($lineIndex + 1));
-                $existing   = PrintJob::active()->where('unleashed_guid', $guid)->where('line_number', $lineNumber)->first();
+                $existing   = $activeJobs->get($guid . ':' . $lineNumber);
 
                 if (!$existing) {
                     $swept = PrintJob::where('unleashed_guid', $guid)
@@ -83,6 +93,7 @@ class PrintScheduleSyncService
                     if ($swept) {
                         $swept->update(['archived_at' => null]);
                         $existing = $swept->fresh();
+                        $activeJobs->put($guid . ':' . $lineNumber, $existing);
                     }
                 }
 
@@ -125,7 +136,7 @@ class PrintScheduleSyncService
                         'required_date'          => $requiredDate,
                         'original_required_date' => $requiredDate,
                         'board'                  => 'unplanned',
-                        'position'               => PrintJob::where('board', 'unplanned')->max('position') + 1,
+                        'position'               => ++$maxPosition,
                         'unleashed_status'       => $orderStatus,
                         'synced_at'              => now(),
                     ]);
@@ -139,8 +150,17 @@ class PrintScheduleSyncService
     {
         // Fetch ALL assemblies including completed/deleted so their status is authoritative
         // and we never need an expensive per-GUID lookup to tell completed from deleted.
-        $all      = $unleashed->paginateFast('Assemblies', [], 200);
-        $seenGuids = [];
+        $all = $unleashed->paginateFast('Assemblies', [], 200);
+
+        // Pre-fetch all active assembly jobs into memory — avoids one DB query per assembly
+        $activeJobs = PrintJob::active()
+            ->where('is_manual', false)
+            ->where('order_number', 'like', 'ASM-%')
+            ->whereNotNull('unleashed_guid')
+            ->get()
+            ->keyBy('unleashed_guid');
+
+        $maxPosition = PrintJob::where('board', 'unplanned')->max('position') ?? 0;
 
         // Batch-fetch SO data only for active assemblies
         $activeAssemblies = array_filter($all, fn($a) =>
@@ -150,6 +170,8 @@ class PrintScheduleSyncService
             array_column(array_map(fn($a) => ['SalesOrderNumber' => $a['SalesOrderNumber'] ?? null], $activeAssemblies), 'SalesOrderNumber')
         )));
         $soData = !empty($soNumbers) ? $unleashed->fetchSalesOrderData($soNumbers) : [];
+
+        $seenGuids = [];
 
         foreach ($all as $assembly) {
             $guid = $assembly['Guid'] ?? null;
@@ -161,11 +183,7 @@ class PrintScheduleSyncService
             if (!$productCode) continue;
 
             $seenGuids[$guid] = true;
-
-            $existing = PrintJob::active()
-                ->where('unleashed_guid', $guid)
-                ->where('line_number', 1)
-                ->first();
+            $existing         = $activeJobs->get($guid);
 
             // Deleted → hard delete
             if (strtolower($assemblyStatus) === 'deleted') {
@@ -236,7 +254,7 @@ class PrintScheduleSyncService
                     'required_date'          => $requiredDate,
                     'original_required_date' => $requiredDate,
                     'board'                  => 'unplanned',
-                    'position'               => PrintJob::where('board', 'unplanned')->max('position') + 1,
+                    'position'               => ++$maxPosition,
                     'unleashed_status'       => $assemblyStatus,
                     'synced_at'              => now(),
                 ]);
@@ -244,17 +262,11 @@ class PrintScheduleSyncService
             }
         }
 
-        // Any active job not present in the Unleashed response at all → archive as deleted.
-        // No GUID lookup needed — the full paginated list is already authoritative.
-        if (!empty($seenGuids)) {
-            PrintJob::active()
-                ->where('is_manual', false)
-                ->where('order_number', 'like', 'ASM-%')
-                ->get()
-                ->each(function ($job) use ($seenGuids) {
-                    if (isset($seenGuids[$job->unleashed_guid])) return;
-                    $job->update(['archived_at' => now(), 'archive_reason' => 'deleted']);
-                });
+        // Sweep using the pre-fetched collection — no extra DB query needed.
+        // Anything active in our DB that wasn't in the Unleashed list at all → deleted.
+        foreach ($activeJobs as $jobGuid => $job) {
+            if (isset($seenGuids[$jobGuid])) continue;
+            $job->update(['archived_at' => now(), 'archive_reason' => 'deleted']);
         }
     }
 }
