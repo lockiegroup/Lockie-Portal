@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\PrintJobDateChangedMail;
 use App\Models\PrintJob;
 use App\Models\PrintJobDateChange;
 use App\Models\PrintJobNote;
@@ -11,6 +12,7 @@ use App\Services\UnleashedService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
 class PrintScheduleController extends Controller
@@ -247,6 +249,13 @@ class PrintScheduleController extends Controller
                 'old_date'     => $oldDate,
                 'new_date'     => $newDate,
             ]);
+
+            Mail::to('sales@jwproducts.co.uk')->send(new PrintJobDateChangedMail(
+                job:       $job,
+                oldDate:   $oldDate,
+                newDate:   $newDate,
+                changedBy: auth()->user()->name,
+            ));
         }
 
         $job->update(['required_date' => $newDate]);
