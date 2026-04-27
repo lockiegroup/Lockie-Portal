@@ -208,16 +208,15 @@
 
         {{-- Notes toggle --}}
         <button onclick="toggleNotes({{ $job->id }})"
-            class="inline-flex items-center gap-1.5 text-xs rounded-lg px-3 py-1.5 transition-colors border
-                {{ $noteCount > 0
-                    ? 'bg-amber-50 border-amber-300 text-amber-700 hover:bg-amber-100 font-semibold'
-                    : 'text-slate-500 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 border-slate-200' }}">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="{{ $noteCount > 0 ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="2">
+            style="display:inline-flex;align-items:center;gap:6px;font-size:0.75rem;border-radius:8px;padding:5px 12px;border:1px solid;cursor:pointer;transition:opacity 0.15s;
+                {{ $noteCount > 0 ? 'background:#ffb66c;border-color:#e09040;color:#000;font-weight:600;' : 'background:#f8fafc;border-color:#e2e8f0;color:#64748b;font-weight:400;' }}">
+            <svg style="width:14px;height:14px;flex-shrink:0;" viewBox="0 0 24 24" fill="{{ $noteCount > 0 ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="2">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
             Notes
             <span id="note-count-{{ $job->id }}"
-                class="inline-flex items-center justify-center w-4 h-4 text-xs rounded-full {{ $noteCount > 0 ? 'bg-amber-400 text-white' : 'bg-slate-200 text-slate-600' }}">{{ $noteCount }}</span>
+                style="display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 4px;font-size:0.7rem;border-radius:9px;
+                    {{ $noteCount > 0 ? 'background:rgba(0,0,0,0.18);color:#000;font-weight:700;' : 'background:#e2e8f0;color:#64748b;' }}">{{ $noteCount }}</span>
         </button>
 
         {{-- Part complete --}}
