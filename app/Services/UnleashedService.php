@@ -539,6 +539,7 @@ class UnleashedService
                     $results[$num] = [
                         'lines'        => $order['SalesOrderLines'] ?? [],
                         'requiredDate' => $order['RequiredDate'] ?? null,
+                        'customerName' => $order['Customer']['CustomerName'] ?? null,
                     ];
                 }
             }

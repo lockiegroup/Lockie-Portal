@@ -205,6 +205,7 @@ class PrintScheduleSyncService
             $soNumber           = $assembly['SalesOrderNumber'] ?? null;
             $soTotal            = 0.0;
             $soRequiredDate     = null;
+            $customerName       = $soNumber ?? '';
             if ($soNumber && isset($soData[$soNumber])) {
                 foreach ($soData[$soNumber]['lines'] as $line) {
                     if (($line['Product']['ProductCode'] ?? null) === $productCode) {
@@ -213,6 +214,7 @@ class PrintScheduleSyncService
                     }
                 }
                 $soRequiredDate = $unleashed->parseDate($soData[$soNumber]['requiredDate'] ?? null);
+                $customerName   = $soData[$soNumber]['customerName'] ?? $soNumber;
             }
 
             $requiredDate = $soRequiredDate ?? $assembleBy;
@@ -221,7 +223,7 @@ class PrintScheduleSyncService
                 $update = [
                     'order_number'        => $assemblyNumber,
                     'order_date'          => $assemblyDate,
-                    'customer_name'       => $soNumber ?? '',
+                    'customer_name'       => $customerName,
                     'product_code'        => $productCode,
                     'product_description' => $productDescription,
                     'line_comment'        => $comments,
