@@ -110,11 +110,6 @@
                                             {{ $job->archived_at->format('d M Y') }}
                                         @endif
                                     </td>
-                                    <td style="padding:10px 16px;vertical-align:top;">
-                                        <button onclick="unarchiveJob({{ $job->id }}, this)"
-                                            style="font-size:0.7rem;padding:2px 8px;border:1px solid #e2e8f0;border-radius:5px;background:white;color:#64748b;cursor:pointer;"
-                                            title="Restore to print schedule">Restore</button>
-                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -148,27 +143,5 @@
 
     </main>
 
-<script>
-function unarchiveJob(id, btn) {
-    if (!confirm('Restore this job to the print schedule?')) return;
-    btn.disabled = true;
-    btn.textContent = '…';
-    fetch(`/print-schedule/jobs/${id}/unarchive`, {
-        method: 'POST',
-        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content || '', 'Accept': 'application/json' },
-    })
-    .then(r => r.json())
-    .then(d => {
-        if (d.ok) {
-            btn.closest('tr').style.opacity = '0.4';
-            btn.textContent = 'Restored';
-        } else {
-            alert('Failed: ' + (d.error || 'unknown'));
-            btn.disabled = false; btn.textContent = 'Restore';
-        }
-    })
-    .catch(() => { alert('Request failed'); btn.disabled = false; btn.textContent = 'Restore'; });
-}
-</script>
 
 </x-layout>

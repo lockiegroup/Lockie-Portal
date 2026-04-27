@@ -265,11 +265,8 @@ class PrintScheduleSyncService
                     if (isset($seenKeys[$job->unleashed_guid . ':' . $job->line_number])) return;
                     $assembly = $unleashed->fetchAssemblyByGuid($job->unleashed_guid);
                     $status   = strtolower($assembly['AssemblyStatus'] ?? 'deleted');
-                    if ($status === 'completed') {
-                        $job->update(['archived_at' => now(), 'archive_reason' => 'completed']);
-                    } else {
-                        $job->delete();
-                    }
+                    $reason   = $status === 'completed' ? 'completed' : 'deleted';
+                    $job->update(['archived_at' => now(), 'archive_reason' => $reason]);
                 });
         }
     }
