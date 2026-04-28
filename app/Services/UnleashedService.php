@@ -301,11 +301,13 @@ class UnleashedService
 
         $yearData = Cache::remember($cacheKey, $ttl, function () use ($year) {
             // Match Unleashed Sales Enquiry: all orders by OrderDate range, exclude Cancelled.
-            // Sequential paginate avoids hammering the API with concurrent requests.
-            $orders = $this->paginate('SalesOrders', [
+            // pageSize=200: Unleashed has a pagination bug with larger page sizes where it
+            // repeats page 1 on every subsequent page, causing us to miss older orders.
+            // paginateFast deduplicates by GUID so repeated pages don't inflate totals.
+            $orders = $this->paginateFast('SalesOrders', [
                 'startDate' => "{$year}-01-01",
                 'endDate'   => "{$year}-12-31",
-            ], 500);
+            ], 200);
 
             $aggregated = [];
 

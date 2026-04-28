@@ -74,10 +74,10 @@ class FetchKeyAccountSales extends Command
     {
         $this->info("DEBUG: Fetching all SalesOrders for {$year}, filtering to {$customerCode}...");
 
-        $orders = $unleashed->paginate('SalesOrders', [
+        $orders = $unleashed->paginateFast('SalesOrders', [
             'startDate' => "{$year}-01-01",
             'endDate'   => "{$year}-12-31",
-        ], 500);
+        ], 200);
 
         $this->info('Total orders returned: ' . count($orders));
 
