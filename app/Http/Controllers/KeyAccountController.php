@@ -15,6 +15,7 @@ use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class KeyAccountController extends Controller
 {
@@ -49,7 +50,16 @@ class KeyAccountController extends Controller
         $dataYears = $dataYears ? array_values(array_unique($dataYears)) : [$currentYear];
         sort($dataYears);
 
-        return view('key-accounts.index', compact('accounts', 'salesByYear', 'dataYears', 'currentYear', 'isAdmin'));
+        $salesFrom = $salesTo = null;
+        $kaRange   = KeyAccountSale::selectRaw('MIN(year) as min_year, MAX(year) as max_year')->first();
+        if ($kaRange && $kaRange->min_year) {
+            $salesFrom = 'Jan ' . $kaRange->min_year;
+            $salesTo   = ((int) $kaRange->max_year === $currentYear)
+                ? now()->format('M Y')
+                : 'Dec ' . $kaRange->max_year;
+        }
+
+        return view('key-accounts.index', compact('accounts', 'salesByYear', 'dataYears', 'currentYear', 'isAdmin', 'salesFrom', 'salesTo'));
     }
 
     public function show(KeyAccount $keyAccount): View

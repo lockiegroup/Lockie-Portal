@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
+use Carbon\Carbon;
 
 class ImportsController extends Controller
 {
@@ -27,7 +28,28 @@ class ImportsController extends Controller
 
         $substitutions = $doStock ? StockWatchlistSubstitution::orderBy('id')->get() : collect();
 
-        return view('imports.index', compact('doKA', 'doStock', 'substitutions'));
+        $kaSalesFrom = $kaSalesTo = null;
+        if ($doKA) {
+            $kaRange = KeyAccountSale::selectRaw('MIN(year) as min_year, MAX(year) as max_year')->first();
+            if ($kaRange && $kaRange->min_year) {
+                $currentYear = (int) now()->year;
+                $kaSalesFrom = 'Jan ' . $kaRange->min_year;
+                $kaSalesTo   = ((int) $kaRange->max_year === $currentYear) ? now()->format('M Y') : 'Dec ' . $kaRange->max_year;
+            }
+        }
+
+        $stockSalesFrom = $stockSalesTo = null;
+        if ($doStock) {
+            $stockRange = DB::table('stock_watchlist_sales')
+                ->selectRaw('MIN(year * 100 + month) as min_ym, MAX(year * 100 + month) as max_ym')
+                ->first();
+            if ($stockRange && $stockRange->min_ym) {
+                $stockSalesFrom = Carbon::createFromDate((int) substr($stockRange->min_ym, 0, 4), (int) substr($stockRange->min_ym, 4, 2), 1)->format('M Y');
+                $stockSalesTo   = Carbon::createFromDate((int) substr($stockRange->max_ym, 0, 4), (int) substr($stockRange->max_ym, 4, 2), 1)->format('M Y');
+            }
+        }
+
+        return view('imports.index', compact('doKA', 'doStock', 'substitutions', 'kaSalesFrom', 'kaSalesTo', 'stockSalesFrom', 'stockSalesTo'));
     }
 
     public function storeSubstitution(Request $request): RedirectResponse

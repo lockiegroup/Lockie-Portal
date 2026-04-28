@@ -5,6 +5,9 @@
         <div>
             <h1 class="text-2xl font-bold text-slate-800">Key Accounts</h1>
             <p class="text-slate-500 mt-1">{{ $isAdmin ? 'All accounts' : 'Your assigned accounts' }}</p>
+            @if($salesFrom)
+            <p class="text-xs text-slate-400 mt-0.5">Sales data: {{ $salesFrom }} – {{ $salesTo }}</p>
+            @endif
         </div>
         <div class="flex gap-3 flex-wrap">
             @can('key_accounts_admin')
