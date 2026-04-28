@@ -317,7 +317,7 @@ class UnleashedService
                 $customerCode = $order['Customer']['CustomerCode'] ?? null;
                 if (!$customerCode) continue;
 
-                $rawDate = $order['CompletedDate'] ?? $order['OrderDate'] ?? $order['CreatedOn'] ?? null;
+                $rawDate = $order['OrderDate'] ?? $order['CreatedOn'] ?? null;
                 $date    = $this->parseDate($rawDate);
                 if (!$date) continue;
 
