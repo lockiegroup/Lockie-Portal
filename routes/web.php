@@ -19,6 +19,7 @@ use App\Http\Controllers\PolicyController;
 use App\Http\Controllers\Admin\PolicyController as AdminPolicyController;
 use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\StockWatchlistController;
+use App\Http\Controllers\ImportsController;
 use App\Http\Controllers\KeyAccountController;
 use App\Http\Controllers\Admin\KeyAccountAdminController;
 use Illuminate\Support\Facades\Route;
@@ -129,6 +130,10 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::patch('/items/{item}', [StockWatchlistController::class, 'updateItem'])->name('items.update');
         Route::delete('/items/{item}', [StockWatchlistController::class, 'destroyItem'])->name('items.destroy');
     });
+
+    // Shared imports
+    Route::get('/imports', [ImportsController::class, 'index'])->name('imports.index');
+    Route::post('/imports/sales', [ImportsController::class, 'storeSales'])->name('imports.sales');
 
     // Key Accounts (admin management)
     Route::middleware('can:key_accounts_admin')->prefix('admin/key-accounts')->name('admin.key-accounts.')->group(function () {
