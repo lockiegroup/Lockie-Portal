@@ -51,12 +51,11 @@ class KeyAccountController extends Controller
         sort($dataYears);
 
         $salesFrom = $salesTo = null;
-        $kaRange   = KeyAccountSale::selectRaw('MIN(year) as min_year, MAX(year) as max_year')->first();
-        if ($kaRange && $kaRange->min_year) {
-            $salesFrom = 'Jan ' . $kaRange->min_year;
-            $salesTo   = ((int) $kaRange->max_year === $currentYear)
-                ? now()->format('M Y')
-                : 'Dec ' . $kaRange->max_year;
+        $minDate   = DB::table('app_settings')->where('key', 'ka_sales_min_date')->value('value');
+        $maxDate   = DB::table('app_settings')->where('key', 'ka_sales_max_date')->value('value');
+        if ($minDate && $maxDate) {
+            $salesFrom = Carbon::parse($minDate)->format('jS M Y');
+            $salesTo   = Carbon::parse($maxDate)->format('jS M Y');
         }
 
         return view('key-accounts.index', compact('accounts', 'salesByYear', 'dataYears', 'currentYear', 'isAdmin', 'salesFrom', 'salesTo'));

@@ -30,22 +30,21 @@ class ImportsController extends Controller
 
         $kaSalesFrom = $kaSalesTo = null;
         if ($doKA) {
-            $kaRange = KeyAccountSale::selectRaw('MIN(year) as min_year, MAX(year) as max_year')->first();
-            if ($kaRange && $kaRange->min_year) {
-                $currentYear = (int) now()->year;
-                $kaSalesFrom = 'Jan ' . $kaRange->min_year;
-                $kaSalesTo   = ((int) $kaRange->max_year === $currentYear) ? now()->format('M Y') : 'Dec ' . $kaRange->max_year;
+            $kaMin = DB::table('app_settings')->where('key', 'ka_sales_min_date')->value('value');
+            $kaMax = DB::table('app_settings')->where('key', 'ka_sales_max_date')->value('value');
+            if ($kaMin && $kaMax) {
+                $kaSalesFrom = Carbon::parse($kaMin)->format('jS M Y');
+                $kaSalesTo   = Carbon::parse($kaMax)->format('jS M Y');
             }
         }
 
         $stockSalesFrom = $stockSalesTo = null;
         if ($doStock) {
-            $stockRange = DB::table('stock_watchlist_sales')
-                ->selectRaw('MIN(year * 100 + month) as min_ym, MAX(year * 100 + month) as max_ym')
-                ->first();
-            if ($stockRange && $stockRange->min_ym) {
-                $stockSalesFrom = Carbon::createFromDate((int) substr($stockRange->min_ym, 0, 4), (int) substr($stockRange->min_ym, 4, 2), 1)->format('M Y');
-                $stockSalesTo   = Carbon::createFromDate((int) substr($stockRange->max_ym, 0, 4), (int) substr($stockRange->max_ym, 4, 2), 1)->format('M Y');
+            $stMin = DB::table('app_settings')->where('key', 'stock_sales_min_date')->value('value');
+            $stMax = DB::table('app_settings')->where('key', 'stock_sales_max_date')->value('value');
+            if ($stMin && $stMax) {
+                $stockSalesFrom = Carbon::parse($stMin)->format('jS M Y');
+                $stockSalesTo   = Carbon::parse($stMax)->format('jS M Y');
             }
         }
 
@@ -167,6 +166,8 @@ class ImportsController extends Controller
     private function processKeyAccounts(array $rows, int|false $colDate, int|false $colCustomer, int|false $colSubTotal, int|false $colStatus, string $ext): int
     {
         $aggregated = [];
+        $minDate    = null;
+        $maxDate    = null;
 
         foreach ($rows as $row) {
             $code     = trim((string)($row[$colCustomer] ?? ''));
@@ -177,8 +178,15 @@ class ImportsController extends Controller
             if (empty($code) || $subtotal <= 0) continue;
             if ($status === 'cancelled') continue;
 
-            [$year, $month] = $this->parseDate($rawDate, $ext) ?? [null, null];
-            if ($year === null) continue;
+            $dt = $this->parseDate($rawDate, $ext);
+            if ($dt === null) continue;
+
+            $year    = (int)$dt->format('Y');
+            $month   = (int)$dt->format('n');
+            $dateStr = $dt->format('Y-m-d');
+
+            if ($minDate === null || $dateStr < $minDate) $minDate = $dateStr;
+            if ($maxDate === null || $dateStr > $maxDate) $maxDate = $dateStr;
 
             $quarter = 'q' . (int)ceil($month / 3);
             $aggregated[$year][$code] ??= ['total' => 0.0, 'q1' => 0.0, 'q2' => 0.0, 'q3' => 0.0, 'q4' => 0.0];
@@ -210,6 +218,11 @@ class ImportsController extends Controller
             }
         });
 
+        if ($minDate) {
+            DB::table('app_settings')->updateOrInsert(['key' => 'ka_sales_min_date'], ['value' => $minDate, 'updated_at' => now()]);
+            DB::table('app_settings')->updateOrInsert(['key' => 'ka_sales_max_date'], ['value' => $maxDate, 'updated_at' => now()]);
+        }
+
         return count($insertRows);
     }
 
@@ -221,6 +234,8 @@ class ImportsController extends Controller
         ])->all();
         $watchlistCodes = StockWatchlistItem::pluck('product_code')->all();
         $monthly        = [];
+        $minDate        = null;
+        $maxDate        = null;
 
         foreach ($rows as $row) {
             $code    = strtoupper(trim((string)($row[$colProduct] ?? '')));
@@ -234,7 +249,6 @@ class ImportsController extends Controller
             }
 
             if (!$code || !$rawDate || $qty <= 0) continue;
-            if (!in_array($code, $watchlistCodes)) continue;
 
             $dt = \DateTime::createFromFormat('d/m/Y', $rawDate)
                ?: \DateTime::createFromFormat('Y-m-d', $rawDate)
@@ -242,8 +256,14 @@ class ImportsController extends Controller
 
             if (!$dt) continue;
 
-            $year  = (int)$dt->format('Y');
-            $month = (int)$dt->format('n');
+            $year    = (int)$dt->format('Y');
+            $month   = (int)$dt->format('n');
+            $dateStr = $dt->format('Y-m-d');
+
+            if ($minDate === null || $dateStr < $minDate) $minDate = $dateStr;
+            if ($maxDate === null || $dateStr > $maxDate) $maxDate = $dateStr;
+
+            if (!in_array($code, $watchlistCodes)) continue;
             $monthly[$code][$year][$month] = ($monthly[$code][$year][$month] ?? 0) + $qty;
         }
 
@@ -265,26 +285,28 @@ class ImportsController extends Controller
             DB::table('stock_watchlist_sales')->insert($chunk);
         }
 
+        if ($minDate) {
+            DB::table('app_settings')->updateOrInsert(['key' => 'stock_sales_min_date'], ['value' => $minDate, 'updated_at' => now()]);
+            DB::table('app_settings')->updateOrInsert(['key' => 'stock_sales_max_date'], ['value' => $maxDate, 'updated_at' => now()]);
+        }
+
         return ['products' => count($monthly), 'months' => count($insertRows)];
     }
 
-    private function parseDate(mixed $raw, string $ext): ?array
+    private function parseDate(mixed $raw, string $ext): ?\DateTime
     {
         if ($raw === null || $raw === '') return null;
 
         if (in_array($ext, ['xlsx', 'xls']) && is_numeric($raw)) {
             try {
-                $dt = ExcelDate::excelToDateTimeObject($raw);
-                return [(int)$dt->format('Y'), (int)$dt->format('n')];
+                return ExcelDate::excelToDateTimeObject($raw);
             } catch (\Throwable) {
                 return null;
             }
         }
 
-        $dt = \DateTime::createFromFormat('d/m/Y', (string)$raw)
-           ?: \DateTime::createFromFormat('Y-m-d', (string)$raw)
-           ?: (($ts = strtotime((string)$raw)) ? (new \DateTime())->setTimestamp($ts) : null);
-
-        return $dt ? [(int)$dt->format('Y'), (int)$dt->format('n')] : null;
+        return \DateTime::createFromFormat('d/m/Y', (string)$raw)
+            ?: \DateTime::createFromFormat('Y-m-d', (string)$raw)
+            ?: (($ts = strtotime((string)$raw)) ? (new \DateTime())->setTimestamp($ts) : null);
     }
 }

@@ -78,13 +78,12 @@ class StockWatchlistController extends Controller
 
         $syncedAt = StockWatchlistStock::max('synced_at');
 
-        $salesRange = DB::table('stock_watchlist_sales')
-            ->selectRaw('MIN(year * 100 + month) as min_ym, MAX(year * 100 + month) as max_ym')
-            ->first();
         $salesFrom = $salesTo = null;
-        if ($salesRange && $salesRange->min_ym) {
-            $salesFrom = Carbon::createFromDate((int)substr($salesRange->min_ym, 0, 4), (int)substr($salesRange->min_ym, 4, 2), 1)->format('M Y');
-            $salesTo   = Carbon::createFromDate((int)substr($salesRange->max_ym, 0, 4), (int)substr($salesRange->max_ym, 4, 2), 1)->format('M Y');
+        $stMin = DB::table('app_settings')->where('key', 'stock_sales_min_date')->value('value');
+        $stMax = DB::table('app_settings')->where('key', 'stock_sales_max_date')->value('value');
+        if ($stMin && $stMax) {
+            $salesFrom = Carbon::parse($stMin)->format('jS M Y');
+            $salesTo   = Carbon::parse($stMax)->format('jS M Y');
         }
 
         $substitutions = StockWatchlistSubstitution::orderBy('id')->get();
