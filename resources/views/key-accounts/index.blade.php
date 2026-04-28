@@ -35,9 +35,8 @@
     @endif
 
     @php
-        $currentYear = now()->year;
-        $prevYear    = $currentYear - 1;
-        $currentQ    = (int) ceil(now()->month / 3);
+        $currentQ  = (int) ceil(now()->month / 3);
+        $histYears = array_values(array_filter($dataYears, fn($y) => $y !== $currentYear));
     @endphp
 
     @if($accounts->isEmpty())
@@ -67,7 +66,9 @@
                         <th class="text-left px-4 py-3 font-semibold text-slate-600 whitespace-nowrap">Type</th>
                         <th class="text-left px-4 py-3 font-semibold text-slate-600 whitespace-nowrap">Last Contact</th>
                         <th class="text-left px-4 py-3 font-semibold text-slate-600 whitespace-nowrap">Last Gift</th>
-                        <th class="text-right px-4 py-3 font-semibold text-slate-600 whitespace-nowrap">{{ $prevYear }}</th>
+                        @foreach($histYears as $hy)
+                        <th class="text-right px-4 py-3 font-semibold text-slate-600 whitespace-nowrap">{{ $hy }}</th>
+                        @endforeach
                         <th class="text-right px-4 py-3 font-semibold text-slate-600 whitespace-nowrap">Q1</th>
                         <th class="text-right px-4 py-3 font-semibold text-slate-600 whitespace-nowrap">Q2</th>
                         <th class="text-right px-4 py-3 font-semibold text-slate-600 whitespace-nowrap">Q3</th>
@@ -78,8 +79,7 @@
                 <tbody class="divide-y divide-slate-100">
                     @foreach($personAccounts as $account)
                     @php
-                        $prev   = $salesByYear[$prevYear][$account->account_code]    ?? ['total' => 0, 'q1' => 0, 'q2' => 0, 'q3' => 0, 'q4' => 0];
-                        $curr   = $salesByYear[$currentYear][$account->account_code] ?? ['total' => 0, 'q1' => 0, 'q2' => 0, 'q3' => 0, 'q4' => 0];
+                        $curr        = $salesByYear[$currentYear][$account->account_code] ?? ['total' => 0, 'q1' => 0, 'q2' => 0, 'q3' => 0, 'q4' => 0];
                         $lastContact = $account->contacts->first()?->contacted_at;
                         $lastGift    = $account->gifts->first()?->gifted_at;
                     @endphp
@@ -99,9 +99,12 @@
                         <td class="px-4 py-3 text-slate-600 whitespace-nowrap">
                             {{ $lastGift ? $lastGift->format('d M Y') : '—' }}
                         </td>
+                        @foreach($histYears as $hy)
+                        @php $hval = $salesByYear[$hy][$account->account_code]['total'] ?? 0; @endphp
                         <td class="px-4 py-3 text-right text-slate-600 whitespace-nowrap">
-                            {{ $prev['total'] > 0 ? '£' . number_format($prev['total'], 2) : '—' }}
+                            {{ $hval > 0 ? '£' . number_format($hval, 2) : '—' }}
                         </td>
+                        @endforeach
                         @foreach(['q1','q2','q3','q4'] as $qi => $q)
                         @php
                             $qNum = $qi + 1;

@@ -24,15 +24,15 @@ class KeyAccountController extends Controller
             ? KeyAccount::with(['user', 'contacts', 'gifts'])->orderBy('name')->get()
             : KeyAccount::with(['contacts', 'gifts'])->where('user_id', $user->id)->orderBy('name')->get();
 
-        $years         = [now()->year - 1, now()->year];
+        $currentYear   = (int) now()->year;
         $customerCodes = $accounts->pluck('account_code')->all();
 
         $salesByYear = [];
+        $dataYears   = [];
         if (!empty($customerCodes)) {
-            $rows = KeyAccountSale::whereIn('account_code', $customerCodes)
-                ->whereIn('year', $years)
-                ->get();
+            $rows = KeyAccountSale::whereIn('account_code', $customerCodes)->get();
             foreach ($rows as $row) {
+                $dataYears[] = (int) $row->year;
                 $salesByYear[$row->year][$row->account_code] = [
                     'total' => (float) $row->total,
                     'q1'    => (float) $row->q1,
@@ -43,7 +43,10 @@ class KeyAccountController extends Controller
             }
         }
 
-        return view('key-accounts.index', compact('accounts', 'salesByYear', 'years', 'isAdmin'));
+        $dataYears = $dataYears ? array_values(array_unique($dataYears)) : [$currentYear];
+        sort($dataYears);
+
+        return view('key-accounts.index', compact('accounts', 'salesByYear', 'dataYears', 'currentYear', 'isAdmin'));
     }
 
     public function show(KeyAccount $keyAccount): View
@@ -214,7 +217,7 @@ class KeyAccountController extends Controller
                     continue;
                 }
 
-                // Parse date — handles Excel serial number, date string, or /Date()/ format
+                // Parse date — handles Excel serial number or d/m/Y string
                 if (is_numeric($rawDate)) {
                     try {
                         $date = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($rawDate)->format('Y-m-d');
@@ -223,13 +226,27 @@ class KeyAccountController extends Controller
                         continue;
                     }
                 } else {
-                    $parsed = strtotime((string) $rawDate);
-                    if (!$parsed) { $skipped++; continue; }
-                    $date = date('Y-m-d', $parsed);
+                    $dt = \DateTime::createFromFormat('d/m/Y', (string) $rawDate)
+                       ?: \DateTime::createFromFormat('Y-m-d', (string) $rawDate);
+                    if (!$dt) { $skipped++; continue; }
+                    $date = $dt->format('Y-m-d');
                 }
 
-                $account = KeyAccount::where('account_code', $code)->first();
-                if (!$account || (!$isAdmin && $account->user_id !== $user->id)) {
+                // Find or create a placeholder account so gifts are stored even for
+                // accounts not yet being actively managed
+                $account = KeyAccount::withTrashed()->where('account_code', $code)->first();
+                if (!$account) {
+                    $account = KeyAccount::create([
+                        'account_code' => $code,
+                        'name'         => $code,
+                        'type'         => 'key',
+                        'user_id'      => null,
+                    ]);
+                } elseif ($account->trashed()) {
+                    $account->restore();
+                }
+
+                if (!$isAdmin && $account->user_id !== null && $account->user_id !== $user->id) {
                     $skipped++;
                     continue;
                 }
