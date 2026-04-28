@@ -141,6 +141,7 @@ Route::middleware(['auth', 'otp'])->group(function () {
     Route::middleware('can:key_accounts_admin')->prefix('admin/key-accounts')->name('admin.key-accounts.')->group(function () {
         Route::get('/', [KeyAccountAdminController::class, 'index'])->name('index');
         Route::post('/', [KeyAccountAdminController::class, 'store'])->name('store');
+        Route::post('/reorder', [KeyAccountAdminController::class, 'reorder'])->name('reorder');
         Route::put('/{keyAccount}', [KeyAccountAdminController::class, 'update'])->name('update');
         Route::delete('/{keyAccount}', [KeyAccountAdminController::class, 'destroy'])->name('destroy');
     });

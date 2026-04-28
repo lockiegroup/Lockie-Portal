@@ -64,6 +64,7 @@
         <table class="w-full text-sm">
             <thead>
                 <tr class="border-b border-slate-200 bg-slate-50">
+                    <th class="w-8 px-3 py-3"></th>
                     <th class="text-left px-4 py-3 font-semibold text-slate-600">Code</th>
                     <th class="text-left px-4 py-3 font-semibold text-slate-600">Name</th>
                     <th class="text-left px-4 py-3 font-semibold text-slate-600">Type</th>
@@ -71,9 +72,12 @@
                     <th class="px-4 py-3"></th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-slate-100">
+            <tbody id="accounts-sortable" class="divide-y divide-slate-100">
                 @foreach($accounts as $account)
-                <tr id="row-{{ $account->id }}" class="hover:bg-slate-50">
+                <tr id="row-{{ $account->id }}" data-id="{{ $account->id }}" class="hover:bg-slate-50">
+                    <td class="px-3 py-3 text-slate-300 ka-drag-handle cursor-grab active:cursor-grabbing">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg>
+                    </td>
                     <td class="px-4 py-3 font-semibold text-slate-800">{{ $account->account_code }}</td>
                     <td class="px-4 py-3 text-slate-700">{{ $account->name }}</td>
                     <td class="px-4 py-3">
@@ -93,8 +97,8 @@
                     </td>
                 </tr>
                 {{-- Inline edit row (hidden) --}}
-                <tr id="edit-{{ $account->id }}" class="hidden bg-sky-50 border-b border-sky-100">
-                    <td colspan="5" class="px-4 py-4">
+                <tr id="edit-{{ $account->id }}" class="hidden bg-sky-50 border-b border-sky-100 ka-no-drag">
+                    <td colspan="6" class="px-4 py-4">
                         <form action="{{ route('admin.key-accounts.update', $account) }}" method="POST">
                             @csrf @method('PUT')
                             <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-3">
@@ -141,6 +145,7 @@
 
 </main>
 
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script>
 function openEdit(id) {
     document.getElementById('edit-' + id).classList.remove('hidden');
@@ -149,6 +154,32 @@ function openEdit(id) {
 function closeEdit(id) {
     document.getElementById('edit-' + id).classList.add('hidden');
     document.getElementById('row-' + id).classList.remove('hidden');
+}
+
+const tbody = document.getElementById('accounts-sortable');
+if (tbody) {
+    Sortable.create(tbody, {
+        handle: '.ka-drag-handle',
+        filter: '.ka-no-drag',
+        animation: 150,
+        onEnd() {
+            const ids = [...tbody.querySelectorAll('tr[data-id]')].map(r => r.dataset.id);
+            // Keep each edit row immediately after its display row
+            ids.forEach(id => {
+                const displayRow = document.getElementById('row-' + id);
+                const editRow    = document.getElementById('edit-' + id);
+                if (displayRow && editRow) displayRow.after(editRow);
+            });
+            fetch('{{ route("admin.key-accounts.reorder") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                },
+                body: JSON.stringify({ ids }),
+            });
+        },
+    });
 }
 </script>
 </x-layout>

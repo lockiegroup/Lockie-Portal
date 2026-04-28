@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\KeyAccount;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -15,10 +16,19 @@ class KeyAccountAdminController extends Controller
 {
     public function index(): View
     {
-        $accounts = KeyAccount::with('user')->whereNotNull('user_id')->orderBy('name')->get();
+        $accounts = KeyAccount::with('user')->whereNotNull('user_id')->orderBy('sort_order')->orderBy('name')->get();
         $users    = User::where('is_active', true)->orderBy('name')->get();
 
         return view('admin.key-accounts.index', compact('accounts', 'users'));
+    }
+
+    public function reorder(Request $request): JsonResponse
+    {
+        $request->validate(['ids' => 'required|array', 'ids.*' => 'integer']);
+        foreach ($request->ids as $order => $id) {
+            KeyAccount::where('id', $id)->update(['sort_order' => $order]);
+        }
+        return response()->json(['ok' => true]);
     }
 
     public function store(Request $request): RedirectResponse
