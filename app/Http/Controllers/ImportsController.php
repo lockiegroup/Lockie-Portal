@@ -60,27 +60,33 @@ class ImportsController extends Controller
             $colProduct  = array_search('product code', $header);
             $colQty      = array_search('quantity', $header);
 
+            // Build list of required columns based on what this user can process
+            $needed = ['order date' => 'Order Date'];
+            if ($doKA)    { $needed['customer code'] = 'Customer Code'; $needed['sub total'] = 'Sub Total'; }
+            if ($doStock) { $needed['product code']  = 'Product Code';  $needed['quantity']  = 'Quantity'; }
+
+            $missing = array_values(array_filter(
+                array_map(fn($key, $label) => array_search($key, $header) === false ? $label : null, array_keys($needed), $needed)
+            ));
+
+            if (!empty($missing)) {
+                return back()->withErrors(['file' => 'Required columns not found: ' . implode(', ', $missing) . '. Expected: Order Date, Customer Code, Product Code, Quantity, Sub Total.']);
+            }
+
             array_shift($rows);
 
             $messages = [];
 
             if ($doKA) {
-                if ($colDate === false || $colCustomer === false || $colSubTotal === false) {
-                    return back()->withErrors(['file' => 'Required columns not found. Expected: Order Date, Customer Code, Sub Total.']);
-                }
                 $kaCount = $this->processKeyAccounts($rows, $colDate, $colCustomer, $colSubTotal, $colStatus, $ext);
                 $messages[] = "Key Accounts: sales updated for {$kaCount} account/year combination(s).";
                 ActivityLog::record('imports.sales_ka', "Imported key account sales for {$kaCount} account/year(s)");
             }
 
             if ($doStock) {
-                if ($colProduct !== false && $colDate !== false && $colQty !== false) {
-                    $stockResult = $this->processStockWatchlist($rows, $colProduct, $colDate, $colQty);
-                    $messages[] = "Stock Watchlist: updated {$stockResult['products']} product(s) across {$stockResult['months']} month(s).";
-                    ActivityLog::record('imports.sales_stock', "Imported stock watchlist sales for {$stockResult['products']} product(s)");
-                } else {
-                    $messages[] = 'Stock Watchlist: skipped (Product Code or Quantity column not found).';
-                }
+                $stockResult = $this->processStockWatchlist($rows, $colProduct, $colDate, $colQty);
+                $messages[] = "Stock Watchlist: updated {$stockResult['products']} product(s) across {$stockResult['months']} month(s).";
+                ActivityLog::record('imports.sales_stock', "Imported stock watchlist sales for {$stockResult['products']} product(s)");
             }
 
             return back()->with('success', implode(' ', $messages));

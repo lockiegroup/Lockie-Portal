@@ -16,9 +16,7 @@
     <div class="bg-white rounded-xl border border-slate-200 p-6 max-w-xl">
         <h2 class="text-base font-semibold text-slate-800 mb-1">Sales Enquiry Import</h2>
         <p class="text-sm text-slate-500 mb-1">Export from <strong>Reports → Sales → Sales Enquiry</strong> in Unleashed.</p>
-        <p class="text-sm text-slate-500 mb-4">Required columns: <strong>Order Date, Customer Code, Sub Total, Status</strong>
-            @if($doStock), Product Code, Quantity@endif
-        </p>
+        <p class="text-sm text-slate-500 mb-4">Required columns: <strong>Order Date, Customer Code, Product Code, Quantity, Sub Total</strong></p>
 
         <div class="mb-4 flex flex-wrap gap-2">
             @if($doKA)
