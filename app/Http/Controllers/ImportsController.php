@@ -25,7 +25,39 @@ class ImportsController extends Controller
             abort(403);
         }
 
-        return view('imports.index', compact('doKA', 'doStock'));
+        $substitutions = $doStock ? StockWatchlistSubstitution::orderBy('id')->get() : collect();
+
+        return view('imports.index', compact('doKA', 'doStock', 'substitutions'));
+    }
+
+    public function storeSubstitution(Request $request): RedirectResponse
+    {
+        $user = auth()->user();
+        if (!$user->can('stock_ordering')) abort(403);
+
+        $data = $request->validate([
+            'find'    => ['required', 'string', 'max:100'],
+            'replace' => ['required', 'string', 'max:100'],
+        ]);
+
+        StockWatchlistSubstitution::create([
+            'find'    => strtoupper(trim($data['find'])),
+            'replace' => strtoupper(trim($data['replace'])),
+        ]);
+
+        ActivityLog::record('imports.substitution_added', "Added substitution rule: {$data['find']} → {$data['replace']}");
+
+        return back()->with('success', 'Substitution rule added.');
+    }
+
+    public function destroySubstitution(StockWatchlistSubstitution $substitution): RedirectResponse
+    {
+        $user = auth()->user();
+        if (!$user->can('stock_ordering')) abort(403);
+
+        $substitution->delete();
+
+        return back()->with('success', 'Substitution rule removed.');
     }
 
     public function storeSales(Request $request): RedirectResponse
@@ -132,21 +164,31 @@ class ImportsController extends Controller
             $aggregated[$year][$code][$quarter] += $subtotal;
         }
 
-        $now    = now();
+        $now    = now()->toDateTimeString();
         $userId = auth()->id();
-        $count  = 0;
 
+        $allCodes = array_values(array_unique(array_merge(...array_map('array_keys', $aggregated))));
+        KeyAccountSale::whereIn('account_code', $allCodes)->delete();
+
+        $insertRows = [];
         foreach ($aggregated as $year => $customers) {
             foreach ($customers as $code => $data) {
-                KeyAccountSale::updateOrCreate(
-                    ['account_code' => $code, 'year' => $year],
-                    array_merge($data, ['imported_at' => $now, 'user_id' => $userId])
-                );
-                $count++;
+                $insertRows[] = array_merge($data, [
+                    'account_code' => $code,
+                    'year'         => $year,
+                    'imported_at'  => $now,
+                    'user_id'      => $userId,
+                    'created_at'   => $now,
+                    'updated_at'   => $now,
+                ]);
             }
         }
 
-        return $count;
+        foreach (array_chunk($insertRows, 200) as $chunk) {
+            DB::table('key_account_sales')->insert($chunk);
+        }
+
+        return count($insertRows);
     }
 
     private function processStockWatchlist(array $rows, int|false $colProduct, int|false $colDate, int|false $colQty): array

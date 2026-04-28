@@ -134,6 +134,8 @@ Route::middleware(['auth', 'otp'])->group(function () {
     // Shared imports
     Route::get('/imports', [ImportsController::class, 'index'])->name('imports.index');
     Route::post('/imports/sales', [ImportsController::class, 'storeSales'])->name('imports.sales');
+    Route::post('/imports/substitutions', [ImportsController::class, 'storeSubstitution'])->name('imports.substitutions.store');
+    Route::delete('/imports/substitutions/{substitution}', [ImportsController::class, 'destroySubstitution'])->name('imports.substitutions.destroy');
 
     // Key Accounts (admin management)
     Route::middleware('can:key_accounts_admin')->prefix('admin/key-accounts')->name('admin.key-accounts.')->group(function () {

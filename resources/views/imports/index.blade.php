@@ -45,5 +45,46 @@
         </form>
     </div>
 
+    @if($doStock)
+    <div class="bg-white rounded-xl border border-slate-200 p-6 max-w-xl mt-6">
+        <h2 class="text-base font-semibold text-slate-800 mb-1">Product Code Substitution Rules</h2>
+        <p class="text-sm text-slate-500 mb-4">Remap product codes before matching against the Stock Watchlist. Applied to every import.</p>
+
+        @if($substitutions->isNotEmpty())
+        <div class="mb-4 divide-y divide-slate-100 border border-slate-200 rounded-lg overflow-hidden">
+            @foreach($substitutions as $sub)
+            <div class="flex items-center justify-between px-3 py-2 text-sm bg-white">
+                <span class="font-mono text-slate-700">{{ $sub->find }} <span class="text-slate-400 mx-1">→</span> {{ $sub->replace }}</span>
+                <form action="{{ route('imports.substitutions.destroy', $sub) }}" method="POST">
+                    @csrf @method('DELETE')
+                    <button type="submit" class="text-red-400 hover:text-red-600 transition text-xs font-medium">Remove</button>
+                </form>
+            </div>
+            @endforeach
+        </div>
+        @else
+        <p class="text-sm text-slate-400 mb-4">No substitution rules yet.</p>
+        @endif
+
+        <form action="{{ route('imports.substitutions.store') }}" method="POST" class="flex gap-2 items-end flex-wrap">
+            @csrf
+            <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1">Find (product code fragment)</label>
+                <input type="text" name="find" placeholder="e.g. OLD" required
+                    class="border border-slate-300 rounded-lg px-3 py-2 text-sm w-36 focus:outline-none focus:ring-2 focus:ring-sky-500">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-600 mb-1">Replace with</label>
+                <input type="text" name="replace" placeholder="e.g. NEW" required
+                    class="border border-slate-300 rounded-lg px-3 py-2 text-sm w-36 focus:outline-none focus:ring-2 focus:ring-sky-500">
+            </div>
+            <button type="submit"
+                class="px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-semibold hover:bg-slate-700 transition">
+                Add Rule
+            </button>
+        </form>
+    </div>
+    @endif
+
 </main>
 </x-layout>

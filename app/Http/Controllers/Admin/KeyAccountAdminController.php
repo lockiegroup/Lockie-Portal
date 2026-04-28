@@ -15,7 +15,7 @@ class KeyAccountAdminController extends Controller
 {
     public function index(): View
     {
-        $accounts = KeyAccount::with('user')->orderBy('name')->get();
+        $accounts = KeyAccount::with('user')->whereNotNull('user_id')->orderBy('name')->get();
         $users    = User::where('is_active', true)->orderBy('name')->get();
 
         return view('admin.key-accounts.index', compact('accounts', 'users'));
@@ -33,6 +33,12 @@ class KeyAccountAdminController extends Controller
         $existing = KeyAccount::withTrashed()->where('account_code', $data['account_code'])->first();
 
         if ($existing && ! $existing->trashed()) {
+            if ($existing->user_id === null) {
+                // Unassigned placeholder created by gifts import — promote it
+                $existing->update($data);
+                ActivityLog::record('key_accounts.created', "Created account {$data['account_code']}");
+                return back()->with('success', "Account {$data['account_code']} created.");
+            }
             return back()->withErrors(['account_code' => 'Account code already exists.'])->withInput();
         }
 
