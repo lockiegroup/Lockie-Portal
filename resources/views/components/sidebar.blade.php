@@ -147,6 +147,20 @@
         </a>
         @endif
 
+        @if($user->hasModule('key_accounts'))
+        <a href="{{ route('key-accounts.index') }}"
+           class="sb-item{{ request()->routeIs('key-accounts.*') ? ' sb-active' : '' }}"
+           data-tip="Key Accounts">
+            <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                <path d="M21 21v-2a4 4 0 0 0-3-3.87"/>
+            </svg>
+            <span class="sb-label">Key Accounts</span>
+        </a>
+        @endif
+
         @if($user->hasModule('print_schedule'))
         <button onclick="togglePrint()" id="print-toggle"
             class="sb-item{{ $isPrintSection ? ' sb-active' : '' }}"
@@ -173,7 +187,7 @@
         </div>
         @endif
 
-        @canany(['manage_users', 'print_settings', 'envelope_settings', 'policy_settings', 'cash_flow'])
+        @canany(['manage_users', 'print_settings', 'envelope_settings', 'policy_settings', 'cash_flow', 'key_accounts_admin'])
         <div style="height:1px;background:#1e293b;margin:10px 4px 8px;"></div>
         <p class="sb-section" style="font-size:0.625rem;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:0.1em;padding:0 10px;margin-bottom:6px;">Admin</p>
 
@@ -222,6 +236,18 @@
                 <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
             </svg>
             <span class="sb-label">Policy Settings</span>
+        </a>
+        @endcan
+
+        @can('key_accounts_admin')
+        <a href="{{ route('admin.key-accounts.index') }}"
+           class="sb-item{{ request()->routeIs('admin.key-accounts*') ? ' sb-active' : '' }}"
+           data-tip="Key Accounts Admin">
+            <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+            </svg>
+            <span class="sb-label">Key Accounts</span>
         </a>
         @endcan
 

@@ -287,6 +287,66 @@ class UnleashedService
     }
 
     /**
+     * Fetch quarterly sales totals for each customer code for a given year.
+     * Results are cached per customer+year (1 hour for current year, 24 hours for past).
+     * Returns ['BESGROUP' => ['total' => 0.0, 'q1' => 0.0, 'q2' => 0.0, 'q3' => 0.0, 'q4' => 0.0], ...]
+     */
+    public function fetchSalesByCustomerCodes(array $customerCodes, int $year): array
+    {
+        if (empty($customerCodes)) return [];
+
+        $ttl       = ($year === (int) date('Y')) ? 3600 : 86400;
+        $uncached  = [];
+        $results   = [];
+
+        foreach ($customerCodes as $code) {
+            $cached = Cache::get("unleashed_ka_sales_{$year}_{$code}");
+            if ($cached !== null) {
+                $results[$code] = $cached;
+            } else {
+                $uncached[] = $code;
+                $results[$code] = ['total' => 0.0, 'q1' => 0.0, 'q2' => 0.0, 'q3' => 0.0, 'q4' => 0.0];
+            }
+        }
+
+        if (empty($uncached)) return $results;
+
+        $responses = Http::pool(function ($pool) use ($uncached, $year) {
+            $calls = [];
+            foreach ($uncached as $code) {
+                $qs = http_build_query([
+                    'customerCode'  => $code,
+                    'startDate'     => "{$year}-01-01",
+                    'endDate'       => "{$year}-12-31",
+                    'invoiceStatus' => 'Complete',
+                    'pageSize'      => 500,
+                    'pageNumber'    => 1,
+                ]);
+                $calls[] = $pool->as($code)->timeout(30)->withHeaders($this->headers($qs))->get(self::BASE_URL . '/SalesInvoices?' . $qs);
+            }
+            return $calls;
+        });
+
+        foreach ($uncached as $code) {
+            $res = $responses[$code] ?? null;
+            if ($res && !($res instanceof \Throwable) && !$res->failed()) {
+                foreach ($res->json()['Items'] ?? [] as $invoice) {
+                    $date     = $this->parseDate($invoice['InvoiceDate'] ?? null);
+                    $subtotal = (float) ($invoice['SubTotal'] ?? 0);
+                    if (!$date || $subtotal <= 0) continue;
+                    $month   = (int) date('n', strtotime($date));
+                    $quarter = 'q' . (int) ceil($month / 3);
+                    $results[$code]['total']    += $subtotal;
+                    $results[$code][$quarter]   += $subtotal;
+                }
+            }
+            Cache::put("unleashed_ka_sales_{$year}_{$code}", $results[$code], $ttl);
+        }
+
+        return $results;
+    }
+
+    /**
      * Parse a date string from Unleashed API.
      * Handles /Date(ms)/ format and ISO strings, returns Y-m-d or null.
      */

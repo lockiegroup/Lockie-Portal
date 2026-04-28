@@ -19,6 +19,8 @@ use App\Http\Controllers\PolicyController;
 use App\Http\Controllers\Admin\PolicyController as AdminPolicyController;
 use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\StockWatchlistController;
+use App\Http\Controllers\KeyAccountController;
+use App\Http\Controllers\Admin\KeyAccountAdminController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn() => redirect()->route('login'));
@@ -128,7 +130,25 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::delete('/items/{item}', [StockWatchlistController::class, 'destroyItem'])->name('items.destroy');
     });
 
-// Admin — manage users + activity log
+    // Key Accounts (admin management)
+    Route::middleware('can:key_accounts_admin')->prefix('admin/key-accounts')->name('admin.key-accounts.')->group(function () {
+        Route::get('/', [KeyAccountAdminController::class, 'index'])->name('index');
+        Route::post('/', [KeyAccountAdminController::class, 'store'])->name('store');
+        Route::put('/{keyAccount}', [KeyAccountAdminController::class, 'update'])->name('update');
+        Route::delete('/{keyAccount}', [KeyAccountAdminController::class, 'destroy'])->name('destroy');
+    });
+
+    // Key Accounts (salesperson views)
+    Route::prefix('key-accounts')->name('key-accounts.')->group(function () {
+        Route::get('/', [KeyAccountController::class, 'index'])->name('index');
+        Route::post('/gifts/import', [KeyAccountController::class, 'importGifts'])->name('gifts.import');
+        Route::get('/{keyAccount}', [KeyAccountController::class, 'show'])->name('show');
+        Route::post('/{keyAccount}/contacts', [KeyAccountController::class, 'storeContact'])->name('contacts.store');
+        Route::delete('/{keyAccount}/contacts/{contact}', [KeyAccountController::class, 'destroyContact'])->name('contacts.destroy');
+        Route::patch('/{keyAccount}/notes', [KeyAccountController::class, 'updateNotes'])->name('notes.update');
+    });
+
+    // Admin — manage users + activity log
     Route::middleware('can:manage_users')->group(function () {
         Route::resource('admin/users', UserController::class)->names('admin.users');
         Route::get('admin/activity-log', ActivityLogController::class)->name('admin.activity-log');
