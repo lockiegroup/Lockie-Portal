@@ -98,32 +98,7 @@
             </span>
             <button class="btn-ghost" onclick="openCatModal()">Manage Categories</button>
             <button class="btn-ghost" onclick="clearAllToOrder()" style="color:#dc2626;border-color:#fca5a5;">Clear To Order</button>
-            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-                <button class="btn-ghost" onclick="document.getElementById('sales-import-input').click()">
-                    Import Sales CSV
-                </button>
-                {{-- Saved substitution chips --}}
-                @foreach($substitutions as $sub)
-                <span id="sub-{{ $sub->id }}" style="display:inline-flex;align-items:center;gap:4px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:20px;padding:2px 8px 2px 10px;font-size:0.75rem;color:#334155;font-family:monospace;">
-                    {{ $sub->find }} → {{ $sub->replace }}
-                    <button onclick="deleteSubstitution({{ $sub->id }})" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:0.9rem;padding:0 2px;line-height:1;" title="Remove">&times;</button>
-                </span>
-                @endforeach
-                <button class="btn-ghost" onclick="document.getElementById('sub-add-form').style.display='flex'" style="font-size:0.75rem;padding:3px 10px;">+ Add Rule</button>
-                <span id="sub-add-form" style="display:none;align-items:center;gap:4px;">
-                    <input type="text" id="sub-find" placeholder="Find…"
-                        style="width:65px;border:1px solid #e2e8f0;border-radius:6px;padding:3px 6px;font-size:0.78rem;text-transform:uppercase;"
-                        oninput="this.value=this.value.toUpperCase()">
-                    <span style="font-size:0.75rem;color:#94a3b8;">→</span>
-                    <input type="text" id="sub-replace" placeholder="Replace…"
-                        style="width:65px;border:1px solid #e2e8f0;border-radius:6px;padding:3px 6px;font-size:0.78rem;text-transform:uppercase;"
-                        oninput="this.value=this.value.toUpperCase()">
-                    <button class="btn-ghost" onclick="addSubstitution()" style="font-size:0.75rem;padding:3px 10px;">Save</button>
-                    <button class="btn-ghost" onclick="document.getElementById('sub-add-form').style.display='none'" style="font-size:0.75rem;padding:3px 8px;">✕</button>
-                </span>
-            </div>
-            <input type="file" id="sales-import-input" accept=".csv,.tsv,.txt" style="display:none"
-                onchange="importSalesFile(this)">
+            <a href="{{ route('imports.index') }}" class="btn-ghost">Import Sales</a>
             <button id="sync-btn" onclick="runSync()"
                 style="display:flex;align-items:center;gap:7px;padding:8px 16px;background:#0f172a;color:white;border:none;border-radius:8px;font-size:0.875rem;font-weight:600;cursor:pointer;transition:background 0.15s;"
                 onmouseover="this.style.background='#1e293b'" onmouseout="this.style.background='#0f172a'">
@@ -659,38 +634,7 @@ function saveCatCurrency(catId, sym) {
 }
 document.querySelectorAll('.sw-total').forEach(renderTotal);
 
-// ── Code substitutions ────────────────────────────────────────────────────────
-function addSubstitution() {
-    const find    = document.getElementById('sub-find').value.trim().toUpperCase();
-    const replace = document.getElementById('sub-replace').value.trim().toUpperCase();
-    if (!find || !replace) return;
-    fetch('{{ route("stock-watchlist.substitutions.store") }}', {
-        method: 'POST',
-        headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ find, replace }),
-    })
-    .then(r => r.json())
-    .then(sub => {
-        const chip = document.createElement('span');
-        chip.id = `sub-${sub.id}`;
-        chip.style.cssText = 'display:inline-flex;align-items:center;gap:4px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:20px;padding:2px 8px 2px 10px;font-size:0.75rem;color:#334155;font-family:monospace;';
-        chip.innerHTML = `${escHtml(sub.find)} → ${escHtml(sub.replace)} <button onclick="deleteSubstitution(${sub.id})" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:0.9rem;padding:0 2px;line-height:1;" title="Remove">&times;</button>`;
-        document.getElementById('sub-add-form').before(chip);
-        document.getElementById('sub-find').value = '';
-        document.getElementById('sub-replace').value = '';
-        document.getElementById('sub-add-form').style.display = 'none';
-    })
-    .catch(() => alert('Failed to save substitution'));
-}
 
-function deleteSubstitution(id) {
-    fetch(`/stock-watchlist/substitutions/${id}`, {
-        method: 'DELETE',
-        headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
-    })
-    .then(r => r.json())
-    .then(d => { if (d.ok) document.getElementById(`sub-${id}`)?.remove(); });
-}
 
 // ── Clear To Order ────────────────────────────────────────────────────────────
 function clearAllToOrder() {
@@ -709,37 +653,6 @@ function clearAllToOrder() {
     });
 }
 
-// ── Sales CSV Import ──────────────────────────────────────────────────────────
-function importSalesFile(input) {
-    const file = input.files[0];
-    if (!file) return;
-    input.value = '';
-
-    const status = document.getElementById('sync-status');
-    status.textContent = 'Importing…';
-
-    const form = new FormData();
-    form.append('file', file);
-    form.append('_token', csrfToken);
-
-    fetch('{{ route("stock-watchlist.import-sales") }}', {
-        method: 'POST',
-        headers: { 'Accept': 'application/json' },
-        body: form,
-    })
-    .then(r => r.json())
-    .then(d => {
-        console.log('Sales import result:', d);
-        if (d.ok) {
-            status.textContent = `Imported ${d.months} month-rows for ${d.products} product(s) (${d.rows_processed} rows matched, ${d.rows_skipped} skipped)`;
-            setTimeout(() => location.reload(), 1500);
-        } else {
-            alert('Import failed: ' + (d.error || 'Unknown error'));
-            status.textContent = '';
-        }
-    })
-    .catch(() => { alert('Import request failed.'); status.textContent = ''; });
-}
 
 function escHtml(str) {
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');

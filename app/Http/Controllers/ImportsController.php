@@ -167,8 +167,15 @@ class ImportsController extends Controller
         $now    = now()->toDateTimeString();
         $userId = auth()->id();
 
-        $allCodes = array_values(array_unique(array_merge(...array_map('array_keys', $aggregated))));
-        KeyAccountSale::whereIn('account_code', $allCodes)->delete();
+        $codeSet = [];
+        foreach ($aggregated as $yearData) {
+            foreach (array_keys($yearData) as $code) {
+                $codeSet[$code] = true;
+            }
+        }
+        if (!empty($codeSet)) {
+            KeyAccountSale::whereIn('account_code', array_keys($codeSet))->delete();
+        }
 
         $insertRows = [];
         foreach ($aggregated as $year => $customers) {
