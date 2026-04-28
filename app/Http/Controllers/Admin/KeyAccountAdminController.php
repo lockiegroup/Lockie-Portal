@@ -8,6 +8,7 @@ use App\Models\KeyAccount;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class KeyAccountAdminController extends Controller
@@ -23,11 +24,24 @@ class KeyAccountAdminController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'account_code' => ['required', 'string', 'max:50', 'unique:key_accounts,account_code'],
+            'account_code' => ['required', 'string', 'max:50'],
             'name'         => ['required', 'string', 'max:200'],
             'type'         => ['required', 'in:key,growth'],
             'user_id'      => ['nullable', 'exists:users,id'],
         ]);
+
+        $existing = KeyAccount::withTrashed()->where('account_code', $data['account_code'])->first();
+
+        if ($existing && ! $existing->trashed()) {
+            return back()->withErrors(['account_code' => 'Account code already exists.'])->withInput();
+        }
+
+        if ($existing && $existing->trashed()) {
+            $existing->restore();
+            $existing->update($data);
+            ActivityLog::record('key_accounts.created', "Restored account {$data['account_code']}");
+            return back()->with('success', "Account {$data['account_code']} restored with existing history.");
+        }
 
         KeyAccount::create($data);
         ActivityLog::record('key_accounts.created', "Created account {$data['account_code']}");
@@ -38,7 +52,7 @@ class KeyAccountAdminController extends Controller
     public function update(Request $request, KeyAccount $keyAccount): RedirectResponse
     {
         $data = $request->validate([
-            'account_code' => ['required', 'string', 'max:50', 'unique:key_accounts,account_code,' . $keyAccount->id],
+            'account_code' => ['required', 'string', 'max:50', Rule::unique('key_accounts', 'account_code')->ignore($keyAccount->id)->whereNull('deleted_at')],
             'name'         => ['required', 'string', 'max:200'],
             'type'         => ['required', 'in:key,growth'],
             'user_id'      => ['nullable', 'exists:users,id'],

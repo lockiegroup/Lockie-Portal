@@ -5,9 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class KeyAccount extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = ['account_code', 'name', 'type', 'user_id', 'notes'];
 
     public function user(): BelongsTo
