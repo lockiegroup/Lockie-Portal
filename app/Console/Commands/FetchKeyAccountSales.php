@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Cache;
 
 class FetchKeyAccountSales extends Command
 {
-    protected $signature   = 'key-accounts:fetch-sales {--year= : Specific year to fetch (defaults to current and previous year)} {--debug : Dump raw API date fields for first 10 orders to diagnose mismatches}';
+    protected $signature   = 'key-accounts:fetch-sales {--year= : Specific year to fetch (defaults to current and previous year)} {--debug= : Dump orders for a specific customer code, e.g. --debug=BESGROUP}';
     protected $description = 'Pre-fetch and cache Key Account quarterly sales figures from Unleashed';
 
     public function handle(): int
@@ -31,7 +31,8 @@ class FetchKeyAccountSales extends Command
         );
 
         if ($this->option('debug')) {
-            $this->debugDumpOrders($unleashed, $years[count($years) - 1]);
+            $year = $this->option('year') ? (int) $this->option('year') : now()->year;
+            $this->debugDumpCustomer($unleashed, $year, strtoupper($this->option('debug')));
             return 0;
         }
 
@@ -69,31 +70,40 @@ class FetchKeyAccountSales extends Command
         return 0;
     }
 
-    private function debugDumpOrders(UnleashedService $unleashed, int $year): void
+    private function debugDumpCustomer(UnleashedService $unleashed, int $year, string $customerCode): void
     {
-        $this->info("DEBUG: Fetching first page of SalesOrders for {$year}-01-01 to {$year}-12-31...");
+        $this->info("DEBUG: Fetching all SalesOrders for {$year}, filtering to {$customerCode}...");
 
-        $data   = $unleashed->get('SalesOrders', [
-            'startDate'  => "{$year}-01-01",
-            'endDate'    => "{$year}-12-31",
-            'pageSize'   => 10,
-            'pageNumber' => 1,
-        ]);
+        $orders = $unleashed->paginate('SalesOrders', [
+            'startDate' => "{$year}-01-01",
+            'endDate'   => "{$year}-12-31",
+        ], 500);
 
-        $orders = $data['Items'] ?? [];
-        $this->info('Total pages: ' . ($data['Pagination']['NumberOfPages'] ?? '?') . ', Total items: ' . ($data['Pagination']['NumberOfItems'] ?? '?'));
-        $this->line('');
+        $this->info('Total orders returned: ' . count($orders));
 
-        foreach (array_slice($orders, 0, 10) as $order) {
-            $this->line('Order: ' . ($order['OrderNumber'] ?? 'N/A'));
-            $this->line('  CustomerCode : ' . ($order['Customer']['CustomerCode'] ?? 'null'));
-            $this->line('  OrderStatus  : ' . ($order['OrderStatus'] ?? 'null'));
-            $this->line('  SubTotal     : ' . ($order['SubTotal'] ?? 'null'));
-            $this->line('  OrderDate    : ' . ($order['OrderDate'] ?? 'null'));
-            $this->line('  RequiredDate : ' . ($order['RequiredDate'] ?? 'null'));
-            $this->line('  CompletedDate: ' . ($order['CompletedDate'] ?? 'null'));
-            $this->line('  CreatedOn    : ' . ($order['CreatedOn'] ?? 'null'));
-            $this->line('');
+        $found = 0;
+        foreach ($orders as $order) {
+            if (($order['Customer']['CustomerCode'] ?? '') !== $customerCode) continue;
+            $found++;
+
+            $od  = $unleashed->parseDate($order['OrderDate']    ?? null) ?? 'null';
+            $rd  = $unleashed->parseDate($order['RequiredDate'] ?? null) ?? 'null';
+            $cd  = $unleashed->parseDate($order['CompletedDate'] ?? null) ?? 'null';
+            $cr  = $unleashed->parseDate($order['CreatedOn']    ?? null) ?? 'null';
+
+            $month   = $od !== 'null' ? (int) date('n', strtotime($od)) : 0;
+            $quarter = $month > 0 ? 'Q' . (int) ceil($month / 3) : '?';
+
+            $this->line(sprintf(
+                '%-15s  %-12s  OrderDate=%-12s  Required=%-12s  Completed=%-12s  Created=%-12s  £%-10s  %s',
+                $order['OrderNumber'] ?? 'N/A',
+                $order['OrderStatus'] ?? '?',
+                $od, $rd, $cd, $cr,
+                $order['SubTotal'] ?? '?',
+                $quarter
+            ));
         }
+
+        $this->info("{$found} {$customerCode} orders found.");
     }
 }
