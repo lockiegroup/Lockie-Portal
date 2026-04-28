@@ -288,59 +288,52 @@ class UnleashedService
 
     /**
      * Fetch quarterly sales totals for each customer code for a given year.
-     * Results are cached per customer+year (1 hour for current year, 24 hours for past).
+     * Fetches all complete invoices for the year in one pass, aggregates by customer code in PHP.
+     * Cached per year (1 hour for current year, 24 hours for past years).
      * Returns ['BESGROUP' => ['total' => 0.0, 'q1' => 0.0, 'q2' => 0.0, 'q3' => 0.0, 'q4' => 0.0], ...]
      */
     public function fetchSalesByCustomerCodes(array $customerCodes, int $year): array
     {
         if (empty($customerCodes)) return [];
 
-        $ttl       = ($year === (int) date('Y')) ? 3600 : 86400;
-        $uncached  = [];
-        $results   = [];
+        $ttl      = ($year === (int) date('Y')) ? 3600 : 86400;
+        $cacheKey = "unleashed_ka_sales_year_{$year}";
 
-        foreach ($customerCodes as $code) {
-            $cached = Cache::get("unleashed_ka_sales_{$year}_{$code}");
-            if ($cached !== null) {
-                $results[$code] = $cached;
-            } else {
-                $uncached[] = $code;
-                $results[$code] = ['total' => 0.0, 'q1' => 0.0, 'q2' => 0.0, 'q3' => 0.0, 'q4' => 0.0];
+        $yearData = Cache::remember($cacheKey, $ttl, function () use ($year) {
+            $invoices = $this->paginate('SalesInvoices', [
+                'startDate'     => "{$year}-01-01",
+                'invoiceStatus' => 'Complete',
+            ], 500);
+
+            $aggregated = [];
+            foreach ($invoices as $invoice) {
+                $date        = $this->parseDate($invoice['InvoiceDate'] ?? null);
+                $customerCode = $invoice['Customer']['CustomerCode'] ?? null;
+                if (!$date || !$customerCode) continue;
+
+                // Filter to the requested year (in case Unleashed returns stray results)
+                if ((int) substr($date, 0, 4) !== $year) continue;
+
+                $subtotal = (float) ($invoice['SubTotal'] ?? 0);
+                if ($subtotal <= 0) continue;
+
+                $month   = (int) date('n', strtotime($date));
+                $quarter = 'q' . (int) ceil($month / 3);
+
+                if (!isset($aggregated[$customerCode])) {
+                    $aggregated[$customerCode] = ['total' => 0.0, 'q1' => 0.0, 'q2' => 0.0, 'q3' => 0.0, 'q4' => 0.0];
+                }
+                $aggregated[$customerCode]['total']   += $subtotal;
+                $aggregated[$customerCode][$quarter]  += $subtotal;
             }
-        }
 
-        if (empty($uncached)) return $results;
-
-        $responses = Http::pool(function ($pool) use ($uncached, $year) {
-            $calls = [];
-            foreach ($uncached as $code) {
-                $qs = http_build_query([
-                    'customerCode'  => $code,
-                    'startDate'     => "{$year}-01-01",
-                    'endDate'       => "{$year}-12-31",
-                    'invoiceStatus' => 'Complete',
-                    'pageSize'      => 500,
-                    'pageNumber'    => 1,
-                ]);
-                $calls[] = $pool->as($code)->timeout(30)->withHeaders($this->headers($qs))->get(self::BASE_URL . '/SalesInvoices?' . $qs);
-            }
-            return $calls;
+            return $aggregated;
         });
 
-        foreach ($uncached as $code) {
-            $res = $responses[$code] ?? null;
-            if ($res && !($res instanceof \Throwable) && !$res->failed()) {
-                foreach ($res->json()['Items'] ?? [] as $invoice) {
-                    $date     = $this->parseDate($invoice['InvoiceDate'] ?? null);
-                    $subtotal = (float) ($invoice['SubTotal'] ?? 0);
-                    if (!$date || $subtotal <= 0) continue;
-                    $month   = (int) date('n', strtotime($date));
-                    $quarter = 'q' . (int) ceil($month / 3);
-                    $results[$code]['total']    += $subtotal;
-                    $results[$code][$quarter]   += $subtotal;
-                }
-            }
-            Cache::put("unleashed_ka_sales_{$year}_{$code}", $results[$code], $ttl);
+        $empty = ['total' => 0.0, 'q1' => 0.0, 'q2' => 0.0, 'q3' => 0.0, 'q4' => 0.0];
+        $results = [];
+        foreach ($customerCodes as $code) {
+            $results[$code] = $yearData[$code] ?? $empty;
         }
 
         return $results;
