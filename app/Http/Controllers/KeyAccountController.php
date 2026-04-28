@@ -151,15 +151,14 @@ class KeyAccountController extends Controller
                 if ($status === 'cancelled') continue;
 
                 if (is_numeric($rawDate)) {
-                    $dt    = ExcelDate::excelToDateTimeObject($rawDate);
-                    $year  = (int) $dt->format('Y');
-                    $month = (int) $dt->format('n');
+                    $dt = ExcelDate::excelToDateTimeObject($rawDate);
                 } else {
-                    $ts = strtotime((string) $rawDate);
-                    if (!$ts) continue;
-                    $year  = (int) date('Y', $ts);
-                    $month = (int) date('n', $ts);
+                    $dt = \DateTime::createFromFormat('d/m/Y', (string) $rawDate)
+                       ?: \DateTime::createFromFormat('Y-m-d', (string) $rawDate);
+                    if (!$dt) continue;
                 }
+                $year  = (int) $dt->format('Y');
+                $month = (int) $dt->format('n');
 
                 $quarter = 'q' . (int) ceil($month / 3);
                 $aggregated[$year][$code] ??= ['total' => 0.0, 'q1' => 0.0, 'q2' => 0.0, 'q3' => 0.0, 'q4' => 0.0];
