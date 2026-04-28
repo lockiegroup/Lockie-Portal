@@ -310,7 +310,8 @@ class UnleashedService
             $aggregated = [];
 
             foreach ($orders as $order) {
-                if (strtolower($order['OrderStatus'] ?? '') === 'cancelled') continue;
+                $status = strtolower($order['OrderStatus'] ?? '');
+                if (!in_array($status, ['completed', 'invoiced'], true)) continue;
 
                 $customerCode = $order['Customer']['CustomerCode'] ?? null;
                 if (!$customerCode) continue;
