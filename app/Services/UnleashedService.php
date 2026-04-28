@@ -300,10 +300,12 @@ class UnleashedService
         $cacheKey = "unleashed_ka_sales_year_{$year}";
 
         $yearData = Cache::remember($cacheKey, $ttl, function () use ($year) {
-            // Use SalesOrders (Completed + Invoiced) — matches Unleashed Sales Enquiry view
+            // Use SalesOrders (Completed + Invoiced) — matches Unleashed Sales Enquiry view.
+            // No endDate: orders placed in Dec may complete in Jan of the next year,
+            // so we fetch from startDate onwards and filter by OrderDate year in PHP.
             $raw = $this->parallelPaginate([
-                'completed' => ['SalesOrders', ['orderStatus' => 'Completed', 'startDate' => "{$year}-01-01", 'endDate' => "{$year}-12-31"]],
-                'invoiced'  => ['SalesOrders', ['orderStatus' => 'Invoiced',  'startDate' => "{$year}-01-01", 'endDate' => "{$year}-12-31"]],
+                'completed' => ['SalesOrders', ['orderStatus' => 'Completed', 'startDate' => "{$year}-01-01"]],
+                'invoiced'  => ['SalesOrders', ['orderStatus' => 'Invoiced',  'startDate' => "{$year}-01-01"]],
             ], 200);
 
             $seen       = [];
