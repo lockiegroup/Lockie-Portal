@@ -16,3 +16,6 @@ Schedule::command('print:sync')->everyThirtyMinutes();
 
 // Nightly reconciliation: correct assembly archive labels (completed vs deleted)
 Schedule::command('print:fix-archive-labels', ['--include-completed'])->dailyAt('02:00');
+
+// Pre-fetch Key Account quarterly sales from Unleashed nightly
+Schedule::command('key-accounts:fetch-sales')->dailyAt('02:30');

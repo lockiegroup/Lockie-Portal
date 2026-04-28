@@ -300,21 +300,30 @@ class UnleashedService
         $cacheKey = "unleashed_ka_sales_year_{$year}";
 
         $yearData = Cache::remember($cacheKey, $ttl, function () use ($year) {
-            $invoices = $this->paginateFast('SalesInvoices', [
-                'startDate'     => "{$year}-01-01",
-                'invoiceStatus' => 'Complete',
-            ], 500);
+            // Use SalesOrders (Completed + Invoiced) — matches Unleashed Sales Enquiry view
+            $raw = $this->parallelPaginate([
+                'completed' => ['SalesOrders', ['orderStatus' => 'Completed', 'startDate' => "{$year}-01-01", 'endDate' => "{$year}-12-31"]],
+                'invoiced'  => ['SalesOrders', ['orderStatus' => 'Invoiced',  'startDate' => "{$year}-01-01", 'endDate' => "{$year}-12-31"]],
+            ], 200);
 
+            $seen       = [];
             $aggregated = [];
-            foreach ($invoices as $invoice) {
-                $date        = $this->parseDate($invoice['InvoiceDate'] ?? null);
-                $customerCode = $invoice['Customer']['CustomerCode'] ?? null;
-                if (!$date || !$customerCode) continue;
 
-                // Filter to the requested year (in case Unleashed returns stray results)
+            foreach (array_merge($raw['completed'], $raw['invoiced']) as $order) {
+                $guid = $order['Guid'] ?? null;
+                if ($guid !== null && isset($seen[$guid])) continue;
+                if ($guid !== null) $seen[$guid] = true;
+
+                $customerCode = $order['Customer']['CustomerCode'] ?? null;
+                if (!$customerCode) continue;
+
+                $rawDate = $order['CompletedDate'] ?? $order['OrderDate'] ?? $order['CreatedOn'] ?? null;
+                $date    = $this->parseDate($rawDate);
+                if (!$date) continue;
+
                 if ((int) substr($date, 0, 4) !== $year) continue;
 
-                $subtotal = (float) ($invoice['SubTotal'] ?? 0);
+                $subtotal = (float) ($order['SubTotal'] ?? 0);
                 if ($subtotal <= 0) continue;
 
                 $month   = (int) date('n', strtotime($date));
