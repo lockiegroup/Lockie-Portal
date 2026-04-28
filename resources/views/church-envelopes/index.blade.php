@@ -27,7 +27,12 @@
                 <label style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;background:white;border:1px solid #cbd5e1;border-radius:8px;padding:8px 12px;cursor:pointer;">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
                     <span id="parse-file-label" style="font-size:13px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Choose .xlsx file…</span>
-                    <input type="file" id="parse-file" accept=".xlsx,.xls" style="display:none;" onchange="document.getElementById('parse-file-label').textContent=this.files[0]?.name||'Choose .xlsx file…'">
+                    <input type="file" id="parse-file" accept=".xlsx,.xls" style="display:none;" onchange="
+                        const f=this.files[0];
+                        document.getElementById('parse-file-label').textContent=f?.name||'Choose .xlsx file…';
+                        const ac=document.getElementById('account_code');
+                        if(f&&ac&&!ac.value) ac.value=f.name.replace(/\.[^.]+$/,'');
+                    ">
                 </label>
                 <button type="button" id="parse-btn" onclick="loadFromFile()"
                     style="background:#1e293b;color:white;border:none;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;flex-shrink:0;">
@@ -37,8 +42,22 @@
             <p id="parse-status" style="font-size:12px;margin:10px 0 0 0;display:none;"></p>
         </div>
 
-        <form action="{{ route('church-envelopes.generate') }}" method="POST" class="space-y-6">
+        <form action="{{ route('church-envelopes.generate') }}" method="POST" class="space-y-6" id="envelope-form">
             @csrf
+
+            {{-- Account Code --}}
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <div class="flex items-center gap-3">
+                    <div class="flex-1">
+                        <label for="account_code" class="block text-sm font-medium text-slate-700 mb-1.5">
+                            Account Code <span class="text-slate-400 font-normal text-xs">(used as filename)</span>
+                        </label>
+                        <input type="text" name="account_code" id="account_code" value="{{ old('account_code') }}"
+                            placeholder="e.g. OO167"
+                            class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
+                    </div>
+                </div>
+            </div>
 
             {{-- Schedule --}}
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
@@ -492,6 +511,67 @@
                     btn.textContent = 'Load from file';
                 });
         }
+
+        // ── Download with Save As dialog ─────────────────────────────────────
+        document.getElementById('envelope-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const form        = this;
+            const btn         = form.querySelector('button[type="submit"]');
+            const accountCode = document.getElementById('account_code').value.trim();
+            const suggestedName = (accountCode || 'church-envelopes') + '.xlsx';
+
+            // Open Save As picker immediately (must be first async call to keep user gesture)
+            let fileHandle = null;
+            if (window.showSaveFilePicker) {
+                try {
+                    fileHandle = await window.showSaveFilePicker({
+                        suggestedName: suggestedName,
+                        types: [{ description: 'Excel Workbook', accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] } }],
+                    });
+                } catch (err) {
+                    if (err.name === 'AbortError') return; // User cancelled picker
+                    fileHandle = null; // Picker not supported in this context — fall through to blob download
+                }
+            }
+
+            btn.disabled    = true;
+            btn.textContent = 'Generating…';
+
+            try {
+                const response = await fetch(form.action, { method: 'POST', body: new FormData(form) });
+                const contentType = response.headers.get('content-type') || '';
+
+                // If server returned HTML (e.g. validation errors), fall back to a full submit
+                if (!contentType.includes('spreadsheetml') && !contentType.includes('octet-stream')) {
+                    form.submit();
+                    return;
+                }
+
+                const blob = await response.blob();
+
+                if (fileHandle) {
+                    const writable = await fileHandle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+                } else {
+                    // Fallback: trigger browser download
+                    const url = URL.createObjectURL(blob);
+                    const a   = document.createElement('a');
+                    a.href     = url;
+                    a.download = suggestedName;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Failed to generate file. Please try again.');
+            } finally {
+                btn.disabled    = false;
+                btn.textContent = 'Download Excel';
+            }
+        });
 
         // Default to V4 on fresh load (no old() values)
         @unless(old('vt'))

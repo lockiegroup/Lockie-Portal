@@ -45,6 +45,7 @@ class ChurchEnvelopeController extends Controller
             'specials.*.show_date' => 'nullable',
             'specials.*.position'  => 'nullable|in:before,after,back',
             'specials.*.vt7'       => 'nullable|string|max:200',
+            'account_code'         => 'nullable|string|max:50',
         ]);
 
         $startDate = Carbon::parse($request->start_date);
@@ -222,9 +223,12 @@ class ChurchEnvelopeController extends Controller
             "Generated church envelopes for {$request->input('church')} ({$request->input('num_weeks')} weeks)"
         );
 
+        $accountCode = preg_replace('/[^A-Za-z0-9_\-]/', '', trim($request->input('account_code', '')));
+        $fileName    = ($accountCode ?: 'church-envelopes-' . $startDate->format('Y')) . '.xlsx';
+
         return response()->download(
             $tmpFile,
-            'church-envelopes-' . $startDate->format('Y') . '.xlsx',
+            $fileName,
             ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
         )->deleteFileAfterSend(true);
     }
