@@ -300,21 +300,17 @@ class UnleashedService
         $cacheKey = "unleashed_ka_sales_year_{$year}";
 
         $yearData = Cache::remember($cacheKey, $ttl, function () use ($year) {
-            // Use SalesOrders (Completed + Invoiced) — matches Unleashed Sales Enquiry view.
-            // No endDate: orders placed in Dec may complete in Jan of the next year,
-            // so we fetch from startDate onwards and filter by OrderDate year in PHP.
-            $raw = $this->parallelPaginate([
-                'completed' => ['SalesOrders', ['orderStatus' => 'Completed', 'startDate' => "{$year}-01-01"]],
-                'invoiced'  => ['SalesOrders', ['orderStatus' => 'Invoiced',  'startDate' => "{$year}-01-01"]],
-            ], 200);
+            // Match Unleashed Sales Enquiry: all orders by OrderDate range, exclude Cancelled.
+            // Sequential paginate avoids hammering the API with concurrent requests.
+            $orders = $this->paginate('SalesOrders', [
+                'startDate' => "{$year}-01-01",
+                'endDate'   => "{$year}-12-31",
+            ], 500);
 
-            $seen       = [];
             $aggregated = [];
 
-            foreach (array_merge($raw['completed'], $raw['invoiced']) as $order) {
-                $guid = $order['Guid'] ?? null;
-                if ($guid !== null && isset($seen[$guid])) continue;
-                if ($guid !== null) $seen[$guid] = true;
+            foreach ($orders as $order) {
+                if (strtolower($order['OrderStatus'] ?? '') === 'cancelled') continue;
 
                 $customerCode = $order['Customer']['CustomerCode'] ?? null;
                 if (!$customerCode) continue;
@@ -322,8 +318,6 @@ class UnleashedService
                 $rawDate = $order['OrderDate'] ?? $order['CreatedOn'] ?? null;
                 $date    = $this->parseDate($rawDate);
                 if (!$date) continue;
-
-                if ((int) substr($date, 0, 4) !== $year) continue;
 
                 $subtotal = (float) ($order['SubTotal'] ?? 0);
                 if ($subtotal <= 0) continue;
