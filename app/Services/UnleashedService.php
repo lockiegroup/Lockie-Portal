@@ -300,7 +300,7 @@ class UnleashedService
         $cacheKey = "unleashed_ka_sales_year_{$year}";
 
         $yearData = Cache::remember($cacheKey, $ttl, function () use ($year) {
-            $invoices = $this->paginate('SalesInvoices', [
+            $invoices = $this->paginateFast('SalesInvoices', [
                 'startDate'     => "{$year}-01-01",
                 'invoiceStatus' => 'Complete',
             ], 500);
