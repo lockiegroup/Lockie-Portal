@@ -288,7 +288,9 @@ class UnleashedService
 
     /**
      * Fetch quarterly sales totals for each customer code for a given year.
-     * Fetches all complete invoices for the year in one pass, aggregates by customer code in PHP.
+     * Queries per customer using customerCode filter so each response is small
+     * enough to fit on one page — this avoids the Unleashed pagination bug where
+     * date-filtered all-customer queries repeat page 1 on every subsequent page.
      * Cached per year (1 hour for current year, 24 hours for past years).
      * Returns ['BESGROUP' => ['total' => 0.0, 'q1' => 0.0, 'q2' => 0.0, 'q3' => 0.0, 'q4' => 0.0], ...]
      */
@@ -298,46 +300,60 @@ class UnleashedService
 
         $ttl      = ($year === (int) date('Y')) ? 3600 : 86400;
         $cacheKey = "unleashed_ka_sales_year_{$year}";
+        $empty    = ['total' => 0.0, 'q1' => 0.0, 'q2' => 0.0, 'q3' => 0.0, 'q4' => 0.0];
 
-        $yearData = Cache::remember($cacheKey, $ttl, function () use ($year) {
-            // Match Unleashed Sales Enquiry: all orders by OrderDate range, exclude Cancelled.
-            // pageSize=200: Unleashed has a pagination bug with larger page sizes where it
-            // repeats page 1 on every subsequent page, causing us to miss older orders.
-            // paginateFast deduplicates by GUID so repeated pages don't inflate totals.
-            $orders = $this->paginateFast('SalesOrders', [
-                'startDate' => "{$year}-01-01",
-                'endDate'   => "{$year}-12-31",
-            ], 200);
+        $yearData = Cache::remember($cacheKey, $ttl, function () use ($year, $customerCodes, $empty) {
+            // Query per customer in parallel. Each customer has far fewer than 200 orders
+            // per year so the result fits in one page — avoiding Unleashed's pagination bug
+            // where date-filtered multi-customer queries repeat page 1 on every page.
+            $responses = Http::pool(function ($pool) use ($customerCodes, $year) {
+                $calls = [];
+                foreach ($customerCodes as $code) {
+                    $qs = http_build_query([
+                        'customerCode' => $code,
+                        'startDate'    => "{$year}-01-01",
+                        'pageSize'     => 200,
+                        'pageNumber'   => 1,
+                    ]);
+                    $calls[] = $pool->as($code)
+                        ->timeout(60)
+                        ->withHeaders($this->headers($qs))
+                        ->get(self::BASE_URL . '/SalesOrders?' . $qs);
+                }
+                return $calls;
+            });
 
             $aggregated = [];
 
-            foreach ($orders as $order) {
-                if (strtolower($order['OrderStatus'] ?? '') === 'cancelled') continue;
+            foreach ($customerCodes as $code) {
+                $res = $responses[$code] ?? null;
+                if (!$res || $res instanceof \Throwable || $res->failed()) continue;
 
-                $customerCode = $order['Customer']['CustomerCode'] ?? null;
-                if (!$customerCode) continue;
+                foreach ($res->json()['Items'] ?? [] as $order) {
+                    if (strtolower($order['OrderStatus'] ?? '') === 'cancelled') continue;
 
-                $rawDate = $order['OrderDate'] ?? $order['CreatedOn'] ?? null;
-                $date    = $this->parseDate($rawDate);
-                if (!$date) continue;
+                    // Guard against customerCode filter being ignored by Unleashed
+                    if (($order['Customer']['CustomerCode'] ?? null) !== $code) continue;
 
-                $subtotal = (float) ($order['SubTotal'] ?? 0);
-                if ($subtotal <= 0) continue;
+                    $rawDate = $order['OrderDate'] ?? $order['CreatedOn'] ?? null;
+                    $date    = $this->parseDate($rawDate);
+                    if (!$date || (int) substr($date, 0, 4) !== $year) continue;
 
-                $month   = (int) date('n', strtotime($date));
-                $quarter = 'q' . (int) ceil($month / 3);
+                    $subtotal = (float) ($order['SubTotal'] ?? 0);
+                    if ($subtotal <= 0) continue;
 
-                if (!isset($aggregated[$customerCode])) {
-                    $aggregated[$customerCode] = ['total' => 0.0, 'q1' => 0.0, 'q2' => 0.0, 'q3' => 0.0, 'q4' => 0.0];
+                    $month   = (int) date('n', strtotime($date));
+                    $quarter = 'q' . (int) ceil($month / 3);
+
+                    $aggregated[$code] ??= $empty;
+                    $aggregated[$code]['total']   += $subtotal;
+                    $aggregated[$code][$quarter]  += $subtotal;
                 }
-                $aggregated[$customerCode]['total']   += $subtotal;
-                $aggregated[$customerCode][$quarter]  += $subtotal;
             }
 
             return $aggregated;
         });
 
-        $empty = ['total' => 0.0, 'q1' => 0.0, 'q2' => 0.0, 'q3' => 0.0, 'q4' => 0.0];
         $results = [];
         foreach ($customerCodes as $code) {
             $results[$code] = $yearData[$code] ?? $empty;
