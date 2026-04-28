@@ -192,8 +192,9 @@ class ImportsController extends Controller
             }
         }
 
-        if (!empty($monthly)) {
-            DB::table('stock_watchlist_sales')->whereIn('product_code', array_keys($monthly))->delete();
+        // Wipe all watchlist sales so stale data from previous imports doesn't linger
+        if (!empty($watchlistCodes)) {
+            DB::table('stock_watchlist_sales')->whereIn('product_code', $watchlistCodes)->delete();
         }
 
         foreach (array_chunk($insertRows, 200) as $chunk) {
