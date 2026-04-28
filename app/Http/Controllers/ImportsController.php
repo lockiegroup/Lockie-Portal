@@ -167,16 +167,6 @@ class ImportsController extends Controller
         $now    = now()->toDateTimeString();
         $userId = auth()->id();
 
-        $codeSet = [];
-        foreach ($aggregated as $yearData) {
-            foreach (array_keys($yearData) as $code) {
-                $codeSet[$code] = true;
-            }
-        }
-        if (!empty($codeSet)) {
-            KeyAccountSale::whereIn('account_code', array_keys($codeSet))->delete();
-        }
-
         $insertRows = [];
         foreach ($aggregated as $year => $customers) {
             foreach ($customers as $code => $data) {
@@ -191,9 +181,12 @@ class ImportsController extends Controller
             }
         }
 
-        foreach (array_chunk($insertRows, 200) as $chunk) {
-            DB::table('key_account_sales')->insert($chunk);
-        }
+        DB::transaction(function () use ($insertRows) {
+            DB::table('key_account_sales')->delete();
+            foreach (array_chunk($insertRows, 200) as $chunk) {
+                DB::table('key_account_sales')->insert($chunk);
+            }
+        });
 
         return count($insertRows);
     }
