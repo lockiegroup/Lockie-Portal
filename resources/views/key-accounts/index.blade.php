@@ -76,7 +76,13 @@
                         <th class="text-left px-4 py-3 font-semibold text-slate-600 whitespace-nowrap">Last Contact</th>
                         <th class="text-left px-4 py-3 font-semibold text-slate-600 whitespace-nowrap">Last Gift</th>
                         @foreach($histYears as $hy)
-                        <th class="text-right px-4 py-3 font-semibold text-slate-600 whitespace-nowrap">{{ $hy }}</th>
+                        <th class="text-right px-4 py-3 font-semibold text-slate-600 whitespace-nowrap cursor-pointer select-none hover:text-slate-900" onclick="toggleYear({{ $hy }})">
+                            {{ $hy }}&nbsp;<span class="year-chevron-{{ $hy }} text-slate-400 text-xs font-normal">▸</span>
+                        </th>
+                        <th class="text-right px-2 py-3 font-medium text-slate-400 text-xs whitespace-nowrap hidden" data-year-expand="{{ $hy }}">Q1</th>
+                        <th class="text-right px-2 py-3 font-medium text-slate-400 text-xs whitespace-nowrap hidden" data-year-expand="{{ $hy }}">Q2</th>
+                        <th class="text-right px-2 py-3 font-medium text-slate-400 text-xs whitespace-nowrap hidden" data-year-expand="{{ $hy }}">Q3</th>
+                        <th class="text-right px-2 py-3 font-medium text-slate-400 text-xs whitespace-nowrap hidden" data-year-expand="{{ $hy }}">Q4</th>
                         @endforeach
                         <th class="text-right px-4 py-3 font-semibold text-slate-600 whitespace-nowrap">Q1</th>
                         <th class="text-right px-4 py-3 font-semibold text-slate-600 whitespace-nowrap">Q2</th>
@@ -109,10 +115,15 @@
                             {{ $lastGift ? $lastGift->format('d M Y') : '—' }}
                         </td>
                         @foreach($histYears as $hy)
-                        @php $hval = $salesByYear[$hy][$account->account_code]['total'] ?? 0; @endphp
+                        @php $hdata = $salesByYear[$hy][$account->account_code] ?? ['total' => 0, 'q1' => 0, 'q2' => 0, 'q3' => 0, 'q4' => 0]; @endphp
                         <td class="px-4 py-3 text-right text-slate-600 whitespace-nowrap">
-                            {{ $hval > 0 ? '£' . number_format($hval, 2) : '—' }}
+                            {{ $hdata['total'] > 0 ? '£' . number_format($hdata['total'], 2) : '—' }}
                         </td>
+                        @foreach(['q1','q2','q3','q4'] as $hq)
+                        <td class="px-2 py-3 text-right text-slate-400 text-xs whitespace-nowrap hidden" data-year-expand="{{ $hy }}">
+                            {{ $hdata[$hq] > 0 ? '£' . number_format($hdata[$hq], 2) : '—' }}
+                        </td>
+                        @endforeach
                         @endforeach
                         @foreach(['q1','q2','q3','q4'] as $qi => $q)
                         @php
@@ -138,6 +149,15 @@
     @endif
 
 </main>
+
+<script>
+function toggleYear(year) {
+    document.querySelectorAll('[data-year-expand="' + year + '"]').forEach(el => el.classList.toggle('hidden'));
+    document.querySelectorAll('.year-chevron-' + year).forEach(el => {
+        el.textContent = el.textContent.trim() === '▸' ? '▾' : '▸';
+    });
+}
+</script>
 
 {{-- Gift import modal --}}
 <div id="gift-import-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40">
