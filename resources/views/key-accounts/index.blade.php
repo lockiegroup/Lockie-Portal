@@ -13,6 +13,12 @@
                 Manage Accounts
             </a>
             @endcan
+            {{-- Sales import --}}
+            <button onclick="document.getElementById('sales-import-modal').classList.remove('hidden')"
+                class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50 transition">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Import Sales
+            </button>
             {{-- Gift import --}}
             <button onclick="document.getElementById('gift-import-modal').classList.remove('hidden')"
                 class="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition">
@@ -121,6 +127,29 @@
     @endif
 
 </main>
+
+{{-- Sales import modal --}}
+<div id="sales-import-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
+        <h3 class="text-base font-semibold text-slate-800 mb-1">Import Sales from Unleashed</h3>
+        <p class="text-sm text-slate-500 mb-1">Export from <strong>Reports → Sales → Sales Enquiry</strong> in Unleashed.</p>
+        <p class="text-sm text-slate-500 mb-4">Required columns: <strong>Order Date, Customer Code, Sub Total, Status</strong></p>
+        @error('sales_file')
+        <div class="mb-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-3 py-2">{{ $message }}</div>
+        @enderror
+        <form action="{{ route('key-accounts.sales.import') }}" method="POST" enctype="multipart/form-data">
+            @csrf
+            <input type="file" name="file" accept=".xlsx,.xls,.csv" required
+                class="block w-full text-sm text-slate-600 mb-4 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-slate-900 file:text-white file:font-medium file:cursor-pointer">
+            <div class="flex gap-3 justify-end">
+                <button type="button" onclick="document.getElementById('sales-import-modal').classList.add('hidden')"
+                    class="px-4 py-2 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
+                <button type="submit"
+                    class="px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-semibold hover:bg-slate-700">Import</button>
+            </div>
+        </form>
+    </div>
+</div>
 
 {{-- Gift import modal --}}
 <div id="gift-import-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40">
