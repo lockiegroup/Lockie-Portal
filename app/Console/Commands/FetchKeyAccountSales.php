@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Cache;
 
 class FetchKeyAccountSales extends Command
 {
-    protected $signature   = 'key-accounts:fetch-sales {--year= : Specific year to fetch (defaults to current and previous year)}';
+    protected $signature   = 'key-accounts:fetch-sales {--year= : Specific year to fetch (defaults to current and previous year)} {--debug : Dump raw API date fields for first 10 orders to diagnose mismatches}';
     protected $description = 'Pre-fetch and cache Key Account quarterly sales figures from Unleashed';
 
     public function handle(): int
@@ -29,6 +29,11 @@ class FetchKeyAccountSales extends Command
             config('services.unleashed.id'),
             config('services.unleashed.key')
         );
+
+        if ($this->option('debug')) {
+            $this->debugDumpOrders($unleashed, $years[count($years) - 1]);
+            return 0;
+        }
 
         foreach ($years as $year) {
             $this->info("Fetching {$year} sales...");
@@ -62,5 +67,33 @@ class FetchKeyAccountSales extends Command
 
         $this->info('Done.');
         return 0;
+    }
+
+    private function debugDumpOrders(UnleashedService $unleashed, int $year): void
+    {
+        $this->info("DEBUG: Fetching first page of SalesOrders for {$year}-01-01 to {$year}-12-31...");
+
+        $data   = $unleashed->get('SalesOrders', [
+            'startDate'  => "{$year}-01-01",
+            'endDate'    => "{$year}-12-31",
+            'pageSize'   => 10,
+            'pageNumber' => 1,
+        ]);
+
+        $orders = $data['Items'] ?? [];
+        $this->info('Total pages: ' . ($data['Pagination']['NumberOfPages'] ?? '?') . ', Total items: ' . ($data['Pagination']['NumberOfItems'] ?? '?'));
+        $this->line('');
+
+        foreach (array_slice($orders, 0, 10) as $order) {
+            $this->line('Order: ' . ($order['OrderNumber'] ?? 'N/A'));
+            $this->line('  CustomerCode : ' . ($order['Customer']['CustomerCode'] ?? 'null'));
+            $this->line('  OrderStatus  : ' . ($order['OrderStatus'] ?? 'null'));
+            $this->line('  SubTotal     : ' . ($order['SubTotal'] ?? 'null'));
+            $this->line('  OrderDate    : ' . ($order['OrderDate'] ?? 'null'));
+            $this->line('  RequiredDate : ' . ($order['RequiredDate'] ?? 'null'));
+            $this->line('  CompletedDate: ' . ($order['CompletedDate'] ?? 'null'));
+            $this->line('  CreatedOn    : ' . ($order['CreatedOn'] ?? 'null'));
+            $this->line('');
+        }
     }
 }
