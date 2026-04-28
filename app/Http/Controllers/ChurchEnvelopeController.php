@@ -240,7 +240,22 @@ class ChurchEnvelopeController extends Controller
         try {
             $spreadsheet = IOFactory::load($request->file('file')->getRealPath());
             $allRows     = $spreadsheet->getActiveSheet()->toArray(null, true, true, false);
-            array_shift($allRows); // remove header row
+            $headerRow   = array_shift($allRows);
+
+            // Detect VT column positions from the header row so old spreadsheets
+            // that omit VT5 (or any other VT) still parse correctly.
+            $vtCols = [];
+            foreach ($headerRow as $idx => $header) {
+                if (preg_match('/^VT(\d+)$/i', trim((string) ($header ?? '')), $m)) {
+                    $vtCols[(int) $m[1]] = $idx;
+                }
+            }
+            for ($i = 1; $i <= 8; $i++) {
+                $vtCols[$i] ??= 12 + $i; // fall back to expected fixed positions
+            }
+            $vt1Col = $vtCols[1];
+            $vt6Col = $vtCols[6];
+            $vt7Col = $vtCols[7];
 
             $church = $town = $diocese1 = $diocese2 = $diocese3 = $imagePath = '';
             $weeklyVts      = array_fill(0, 8, '');
@@ -260,8 +275,8 @@ class ChurchEnvelopeController extends Controller
                 // Columns: 0=lineNum,1=DAY,2=MONTH,3=YEAR,4=setL,5=setR,
                 //          6=G(design),7=H(spiral),8=church,9=town,
                 //          10=diocese1,11=diocese2,12=diocese3, 13-20=VT1-VT8
-                $vt1    = (string) ($row[13] ?? '');
-                $vt6    = (string) ($row[18] ?? '');
+                $vt1    = (string) ($row[$vt1Col] ?? '');
+                $vt6    = (string) ($row[$vt6Col] ?? '');
                 $spiral = (string) ($row[7]  ?? '');
 
                 // Specials have VT6 set and VT1 blank (or a spiral path in col H)
@@ -303,8 +318,8 @@ class ChurchEnvelopeController extends Controller
                         $imagePath = (string) $row[6];
                     }
                     if (empty(array_filter($weeklyVts))) {
-                        for ($i = 0; $i < 8; $i++) {
-                            $weeklyVts[$i] = (string) ($row[13 + $i] ?? '');
+                        for ($i = 1; $i <= 8; $i++) {
+                            $weeklyVts[$i - 1] = isset($vtCols[$i]) ? (string) ($row[$vtCols[$i]] ?? '') : '';
                         }
                     }
 
@@ -331,7 +346,7 @@ class ChurchEnvelopeController extends Controller
                     $specials[] = [
                         'name'      => $vt6,
                         'date'      => $specialDate,
-                        'vt7'       => (string) ($row[19] ?? ''),
+                        'vt7'       => (string) ($row[$vt7Col] ?? ''),
                         'show_date' => $day !== '' || $month !== '',
                         'position'  => 'after',
                     ];
