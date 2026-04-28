@@ -21,7 +21,7 @@ class KeyAccountController extends Controller
         $isAdmin = $user->can('key_accounts_admin');
 
         $accounts = $isAdmin
-            ? KeyAccount::with(['user', 'contacts', 'gifts'])->orderBy('name')->get()
+            ? KeyAccount::with(['user', 'contacts', 'gifts'])->whereNotNull('user_id')->orderBy('name')->get()
             : KeyAccount::with(['contacts', 'gifts'])->where('user_id', $user->id)->orderBy('name')->get();
 
         $currentYear   = (int) now()->year;
