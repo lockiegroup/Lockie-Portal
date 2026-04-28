@@ -12,6 +12,9 @@ use Illuminate\Http\Request;
 use Illuminate\View\View;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Illuminate\Support\Facades\DB;
 
 class KeyAccountController extends Controller
 {
@@ -198,13 +201,13 @@ class KeyAccountController extends Controller
         try {
             $spreadsheet = IOFactory::load($request->file('file')->getRealPath());
             $rows        = $spreadsheet->getActiveSheet()->toArray(null, true, true, false);
-            array_shift($rows); // remove header
+            array_shift($rows);
 
             $user    = auth()->user();
             $isAdmin = $user->can('key_accounts_admin');
 
-            $imported = 0;
-            $skipped  = 0;
+            $pending = [];
+            $skipped = 0;
 
             foreach ($rows as $row) {
                 $code        = trim((string) ($row[0] ?? ''));
@@ -217,10 +220,9 @@ class KeyAccountController extends Controller
                     continue;
                 }
 
-                // Parse date — handles Excel serial number or d/m/Y string
                 if (is_numeric($rawDate)) {
                     try {
-                        $date = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($rawDate)->format('Y-m-d');
+                        $date = ExcelDate::excelToDateTimeObject($rawDate)->format('Y-m-d');
                     } catch (\Throwable) {
                         $skipped++;
                         continue;
@@ -232,31 +234,58 @@ class KeyAccountController extends Controller
                     $date = $dt->format('Y-m-d');
                 }
 
-                // Find or create a placeholder account so gifts are stored even for
-                // accounts not yet being actively managed
-                $account = KeyAccount::withTrashed()->where('account_code', $code)->first();
-                if (!$account) {
-                    $account = KeyAccount::create([
+                $pending[$code][] = ['recipient' => $recipient, 'gifted_at' => $date, 'description' => $description];
+            }
+
+            if (empty($pending)) {
+                return back()->with('success', "No gifts imported. Skipped {$skipped} rows.");
+            }
+
+            $codes    = array_keys($pending);
+            $accounts = KeyAccount::withTrashed()->whereIn('account_code', $codes)->get()->keyBy('account_code');
+
+            // Ensure an account row exists for every code
+            foreach ($codes as $code) {
+                if (!isset($accounts[$code])) {
+                    $accounts[$code] = KeyAccount::create([
                         'account_code' => $code,
                         'name'         => $code,
                         'type'         => 'key',
                         'user_id'      => null,
                     ]);
-                } elseif ($account->trashed()) {
-                    $account->restore();
+                } elseif ($accounts[$code]->trashed()) {
+                    $accounts[$code]->restore();
                 }
+            }
+
+            $now        = now()->toDateTimeString();
+            $insertRows = [];
+            $imported   = 0;
+
+            foreach ($codes as $code) {
+                $account = $accounts[$code] ?? null;
+                if (!$account) continue;
 
                 if (!$isAdmin && $account->user_id !== null && $account->user_id !== $user->id) {
-                    $skipped++;
+                    $skipped += count($pending[$code]);
                     continue;
                 }
 
-                $account->gifts()->create([
-                    'recipient'   => $recipient,
-                    'gifted_at'   => $date,
-                    'description' => $description,
-                ]);
-                $imported++;
+                // Full replace: wipe existing gifts for this account then re-insert
+                DB::table('key_account_gifts')->where('key_account_id', $account->id)->delete();
+
+                foreach ($pending[$code] as $gift) {
+                    $insertRows[] = array_merge($gift, [
+                        'key_account_id' => $account->id,
+                        'created_at'     => $now,
+                        'updated_at'     => $now,
+                    ]);
+                    $imported++;
+                }
+            }
+
+            foreach (array_chunk($insertRows, 200) as $chunk) {
+                DB::table('key_account_gifts')->insert($chunk);
             }
 
             ActivityLog::record('key_accounts.gifts_import', "Imported {$imported} gift(s)");
@@ -265,5 +294,44 @@ class KeyAccountController extends Controller
         } catch (\Throwable $e) {
             return back()->withErrors(['file' => 'Could not read file: ' . $e->getMessage()]);
         }
+    }
+
+    public function exportGifts(): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
+        $user    = auth()->user();
+        $isAdmin = $user->can('key_accounts_admin');
+
+        $accounts = $isAdmin
+            ? KeyAccount::with(['gifts' => fn($q) => $q->orderBy('gifted_at')])->orderBy('account_code')->get()
+            : KeyAccount::with(['gifts' => fn($q) => $q->orderBy('gifted_at')])->where('user_id', $user->id)->orderBy('account_code')->get();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet       = $spreadsheet->getActiveSheet();
+
+        $sheet->fromArray(['Account Code', 'Recipient', 'Date', 'Gift Description'], null, 'A1');
+
+        $rowNum = 2;
+        foreach ($accounts as $account) {
+            foreach ($account->gifts as $gift) {
+                $sheet->fromArray([
+                    $account->account_code,
+                    $gift->recipient,
+                    $gift->gifted_at->format('d/m/Y'),
+                    $gift->description,
+                ], null, "A{$rowNum}");
+                $rowNum++;
+            }
+        }
+
+        $tmpFile = tempnam(sys_get_temp_dir(), 'gifts_') . '.xlsx';
+        (new Xlsx($spreadsheet))->save($tmpFile);
+
+        ActivityLog::record('key_accounts.gifts_export', "Exported gifts (" . ($rowNum - 2) . " row(s))");
+
+        return response()->download(
+            $tmpFile,
+            'gifts-export-' . now()->format('Y-m-d') . '.xlsx',
+            ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
+        )->deleteFileAfterSend(true);
     }
 }

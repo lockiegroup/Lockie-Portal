@@ -150,6 +150,7 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::get('/', [KeyAccountController::class, 'index'])->name('index');
         Route::post('/sales/import', [KeyAccountController::class, 'importSales'])->name('sales.import');
         Route::post('/gifts/import', [KeyAccountController::class, 'importGifts'])->name('gifts.import');
+        Route::get('/gifts/export', [KeyAccountController::class, 'exportGifts'])->name('gifts.export');
         Route::get('/{keyAccount}', [KeyAccountController::class, 'show'])->name('show');
         Route::post('/{keyAccount}/contacts', [KeyAccountController::class, 'storeContact'])->name('contacts.store');
         Route::delete('/{keyAccount}/contacts/{contact}', [KeyAccountController::class, 'destroyContact'])->name('contacts.destroy');
