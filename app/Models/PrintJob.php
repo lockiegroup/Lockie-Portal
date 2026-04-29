@@ -34,6 +34,7 @@ class PrintJob extends Model
         'product_code',
         'product_description',
         'line_comment',
+        'delivery_name',
         'delivery_city',
         'delivery_postcode',
         'delivery_address',

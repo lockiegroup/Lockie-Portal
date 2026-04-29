@@ -454,7 +454,7 @@
             if (!detail) return;
             const open = detail.style.display === 'none';
             detail.style.display = open ? 'block' : 'none';
-            if (label) label.textContent = open ? 'Hide address' : label.dataset.summary || label.textContent;
+            if (label) label.textContent = open ? 'Hide address' : (label.dataset.summary || 'Delivery address');
         };
 
         // ─── Toggle notes panel ───────────────────────────────────────────

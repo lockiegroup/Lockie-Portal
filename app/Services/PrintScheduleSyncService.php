@@ -55,10 +55,11 @@ class PrintScheduleSyncService
             $orderStatus  = $order['OrderStatus'] ?? 'Open';
             $requiredDate = $unleashed->parseDate($order['RequiredDate'] ?? null);
 
+            $deliveryName     = trim((string)($order['DeliveryName'] ?? '')) ?: null;
             $deliveryCity     = trim((string)($order['DeliveryCity'] ?? '')) ?: null;
             $deliveryPostcode = trim((string)($order['DeliveryPostCode'] ?? '')) ?: null;
             $addrParts = array_filter([
-                trim((string)($order['DeliveryName']          ?? '')),
+                $deliveryName,
                 trim((string)($order['DeliveryStreetAddress']  ?? '')),
                 trim((string)($order['DeliveryStreetAddress2'] ?? '')),
                 trim((string)($order['DeliverySuburb']         ?? '')),
@@ -122,6 +123,7 @@ class PrintScheduleSyncService
                         'product_code'        => $productCode,
                         'product_description' => $line['Product']['ProductDescription'] ?? null,
                         'line_comment'        => $line['Comments'] ?? $line['LineComment'] ?? null,
+                        'delivery_name'       => $deliveryName,
                         'delivery_city'       => $deliveryCity,
                         'delivery_postcode'   => $deliveryPostcode,
                         'delivery_address'    => $deliveryAddress,
@@ -148,6 +150,7 @@ class PrintScheduleSyncService
                         'product_code'           => $productCode,
                         'product_description'    => $line['Product']['ProductDescription'] ?? null,
                         'line_comment'           => $line['Comments'] ?? $line['LineComment'] ?? null,
+                        'delivery_name'          => $deliveryName,
                         'delivery_city'          => $deliveryCity,
                         'delivery_postcode'      => $deliveryPostcode,
                         'delivery_address'       => $deliveryAddress,
