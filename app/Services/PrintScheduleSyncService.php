@@ -55,6 +55,21 @@ class PrintScheduleSyncService
             $orderStatus  = $order['OrderStatus'] ?? 'Open';
             $requiredDate = $unleashed->parseDate($order['RequiredDate'] ?? null);
 
+            $deliveryCity     = trim((string)($order['DeliveryCity'] ?? '')) ?: null;
+            $deliveryPostcode = trim((string)($order['DeliveryPostCode'] ?? '')) ?: null;
+            $addrParts = array_filter([
+                trim((string)($order['DeliveryAddress'] ?? '')),
+                trim((string)($order['DeliveryStreet']  ?? '')),
+                trim((string)($order['DeliverySuburb']  ?? '')),
+                $deliveryCity,
+                trim((string)($order['DeliveryRegion']  ?? '')),
+                $deliveryPostcode,
+                is_array($order['DeliveryCountry'] ?? null)
+                    ? trim((string)($order['DeliveryCountry']['Name'] ?? ''))
+                    : trim((string)($order['DeliveryCountry'] ?? '')),
+            ]);
+            $deliveryAddress = $addrParts ? implode(', ', $addrParts) : null;
+
             if (in_array($orderStatus, ['Completed', 'Deleted'], true)) {
                 $completedDate = $unleashed->parseDate($order['CompletedDate'] ?? null);
                 foreach ($order['SalesOrderLines'] ?? [] as $lineIndex => $line) {
@@ -106,6 +121,9 @@ class PrintScheduleSyncService
                         'product_code'        => $productCode,
                         'product_description' => $line['Product']['ProductDescription'] ?? null,
                         'line_comment'        => $line['Comments'] ?? $line['LineComment'] ?? null,
+                        'delivery_city'       => $deliveryCity,
+                        'delivery_postcode'   => $deliveryPostcode,
+                        'delivery_address'    => $deliveryAddress,
                         'order_total'         => $orderTotal,
                         'line_total'          => (float) ($line['LineTotal'] ?? 0),
                         'order_quantity'      => (int) ($line['OrderQuantity'] ?? 0),
@@ -129,6 +147,9 @@ class PrintScheduleSyncService
                         'product_code'           => $productCode,
                         'product_description'    => $line['Product']['ProductDescription'] ?? null,
                         'line_comment'           => $line['Comments'] ?? $line['LineComment'] ?? null,
+                        'delivery_city'          => $deliveryCity,
+                        'delivery_postcode'      => $deliveryPostcode,
+                        'delivery_address'       => $deliveryAddress,
                         'order_total'            => $orderTotal,
                         'line_total'             => (float) ($line['LineTotal'] ?? 0),
                         'order_quantity'         => (int) ($line['OrderQuantity'] ?? 0),

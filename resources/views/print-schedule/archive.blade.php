@@ -66,6 +66,7 @@
                                 <th style="padding:10px 16px;text-align:left;font-weight:600;color:#64748b;white-space:nowrap;">Customer</th>
                                 <th style="padding:10px 16px;text-align:left;font-weight:600;color:#64748b;white-space:nowrap;">Product</th>
                                 <th style="padding:10px 16px;text-align:left;font-weight:600;color:#64748b;">Print Data</th>
+                                <th style="padding:10px 16px;text-align:left;font-weight:600;color:#64748b;white-space:nowrap;">Delivery</th>
                                 <th style="padding:10px 16px;text-align:right;font-weight:600;color:#64748b;white-space:nowrap;">Packs</th>
                                 <th style="padding:10px 16px;text-align:left;font-weight:600;color:#64748b;white-space:nowrap;">Completed</th>
                             </tr>
@@ -96,6 +97,13 @@
                                     <td style="padding:10px 16px;vertical-align:top;max-width:320px;">
                                         @if($job->line_comment)
                                             <span class="font-mono text-xs text-blue-800" style="white-space:pre-wrap;word-break:break-word;">{{ $job->line_comment }}</span>
+                                        @else
+                                            <span class="text-xs text-slate-300 italic">—</span>
+                                        @endif
+                                    </td>
+                                    <td style="padding:10px 16px;vertical-align:top;white-space:nowrap;">
+                                        @if($job->delivery_city || $job->delivery_postcode)
+                                            <span class="text-xs text-slate-500">{{ collect([$job->delivery_city, $job->delivery_postcode])->filter()->implode(', ') }}</span>
                                         @else
                                             <span class="text-xs text-slate-300 italic">—</span>
                                         @endif

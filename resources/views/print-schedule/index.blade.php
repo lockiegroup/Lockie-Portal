@@ -447,6 +447,16 @@
             });
         };
 
+        // ─── Toggle delivery address ──────────────────────────────────────
+        window.toggleDelivery = function (jobId) {
+            const detail = document.getElementById('delivery-detail-' + jobId);
+            const label  = document.getElementById('delivery-label-' + jobId);
+            if (!detail) return;
+            const open = detail.style.display === 'none';
+            detail.style.display = open ? 'block' : 'none';
+            if (label) label.textContent = open ? 'Hide address' : label.dataset.summary || label.textContent;
+        };
+
         // ─── Toggle notes panel ───────────────────────────────────────────
         window.toggleNotes = function (jobId) {
             const panel = document.getElementById('notes-panel-' + jobId);

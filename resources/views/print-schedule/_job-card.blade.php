@@ -9,7 +9,7 @@
      data-current-board="{{ $job->board }}"
      data-remaining="{{ $job->remaining_quantity }}"
      data-required-date="{{ $job->required_date ? $job->required_date->format('Y-m-d') : '' }}"
-     data-search-text="{{ strtolower(collect([$job->order_number, $job->customer_name, $job->customer_ref, $job->product_code, $job->product_description, $job->line_comment])->filter()->implode(' ')) }}"
+     data-search-text="{{ strtolower(collect([$job->order_number, $job->customer_name, $job->customer_ref, $job->product_code, $job->product_description, $job->line_comment, $job->delivery_address])->filter()->implode(' ')) }}"
      id="job-card-{{ $job->id }}">
 
     {{-- Row 1: Drag handle | Order number | Customer | Board select --}}
@@ -84,6 +84,24 @@
     @if($job->line_comment)
         <div class="mb-3 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
             <p class="font-mono text-xs text-blue-800" style="white-space:pre-wrap;word-break:break-word;">{{ $job->line_comment }}</p>
+        </div>
+    @endif
+
+    {{-- Delivery address --}}
+    @if($job->delivery_city || $job->delivery_address)
+        @php $addrSummary = collect([$job->delivery_city, $job->delivery_postcode])->filter()->implode(', ') ?: 'Delivery address'; @endphp
+        <div class="mb-3">
+            <button type="button" onclick="toggleDelivery({{ $job->id }})"
+                style="display:flex;align-items:center;gap:6px;font-size:0.75rem;color:#94a3b8;background:none;border:none;cursor:pointer;padding:0;"
+                onmouseover="this.style.color='#475569'" onmouseout="this.style.color='#94a3b8'">
+                <svg style="width:13px;height:13px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                </svg>
+                <span id="delivery-label-{{ $job->id }}">{{ $addrSummary }}</span>
+            </button>
+            <div id="delivery-detail-{{ $job->id }}" style="display:none;margin-top:6px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;">
+                <p style="font-size:0.75rem;color:#475569;white-space:pre-line;margin:0;">{{ $job->delivery_address }}</p>
+            </div>
         </div>
     @endif
 
