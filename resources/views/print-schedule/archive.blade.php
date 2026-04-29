@@ -102,8 +102,16 @@
                                         @endif
                                     </td>
                                     <td style="padding:10px 16px;vertical-align:top;white-space:nowrap;">
-                                        @if($job->delivery_name || $job->delivery_city || $job->delivery_postcode)
-                                            <span class="text-xs text-slate-500">{{ collect([$job->delivery_name, $job->delivery_city, $job->delivery_postcode])->filter()->implode(', ') }}</span>
+                                        @if($job->delivery_name || $job->delivery_address)
+                                            <details style="cursor:pointer;">
+                                                <summary style="font-size:0.75rem;color:#64748b;list-style:none;display:flex;align-items:center;gap:4px;">
+                                                    <svg style="width:11px;height:11px;flex-shrink:0;color:#94a3b8;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                                    {{ $job->delivery_name ?? $job->delivery_city }}
+                                                </summary>
+                                                @if($job->delivery_address)
+                                                    <p style="font-size:0.7rem;color:#64748b;margin:4px 0 0 15px;white-space:normal;max-width:200px;line-height:1.4;">{{ $job->delivery_address }}</p>
+                                                @endif
+                                            </details>
                                         @else
                                             <span class="text-xs text-slate-300 italic">—</span>
                                         @endif
