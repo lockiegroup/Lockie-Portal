@@ -102,8 +102,8 @@
                                         @endif
                                     </td>
                                     <td style="padding:10px 16px;vertical-align:top;white-space:nowrap;">
-                                        @if($job->delivery_city || $job->delivery_postcode)
-                                            <span class="text-xs text-slate-500">{{ collect([$job->delivery_city, $job->delivery_postcode])->filter()->implode(', ') }}</span>
+                                        @if($job->delivery_name || $job->delivery_city || $job->delivery_postcode)
+                                            <span class="text-xs text-slate-500">{{ collect([$job->delivery_name, $job->delivery_city, $job->delivery_postcode])->filter()->implode(', ') }}</span>
                                         @else
                                             <span class="text-xs text-slate-300 italic">—</span>
                                         @endif
