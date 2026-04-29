@@ -224,12 +224,17 @@ class PrintScheduleSyncService
             $assemblyDate       = $unleashed->parseDate($assembly['AssemblyDate'] ?? null);
             $comments           = $assembly['Comments'] ?? null;
             $soNumber           = $assembly['SalesOrderNumber'] ?? null;
-            $soTotal            = 0.0;
-            $soRequiredDate     = null;
-            $customerName       = $soNumber ?? '';
+            $soTotal             = 0.0;
+            $soRequiredDate      = null;
+            $customerName        = $soNumber ?? '';
+            $asmDeliveryName     = null;
+            $asmDeliveryCity     = null;
+            $asmDeliveryPostcode = null;
+            $asmDeliveryAddress  = null;
             if ($soNumber && isset($soData[$soNumber])) {
+                $sd          = $soData[$soNumber];
                 $matchedLine = null;
-                foreach ($soData[$soNumber]['lines'] as $line) {
+                foreach ($sd['lines'] as $line) {
                     if (($line['Product']['ProductCode'] ?? null) === $productCode) {
                         if ($matchedLine === null) {
                             $matchedLine = $line;
@@ -243,8 +248,22 @@ class PrintScheduleSyncService
                 if ($matchedLine) {
                     $soTotal = (float) ($matchedLine['LineTotal'] ?? 0);
                 }
-                $soRequiredDate = $unleashed->parseDate($soData[$soNumber]['requiredDate'] ?? null);
-                $customerName   = $soData[$soNumber]['customerName'] ?? $soNumber;
+                $soRequiredDate      = $unleashed->parseDate($sd['requiredDate'] ?? null);
+                $customerName        = $sd['customerName'] ?? $soNumber;
+                $asmDeliveryName     = $sd['deliveryName'] ?? null;
+                $asmDeliveryCity     = $sd['deliveryCity'] ?? null;
+                $asmDeliveryPostcode = $sd['deliveryPostCode'] ?? null;
+                $asmAddrParts        = array_filter([
+                    $sd['deliveryName']    ?? null,
+                    $sd['deliveryStreet1'] ?? null,
+                    $sd['deliveryStreet2'] ?? null,
+                    $sd['deliverySuburb']  ?? null,
+                    $sd['deliveryCity']    ?? null,
+                    $sd['deliveryRegion']  ?? null,
+                    $sd['deliveryPostCode'] ?? null,
+                    $sd['deliveryCountry'] ?? null,
+                ]);
+                $asmDeliveryAddress = $asmAddrParts ? implode(', ', $asmAddrParts) : null;
             }
 
             $requiredDate = $soRequiredDate ?? $assembleBy;
@@ -257,6 +276,10 @@ class PrintScheduleSyncService
                     'product_code'        => $productCode,
                     'product_description' => $productDescription,
                     'line_comment'        => $comments,
+                    'delivery_name'       => $asmDeliveryName,
+                    'delivery_city'       => $asmDeliveryCity,
+                    'delivery_postcode'   => $asmDeliveryPostcode,
+                    'delivery_address'    => $asmDeliveryAddress,
                     'order_quantity'      => $assembledQty,
                     'order_total'         => $soTotal,
                     'unleashed_status'    => $assemblyStatus,
@@ -279,6 +302,10 @@ class PrintScheduleSyncService
                     'product_code'           => $productCode,
                     'product_description'    => $productDescription,
                     'line_comment'           => $comments,
+                    'delivery_name'          => $asmDeliveryName,
+                    'delivery_city'          => $asmDeliveryCity,
+                    'delivery_postcode'      => $asmDeliveryPostcode,
+                    'delivery_address'       => $asmDeliveryAddress,
                     'order_total'            => $soTotal,
                     'line_total'             => 0,
                     'order_quantity'         => $assembledQty,

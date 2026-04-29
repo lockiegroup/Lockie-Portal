@@ -635,9 +635,19 @@ class UnleashedService
                 $order = ($res->json()['Items'] ?? [])[0] ?? null;
                 if ($order) {
                     $results[$num] = [
-                        'lines'        => $order['SalesOrderLines'] ?? [],
-                        'requiredDate' => $order['RequiredDate'] ?? null,
-                        'customerName' => $order['Customer']['CustomerName'] ?? null,
+                        'lines'              => $order['SalesOrderLines'] ?? [],
+                        'requiredDate'       => $order['RequiredDate'] ?? null,
+                        'customerName'       => $order['Customer']['CustomerName'] ?? null,
+                        'deliveryName'       => $order['DeliveryName'] ?? null,
+                        'deliveryStreet1'    => $order['DeliveryStreetAddress'] ?? null,
+                        'deliveryStreet2'    => $order['DeliveryStreetAddress2'] ?? null,
+                        'deliverySuburb'     => $order['DeliverySuburb'] ?? null,
+                        'deliveryCity'       => $order['DeliveryCity'] ?? null,
+                        'deliveryRegion'     => $order['DeliveryRegion'] ?? null,
+                        'deliveryPostCode'   => $order['DeliveryPostCode'] ?? null,
+                        'deliveryCountry'    => is_array($order['DeliveryCountry'] ?? null)
+                            ? ($order['DeliveryCountry']['Name'] ?? null)
+                            : ($order['DeliveryCountry'] ?? null),
                     ];
                 }
             }
