@@ -58,8 +58,11 @@ class PrintScheduleSyncService
             $deliveryCity     = trim((string)($order['DeliveryCity'] ?? '')) ?: null;
             $deliveryPostcode = trim((string)($order['DeliveryPostCode'] ?? '')) ?: null;
             $addrParts = array_filter([
+                trim((string)($order['DeliveryName']    ?? '')),
                 trim((string)($order['DeliveryAddress'] ?? '')),
                 trim((string)($order['DeliveryStreet']  ?? '')),
+                trim((string)($order['DeliveryLine1']   ?? '')),
+                trim((string)($order['DeliveryLine2']   ?? '')),
                 trim((string)($order['DeliverySuburb']  ?? '')),
                 $deliveryCity,
                 trim((string)($order['DeliveryRegion']  ?? '')),
