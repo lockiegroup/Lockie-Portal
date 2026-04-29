@@ -203,11 +203,20 @@ class PrintScheduleSyncService
             $soRequiredDate     = null;
             $customerName       = $soNumber ?? '';
             if ($soNumber && isset($soData[$soNumber])) {
+                $matchedLine = null;
                 foreach ($soData[$soNumber]['lines'] as $line) {
                     if (($line['Product']['ProductCode'] ?? null) === $productCode) {
-                        $soTotal = (float) ($line['LineTotal'] ?? 0);
-                        break;
+                        if ($matchedLine === null) {
+                            $matchedLine = $line;
+                        }
+                        if ((int)($line['OrderQuantity'] ?? 0) === $assembledQty) {
+                            $matchedLine = $line;
+                            break;
+                        }
                     }
+                }
+                if ($matchedLine) {
+                    $soTotal = (float) ($matchedLine['LineTotal'] ?? 0);
                 }
                 $soRequiredDate = $unleashed->parseDate($soData[$soNumber]['requiredDate'] ?? null);
                 $customerName   = $soData[$soNumber]['customerName'] ?? $soNumber;
