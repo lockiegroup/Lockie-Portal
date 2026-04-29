@@ -31,15 +31,21 @@ class BackfillDeliveryAddresses extends Command
 
         // Build a map of job_id => SO number to fetch
         $fetchMap = []; // soNumber => [job ids]
+        $asmSkipped = 0;
         foreach ($jobs as $job) {
             if (str_starts_with($job->order_number, 'ASM-')) {
                 // Extract SO number from line_comment e.g. "Created for Invoice SO-00026284."
                 if (preg_match('/SO-\d+/i', $job->line_comment ?? '', $m)) {
                     $fetchMap[$m[0]][] = $job->id;
+                } else {
+                    $asmSkipped++;
                 }
             } else {
                 $fetchMap[$job->order_number][] = $job->id;
             }
+        }
+        if ($asmSkipped > 0) {
+            $this->warn("{$asmSkipped} ASM job(s) skipped — no SO number found in line_comment.");
         }
 
         $orderNumbers = array_keys($fetchMap);
@@ -47,8 +53,16 @@ class BackfillDeliveryAddresses extends Command
 
         $updated = 0;
 
-        foreach (array_chunk($orderNumbers, 50) as $batch) {
+        foreach (array_chunk($orderNumbers, 10) as $batch) {
             $soData = $unleashed->fetchSalesOrderData($batch);
+
+            // Retry any that failed individually
+            $failed = array_diff($batch, array_keys($soData));
+            foreach ($failed as $num) {
+                sleep(1);
+                $retry = $unleashed->fetchSalesOrderData([$num]);
+                if (isset($retry[$num])) $soData[$num] = $retry[$num];
+            }
 
             foreach ($batch as $orderNumber) {
                 $sd = $soData[$orderNumber] ?? null;
