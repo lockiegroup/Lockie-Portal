@@ -118,15 +118,14 @@ class UnleashedService
         $start = Carbon::parse($from);
         $end   = Carbon::parse($to);
 
-        // Build weekly date chunks. Unleashed treats endDate as exclusive, so we cap at
-        // $end + 1 day to ensure the user's last requested day is always included.
-        // Each chunk's endDate also overlaps the next chunk's startDate by one day so
-        // no day is skipped at internal boundaries. GUID dedup removes duplicates.
-        $cap = $end->copy()->addDay();
+        // Build weekly date chunks. Each chunk's endDate overlaps the next chunk's
+        // startDate by one day so boundary-day orders are captured regardless of
+        // whether Unleashed treats endDate as inclusive or exclusive.
+        // GUID dedup in the merge loop removes any duplicates.
         $dateChunks = [];
         $s = $start->copy();
         while ($s->lte($end)) {
-            $chunkEnd     = $s->copy()->addDays(7)->min($cap);
+            $chunkEnd     = $s->copy()->addDays(7)->min($end);
             $dateChunks[] = ['startDate' => $s->toDateString(), 'endDate' => $chunkEnd->toDateString()];
             $s->addDays(7);
         }

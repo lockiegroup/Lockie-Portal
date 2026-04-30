@@ -50,7 +50,7 @@ class SalesController extends Controller
             [$salesByWarehouse, $creditsByWarehouse, $counts, $debug] = Cache::remember(
                 $cacheKey,
                 1800,
-                function () use ($apiFrom, $apiTo) {
+                function () use ($apiFrom, $apiTo, $from, $to) {
                     // Two calls needed: Unleashed only returns custom-status orders when
                     // customOrderStatus is passed explicitly (it overrides orderStatus).
                     // Pass each custom status individually — Unleashed does not support
@@ -75,6 +75,30 @@ class SalesController extends Controller
                         if ($guid !== null) $seenGuids[$guid] = true;
                         $allSales[] = $order;
                     }
+
+                    // PHP-side date filter: Unleashed's endDate is inclusive so the API
+                    // chunks already cover the full range, but filter to the exact UK date
+                    // range to prevent any boundary-day overshoot appearing in totals.
+                    $ukTz = new \DateTimeZone('Europe/London');
+                    $filterDate = function (array $records, string $field) use ($from, $to, $ukTz): array {
+                        return array_values(array_filter($records, function ($rec) use ($from, $to, $ukTz, $field) {
+                            $raw = $rec[$field] ?? null;
+                            if (!$raw) return true;
+                            try {
+                                if (preg_match('#/Date\((\d+)#', $raw, $m)) {
+                                    $dt = (new \DateTime('@' . (int) ($m[1] / 1000)))->setTimezone($ukTz);
+                                } else {
+                                    $dt = (new \DateTime($raw))->setTimezone($ukTz);
+                                }
+                                $d = $dt->format('Y-m-d');
+                                return $d >= $from && $d <= $to;
+                            } catch (\Throwable) {
+                                return true;
+                            }
+                        }));
+                    };
+                    $allSales   = $filterDate($allSales,  'OrderDate');
+                    $allCredits = $filterDate($allCredits, 'OrderDate');
 
                     // Count orders and subtotals by status before filtering
                     $statusBreakdown = [];
