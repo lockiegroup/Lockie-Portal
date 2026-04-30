@@ -329,7 +329,8 @@ function runSync() {
 
     fetch('{{ route("stock-watchlist.sync") }}', {
         method: 'POST',
-        headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+        headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ category_id: categoryId }),
     })
     .then(r => r.json())
     .then(d => {

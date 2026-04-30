@@ -115,11 +115,13 @@ class StockWatchlistController extends Controller
         return back();
     }
 
-    public function sync()
+    public function sync(Request $request)
     {
         set_time_limit(300);
         try {
-            $result = (new StockWatchlistSyncService())->run();
+            $categoryId = $request->input('category_id');
+            $category   = $categoryId ? StockWatchlistCategory::find($categoryId) : null;
+            $result     = (new StockWatchlistSyncService())->run($category);
             return response()->json(['ok' => true, 'products' => $result['products']]);
         } catch (\Throwable $e) {
             \Log::error('StockWatchlist sync failed', ['error' => $e->getMessage()]);

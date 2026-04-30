@@ -2,19 +2,24 @@
 
 namespace App\Services;
 
+use App\Models\StockWatchlistCategory;
 use App\Models\StockWatchlistItem;
 use App\Models\StockWatchlistStock;
 
 class StockWatchlistSyncService
 {
-    public function run(): array
+    public function run(?StockWatchlistCategory $category = null): array
     {
         $unleashed = new UnleashedService(
             config('services.unleashed.id'),
             config('services.unleashed.key'),
         );
 
-        $productCodes = StockWatchlistItem::pluck('product_code')->unique()->values()->all();
+        $query = StockWatchlistItem::query();
+        if ($category) {
+            $query->where('category_id', $category->id);
+        }
+        $productCodes = $query->pluck('product_code')->unique()->values()->all();
 
         if (empty($productCodes)) {
             return ['products' => 0];
