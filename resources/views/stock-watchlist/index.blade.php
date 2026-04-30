@@ -119,7 +119,7 @@
     </div>
 
     {{-- Table --}}
-    <div style="background:white;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
+    <div style="background:white;border:1px solid #e2e8f0;border-radius:12px;overflow:clip;">
         <div class="sw-wrap">
             <table class="sw-table">
                 <thead>
