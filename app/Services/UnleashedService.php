@@ -115,32 +115,49 @@ class UnleashedService
      */
     public function fetchByDateRange(string $endpoint, array $baseParams, string $from, string $to): array
     {
-        $chunks = [];
-        $start  = Carbon::parse($from);
-        $end    = Carbon::parse($to);
+        $start = Carbon::parse($from);
+        $end   = Carbon::parse($to);
 
-        while ($start->lte($end)) {
-            $chunkEnd = $start->copy()->addDays(6)->min($end);
-            $chunks[] = array_merge($baseParams, [
-                'startDate' => $start->toDateString(),
-                'endDate'   => $chunkEnd->toDateString(),
-            ]);
-            $start->addDays(7);
+        // Build weekly date chunks
+        $dateChunks = [];
+        $s = $start->copy();
+        while ($s->lte($end)) {
+            $chunkEnd     = $s->copy()->addDays(6)->min($end);
+            $dateChunks[] = ['startDate' => $s->toDateString(), 'endDate' => $chunkEnd->toDateString()];
+            $s->addDays(7);
         }
 
-        // Fire all weekly chunks in a single parallel pool
-        $responses = Http::pool(function ($pool) use ($endpoint, $chunks) {
-            $calls = [];
-            foreach ($chunks as $i => $params) {
-                // Comma-separated filter params must NOT have commas URL-encoded,
-                // but spaces and other chars still need encoding.
-                $rawParams = ['orderStatus', 'customOrderStatus'];
+        // If customOrderStatus is an array, fan out into one request per status per chunk.
+        // Unleashed does not reliably support comma-separated values for customOrderStatus.
+        $statusVariants = [[]];
+        if (isset($baseParams['customOrderStatus']) && is_array($baseParams['customOrderStatus'])) {
+            $statusVariants = array_map(
+                fn($st) => ['customOrderStatus' => $st],
+                $baseParams['customOrderStatus']
+            );
+            unset($baseParams['customOrderStatus']);
+        }
+
+        // Build all (chunk × variant) request param sets
+        $requests = [];
+        foreach ($dateChunks as $chunk) {
+            foreach ($statusVariants as $variant) {
+                $requests[] = array_merge($baseParams, $chunk, $variant);
+            }
+        }
+
+        // Fire all in a single parallel pool
+        $responses = Http::pool(function ($pool) use ($endpoint, $requests) {
+            $calls     = [];
+            $rawParams = ['orderStatus', 'customOrderStatus'];
+            foreach ($requests as $i => $params) {
                 $raw  = array_intersect_key($params, array_flip($rawParams));
                 $rest = array_diff_key($params, array_flip($rawParams));
                 $qs   = http_build_query(array_merge($rest, ['pageSize' => 500, 'pageNumber' => 1]));
                 foreach ($raw as $key => $val) {
                     if ($val) {
-                        // Encode everything then restore commas to literal
+                        // rawurlencode encodes spaces as %20 and commas as %2C;
+                        // restore commas so single-value strings pass through cleanly.
                         $encoded = str_replace('%2C', ',', rawurlencode($val));
                         $qs .= "&{$key}={$encoded}";
                     }
@@ -156,7 +173,7 @@ class UnleashedService
         $items = [];
         $seen  = [];
 
-        foreach (array_keys($chunks) as $i) {
+        foreach (array_keys($requests) as $i) {
             $res = $responses[$i] ?? null;
             if (!$res || $res instanceof \Throwable || $res->failed()) continue;
             foreach ($res->json()['Items'] ?? [] as $item) {

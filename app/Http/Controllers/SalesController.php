@@ -53,29 +53,39 @@ class SalesController extends Controller
                 function () use ($apiFrom, $apiTo) {
                     // Two calls needed: Unleashed only returns custom-status orders when
                     // customOrderStatus is passed explicitly (it overrides orderStatus).
-                    $customStatuses = implode(',', [
-                        'Awaiting Proof', 'Call Off', 'Coditherm', 'Hoefon', 'Laser',
-                        'PO Placed', 'Proforma', 'SKD', 'Sleeves', 'Waiting Yoseal',
-                    ]);
+                    // Pass each custom status individually — Unleashed does not support
+                    // comma-separated values for customOrderStatus reliably.
                     $fixedSales  = $this->unleashed->fetchByDateRange('SalesOrders', [], $apiFrom, $apiTo);
-                    $customSales = $this->unleashed->fetchByDateRange('SalesOrders', ['customOrderStatus' => $customStatuses], $apiFrom, $apiTo);
+                    $customSales = $this->unleashed->fetchByDateRange('SalesOrders', [
+                        'customOrderStatus' => [
+                            'Awaiting Proof', 'Call Off', 'Coditherm', 'Hoefon', 'Laser',
+                            'PO Placed', 'Proforma', 'SKD', 'Sleeves', 'Waiting Yoseal',
+                        ],
+                    ], $apiFrom, $apiTo);
                     $allCredits  = $this->unleashed->fetchByDateRange('CreditNotes',  [], $apiFrom, $apiTo);
 
-                    // Merge, dedup by GUID
-                    $seenGuids = array_flip(array_filter(array_column($fixedSales, 'Guid')));
-                    $allSales  = $fixedSales;
-                    foreach ($customSales as $order) {
+                    // Merge, dedup by GUID. Custom-status call wins on status name
+                    // (Unleashed returns the custom name when customOrderStatus is specified,
+                    // but returns "Parked" for the same orders when no filter is used).
+                    $seenGuids = [];
+                    $allSales  = [];
+                    foreach (array_merge($customSales, $fixedSales) as $order) {
                         $guid = $order['Guid'] ?? null;
-                        if ($guid && isset($seenGuids[$guid])) continue;
-                        if ($guid) $seenGuids[$guid] = true;
+                        if ($guid !== null && isset($seenGuids[$guid])) continue;
+                        if ($guid !== null) $seenGuids[$guid] = true;
                         $allSales[] = $order;
                     }
 
-                    // Count orders by status before filtering
+                    // Count orders and subtotals by status before filtering
                     $statusBreakdown = [];
                     foreach ($allSales as $o) {
                         $s = $o['OrderStatus'] ?? 'Unknown';
                         $statusBreakdown[$s] = ($statusBreakdown[$s] ?? 0) + 1;
+                    }
+                    $statusSubTotals = [];
+                    foreach ($allSales as $o) {
+                        $s = $o['OrderStatus'] ?? 'Unknown';
+                        $statusSubTotals[$s] = ($statusSubTotals[$s] ?? 0.0) + (float) ($o['SubTotal'] ?? 0);
                     }
 
                     $salesOrders = array_values(array_filter(
@@ -89,11 +99,19 @@ class SalesController extends Controller
                         $this->groupByWarehouse($salesOrders),
                         $this->groupByWarehouse($allCredits),
                         [
-                            'sales'    => count($salesOrders),
-                            'salesRaw' => count($allSales),
-                            'credits'  => count($allCredits),
+                            'sales'       => count($salesOrders),
+                            'salesRaw'    => count($allSales),
+                            'salesFixed'  => count($fixedSales),
+                            'salesCustom' => count($customSales),
+                            'credits'     => count($allCredits),
                         ],
-                        ['statuses' => $statusBreakdown, 'rawSubTotal' => $rawSubTotal, 'apiFrom' => $apiFrom, 'apiTo' => $apiTo],
+                        [
+                            'statuses'       => $statusBreakdown,
+                            'statusSubTotals' => $statusSubTotals,
+                            'rawSubTotal'    => $rawSubTotal,
+                            'apiFrom'        => $apiFrom,
+                            'apiTo'          => $apiTo,
+                        ],
                     ];
                 }
             );

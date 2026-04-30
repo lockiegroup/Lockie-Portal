@@ -159,11 +159,15 @@
                 </div>`;
             }).join('');
 
-            const statuses = data.debug?.statuses || {};
-            const statusHtml = Object.entries(statuses).sort((a,b)=>b[1]-a[1]).map(([s,n])=>
-                `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-slate-100 text-slate-600"><b>${n}</b> ${s}</span>`
-            ).join(' ');
-            const debugHtml = `<div class="text-xs text-slate-400 mb-6">Orders by status from API: ${statusHtml || '—'} &nbsp;·&nbsp; API dates: ${escHtml(data.debug?.apiFrom||'')} → ${escHtml(data.debug?.apiTo||'')}</div>`;
+            const statuses    = data.debug?.statuses || {};
+            const subTotals   = data.debug?.statusSubTotals || {};
+            const statusHtml = Object.entries(statuses).sort((a,b)=>b[1]-a[1]).map(([s,n])=>{
+                const sub = subTotals[s] != null ? ` £${fmt(subTotals[s])}` : '';
+                return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-slate-100 text-slate-600"><b>${n}</b> ${escHtml(s)}${sub}</span>`;
+            }).join(' ');
+            const fixedCount  = counts.salesFixed  ?? '?';
+            const customCount = counts.salesCustom ?? '?';
+            const debugHtml = `<div class="text-xs text-slate-400 mb-6">Orders by status (net): ${statusHtml || '—'} &nbsp;·&nbsp; API: ${fixedCount} fixed + ${customCount} custom (before dedup) &nbsp;·&nbsp; dates: ${escHtml(data.debug?.apiFrom||'')} → ${escHtml(data.debug?.apiTo||'')}</div>`;
 
             return `<div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">${cards}</div>${debugHtml}${tables}`;
         }
