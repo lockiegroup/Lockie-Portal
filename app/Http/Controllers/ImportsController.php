@@ -169,21 +169,12 @@ class ImportsController extends Controller
 
             $count = count($insertRows);
 
-            // Save the session now so the user stays logged in even if the web server
-            // closes the connection while inserts are still running.
+            // Save session before the long DB operation so the user can't be logged out
+            // even if the web server closes the HTTP connection due to timeout.
+            // ignore_user_abort keeps PHP running after the connection is closed.
             $request->session()->save();
-
-            // On PHP-FPM (shared hosting), fastcgi_finish_request() sends the HTTP
-            // response to the browser immediately and lets PHP keep running.
-            // This completely sidesteps the web server's HTTP timeout.
-            if (function_exists('fastcgi_finish_request')) {
-                redirect()->back()
-                    ->with('success', "Import started — processing {$count} rows. Refresh in a moment to see the result.")
-                    ->send();
-                fastcgi_finish_request();
-            }
-
-            set_time_limit(300);
+            ignore_user_abort(true);
+            set_time_limit(0);
 
             DB::statement('TRUNCATE TABLE sales_lines');
             DB::transaction(function () use ($insertRows) {
@@ -195,11 +186,7 @@ class ImportsController extends Controller
 
             ActivityLog::record('imports.sales', "Imported {$count} sales line(s)");
 
-            if (!function_exists('fastcgi_finish_request')) {
-                return back()->with('success', "Imported {$count} sales line(s) into master sales table.");
-            }
-
-            exit(0);
+            return back()->with('success', "Imported {$count} sales line(s) into master sales table.");
         } catch (\Throwable $e) {
             ActivityLog::record('imports.sales.error', 'Import failed: ' . $e->getMessage());
             return back()->withErrors(['file' => 'Could not read file: ' . $e->getMessage()]);
