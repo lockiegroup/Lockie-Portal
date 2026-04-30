@@ -2,11 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\StockWatchlistItem;
-use App\Models\StockWatchlistSale;
 use App\Models\StockWatchlistStock;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 
 class StockWatchlistSyncService
 {
@@ -38,8 +34,6 @@ class StockWatchlistSyncService
         }
 
         $stockMap = $this->syncStock($unleashed, $productCodes, $jwCode);
-        $this->syncSalesHistory($unleashed, $productCodes);
-        $this->syncProductNames();
 
         return ['products' => count($productCodes), 'stock' => $stockMap];
     }
@@ -154,69 +148,4 @@ class StockWatchlistSyncService
         return $results;
     }
 
-    private function syncSalesHistory(UnleashedService $unleashed, array $productCodes): void
-    {
-        // Pull 25 months to ensure we always have full previous 24 calendar months
-        $startDate = now()->subMonths(25)->startOfMonth()->format('Y-m-d');
-
-        $monthly = [];
-
-        // Use SalesOrders (Complete + Invoiced) — matches what Unleashed shows in Sales Enquiry
-        $raw = $unleashed->parallelPaginate([
-            'complete' => ['SalesOrders', ['orderStatus' => 'Completed', 'startDate' => $startDate]],
-            'invoiced' => ['SalesOrders', ['orderStatus' => 'Invoiced',  'startDate' => $startDate]],
-        ], 200);
-
-        $seen = [];
-        foreach (array_merge($raw['complete'], $raw['invoiced']) as $order) {
-            $guid = $order['Guid'] ?? null;
-            if ($guid !== null && isset($seen[$guid])) continue;
-            if ($guid !== null) $seen[$guid] = true;
-
-            $rawDate = $order['CompletedDate'] ?? $order['OrderDate'] ?? $order['CreatedOn'] ?? null;
-            $parsed  = $unleashed->parseDate($rawDate);
-            if (!$parsed) continue;
-
-            $dt    = Carbon::parse($parsed);
-            $year  = $dt->year;
-            $month = $dt->month;
-
-            foreach ($order['SalesOrderLines'] ?? [] as $line) {
-                $code = $line['Product']['ProductCode'] ?? null;
-                if (!$code || !in_array($code, $productCodes)) continue;
-
-                $qty = (float) ($line['OrderQuantity'] ?? 0);
-                if ($qty <= 0) continue;
-
-                $monthly[$code][$year][$month] = ($monthly[$code][$year][$month] ?? 0) + $qty;
-            }
-        }
-
-        // Flatten and bulk-upsert
-        $rows = [];
-        foreach ($monthly as $code => $years) {
-            foreach ($years as $year => $months) {
-                foreach ($months as $month => $qty) {
-                    $rows[] = ['product_code' => $code, 'year' => $year, 'month' => $month, 'qty_sold' => $qty];
-                }
-            }
-        }
-
-        foreach (array_chunk($rows, 200) as $chunk) {
-            DB::table('stock_watchlist_sales')->upsert($chunk, ['product_code', 'year', 'month'], ['qty_sold']);
-        }
-    }
-
-    private function syncProductNames(): void
-    {
-        // Back-fill product_name on items where the stock sync found a name
-        $names = StockWatchlistStock::whereNotNull('product_name')
-            ->pluck('product_name', 'product_code');
-
-        foreach ($names as $code => $name) {
-            StockWatchlistItem::where('product_code', $code)
-                ->whereNull('product_name')
-                ->update(['product_name' => $name]);
-        }
-    }
 }
