@@ -21,16 +21,11 @@
                 <div>
                     <h2 class="text-base font-semibold text-slate-800">Sales Enquiry Import</h2>
                     <p class="text-sm text-slate-500 mt-0.5">Export from <strong>Reports → Sales → Sales Enquiry</strong> in Unleashed.</p>
-                    <p class="text-xs text-slate-400 mt-0.5">Required columns: Order Date, Customer Code, Product Code, Quantity, Sub Total</p>
+                    <p class="text-xs text-slate-400 mt-0.5">Required columns: Order No., Order Date, Required Date, Completed Date, Warehouse, Customer Code, Customer, Customer Type, Product Code, Product Group, Status, Quantity, Sub Total</p>
                 </div>
-                @if($kaSalesFrom || $stockSalesFrom)
-                <div class="text-right text-xs text-slate-400 shrink-0 space-y-0.5">
-                    @if($kaSalesFrom)
-                    <div>Key Accounts: <span class="text-slate-500 font-medium">{{ $kaSalesFrom }} – {{ $kaSalesTo }}</span></div>
-                    @endif
-                    @if($stockSalesFrom)
-                    <div>Stock Watchlist: <span class="text-slate-500 font-medium">{{ $stockSalesFrom }} – {{ $stockSalesTo }}</span></div>
-                    @endif
+                @if($salesFrom)
+                <div class="text-right text-xs text-slate-400 shrink-0">
+                    <div>Data covers: <span class="text-slate-500 font-medium">{{ $salesFrom }} – {{ $salesTo }}</span></div>
                 </div>
                 @endif
             </div>

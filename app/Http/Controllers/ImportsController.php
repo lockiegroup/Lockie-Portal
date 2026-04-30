@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\KeyAccountSale;
-use App\Models\StockWatchlistItem;
 use App\Models\StockWatchlistSubstitution;
 use App\Models\ActivityLog;
 use Illuminate\Http\RedirectResponse;
@@ -28,27 +26,16 @@ class ImportsController extends Controller
 
         $substitutions = $doStock ? StockWatchlistSubstitution::orderBy('id')->get() : collect();
 
-        $kaSalesFrom = $kaSalesTo = null;
-        if ($doKA) {
-            $kaMin = DB::table('app_settings')->where('key', 'ka_sales_min_date')->value('value');
-            $kaMax = DB::table('app_settings')->where('key', 'ka_sales_max_date')->value('value');
-            if ($kaMin && $kaMax) {
-                $kaSalesFrom = Carbon::parse($kaMin)->format('jS M Y');
-                $kaSalesTo   = Carbon::parse($kaMax)->format('jS M Y');
-            }
+        $salesFrom = $salesTo = null;
+        $range = DB::table('sales_lines')
+            ->selectRaw('MIN(COALESCE(completed_date, order_date)) as min_d, MAX(COALESCE(completed_date, order_date)) as max_d')
+            ->first();
+        if ($range && $range->min_d) {
+            $salesFrom = Carbon::parse($range->min_d)->format('jS M Y');
+            $salesTo   = Carbon::parse($range->max_d)->format('jS M Y');
         }
 
-        $stockSalesFrom = $stockSalesTo = null;
-        if ($doStock) {
-            $stMin = DB::table('app_settings')->where('key', 'stock_sales_min_date')->value('value');
-            $stMax = DB::table('app_settings')->where('key', 'stock_sales_max_date')->value('value');
-            if ($stMin && $stMax) {
-                $stockSalesFrom = Carbon::parse($stMin)->format('jS M Y');
-                $stockSalesTo   = Carbon::parse($stMax)->format('jS M Y');
-            }
-        }
-
-        return view('imports.index', compact('doKA', 'doStock', 'substitutions', 'kaSalesFrom', 'kaSalesTo', 'stockSalesFrom', 'stockSalesTo'));
+        return view('imports.index', compact('doKA', 'doStock', 'substitutions', 'salesFrom', 'salesTo'));
     }
 
     public function storeSubstitution(Request $request): RedirectResponse
@@ -105,44 +92,84 @@ class ImportsController extends Controller
                 return back()->withErrors(['file' => 'File appears empty.']);
             }
 
-            $header      = array_map(fn($h) => strtolower(trim((string)($h ?? ''))), $rows[0]);
-            $colDate     = array_search('order date', $header);
-            $colCustomer = array_search('customer code', $header);
-            $colSubTotal = array_search('sub total', $header);
-            $colStatus   = array_search('status', $header);
-            $colProduct  = array_search('product code', $header);
-            $colQty      = array_search('quantity', $header);
+            $header = array_map(fn($h) => strtolower(trim((string)($h ?? ''))), $rows[0]);
 
-            // Build list of required columns based on what this user can process
-            $needed = ['order date' => 'Order Date'];
-            if ($doKA)    { $needed['customer code'] = 'Customer Code'; $needed['sub total'] = 'Sub Total'; }
-            if ($doStock) { $needed['product code']  = 'Product Code';  $needed['quantity']  = 'Quantity'; }
+            $colOrderNo       = array_search('order no.',     $header);
+            $colOrderDate     = array_search('order date',    $header);
+            $colRequiredDate  = array_search('required date', $header);
+            $colCompletedDate = array_search('completed date',$header);
+            $colWarehouse     = array_search('warehouse',     $header);
+            $colCustomer      = array_search('customer code', $header);
+            $colCustomerName  = array_search('customer',      $header);
+            $colCustomerType  = array_search('customer type', $header);
+            $colProduct       = array_search('product code',  $header);
+            $colProductGroup  = array_search('product group', $header);
+            $colStatus        = array_search('status',        $header);
+            $colQty           = array_search('quantity',      $header);
+            $colSubTotal      = array_search('sub total',     $header);
 
-            $missing = array_values(array_filter(
-                array_map(fn($key, $label) => array_search($key, $header) === false ? $label : null, array_keys($needed), $needed)
-            ));
-
-            if (!empty($missing)) {
-                return back()->withErrors(['file' => 'Required columns not found: ' . implode(', ', $missing) . '. Expected: Order Date, Customer Code, Product Code, Quantity, Sub Total.']);
+            $missing = [];
+            foreach (['order date' => 'Order Date', 'customer code' => 'Customer Code', 'product code' => 'Product Code', 'quantity' => 'Quantity', 'sub total' => 'Sub Total'] as $key => $label) {
+                if (array_search($key, $header) === false) $missing[] = $label;
             }
+            if (!empty($missing)) {
+                return back()->withErrors(['file' => 'Required columns not found: ' . implode(', ', $missing) . '. Expected: Order No., Order Date, Required Date, Completed Date, Warehouse, Customer Code, Customer, Customer Type, Product Code, Product Group, Status, Quantity, Sub Total.']);
+            }
+
+            $substitutions = StockWatchlistSubstitution::all()->map(fn($s) => [
+                'find'    => strtoupper($s->find),
+                'replace' => strtoupper($s->replace),
+            ])->all();
 
             array_shift($rows);
 
-            $messages = [];
+            $insertRows = [];
+            $now        = now()->toDateTimeString();
 
-            if ($doKA) {
-                $kaCount = $this->processKeyAccounts($rows, $colDate, $colCustomer, $colSubTotal, $colStatus, $ext);
-                $messages[] = "Key Accounts: sales updated for {$kaCount} account/year combination(s).";
-                ActivityLog::record('imports.sales_ka', "Imported key account sales for {$kaCount} account/year(s)");
+            foreach ($rows as $row) {
+                $status = strtolower(trim((string)($colStatus !== false ? ($row[$colStatus] ?? '') : '')));
+                if ($status === 'cancelled') continue;
+
+                $orderDate = $this->parseDate($row[$colOrderDate] ?? null, $ext);
+                if ($orderDate === null) continue;
+
+                $productCode = strtoupper(substr(trim((string)($colProduct !== false ? ($row[$colProduct] ?? '') : '')), 0, 100));
+                foreach ($substitutions as $sub) {
+                    if ($productCode && str_contains($productCode, $sub['find'])) {
+                        $productCode = str_replace($sub['find'], $sub['replace'], $productCode);
+                    }
+                }
+
+                $insertRows[] = [
+                    'order_no'        => $colOrderNo !== false      ? (substr(trim((string)($row[$colOrderNo] ?? '')), 0, 50) ?: null) : null,
+                    'order_date'      => $orderDate->format('Y-m-d'),
+                    'required_date'   => $colRequiredDate  !== false ? ($this->parseDate($row[$colRequiredDate]  ?? null, $ext)?->format('Y-m-d')) : null,
+                    'completed_date'  => $colCompletedDate !== false ? ($this->parseDate($row[$colCompletedDate] ?? null, $ext)?->format('Y-m-d')) : null,
+                    'warehouse'       => $colWarehouse     !== false ? (substr(trim((string)($row[$colWarehouse] ?? '')), 0, 100) ?: null) : null,
+                    'customer_code'   => $colCustomer      !== false ? (substr(trim((string)($row[$colCustomer] ?? '')), 0, 100) ?: null) : null,
+                    'customer'        => $colCustomerName  !== false ? (substr(trim((string)($row[$colCustomerName] ?? '')), 0, 255) ?: null) : null,
+                    'customer_type'   => $colCustomerType  !== false ? (substr(trim((string)($row[$colCustomerType] ?? '')), 0, 100) ?: null) : null,
+                    'product_code'    => $productCode ?: null,
+                    'product_group'   => $colProductGroup  !== false ? (substr(trim((string)($row[$colProductGroup] ?? '')), 0, 100) ?: null) : null,
+                    'status'          => $status ? substr($status, 0, 50) : null,
+                    'quantity'        => max(0, (float)str_replace([',', '£', '$', '€'], '', $colQty !== false ? ($row[$colQty] ?? 0) : 0)),
+                    'sub_total'       => max(0, (float)str_replace([',', '£', '$', '€'], '', $colSubTotal !== false ? ($row[$colSubTotal] ?? 0) : 0)),
+                    'created_at'      => $now,
+                    'updated_at'      => $now,
+                ];
             }
 
-            if ($doStock) {
-                $stockResult = $this->processStockWatchlist($rows, $colProduct, $colDate, $colQty);
-                $messages[] = "Stock Watchlist: updated {$stockResult['products']} product(s) across {$stockResult['months']} month(s).";
-                ActivityLog::record('imports.sales_stock', "Imported stock watchlist sales for {$stockResult['products']} product(s)");
-            }
+            DB::transaction(function () use ($insertRows) {
+                DB::table('sales_lines')->delete();
+                foreach (array_chunk($insertRows, 500) as $chunk) {
+                    DB::table('sales_lines')->insert($chunk);
+                }
+            });
 
-            return back()->with('success', implode(' ', $messages));
+            $count = count($insertRows);
+            ActivityLog::record('imports.sales', "Imported {$count} sales line(s)");
+
+            return back()->with('success', "Imported {$count} sales line(s) into master sales table.");
         } catch (\Throwable $e) {
             return back()->withErrors(['file' => 'Could not read file: ' . $e->getMessage()]);
         }
@@ -150,7 +177,7 @@ class ImportsController extends Controller
 
     private function parseSpreadsheet(string $path): array
     {
-        return IOFactory::load($path)->getActiveSheet()->toArray(null, true, true, false);
+        return IOFactory::load($path)->getActiveSheet()->toArray(null, true, false, false);
     }
 
     private function parseCsv(string $path): array
@@ -161,136 +188,6 @@ class ImportsController extends Controller
         $lines     = explode("\n", trim($content));
         $delimiter = str_contains($lines[0] ?? '', "\t") ? "\t" : ',';
         return array_map(fn($line) => str_getcsv($line, $delimiter), $lines);
-    }
-
-    private function processKeyAccounts(array $rows, int|false $colDate, int|false $colCustomer, int|false $colSubTotal, int|false $colStatus, string $ext): int
-    {
-        $aggregated = [];
-        $minDate    = null;
-        $maxDate    = null;
-
-        foreach ($rows as $row) {
-            $code     = trim((string)($row[$colCustomer] ?? ''));
-            $subtotal = (float)str_replace([',', '£', '$', '€'], '', $row[$colSubTotal] ?? 0);
-            $rawDate  = $row[$colDate] ?? null;
-            $status   = strtolower(trim((string)($colStatus !== false ? ($row[$colStatus] ?? '') : '')));
-
-            if (empty($code) || $subtotal <= 0) continue;
-            if ($status === 'cancelled') continue;
-
-            $dt = $this->parseDate($rawDate, $ext);
-            if ($dt === null) continue;
-
-            $year    = (int)$dt->format('Y');
-            $month   = (int)$dt->format('n');
-            $dateStr = $dt->format('Y-m-d');
-
-            if ($minDate === null || $dateStr < $minDate) $minDate = $dateStr;
-            if ($maxDate === null || $dateStr > $maxDate) $maxDate = $dateStr;
-
-            $quarter = 'q' . (int)ceil($month / 3);
-            $aggregated[$year][$code] ??= ['total' => 0.0, 'q1' => 0.0, 'q2' => 0.0, 'q3' => 0.0, 'q4' => 0.0];
-            $aggregated[$year][$code]['total']  += $subtotal;
-            $aggregated[$year][$code][$quarter] += $subtotal;
-        }
-
-        $now    = now()->toDateTimeString();
-        $userId = auth()->id();
-
-        $insertRows = [];
-        foreach ($aggregated as $year => $customers) {
-            foreach ($customers as $code => $data) {
-                $insertRows[] = array_merge($data, [
-                    'account_code' => $code,
-                    'year'         => $year,
-                    'imported_at'  => $now,
-                    'user_id'      => $userId,
-                    'created_at'   => $now,
-                    'updated_at'   => $now,
-                ]);
-            }
-        }
-
-        DB::transaction(function () use ($insertRows) {
-            DB::table('key_account_sales')->delete();
-            foreach (array_chunk($insertRows, 200) as $chunk) {
-                DB::table('key_account_sales')->insert($chunk);
-            }
-        });
-
-        if ($minDate) {
-            DB::table('app_settings')->updateOrInsert(['key' => 'ka_sales_min_date'], ['value' => $minDate, 'updated_at' => now()]);
-            DB::table('app_settings')->updateOrInsert(['key' => 'ka_sales_max_date'], ['value' => $maxDate, 'updated_at' => now()]);
-        }
-
-        return count($insertRows);
-    }
-
-    private function processStockWatchlist(array $rows, int|false $colProduct, int|false $colDate, int|false $colQty): array
-    {
-        $substitutions  = StockWatchlistSubstitution::all()->map(fn($s) => [
-            'find'    => strtoupper($s->find),
-            'replace' => strtoupper($s->replace),
-        ])->all();
-        $watchlistCodes = StockWatchlistItem::pluck('product_code')->all();
-        $monthly        = [];
-        $minDate        = null;
-        $maxDate        = null;
-
-        foreach ($rows as $row) {
-            $code    = strtoupper(trim((string)($row[$colProduct] ?? '')));
-            $rawDate = trim((string)($row[$colDate] ?? ''));
-            $qty     = (float)str_replace([',', '£', '$', '€'], '', $row[$colQty] ?? 0);
-
-            foreach ($substitutions as $sub) {
-                if (str_contains($code, $sub['find'])) {
-                    $code = str_replace($sub['find'], $sub['replace'], $code);
-                }
-            }
-
-            if (!$code || !$rawDate || $qty <= 0) continue;
-
-            $dt = \DateTime::createFromFormat('d/m/Y', $rawDate)
-               ?: \DateTime::createFromFormat('Y-m-d', $rawDate)
-               ?: (($ts = strtotime($rawDate)) ? (new \DateTime())->setTimestamp($ts) : null);
-
-            if (!$dt) continue;
-
-            $year    = (int)$dt->format('Y');
-            $month   = (int)$dt->format('n');
-            $dateStr = $dt->format('Y-m-d');
-
-            if ($minDate === null || $dateStr < $minDate) $minDate = $dateStr;
-            if ($maxDate === null || $dateStr > $maxDate) $maxDate = $dateStr;
-
-            if (!in_array($code, $watchlistCodes)) continue;
-            $monthly[$code][$year][$month] = ($monthly[$code][$year][$month] ?? 0) + $qty;
-        }
-
-        $insertRows = [];
-        foreach ($monthly as $code => $years) {
-            foreach ($years as $year => $months) {
-                foreach ($months as $month => $qty) {
-                    $insertRows[] = ['product_code' => $code, 'year' => $year, 'month' => $month, 'qty_sold' => $qty];
-                }
-            }
-        }
-
-        // Wipe all watchlist sales so stale data from previous imports doesn't linger
-        if (!empty($watchlistCodes)) {
-            DB::table('stock_watchlist_sales')->whereIn('product_code', $watchlistCodes)->delete();
-        }
-
-        foreach (array_chunk($insertRows, 200) as $chunk) {
-            DB::table('stock_watchlist_sales')->insert($chunk);
-        }
-
-        if ($minDate) {
-            DB::table('app_settings')->updateOrInsert(['key' => 'stock_sales_min_date'], ['value' => $minDate, 'updated_at' => now()]);
-            DB::table('app_settings')->updateOrInsert(['key' => 'stock_sales_max_date'], ['value' => $maxDate, 'updated_at' => now()]);
-        }
-
-        return ['products' => count($monthly), 'months' => count($insertRows)];
     }
 
     private function parseDate(mixed $raw, string $ext): ?\DateTime

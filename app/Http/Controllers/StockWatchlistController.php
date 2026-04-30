@@ -4,11 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\StockWatchlistCategory;
 use App\Models\StockWatchlistItem;
-use App\Models\StockWatchlistSale;
 use App\Models\StockWatchlistStock;
 use App\Models\StockWatchlistSubstitution;
 use App\Services\StockWatchlistSyncService;
 use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -18,26 +18,52 @@ class StockWatchlistController extends Controller
     {
         $now = Carbon::now();
 
-        // Display only years that have sales data imported
-        $years = DB::table('stock_watchlist_sales')
-            ->distinct()->orderBy('year')->pluck('year')
-            ->map(fn($y) => (int)$y)->all();
-        if (empty($years)) {
-            $years = [(int)$now->year];
-        }
-
         $categories   = StockWatchlistCategory::with(['items' => fn($q) => $q->orderBy('position')])->orderBy('position')->get();
         $productCodes = $categories->flatMap(fn($c) => $c->items->pluck('product_code'))->unique()->values()->all();
 
+        // Session-stored date range, defaulting to start of 2 years ago → today
+        $defaultFrom = now()->subYears(2)->startOfYear()->format('Y-m-d');
+        $defaultTo   = now()->format('Y-m-d');
+        $filterFrom  = session('stock_sales_from', $defaultFrom);
+        $filterTo    = session('stock_sales_to',   $defaultTo);
+
         $stockMap = StockWatchlistStock::whereIn('product_code', $productCodes)->get()->keyBy('product_code');
 
-        // Fetch all sales data (no year filter) to support rolling avg across any range
         $salesMap = [];
-        StockWatchlistSale::whereIn('product_code', $productCodes)
-            ->get()
-            ->each(function ($s) use (&$salesMap) {
-                $salesMap[$s->product_code][$s->year][$s->month] = (float)$s->qty_sold;
-            });
+        if (!empty($productCodes)) {
+            DB::table('sales_lines')
+                ->selectRaw("
+                    product_code,
+                    YEAR(COALESCE(completed_date, order_date))  AS year,
+                    MONTH(COALESCE(completed_date, order_date)) AS month,
+                    SUM(quantity) AS qty_sold
+                ")
+                ->whereIn('product_code', $productCodes)
+                ->whereRaw('COALESCE(completed_date, order_date) BETWEEN ? AND ?', [$filterFrom, $filterTo])
+                ->where('quantity', '>', 0)
+                ->groupByRaw('product_code, YEAR(COALESCE(completed_date, order_date)), MONTH(COALESCE(completed_date, order_date))')
+                ->get()
+                ->each(function ($s) use (&$salesMap) {
+                    $salesMap[$s->product_code][(int)$s->year][(int)$s->month] = (float)$s->qty_sold;
+                });
+        }
+
+        // Years present in the filtered data
+        $years = [];
+        if (!empty($productCodes)) {
+            $years = DB::table('sales_lines')
+                ->selectRaw('DISTINCT YEAR(COALESCE(completed_date, order_date)) AS yr')
+                ->whereIn('product_code', $productCodes)
+                ->whereRaw('COALESCE(completed_date, order_date) BETWEEN ? AND ?', [$filterFrom, $filterTo])
+                ->where('quantity', '>', 0)
+                ->orderBy('yr')
+                ->pluck('yr')
+                ->map(fn($y) => (int)$y)
+                ->all();
+        }
+        if (empty($years)) {
+            $years = [(int)$now->year];
+        }
 
         $categories->each(function ($cat) use ($stockMap, $salesMap, $years, $now) {
             $leadDays = max(1, (int)($cat->lead_time_days ?? 30));
@@ -76,123 +102,20 @@ class StockWatchlistController extends Controller
             });
         });
 
-        $syncedAt = StockWatchlistStock::max('synced_at');
-
-        $salesFrom = $salesTo = null;
-        $stMin = DB::table('app_settings')->where('key', 'stock_sales_min_date')->value('value');
-        $stMax = DB::table('app_settings')->where('key', 'stock_sales_max_date')->value('value');
-        if ($stMin && $stMax) {
-            $salesFrom = Carbon::parse($stMin)->format('jS M Y');
-            $salesTo   = Carbon::parse($stMax)->format('jS M Y');
-        }
-
+        $syncedAt      = StockWatchlistStock::max('synced_at');
         $substitutions = StockWatchlistSubstitution::orderBy('id')->get();
 
-        return view('stock-watchlist.index', compact('categories', 'years', 'syncedAt', 'salesFrom', 'salesTo', 'substitutions'));
+        return view('stock-watchlist.index', compact('categories', 'years', 'syncedAt', 'filterFrom', 'filterTo', 'substitutions'));
     }
 
-    public function importSales(Request $request)
+    public function setDateFilter(Request $request): RedirectResponse
     {
-        $request->validate(['file' => 'required|file|max:20480']);
-
-        $content = file_get_contents($request->file('file')->getRealPath());
-        // Strip UTF-8 BOM if present
-        $content = ltrim($content, "\xEF\xBB\xBF");
-        // Normalise line endings
-        $content = str_replace("\r\n", "\n", str_replace("\r", "\n", $content));
-
-        $lines     = explode("\n", trim($content));
-        $firstLine = $lines[0] ?? '';
-        $delimiter = str_contains($firstLine, "\t") ? "\t" : ',';
-
-        // Parse header row
-        $headers = str_getcsv($firstLine, $delimiter);
-        $headers = array_map('trim', $headers);
-        $colMap  = array_flip($headers);
-
-        $codeCol = $colMap['Product Code'] ?? null;
-        $dateCol = $colMap['Order Date']   ?? null;
-        $qtyCol  = $colMap['Quantity']     ?? null;
-
-        if ($codeCol === null || $dateCol === null || $qtyCol === null) {
-            return response()->json([
-                'error'   => 'File must contain columns: Product Code, Order Date, Quantity',
-                'found'   => $headers,
-            ], 422);
-        }
-
-        $substitutions  = StockWatchlistSubstitution::all()->map(fn($s) => [
-            'find'    => strtoupper($s->find),
-            'replace' => strtoupper($s->replace),
-        ])->all();
-
-        $watchlistCodes = StockWatchlistItem::pluck('product_code')->all();
-        $monthly        = [];
-        $debugRows      = [];
-        $rowsProcessed  = 0;
-        $rowsSkipped    = 0;
-
-        foreach (array_slice($lines, 1) as $line) {
-            $line = trim($line);
-            if ($line === '') continue;
-            $row = str_getcsv($line, $delimiter);
-
-            $code    = strtoupper(trim($row[$codeCol] ?? ''));
-            $rawDate = trim($row[$dateCol] ?? '');
-            // Strip thousands commas and currency symbols before parsing
-            $qty     = (float) str_replace([',', '£', '$', '€'], '', $row[$qtyCol] ?? 0);
-
-            foreach ($substitutions as $sub) {
-                if (str_contains($code, $sub['find'])) {
-                    $code = str_replace($sub['find'], $sub['replace'], $code);
-                }
-            }
-
-            if (!$code || !$rawDate || $qty <= 0) { $rowsSkipped++; continue; }
-            if (!in_array($code, $watchlistCodes))  { $rowsSkipped++; continue; }
-
-            $dt = \DateTime::createFromFormat('d/m/Y', $rawDate)
-               ?: \DateTime::createFromFormat('Y-m-d', $rawDate);
-            if (!$dt) { $rowsSkipped++; continue; }
-
-            $year  = (int) $dt->format('Y');
-            $month = (int) $dt->format('n');
-
-            $monthly[$code][$year][$month] = ($monthly[$code][$year][$month] ?? 0) + $qty;
-            $rowsProcessed++;
-
-            if (count($debugRows) < 10) {
-                $debugRows[] = ['code' => $code, 'date' => $rawDate, 'qty' => $qty, 'year' => $year, 'month' => $month];
-            }
-        }
-
-        $rows = [];
-        foreach ($monthly as $code => $years) {
-            foreach ($years as $year => $months) {
-                foreach ($months as $month => $qty) {
-                    $rows[] = ['product_code' => $code, 'year' => $year, 'month' => $month, 'qty_sold' => $qty];
-                }
-            }
-        }
-
-        // Delete existing records for imported products so stale months don't persist
-        if (!empty($monthly)) {
-            DB::table('stock_watchlist_sales')->whereIn('product_code', array_keys($monthly))->delete();
-        }
-
-        foreach (array_chunk($rows, 200) as $chunk) {
-            DB::table('stock_watchlist_sales')->insert($chunk);
-        }
-
-        return response()->json([
-            'ok'             => true,
-            'products'       => count($monthly),
-            'months'         => count($rows),
-            'rows_processed' => $rowsProcessed,
-            'rows_skipped'   => $rowsSkipped,
-            'headers'        => $headers,
-            'sample'         => $debugRows,
+        $data = $request->validate([
+            'sales_from' => ['required', 'date'],
+            'sales_to'   => ['required', 'date', 'after_or_equal:sales_from'],
         ]);
+        session(['stock_sales_from' => $data['sales_from'], 'stock_sales_to' => $data['sales_to']]);
+        return redirect()->route('stock-watchlist.index');
     }
 
     public function sync()

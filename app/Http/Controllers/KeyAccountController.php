@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\KeyAccount;
 use App\Models\KeyAccountContact;
 use App\Models\KeyAccountGift;
-use App\Models\KeyAccountSale;
 use App\Models\ActivityLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -31,13 +30,36 @@ class KeyAccountController extends Controller
         $currentYear   = (int) now()->year;
         $customerCodes = $accounts->pluck('account_code')->all();
 
+        // Session-stored date range, defaulting to start of 2 years ago → today
+        $defaultFrom = now()->subYears(2)->startOfYear()->format('Y-m-d');
+        $defaultTo   = now()->format('Y-m-d');
+        $filterFrom  = session('ka_sales_from', $defaultFrom);
+        $filterTo    = session('ka_sales_to',   $defaultTo);
+
         $salesByYear = [];
         $dataYears   = [];
+
         if (!empty($customerCodes)) {
-            $rows = KeyAccountSale::whereIn('account_code', $customerCodes)->get();
+            $rows = DB::table('sales_lines')
+                ->selectRaw("
+                    customer_code,
+                    YEAR(COALESCE(completed_date, order_date)) AS year,
+                    SUM(sub_total) AS total,
+                    SUM(CASE WHEN MONTH(COALESCE(completed_date, order_date)) BETWEEN 1  AND 3  THEN sub_total ELSE 0 END) AS q1,
+                    SUM(CASE WHEN MONTH(COALESCE(completed_date, order_date)) BETWEEN 4  AND 6  THEN sub_total ELSE 0 END) AS q2,
+                    SUM(CASE WHEN MONTH(COALESCE(completed_date, order_date)) BETWEEN 7  AND 9  THEN sub_total ELSE 0 END) AS q3,
+                    SUM(CASE WHEN MONTH(COALESCE(completed_date, order_date)) BETWEEN 10 AND 12 THEN sub_total ELSE 0 END) AS q4
+                ")
+                ->whereIn('customer_code', $customerCodes)
+                ->whereRaw('COALESCE(completed_date, order_date) BETWEEN ? AND ?', [$filterFrom, $filterTo])
+                ->where('sub_total', '>', 0)
+                ->groupByRaw('customer_code, YEAR(COALESCE(completed_date, order_date))')
+                ->get();
+
             foreach ($rows as $row) {
-                $dataYears[] = (int) $row->year;
-                $salesByYear[$row->year][$row->account_code] = [
+                $year = (int) $row->year;
+                $dataYears[] = $year;
+                $salesByYear[$year][$row->customer_code] = [
                     'total' => (float) $row->total,
                     'q1'    => (float) $row->q1,
                     'q2'    => (float) $row->q2,
@@ -50,15 +72,17 @@ class KeyAccountController extends Controller
         $dataYears = $dataYears ? array_values(array_unique($dataYears)) : [$currentYear];
         sort($dataYears);
 
-        $salesFrom = $salesTo = null;
-        $minDate   = DB::table('app_settings')->where('key', 'ka_sales_min_date')->value('value');
-        $maxDate   = DB::table('app_settings')->where('key', 'ka_sales_max_date')->value('value');
-        if ($minDate && $maxDate) {
-            $salesFrom = Carbon::parse($minDate)->format('jS M Y');
-            $salesTo   = Carbon::parse($maxDate)->format('jS M Y');
-        }
+        return view('key-accounts.index', compact('accounts', 'salesByYear', 'dataYears', 'currentYear', 'isAdmin', 'filterFrom', 'filterTo'));
+    }
 
-        return view('key-accounts.index', compact('accounts', 'salesByYear', 'dataYears', 'currentYear', 'isAdmin', 'salesFrom', 'salesTo'));
+    public function setDateFilter(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'sales_from' => ['required', 'date'],
+            'sales_to'   => ['required', 'date', 'after_or_equal:sales_from'],
+        ]);
+        session(['ka_sales_from' => $data['sales_from'], 'ka_sales_to' => $data['sales_to']]);
+        return redirect()->route('key-accounts.index');
     }
 
     public function show(KeyAccount $keyAccount): View
@@ -128,81 +152,6 @@ class KeyAccountController extends Controller
         return back()->with('success', 'Notes saved.');
     }
 
-    public function importSales(Request $request): RedirectResponse
-    {
-        $request->validate(['file' => 'required|file|mimes:xlsx,xls,csv|max:20480']);
-
-        try {
-            $spreadsheet = IOFactory::load($request->file('file')->getRealPath());
-            $rows        = $spreadsheet->getActiveSheet()->toArray(null, true, false, false);
-
-            if (empty($rows)) {
-                return back()->withErrors(['sales_file' => 'File appears empty.']);
-            }
-
-            // Detect columns from header row
-            $header      = array_map(fn($h) => strtolower(trim((string) ($h ?? ''))), $rows[0]);
-            $colDate     = array_search('order date', $header);
-            $colCustomer = array_search('customer code', $header);
-            $colSubTotal = array_search('sub total', $header);
-            $colStatus   = array_search('status', $header);
-
-            if ($colDate === false || $colCustomer === false || $colSubTotal === false) {
-                return back()->withErrors(['sales_file' => 'Required columns not found. Expected: Order Date, Customer Code, Sub Total.']);
-            }
-
-            array_shift($rows);
-
-            // Aggregate: [year][customerCode] => [total, q1..q4]
-            $aggregated = [];
-
-            foreach ($rows as $row) {
-                $code     = trim((string) ($row[$colCustomer] ?? ''));
-                $subtotal = (float) ($row[$colSubTotal] ?? 0);
-                $rawDate  = $row[$colDate] ?? null;
-                $status   = strtolower(trim((string) ($colStatus !== false ? ($row[$colStatus] ?? '') : '')));
-
-                if (empty($code) || $subtotal <= 0) continue;
-                if ($status === 'cancelled') continue;
-
-                if (is_numeric($rawDate)) {
-                    $dt = ExcelDate::excelToDateTimeObject($rawDate);
-                } else {
-                    $dt = \DateTime::createFromFormat('d/m/Y', (string) $rawDate)
-                       ?: \DateTime::createFromFormat('Y-m-d', (string) $rawDate);
-                    if (!$dt) continue;
-                }
-                $year  = (int) $dt->format('Y');
-                $month = (int) $dt->format('n');
-
-                $quarter = 'q' . (int) ceil($month / 3);
-                $aggregated[$year][$code] ??= ['total' => 0.0, 'q1' => 0.0, 'q2' => 0.0, 'q3' => 0.0, 'q4' => 0.0];
-                $aggregated[$year][$code]['total']   += $subtotal;
-                $aggregated[$year][$code][$quarter]  += $subtotal;
-            }
-
-            $now    = now();
-            $userId = auth()->id();
-            $count  = 0;
-
-            foreach ($aggregated as $year => $customers) {
-                foreach ($customers as $code => $data) {
-                    KeyAccountSale::updateOrCreate(
-                        ['account_code' => $code, 'year' => $year],
-                        array_merge($data, ['imported_at' => $now, 'user_id' => $userId])
-                    );
-                    $count++;
-                }
-            }
-
-            ActivityLog::record('key_accounts.sales_import', "Imported sales for {$count} account/year(s)");
-
-            return back()->with('success', "Sales imported for {$count} account/year combination(s).");
-        } catch (\Throwable $e) {
-            return back()->withErrors(['sales_file' => 'Could not read file: ' . $e->getMessage()]);
-        }
-    }
-
     public function importGifts(Request $request): RedirectResponse
     {
         $request->validate(['file' => 'required|file|mimes:xlsx,xls|max:5120']);
@@ -253,7 +202,6 @@ class KeyAccountController extends Controller
             $codes    = array_keys($pending);
             $accounts = KeyAccount::withTrashed()->whereIn('account_code', $codes)->get()->keyBy('account_code');
 
-            // Ensure an account row exists for every code
             foreach ($codes as $code) {
                 if (!isset($accounts[$code])) {
                     $accounts[$code] = KeyAccount::create([
@@ -280,7 +228,6 @@ class KeyAccountController extends Controller
                     continue;
                 }
 
-                // Full replace: wipe existing gifts for this account then re-insert
                 DB::table('key_account_gifts')->where('key_account_id', $account->id)->delete();
 
                 foreach ($pending[$code] as $gift) {

@@ -82,11 +82,18 @@
             <p style="font-size:0.875rem;color:#64748b;margin:0;">
                 JW Products stock ordering tracker — sales history, on-hand levels, and order quantities.
             </p>
-            @if($salesFrom)
-            <p style="font-size:0.78rem;color:#94a3b8;margin:4px 0 0;">
-                Sales data: {{ $salesFrom }} – {{ $salesTo }}
-            </p>
-            @endif
+            <form method="POST" action="{{ route('stock-watchlist.sales.filter') }}"
+                  style="display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap;">
+                @csrf
+                <span style="font-size:0.75rem;color:#64748b;font-weight:500;">Sales period:</span>
+                <input type="date" name="sales_from" value="{{ $filterFrom }}"
+                       style="border:1px solid #cbd5e1;border-radius:6px;padding:3px 7px;font-size:0.75rem;color:#1e293b;">
+                <span style="font-size:0.75rem;color:#94a3b8;">to</span>
+                <input type="date" name="sales_to" value="{{ $filterTo }}"
+                       style="border:1px solid #cbd5e1;border-radius:6px;padding:3px 7px;font-size:0.75rem;color:#1e293b;">
+                <button type="submit" class="btn-ghost"
+                        style="padding:3px 10px;font-size:0.75rem;">Apply</button>
+            </form>
         </div>
         <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;flex-wrap:wrap;">
             <span id="sync-status" style="font-size:0.8rem;color:#94a3b8;">

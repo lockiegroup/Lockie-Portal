@@ -116,7 +116,7 @@ Route::middleware(['auth', 'otp'])->group(function () {
     Route::middleware('can:stock_ordering')->prefix('stock-watchlist')->name('stock-watchlist.')->group(function () {
         Route::get('/', [StockWatchlistController::class, 'index'])->name('index');
         Route::post('/sync', [StockWatchlistController::class, 'sync'])->name('sync');
-        Route::post('/import-sales', [StockWatchlistController::class, 'importSales'])->name('import-sales');
+        Route::post('/sales/filter', [StockWatchlistController::class, 'setDateFilter'])->name('sales.filter');
         Route::post('/categories', [StockWatchlistController::class, 'storeCategory'])->name('categories.store');
         Route::patch('/categories/{category}', [StockWatchlistController::class, 'updateCategory'])->name('categories.update');
         Route::delete('/categories/{category}', [StockWatchlistController::class, 'destroyCategory'])->name('categories.destroy');
@@ -149,7 +149,7 @@ Route::middleware(['auth', 'otp'])->group(function () {
     // Key Accounts (salesperson views)
     Route::prefix('key-accounts')->name('key-accounts.')->group(function () {
         Route::get('/', [KeyAccountController::class, 'index'])->name('index');
-        Route::post('/sales/import', [KeyAccountController::class, 'importSales'])->name('sales.import');
+        Route::post('/sales/filter', [KeyAccountController::class, 'setDateFilter'])->name('sales.filter');
         Route::post('/gifts/import', [KeyAccountController::class, 'importGifts'])->name('gifts.import');
         Route::get('/gifts/export', [KeyAccountController::class, 'exportGifts'])->name('gifts.export');
         Route::get('/{keyAccount}', [KeyAccountController::class, 'show'])->name('show');

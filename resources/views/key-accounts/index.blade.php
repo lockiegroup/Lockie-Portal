@@ -5,9 +5,19 @@
         <div>
             <h1 class="text-2xl font-bold text-slate-800">Key Accounts</h1>
             <p class="text-slate-500 mt-1">{{ $isAdmin ? 'All accounts' : 'Your assigned accounts' }}</p>
-            @if($salesFrom)
-            <p class="text-xs text-slate-400 mt-0.5">Sales data: {{ $salesFrom }} – {{ $salesTo }}</p>
-            @endif
+            <form method="POST" action="{{ route('key-accounts.sales.filter') }}" class="flex items-center gap-2 mt-2 flex-wrap">
+                @csrf
+                <span class="text-xs text-slate-500 font-medium">Sales period:</span>
+                <input type="date" name="sales_from" value="{{ $filterFrom }}"
+                       class="border border-slate-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-sky-500">
+                <span class="text-xs text-slate-400">to</span>
+                <input type="date" name="sales_to" value="{{ $filterTo }}"
+                       class="border border-slate-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-sky-500">
+                <button type="submit"
+                        class="px-3 py-1 rounded-lg bg-slate-900 text-white text-xs font-semibold hover:bg-slate-700 transition">
+                    Apply
+                </button>
+            </form>
         </div>
         <div class="flex gap-3 flex-wrap">
             @can('key_accounts_admin')
