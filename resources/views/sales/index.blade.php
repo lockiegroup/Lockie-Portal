@@ -87,16 +87,14 @@
         function tableHtml(group, totals) {
             const keys = Object.keys(group);
             if (keys.length === 0) {
-                return `<tbody><tr><td colspan="5" class="px-6 py-10 text-center text-slate-400">No records found for this period.</td></tr></tbody>`;
+                return `<tbody><tr><td colspan="3" class="px-6 py-10 text-center text-slate-400">No records found for this period.</td></tr></tbody>`;
             }
             const rows = keys.map(w => {
                 const d = group[w];
                 return `<tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
                     <td class="px-6 py-4 font-medium text-slate-800">${escHtml(w)}</td>
                     <td class="px-6 py-4 text-right text-slate-600">${fmtInt(d.count)}</td>
-                    <td class="px-6 py-4 text-right text-slate-600">£${fmt(d.sub)}</td>
-                    <td class="px-6 py-4 text-right text-slate-600">£${fmt(d.tax)}</td>
-                    <td class="px-6 py-4 text-right font-semibold text-slate-800">£${fmt(d.total)}</td>
+                    <td class="px-6 py-4 text-right font-semibold text-slate-800">£${fmt(d.sub)}</td>
                 </tr>`;
             }).join('');
             return `<tbody>${rows}</tbody>
@@ -105,8 +103,6 @@
                     <td class="px-6 py-4">Total</td>
                     <td class="px-6 py-4 text-right">${fmtInt(totals.count)}</td>
                     <td class="px-6 py-4 text-right">£${fmt(totals.sub)}</td>
-                    <td class="px-6 py-4 text-right">£${fmt(totals.tax)}</td>
-                    <td class="px-6 py-4 text-right">£${fmt(totals.total)}</td>
                 </tr>
             </tfoot>`;
         }
@@ -129,8 +125,8 @@
                 const t = totals[s.key];
                 return `<div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
                     <p class="text-slate-500 text-sm font-medium">${s.cardLabel}</p>
-                    <p class="text-2xl font-bold ${s.cardCls} mt-1">£${fmt(t.total)}</p>
-                    <p class="text-slate-400 text-sm mt-1">${fmtInt(t.count)} ${s.unit} &middot; ex VAT £${fmt(t.sub)}</p>
+                    <p class="text-2xl font-bold ${s.cardCls} mt-1">£${fmt(t.sub)}</p>
+                    <p class="text-slate-400 text-sm mt-1">${fmtInt(t.count)} ${s.unit} &middot; net ex VAT</p>
                 </div>`;
             }).join('');
 
@@ -151,9 +147,7 @@
                                 <tr class="bg-slate-50 border-b border-slate-100 text-slate-500 text-xs uppercase tracking-wide">
                                     <th class="px-6 py-3 text-left font-medium">Warehouse</th>
                                     <th class="px-6 py-3 text-right font-medium">Count</th>
-                                    <th class="px-6 py-3 text-right font-medium">Sub-Total</th>
-                                    <th class="px-6 py-3 text-right font-medium">VAT</th>
-                                    <th class="px-6 py-3 text-right font-medium">Total inc VAT</th>
+                                    <th class="px-6 py-3 text-right font-medium">Net (ex VAT)</th>
                                 </tr>
                             </thead>
                             ${tableHtml(group, totals[s.key])}
