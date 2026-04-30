@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Carbon\Carbon;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 
 class ImportsController extends Controller
 {
@@ -33,7 +35,7 @@ class ImportsController extends Controller
             $salesTo   = Carbon::parse($range->max_d)->format('jS M Y');
         }
 
-        $lastImport = \App\Models\ActivityLog::whereIn('action', ['imports.sales', 'imports.sales.queued', 'imports.sales.error'])
+        $lastImport = ActivityLog::whereIn('action', ['imports.sales', 'imports.sales.queued', 'imports.sales.error'])
             ->latest('created_at')
             ->first();
 
@@ -85,24 +87,156 @@ class ImportsController extends Controller
         $file = $request->file('file');
         $ext  = strtolower($file->getClientOriginalExtension());
 
+        ini_set('memory_limit', '512M');
+
         try {
-            $dir = storage_path('app/imports');
-            if (!is_dir($dir)) {
-                mkdir($dir, 0755, true);
+            $rows = in_array($ext, ['xlsx', 'xls'])
+                ? $this->parseSpreadsheet($file->getRealPath())
+                : $this->parseCsv($file->getRealPath());
+
+            if (empty($rows)) {
+                return back()->withErrors(['file' => 'File appears empty.']);
             }
-            $savedPath = $dir . '/sales-import-' . time() . '.' . $ext;
-            $file->move(dirname($savedPath), basename($savedPath));
 
-            $phpBin = file_exists('/usr/local/php84/bin/php-cli') ? '/usr/local/php84/bin/php-cli' : 'php';
-            $artisan = base_path('artisan');
-            exec('nohup ' . $phpBin . ' ' . escapeshellarg($artisan) . ' imports:process-sales ' . escapeshellarg($savedPath) . ' > /dev/null 2>&1 &');
+            $header = array_map(fn($h) => strtolower(trim((string)($h ?? ''))), $rows[0]);
 
-            ActivityLog::record('imports.sales.queued', 'Sales import queued for background processing');
+            $colOrderNo       = array_search('order no.',     $header);
+            $colOrderDate     = array_search('order date',    $header);
+            $colRequiredDate  = array_search('required date', $header);
+            $colCompletedDate = array_search('completed date',$header);
+            $colWarehouse     = array_search('warehouse',     $header);
+            $colCustomer      = array_search('customer code', $header);
+            $colCustomerName  = array_search('customer',      $header);
+            $colCustomerType  = array_search('customer type', $header);
+            $colProduct       = array_search('product code',  $header);
+            $colProductGroup  = array_search('product group', $header);
+            $colStatus        = array_search('status',        $header);
+            $colQty           = array_search('quantity',      $header);
+            $colSubTotal      = array_search('sub total',     $header);
 
-            return back()->with('success', 'Import started — your file is being processed in the background. Data will be updated within a minute or two. Refresh the page to see the updated date range once complete.');
+            $missing = [];
+            foreach (['order date' => 'Order Date', 'customer code' => 'Customer Code', 'product code' => 'Product Code', 'quantity' => 'Quantity', 'sub total' => 'Sub Total'] as $key => $label) {
+                if (array_search($key, $header) === false) $missing[] = $label;
+            }
+            if (!empty($missing)) {
+                return back()->withErrors(['file' => 'Required columns not found: ' . implode(', ', $missing) . '. Expected: Order No., Order Date, Required Date, Completed Date, Warehouse, Customer Code, Customer, Customer Type, Product Code, Product Group, Status, Quantity, Sub Total.']);
+            }
+
+            $substitutions = StockWatchlistSubstitution::all()->map(fn($s) => [
+                'find'    => strtoupper($s->find),
+                'replace' => strtoupper($s->replace),
+            ])->all();
+
+            array_shift($rows);
+
+            $insertRows = [];
+            $now        = now()->toDateTimeString();
+
+            foreach ($rows as $row) {
+                $status = strtolower(trim((string)($colStatus !== false ? ($row[$colStatus] ?? '') : '')));
+                if ($status === 'cancelled') continue;
+
+                $orderDate = $this->parseDate($row[$colOrderDate] ?? null, $ext);
+                if ($orderDate === null) continue;
+
+                $productCode = strtoupper(substr(trim((string)($colProduct !== false ? ($row[$colProduct] ?? '') : '')), 0, 100));
+                foreach ($substitutions as $sub) {
+                    if ($productCode && str_contains($productCode, $sub['find'])) {
+                        $productCode = str_replace($sub['find'], $sub['replace'], $productCode);
+                    }
+                }
+
+                $insertRows[] = [
+                    'order_no'        => $colOrderNo !== false      ? (substr(trim((string)($row[$colOrderNo] ?? '')), 0, 50) ?: null) : null,
+                    'order_date'      => $orderDate->format('Y-m-d'),
+                    'required_date'   => $colRequiredDate  !== false ? ($this->parseDate($row[$colRequiredDate]  ?? null, $ext)?->format('Y-m-d')) : null,
+                    'completed_date'  => $colCompletedDate !== false ? ($this->parseDate($row[$colCompletedDate] ?? null, $ext)?->format('Y-m-d')) : null,
+                    'warehouse'       => $colWarehouse     !== false ? (substr(trim((string)($row[$colWarehouse] ?? '')), 0, 100) ?: null) : null,
+                    'customer_code'   => $colCustomer      !== false ? (substr(trim((string)($row[$colCustomer] ?? '')), 0, 100) ?: null) : null,
+                    'customer'        => $colCustomerName  !== false ? (substr(trim((string)($row[$colCustomerName] ?? '')), 0, 255) ?: null) : null,
+                    'customer_type'   => $colCustomerType  !== false ? (substr(trim((string)($row[$colCustomerType] ?? '')), 0, 100) ?: null) : null,
+                    'product_code'    => $productCode ?: null,
+                    'product_group'   => $colProductGroup  !== false ? (substr(trim((string)($row[$colProductGroup] ?? '')), 0, 100) ?: null) : null,
+                    'status'          => $status ? substr($status, 0, 50) : null,
+                    'quantity'        => max(0, (float)str_replace([',', '£', '$', '€'], '', $colQty !== false ? ($row[$colQty] ?? 0) : 0)),
+                    'sub_total'       => max(0, (float)str_replace([',', '£', '$', '€'], '', $colSubTotal !== false ? ($row[$colSubTotal] ?? 0) : 0)),
+                    'created_at'      => $now,
+                    'updated_at'      => $now,
+                ];
+            }
+
+            unset($rows);
+
+            $count = count($insertRows);
+
+            // Save the session now so the user stays logged in even if the web server
+            // closes the connection while inserts are still running.
+            $request->session()->save();
+
+            // On PHP-FPM (shared hosting), fastcgi_finish_request() sends the HTTP
+            // response to the browser immediately and lets PHP keep running.
+            // This completely sidesteps the web server's HTTP timeout.
+            if (function_exists('fastcgi_finish_request')) {
+                redirect()->back()
+                    ->with('success', "Import started — processing {$count} rows. Refresh in a moment to see the result.")
+                    ->send();
+                fastcgi_finish_request();
+            }
+
+            set_time_limit(300);
+
+            DB::statement('TRUNCATE TABLE sales_lines');
+            DB::transaction(function () use ($insertRows) {
+                foreach (array_chunk($insertRows, 4000) as $chunk) {
+                    DB::table('sales_lines')->insert($chunk);
+                }
+            });
+            unset($insertRows);
+
+            ActivityLog::record('imports.sales', "Imported {$count} sales line(s)");
+
+            if (!function_exists('fastcgi_finish_request')) {
+                return back()->with('success', "Imported {$count} sales line(s) into master sales table.");
+            }
+
+            exit(0);
         } catch (\Throwable $e) {
-            return back()->withErrors(['file' => 'Could not start import: ' . $e->getMessage()]);
+            ActivityLog::record('imports.sales.error', 'Import failed: ' . $e->getMessage());
+            return back()->withErrors(['file' => 'Could not read file: ' . $e->getMessage()]);
         }
     }
 
+    private function parseSpreadsheet(string $path): array
+    {
+        $reader = IOFactory::createReaderForFile($path);
+        $reader->setReadDataOnly(true);
+        return $reader->load($path)->getActiveSheet()->toArray(null, true, false, false);
+    }
+
+    private function parseCsv(string $path): array
+    {
+        $content   = file_get_contents($path);
+        $content   = ltrim($content, "\xEF\xBB\xBF");
+        $content   = str_replace("\r\n", "\n", str_replace("\r", "\n", $content));
+        $lines     = explode("\n", trim($content));
+        $delimiter = str_contains($lines[0] ?? '', "\t") ? "\t" : ',';
+        return array_map(fn($line) => str_getcsv($line, $delimiter), $lines);
+    }
+
+    private function parseDate(mixed $raw, string $ext): ?\DateTime
+    {
+        if ($raw === null || $raw === '') return null;
+
+        if (in_array($ext, ['xlsx', 'xls']) && is_numeric($raw)) {
+            try {
+                return ExcelDate::excelToDateTimeObject($raw);
+            } catch (\Throwable) {
+                return null;
+            }
+        }
+
+        return \DateTime::createFromFormat('d/m/Y', (string)$raw)
+            ?: \DateTime::createFromFormat('Y-m-d', (string)$raw)
+            ?: (($ts = strtotime((string)$raw)) ? (new \DateTime())->setTimestamp($ts) : null);
+    }
 }
