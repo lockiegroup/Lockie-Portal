@@ -83,6 +83,9 @@ class ImportsController extends Controller
         $file = $request->file('file');
         $ext  = strtolower($file->getClientOriginalExtension());
 
+        ini_set('memory_limit', '512M');
+        set_time_limit(300);
+
         try {
             $rows = in_array($ext, ['xlsx', 'xls'])
                 ? $this->parseSpreadsheet($file->getRealPath())
@@ -177,7 +180,9 @@ class ImportsController extends Controller
 
     private function parseSpreadsheet(string $path): array
     {
-        return IOFactory::load($path)->getActiveSheet()->toArray(null, true, false, false);
+        $reader = IOFactory::createReaderForFile($path);
+        $reader->setReadDataOnly(true);
+        return $reader->load($path)->getActiveSheet()->toArray(null, true, false, false);
     }
 
     private function parseCsv(string $path): array
