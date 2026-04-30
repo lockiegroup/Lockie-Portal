@@ -75,7 +75,11 @@ class SalesController extends Controller
                     return [
                         $this->groupByWarehouse($salesOrders),
                         $this->groupByWarehouse($fetched['credits']),
-                        ['sales' => count($salesOrders), 'credits' => count($fetched['credits'])],
+                        [
+                            'sales'         => count($salesOrders),
+                            'salesRaw'      => count($fetched['sales']),
+                            'credits'       => count($fetched['credits']),
+                        ],
                         ['statuses' => $statusBreakdown, 'rawSubTotal' => $rawSubTotal, 'apiFrom' => $apiFrom, 'apiTo' => $apiTo],
                     ];
                 }

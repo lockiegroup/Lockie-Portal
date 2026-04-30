@@ -139,7 +139,7 @@
                         <h2 class="font-semibold text-slate-800">${s.title}</h2>
                         <span class="text-slate-400 text-xs ml-2">${s.note}</span>
                         <div class="ml-auto flex items-center gap-4">
-                            <span class="text-slate-400 text-sm">${fmtInt(counts[s.countKey] ?? 0)} ${s.unit}</span>
+                            <span class="text-slate-400 text-sm">${fmtInt(counts[s.countKey] ?? 0)} of ${fmtInt(counts.salesRaw ?? 0)} ${s.unit} (excl. cancelled)</span>
                             <span class="text-slate-300 text-sm">|</span>
                             <span class="text-slate-400 text-sm">${escHtml(from)} — ${escHtml(to)}</span>
                         </div>
