@@ -86,10 +86,20 @@ class ImportsController extends Controller
         ini_set('memory_limit', '512M');
         set_time_limit(300);
 
+        \Log::info('storeSales: start', [
+            'memory_limit'       => ini_get('memory_limit'),
+            'max_execution_time' => ini_get('max_execution_time'),
+            'file_size'          => $file->getSize(),
+            'ext'                => $ext,
+        ]);
+
         try {
+            \Log::info('storeSales: parsing file');
             $rows = in_array($ext, ['xlsx', 'xls'])
                 ? $this->parseSpreadsheet($file->getRealPath())
                 : $this->parseCsv($file->getRealPath());
+
+            \Log::info('storeSales: parsed', ['rows' => count($rows)]);
 
             if (empty($rows)) {
                 return back()->withErrors(['file' => 'File appears empty.']);
