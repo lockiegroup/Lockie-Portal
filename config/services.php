@@ -36,9 +36,8 @@ return [
     ],
 
     'unleashed' => [
-        'id'             => env('UNLEASHED_API_ID'),
-        'key'            => env('UNLEASHED_API_KEY'),
-        'extra_statuses' => env('UNLEASHED_EXTRA_STATUSES', 'Proforma,Sleeves,Consignment'),
+        'id'  => env('UNLEASHED_API_ID'),
+        'key' => env('UNLEASHED_API_KEY'),
     ],
 
 ];
