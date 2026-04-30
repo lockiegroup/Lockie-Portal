@@ -53,7 +53,10 @@ class SalesController extends Controller
                 function () use ($apiFrom, $apiTo) {
                     // Fetch in weekly chunks — avoids Unleashed's bug where date-filtered
                     // queries return an empty page 2, silently capping results at 500.
-                    $allSales   = $this->unleashed->fetchByDateRange('SalesOrders', [], $apiFrom, $apiTo);
+                    // Unleashed excludes custom statuses (Proforma, Sleeves) unless
+                    // requested explicitly. Pass all known statuses; filter Deleted in PHP.
+                    $statusParam = ['orderStatus' => 'Parked,Placed,Backordered,Completed,Proforma,Sleeves,Consignment'];
+                    $allSales   = $this->unleashed->fetchByDateRange('SalesOrders', $statusParam, $apiFrom, $apiTo);
                     $allCredits = $this->unleashed->fetchByDateRange('CreditNotes', [], $apiFrom, $apiTo);
 
                     // Count orders by status before filtering
@@ -65,7 +68,7 @@ class SalesController extends Controller
 
                     $salesOrders = array_values(array_filter(
                         $allSales,
-                        fn($o) => strcasecmp($o['OrderStatus'] ?? '', 'Cancelled') !== 0
+                        fn($o) => strcasecmp($o['OrderStatus'] ?? '', 'Deleted') !== 0
                     ));
 
                     $rawSubTotal = array_sum(array_column($salesOrders, 'SubTotal'));
