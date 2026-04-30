@@ -40,11 +40,18 @@ class SalesController extends Controller
         }
 
         try {
+            // Unleashed API dates are UTC. Convert the user's UK (Europe/London) dates
+            // to UTC so BST orders near midnight aren't dropped or duplicated.
+            $ukTz    = new \DateTimeZone('Europe/London');
+            $utcTz   = new \DateTimeZone('UTC');
+            $apiFrom = (new \DateTime("{$from} 00:00:00", $ukTz))->setTimezone($utcTz)->format('Y-m-d');
+            $apiTo   = (new \DateTime("{$to} 23:59:59",   $ukTz))->setTimezone($utcTz)->format('Y-m-d');
+
             [$salesByWarehouse, $creditsByWarehouse] = Cache::remember(
                 $cacheKey,
                 1800,
-                function () use ($from, $to) {
-                    $params = ['startDate' => $from, 'endDate' => $to];
+                function () use ($apiFrom, $apiTo) {
+                    $params = ['startDate' => $apiFrom, 'endDate' => $apiTo];
 
                     $fetched = $this->unleashed->parallelPaginate([
                         'sales'   => ['SalesOrders', $params],
