@@ -102,13 +102,12 @@ class PrintScheduleSyncService
                 $existing   = $activeJobs->get($guid . ':' . $lineNumber);
 
                 if (!$existing) {
-                    $swept = PrintJob::where('unleashed_guid', $guid)
+                    $swept = PrintJob::withoutGlobalScopes()
+                        ->where('unleashed_guid', $guid)
                         ->where('line_number', $lineNumber)
-                        ->whereNotNull('archived_at')
-                        ->whereNull('archive_reason')
                         ->first();
                     if ($swept) {
-                        $swept->update(['archived_at' => null]);
+                        $swept->update(['archived_at' => null, 'archive_reason' => null]);
                         $existing = $swept->fresh();
                         $activeJobs->put($guid . ':' . $lineNumber, $existing);
                     }
@@ -217,6 +216,18 @@ class PrintScheduleSyncService
 
             $seenGuids[$guid] = true;
             $existing         = $activeJobs->get($guid);
+
+            if (!$existing) {
+                $swept = PrintJob::withoutGlobalScopes()
+                    ->where('unleashed_guid', $guid)
+                    ->where('line_number', 1)
+                    ->first();
+                if ($swept) {
+                    $swept->update(['archived_at' => null, 'archive_reason' => null]);
+                    $existing = $swept->fresh();
+                    $activeJobs->put($guid, $existing);
+                }
+            }
 
             $productDescription = $assembly['Product']['ProductDescription'] ?? null;
             $assembledQty       = (int) ($assembly['Quantity'] ?? 0);
