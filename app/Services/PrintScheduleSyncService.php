@@ -98,8 +98,24 @@ class PrintScheduleSyncService
                 if (str_contains(strtolower($productCode), 'carriage')) continue;
                 if (str_starts_with(strtoupper($productCode), 'H-')) continue;
 
-                $lineNumber = (int) ($line['LineNumber'] ?? ($lineIndex + 1));
-                $existing   = $activeJobs->get($guid . ':' . $lineNumber);
+                $lineNumber  = (int) ($line['LineNumber'] ?? ($lineIndex + 1));
+                $existing    = $activeJobs->get($guid . ':' . $lineNumber);
+                $shipQty     = (float) ($line['ShipQuantity'] ?? 0);
+                $orderQty    = (float) ($line['OrderQuantity'] ?? 0);
+                $lineShipped = $orderQty > 0 && $shipQty >= $orderQty;
+
+                // If Unleashed shows this line fully shipped and we have an active card, archive it
+                if ($lineShipped && $existing) {
+                    $existing->update(['archived_at' => now(), 'archive_reason' => 'completed']);
+                    $activeJobs->forget($guid . ':' . $lineNumber);
+                    $updated++;
+                    continue;
+                }
+
+                // If fully shipped and no active card, leave it archived — nothing to do
+                if ($lineShipped) {
+                    continue;
+                }
 
                 $anyExisting = null;
                 if (!$existing) {
