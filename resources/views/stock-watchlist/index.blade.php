@@ -322,9 +322,6 @@
                                     <input type="text" name="product_code" placeholder="Product code…"
                                         style="border:1px solid #e2e8f0;border-radius:6px;padding:4px 10px;font-size:0.8rem;color:#334155;width:160px;text-transform:uppercase;"
                                         oninput="this.value=this.value.toUpperCase()" required>
-                                    <input type="number" name="lead_time_months" placeholder="Lead (mo)"
-                                        style="border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px;font-size:0.8rem;color:#334155;width:90px;"
-                                        min="1" max="120" value="3">
                                     <button type="submit"
                                         style="padding:4px 14px;background:#0f172a;color:white;border:none;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;">
                                         + Add
@@ -518,14 +515,13 @@ function deleteCategory(id, btn) {
 // ── Items ─────────────────────────────────────────────────────────────────────
 function addItem(e, catId, form) {
     e.preventDefault();
-    const code     = form.product_code.value.trim().toUpperCase();
-    const leadTime = form.lead_time_months.value;
+    const code = form.product_code.value.trim().toUpperCase();
     if (!code) return;
 
     fetch(`/stock-watchlist/categories/${catId}/items`, {
         method: 'POST',
         headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ product_code: code, lead_time_months: leadTime }),
+        body: JSON.stringify({ product_code: code }),
     })
     .then(r => r.json())
     .then(d => {
