@@ -172,14 +172,20 @@ class ImportsController extends Controller
                 ];
             }
 
-            DB::transaction(function () use ($insertRows) {
-                DB::table('sales_lines')->delete();
-                foreach (array_chunk($insertRows, 500) as $chunk) {
-                    DB::table('sales_lines')->insert($chunk);
-                }
-            });
+            unset($rows);
 
             $count = count($insertRows);
+            \Log::info('storeSales: inserting', ['rows' => $count]);
+
+            // TRUNCATE is instant vs DELETE on 100k+ rows
+            DB::statement('TRUNCATE TABLE sales_lines');
+            foreach (array_chunk($insertRows, 2000) as $chunk) {
+                DB::table('sales_lines')->insert($chunk);
+            }
+            unset($insertRows);
+
+            \Log::info('storeSales: done', ['inserted' => $count]);
+
             ActivityLog::record('imports.sales', "Imported {$count} sales line(s)");
 
             return back()->with('success', "Imported {$count} sales line(s) into master sales table.");
