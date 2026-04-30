@@ -178,9 +178,10 @@ class ImportsController extends Controller
             \Log::info('storeSales: inserting', ['rows' => $count]);
 
             // TRUNCATE then wrap all inserts in one transaction (single commit = much faster than 30 auto-commits)
+            // MySQL hard limit: 65,535 placeholders. 15 columns × 4000 = 60,000 — safe.
             DB::statement('TRUNCATE TABLE sales_lines');
             DB::transaction(function () use ($insertRows) {
-                foreach (array_chunk($insertRows, 5000) as $chunk) {
+                foreach (array_chunk($insertRows, 4000) as $chunk) {
                     DB::table('sales_lines')->insert($chunk);
                 }
             });
