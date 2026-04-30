@@ -51,9 +51,25 @@ class SalesController extends Controller
                 $cacheKey,
                 1800,
                 function () use ($apiFrom, $apiTo) {
-                    // No status filter — Unleashed returns all non-deleted orders by default.
-                    $allSales   = $this->unleashed->fetchByDateRange('SalesOrders', [], $apiFrom, $apiTo);
-                    $allCredits = $this->unleashed->fetchByDateRange('CreditNotes',  [], $apiFrom, $apiTo);
+                    // Two calls needed: Unleashed only returns custom-status orders when
+                    // customOrderStatus is passed explicitly (it overrides orderStatus).
+                    $customStatuses = implode(',', [
+                        'Awaiting Proof', 'Call Off', 'Coditherm', 'Hoefon', 'Laser',
+                        'PO Placed', 'Proforma', 'SKD', 'Sleeves', 'Waiting Yoseal',
+                    ]);
+                    $fixedSales  = $this->unleashed->fetchByDateRange('SalesOrders', [], $apiFrom, $apiTo);
+                    $customSales = $this->unleashed->fetchByDateRange('SalesOrders', ['customOrderStatus' => $customStatuses], $apiFrom, $apiTo);
+                    $allCredits  = $this->unleashed->fetchByDateRange('CreditNotes',  [], $apiFrom, $apiTo);
+
+                    // Merge, dedup by GUID
+                    $seenGuids = array_flip(array_filter(array_column($fixedSales, 'Guid')));
+                    $allSales  = $fixedSales;
+                    foreach ($customSales as $order) {
+                        $guid = $order['Guid'] ?? null;
+                        if ($guid && isset($seenGuids[$guid])) continue;
+                        if ($guid) $seenGuids[$guid] = true;
+                        $allSales[] = $order;
+                    }
 
                     // Count orders by status before filtering
                     $statusBreakdown = [];

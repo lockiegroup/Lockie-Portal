@@ -132,14 +132,18 @@ class UnleashedService
         $responses = Http::pool(function ($pool) use ($endpoint, $chunks) {
             $calls = [];
             foreach ($chunks as $i => $params) {
-                // Comma-separated filter params must NOT be URL-encoded.
-                // Extract them and append raw after the standard encoded params.
+                // Comma-separated filter params must NOT have commas URL-encoded,
+                // but spaces and other chars still need encoding.
                 $rawParams = ['orderStatus', 'customOrderStatus'];
                 $raw  = array_intersect_key($params, array_flip($rawParams));
                 $rest = array_diff_key($params, array_flip($rawParams));
                 $qs   = http_build_query(array_merge($rest, ['pageSize' => 500, 'pageNumber' => 1]));
                 foreach ($raw as $key => $val) {
-                    if ($val) $qs .= "&{$key}={$val}";
+                    if ($val) {
+                        // Encode everything then restore commas to literal
+                        $encoded = str_replace('%2C', ',', rawurlencode($val));
+                        $qs .= "&{$key}={$encoded}";
+                    }
                 }
                 $calls[] = $pool->as($i)
                     ->timeout(30)
