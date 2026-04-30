@@ -685,8 +685,12 @@
         if (typeof Sortable !== 'undefined') {
             document.querySelectorAll('[id^="sortable-"]').forEach(function (el) {
                 Sortable.create(el, {
-                    handle:    '.drag-handle',
-                    animation: 150,
+                    handle:          '.drag-handle',
+                    animation:       150,
+                    scroll:          true,
+                    scrollSensitivity: 100,
+                    scrollSpeed:     20,
+                    bubbleScroll:    true,
                     onEnd: function (evt) {
                         const boardKey   = el.dataset.board;
                         const cards      = el.querySelectorAll('.job-card');
