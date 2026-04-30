@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
@@ -95,6 +96,56 @@ class UnleashedService
 
         foreach ($pages as $page) {
             $res = $responses[$page] ?? null;
+            if (!$res || $res instanceof \Throwable || $res->failed()) continue;
+            foreach ($res->json()['Items'] ?? [] as $item) {
+                $guid = $item['Guid'] ?? null;
+                if ($guid !== null && isset($seen[$guid])) continue;
+                if ($guid !== null) $seen[$guid] = true;
+                $items[] = $item;
+            }
+        }
+
+        return $items;
+    }
+
+    /**
+     * Fetch an endpoint across a date range by splitting into weekly chunks,
+     * all requested in parallel. Avoids Unleashed's bug where date-filtered
+     * queries return an empty page 2, capping results at 500.
+     */
+    public function fetchByDateRange(string $endpoint, array $baseParams, string $from, string $to): array
+    {
+        $chunks = [];
+        $start  = Carbon::parse($from);
+        $end    = Carbon::parse($to);
+
+        while ($start->lte($end)) {
+            $chunkEnd = $start->copy()->addDays(6)->min($end);
+            $chunks[] = array_merge($baseParams, [
+                'startDate' => $start->toDateString(),
+                'endDate'   => $chunkEnd->toDateString(),
+            ]);
+            $start->addDays(7);
+        }
+
+        // Fire all weekly chunks in a single parallel pool
+        $responses = Http::pool(function ($pool) use ($endpoint, $chunks) {
+            $calls = [];
+            foreach ($chunks as $i => $params) {
+                $qs      = http_build_query(array_merge($params, ['pageSize' => 500, 'pageNumber' => 1]));
+                $calls[] = $pool->as($i)
+                    ->timeout(30)
+                    ->withHeaders($this->headers($qs))
+                    ->get(self::BASE_URL . "/{$endpoint}?{$qs}");
+            }
+            return $calls;
+        });
+
+        $items = [];
+        $seen  = [];
+
+        foreach (array_keys($chunks) as $i) {
+            $res = $responses[$i] ?? null;
             if (!$res || $res instanceof \Throwable || $res->failed()) continue;
             foreach ($res->json()['Items'] ?? [] as $item) {
                 $guid = $item['Guid'] ?? null;

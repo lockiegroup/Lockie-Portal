@@ -51,22 +51,20 @@ class SalesController extends Controller
                 $cacheKey,
                 1800,
                 function () use ($apiFrom, $apiTo) {
-                    $params = ['startDate' => $apiFrom, 'endDate' => $apiTo];
-
-                    $fetched = $this->unleashed->parallelPaginate([
-                        'sales'   => ['SalesOrders', $params],
-                        'credits' => ['CreditNotes', $params],
-                    ]);
+                    // Fetch in weekly chunks — avoids Unleashed's bug where date-filtered
+                    // queries return an empty page 2, silently capping results at 500.
+                    $allSales   = $this->unleashed->fetchByDateRange('SalesOrders', [], $apiFrom, $apiTo);
+                    $allCredits = $this->unleashed->fetchByDateRange('CreditNotes', [], $apiFrom, $apiTo);
 
                     // Count orders by status before filtering
                     $statusBreakdown = [];
-                    foreach ($fetched['sales'] as $o) {
+                    foreach ($allSales as $o) {
                         $s = $o['OrderStatus'] ?? 'Unknown';
                         $statusBreakdown[$s] = ($statusBreakdown[$s] ?? 0) + 1;
                     }
 
                     $salesOrders = array_values(array_filter(
-                        $fetched['sales'],
+                        $allSales,
                         fn($o) => strcasecmp($o['OrderStatus'] ?? '', 'Cancelled') !== 0
                     ));
 
@@ -74,11 +72,11 @@ class SalesController extends Controller
 
                     return [
                         $this->groupByWarehouse($salesOrders),
-                        $this->groupByWarehouse($fetched['credits']),
+                        $this->groupByWarehouse($allCredits),
                         [
-                            'sales'         => count($salesOrders),
-                            'salesRaw'      => count($fetched['sales']),
-                            'credits'       => count($fetched['credits']),
+                            'sales'    => count($salesOrders),
+                            'salesRaw' => count($allSales),
+                            'credits'  => count($allCredits),
                         ],
                         ['statuses' => $statusBreakdown, 'rawSubTotal' => $rawSubTotal, 'apiFrom' => $apiFrom, 'apiTo' => $apiTo],
                     ];
