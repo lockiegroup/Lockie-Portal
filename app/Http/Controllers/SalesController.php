@@ -47,7 +47,7 @@ class SalesController extends Controller
             $apiFrom = (new \DateTime("{$from} 00:00:00", $ukTz))->setTimezone($utcTz)->format('Y-m-d');
             $apiTo   = (new \DateTime("{$to} 23:59:59",   $ukTz))->setTimezone($utcTz)->format('Y-m-d');
 
-            [$salesByWarehouse, $creditsByWarehouse, $counts] = Cache::remember(
+            [$salesByWarehouse, $creditsByWarehouse, $counts, $debug] = Cache::remember(
                 $cacheKey,
                 1800,
                 function () use ($apiFrom, $apiTo) {
@@ -58,15 +58,25 @@ class SalesController extends Controller
                         'credits' => ['CreditNotes', $params],
                     ]);
 
+                    // Count orders by status before filtering
+                    $statusBreakdown = [];
+                    foreach ($fetched['sales'] as $o) {
+                        $s = $o['OrderStatus'] ?? 'Unknown';
+                        $statusBreakdown[$s] = ($statusBreakdown[$s] ?? 0) + 1;
+                    }
+
                     $salesOrders = array_values(array_filter(
                         $fetched['sales'],
                         fn($o) => strcasecmp($o['OrderStatus'] ?? '', 'Cancelled') !== 0
                     ));
 
+                    $rawSubTotal = array_sum(array_column($salesOrders, 'SubTotal'));
+
                     return [
                         $this->groupByWarehouse($salesOrders),
                         $this->groupByWarehouse($fetched['credits']),
                         ['sales' => count($salesOrders), 'credits' => count($fetched['credits'])],
+                        ['statuses' => $statusBreakdown, 'rawSubTotal' => $rawSubTotal, 'apiFrom' => $apiFrom, 'apiTo' => $apiTo],
                     ];
                 }
             );
@@ -76,6 +86,7 @@ class SalesController extends Controller
                 'salesByWarehouse'   => $salesByWarehouse,
                 'creditsByWarehouse' => $creditsByWarehouse,
                 'counts'             => $counts,
+                'debug'              => $debug,
             ]);
         } catch (\Throwable $e) {
             return response()->json([

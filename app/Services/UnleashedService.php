@@ -116,7 +116,6 @@ class UnleashedService
         $keys       = array_keys($requests);
         $results    = array_fill_keys($keys, []);
         $seenGuids  = array_fill_keys($keys, []);
-        $maxPages   = array_fill_keys($keys, 1);
         $activeKeys = $keys;
         $page       = 1;
 
@@ -169,10 +168,10 @@ class UnleashedService
                         $newCount++;
                     }
                 }
-                $maxPages[$key] = $data['Pagination']['NumberOfPages'] ?? 1;
-                // Stop if no new items were added (Unleashed pagination bug: filtered queries
-                // return the same page repeatedly when NumberOfPages > actual filtered pages)
-                if ($newCount > 0 && $page < $maxPages[$key]) {
+                // Continue as long as new items arrive. We intentionally do NOT rely on
+                // NumberOfPages because Unleashed returns 1 for filtered queries even when
+                // there are additional pages. GUID dedup stops us if Unleashed loops a page.
+                if ($newCount > 0) {
                     $nextActive[] = $key;
                 }
             }
