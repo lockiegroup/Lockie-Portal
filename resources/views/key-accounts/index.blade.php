@@ -18,6 +18,9 @@
                     Apply
                 </button>
             </form>
+            @if($salesFrom ?? false)
+            <p class="text-xs text-slate-400 mt-1">Data covers: <span class="text-slate-500 font-medium">{{ $salesFrom }} – {{ $salesTo }}</span></p>
+            @endif
         </div>
         <div class="flex gap-3 flex-wrap">
             @can('key_accounts_admin')

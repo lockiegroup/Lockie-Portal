@@ -94,6 +94,9 @@
                 <button type="submit" class="btn-ghost"
                         style="padding:3px 10px;font-size:0.75rem;">Apply</button>
             </form>
+            @if($salesFrom)
+            <p style="font-size:0.7rem;color:#94a3b8;margin:2px 0 0;">Data covers: <span style="color:#64748b;font-weight:500;">{{ $salesFrom }} – {{ $salesTo }}</span></p>
+            @endif
         </div>
         <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;flex-wrap:wrap;">
             <span id="sync-status" style="font-size:0.8rem;color:#94a3b8;">

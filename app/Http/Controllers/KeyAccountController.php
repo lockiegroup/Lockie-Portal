@@ -72,7 +72,14 @@ class KeyAccountController extends Controller
         $dataYears = $dataYears ? array_values(array_unique($dataYears)) : [$currentYear];
         sort($dataYears);
 
-        return view('key-accounts.index', compact('accounts', 'salesByYear', 'dataYears', 'currentYear', 'isAdmin', 'filterFrom', 'filterTo'));
+        $salesFrom = $salesTo = null;
+        $range = DB::table('sales_lines')->selectRaw('MIN(order_date) as min_d, MAX(order_date) as max_d')->first();
+        if ($range && $range->min_d) {
+            $salesFrom = Carbon::parse($range->min_d)->format('jS M Y');
+            $salesTo   = Carbon::parse($range->max_d)->format('jS M Y');
+        }
+
+        return view('key-accounts.index', compact('accounts', 'salesByYear', 'dataYears', 'currentYear', 'isAdmin', 'filterFrom', 'filterTo', 'salesFrom', 'salesTo'));
     }
 
     public function setDateFilter(Request $request): RedirectResponse

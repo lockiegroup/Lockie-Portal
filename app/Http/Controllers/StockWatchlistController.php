@@ -105,7 +105,14 @@ class StockWatchlistController extends Controller
         $syncedAt      = StockWatchlistStock::max('synced_at');
         $substitutions = StockWatchlistSubstitution::orderBy('id')->get();
 
-        return view('stock-watchlist.index', compact('categories', 'years', 'syncedAt', 'filterFrom', 'filterTo', 'substitutions'));
+        $salesFrom = $salesTo = null;
+        $range = DB::table('sales_lines')->selectRaw('MIN(order_date) as min_d, MAX(order_date) as max_d')->first();
+        if ($range && $range->min_d) {
+            $salesFrom = Carbon::parse($range->min_d)->format('jS M Y');
+            $salesTo   = Carbon::parse($range->max_d)->format('jS M Y');
+        }
+
+        return view('stock-watchlist.index', compact('categories', 'years', 'syncedAt', 'filterFrom', 'filterTo', 'substitutions', 'salesFrom', 'salesTo'));
     }
 
     public function setDateFilter(Request $request): RedirectResponse
