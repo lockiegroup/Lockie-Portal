@@ -155,9 +155,10 @@ class UnleashedService
                         "Unleashed API error ({$res->status()}): " . $res->body()
                     );
                 }
-                $data     = $res->json() ?? [];
-                $items    = $data['Items'] ?? [];
-                $newCount = 0;
+                $data      = $res->json() ?? [];
+                $items     = $data['Items'] ?? [];
+                $pageCount = count($items);
+                $newCount  = 0;
                 foreach ($items as $item) {
                     $guid = $item['Guid'] ?? null;
                     if ($guid === null || !isset($seenGuids[$key][$guid])) {
@@ -168,10 +169,10 @@ class UnleashedService
                         $newCount++;
                     }
                 }
-                // Continue as long as new items arrive. We intentionally do NOT rely on
-                // NumberOfPages because Unleashed returns 1 for filtered queries even when
-                // there are additional pages. GUID dedup stops us if Unleashed loops a page.
-                if ($newCount > 0) {
+                // Continue only when the page was full (partial page = last page) AND
+                // at least one item was new (handles Unleashed's page-repeat bug where
+                // filtered queries return page 1 content for every pageNumber).
+                if ($newCount > 0 && $pageCount >= $pageSize) {
                     $nextActive[] = $key;
                 }
             }
