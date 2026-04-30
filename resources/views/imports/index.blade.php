@@ -58,10 +58,11 @@
 
             @if($lastImport)
             @php
-                $isQueued = $lastImport->action === 'imports.sales.queued';
+                $isQueued = $lastImport->action === 'imports.sales.queued' && $lastImport->created_at->gt(now()->subMinutes(5));
                 $isError  = $lastImport->action === 'imports.sales.error';
                 $ago      = $lastImport->created_at->diffForHumans();
             @endphp
+            @if($isQueued || $isError || $lastImport->action === 'imports.sales')
             <div class="mt-4 flex items-center gap-2 text-xs rounded-lg px-3 py-2 {{ $isError ? 'bg-red-50 text-red-700 border border-red-200' : ($isQueued ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-green-50 text-green-700 border border-green-200') }}">
                 @if($isQueued)
                 <svg class="animate-spin shrink-0" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
@@ -76,6 +77,7 @@
             </div>
             @if($isQueued)
             <script>setTimeout(() => location.reload(), 15000)</script>
+            @endif
             @endif
             @endif
         </div>
