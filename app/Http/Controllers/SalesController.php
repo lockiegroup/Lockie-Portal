@@ -53,16 +53,9 @@ class SalesController extends Controller
                 function () use ($apiFrom, $apiTo) {
                     // Fetch in weekly chunks — avoids Unleashed's bug where date-filtered
                     // queries return an empty page 2, silently capping results at 500.
-                    // Unleashed silently drops custom statuses unless requested explicitly.
-                    // List all statuses except Deleted; filter Deleted in PHP below.
-                    $statusParam = ['orderStatus' => implode(',', [
-                        // Fixed statuses
-                        'Parked', 'Placed', 'Backordered', 'Completed',
-                        // Custom statuses
-                        'Awaiting Proof', 'Call Off', 'Coditherm', 'Hoefon', 'Laser',
-                        'PO Placed', 'Proforma', 'SKD', 'Sleeves', 'Waiting Yoseal',
-                    ])];
-                    $allSales   = $this->unleashed->fetchByDateRange('SalesOrders', $statusParam, $apiFrom, $apiTo);
+                    // No orderStatus filter needed — Unleashed returns all non-deleted
+                    // orders by default, including custom statuses.
+                    $allSales   = $this->unleashed->fetchByDateRange('SalesOrders', [], $apiFrom, $apiTo);
                     $allCredits = $this->unleashed->fetchByDateRange('CreditNotes', [], $apiFrom, $apiTo);
 
                     // Count orders by status before filtering
