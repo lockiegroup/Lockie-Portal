@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\StockWatchlistItem;
 use App\Models\StockWatchlistStock;
 
 class StockWatchlistSyncService
