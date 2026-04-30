@@ -90,9 +90,13 @@ class ImportsController extends Controller
         ini_set('memory_limit', '512M');
 
         try {
+            \Log::info('storeSales:start', ['ext' => $ext, 'size' => $file->getSize(), 'memory_limit' => ini_get('memory_limit')]);
+
             $rows = in_array($ext, ['xlsx', 'xls'])
                 ? $this->parseSpreadsheet($file->getRealPath())
                 : $this->parseCsv($file->getRealPath());
+
+            \Log::info('storeSales:parsed', ['rows' => count($rows)]);
 
             if (empty($rows)) {
                 return back()->withErrors(['file' => 'File appears empty.']);
@@ -168,28 +172,31 @@ class ImportsController extends Controller
             unset($rows);
 
             $count = count($insertRows);
+            \Log::info('storeSales:built', ['count' => $count, 'memory' => memory_get_usage(true)]);
 
-            // Save session before the long DB operation so the user can't be logged out
-            // even if the web server closes the HTTP connection due to timeout.
-            // ignore_user_abort keeps PHP running after the connection is closed.
             $request->session()->save();
             ignore_user_abort(true);
             set_time_limit(0);
+            \Log::info('storeSales:inserting');
 
             DB::statement('TRUNCATE TABLE sales_lines');
+            \Log::info('storeSales:truncated');
+
             DB::transaction(function () use ($insertRows) {
                 foreach (array_chunk($insertRows, 4000) as $chunk) {
                     DB::table('sales_lines')->insert($chunk);
                 }
             });
             unset($insertRows);
+            \Log::info('storeSales:done', ['count' => $count]);
 
             ActivityLog::record('imports.sales', "Imported {$count} sales line(s)");
 
             return back()->with('success', "Imported {$count} sales line(s) into master sales table.");
         } catch (\Throwable $e) {
+            \Log::error('storeSales:error', ['message' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
             ActivityLog::record('imports.sales.error', 'Import failed: ' . $e->getMessage());
-            return back()->withErrors(['file' => 'Could not read file: ' . $e->getMessage()]);
+            return back()->withErrors(['file' => 'Import failed: ' . $e->getMessage()]);
         }
     }
 
