@@ -47,7 +47,7 @@ class SalesController extends Controller
             $apiFrom = (new \DateTime("{$from} 00:00:00", $ukTz))->setTimezone($utcTz)->format('Y-m-d');
             $apiTo   = (new \DateTime("{$to} 23:59:59",   $ukTz))->setTimezone($utcTz)->format('Y-m-d');
 
-            [$salesByWarehouse, $creditsByWarehouse] = Cache::remember(
+            [$salesByWarehouse, $creditsByWarehouse, $counts] = Cache::remember(
                 $cacheKey,
                 1800,
                 function () use ($apiFrom, $apiTo) {
@@ -60,12 +60,13 @@ class SalesController extends Controller
 
                     $salesOrders = array_values(array_filter(
                         $fetched['sales'],
-                        fn($o) => ($o['OrderStatus'] ?? '') !== 'Cancelled'
+                        fn($o) => strcasecmp($o['OrderStatus'] ?? '', 'Cancelled') !== 0
                     ));
 
                     return [
                         $this->groupByWarehouse($salesOrders),
                         $this->groupByWarehouse($fetched['credits']),
+                        ['sales' => count($salesOrders), 'credits' => count($fetched['credits'])],
                     ];
                 }
             );
@@ -74,6 +75,7 @@ class SalesController extends Controller
                 'success'            => true,
                 'salesByWarehouse'   => $salesByWarehouse,
                 'creditsByWarehouse' => $creditsByWarehouse,
+                'counts'             => $counts,
             ]);
         } catch (\Throwable $e) {
             return response()->json([
