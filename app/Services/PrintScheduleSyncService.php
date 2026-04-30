@@ -101,16 +101,19 @@ class PrintScheduleSyncService
                 $lineNumber = (int) ($line['LineNumber'] ?? ($lineIndex + 1));
                 $existing   = $activeJobs->get($guid . ':' . $lineNumber);
 
+                $anyExisting = null;
                 if (!$existing) {
-                    $swept = PrintJob::withoutGlobalScopes()
+                    $anyExisting = PrintJob::withoutGlobalScopes()
                         ->where('unleashed_guid', $guid)
                         ->where('line_number', $lineNumber)
                         ->first();
-                    if ($swept) {
-                        $swept->update(['archived_at' => null, 'archive_reason' => null]);
-                        $existing = $swept->fresh();
+                    if ($anyExisting && $anyExisting->archive_reason === null) {
+                        // Auto-swept (no explicit reason): safe to restore
+                        $anyExisting->update(['archived_at' => null]);
+                        $existing = $anyExisting->fresh();
                         $activeJobs->put($guid . ':' . $lineNumber, $existing);
                     }
+                    // If archived with a reason (e.g. completed): leave it archived
                 }
 
                 if ($existing) {
@@ -138,7 +141,8 @@ class PrintScheduleSyncService
                     }
                     $existing->update($update);
                     $updated++;
-                } else {
+                } elseif (!$anyExisting) {
+                    // No record exists at all — create fresh
                     PrintJob::create([
                         'unleashed_guid'         => $guid,
                         'line_number'            => $lineNumber,
@@ -166,6 +170,7 @@ class PrintScheduleSyncService
                     ]);
                     $created++;
                 }
+                // else: archived with a reason (e.g. line completed) — leave it archived, skip
             }
         }
     }
@@ -216,17 +221,20 @@ class PrintScheduleSyncService
 
             $seenGuids[$guid] = true;
             $existing         = $activeJobs->get($guid);
+            $anyExisting      = null;
 
             if (!$existing) {
-                $swept = PrintJob::withoutGlobalScopes()
+                $anyExisting = PrintJob::withoutGlobalScopes()
                     ->where('unleashed_guid', $guid)
                     ->where('line_number', 1)
                     ->first();
-                if ($swept) {
-                    $swept->update(['archived_at' => null, 'archive_reason' => null]);
-                    $existing = $swept->fresh();
+                if ($anyExisting && $anyExisting->archive_reason === null) {
+                    // Auto-swept: safe to restore
+                    $anyExisting->update(['archived_at' => null]);
+                    $existing = $anyExisting->fresh();
                     $activeJobs->put($guid, $existing);
                 }
+                // If archived with a reason: leave it archived
             }
 
             $productDescription = $assembly['Product']['ProductDescription'] ?? null;
@@ -302,7 +310,8 @@ class PrintScheduleSyncService
                 }
                 $existing->update($update);
                 $updated++;
-            } else {
+            } elseif (!$anyExisting) {
+                // No record exists at all — create fresh
                 PrintJob::create([
                     'unleashed_guid'         => $guid,
                     'line_number'            => 1,
@@ -330,6 +339,7 @@ class PrintScheduleSyncService
                 ]);
                 $created++;
             }
+            // else: archived with a reason — leave it archived, skip
         }
 
         // Sweep using the pre-fetched collection — no extra DB query needed.
