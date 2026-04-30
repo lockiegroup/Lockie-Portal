@@ -123,8 +123,12 @@ class ProcessSalesImport extends Command
 
     private function parseCsv(string $path): array
     {
-        $content   = file_get_contents($path);
-        $content   = ltrim($content, "\xEF\xBB\xBF");
+        $content = file_get_contents($path);
+        if (str_starts_with($content, "\xEF\xBB\xBF")) {
+            $content = substr($content, 3);
+        } elseif (!mb_check_encoding($content, 'UTF-8')) {
+            $content = mb_convert_encoding($content, 'UTF-8', 'Windows-1252');
+        }
         $content   = str_replace("\r\n", "\n", str_replace("\r", "\n", $content));
         $lines     = explode("\n", trim($content));
         $delimiter = str_contains($lines[0] ?? '', "\t") ? "\t" : ',';

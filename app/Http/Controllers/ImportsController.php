@@ -194,9 +194,11 @@ class ImportsController extends Controller
 
             return back()->with('success', "Imported {$count} sales line(s) into master sales table.");
         } catch (\Throwable $e) {
-            \Log::error('storeSales:error', ['message' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
-            ActivityLog::record('imports.sales.error', 'Import failed: ' . $e->getMessage());
-            return back()->withErrors(['file' => 'Import failed: ' . $e->getMessage()]);
+            \Log::error('storeSales:error', ['message' => substr($e->getMessage(), 0, 500), 'file' => $e->getFile(), 'line' => $e->getLine()]);
+            try {
+                ActivityLog::record('imports.sales.error', substr('Import failed: ' . $e->getMessage(), 0, 250));
+            } catch (\Throwable) {}
+            return back()->withErrors(['file' => 'Import failed: ' . substr($e->getMessage(), 0, 200)]);
         }
     }
 
@@ -209,8 +211,14 @@ class ImportsController extends Controller
 
     private function parseCsv(string $path): array
     {
-        $content   = file_get_contents($path);
-        $content   = ltrim($content, "\xEF\xBB\xBF");
+        $content = file_get_contents($path);
+        // Strip UTF-8 BOM if present, otherwise convert from Windows-1252
+        // (Unleashed exports CSVs in Windows-1252, which uses \x96 for en-dash etc.)
+        if (str_starts_with($content, "\xEF\xBB\xBF")) {
+            $content = substr($content, 3);
+        } elseif (!mb_check_encoding($content, 'UTF-8')) {
+            $content = mb_convert_encoding($content, 'UTF-8', 'Windows-1252');
+        }
         $content   = str_replace("\r\n", "\n", str_replace("\r", "\n", $content));
         $lines     = explode("\n", trim($content));
         $delimiter = str_contains($lines[0] ?? '', "\t") ? "\t" : ',';
