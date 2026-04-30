@@ -134,7 +134,7 @@ class KeyAccountController extends Controller
 
         try {
             $spreadsheet = IOFactory::load($request->file('file')->getRealPath());
-            $rows        = $spreadsheet->getActiveSheet()->toArray(null, true, true, false);
+            $rows        = $spreadsheet->getActiveSheet()->toArray(null, true, false, false);
 
             if (empty($rows)) {
                 return back()->withErrors(['sales_file' => 'File appears empty.']);
@@ -209,7 +209,7 @@ class KeyAccountController extends Controller
 
         try {
             $spreadsheet = IOFactory::load($request->file('file')->getRealPath());
-            $rows        = $spreadsheet->getActiveSheet()->toArray(null, true, true, false);
+            $rows        = $spreadsheet->getActiveSheet()->toArray(null, true, false, false);
             array_shift($rows);
 
             $user    = auth()->user();
