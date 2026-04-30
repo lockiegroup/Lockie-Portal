@@ -28,7 +28,7 @@ class ImportsController extends Controller
 
         $salesFrom = $salesTo = null;
         $range = DB::table('sales_lines')
-            ->selectRaw('MIN(COALESCE(completed_date, order_date)) as min_d, MAX(COALESCE(completed_date, order_date)) as max_d')
+            ->selectRaw('MIN(order_date) as min_d, MAX(order_date) as max_d')
             ->first();
         if ($range && $range->min_d) {
             $salesFrom = Carbon::parse($range->min_d)->format('jS M Y');

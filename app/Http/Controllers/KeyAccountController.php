@@ -43,17 +43,17 @@ class KeyAccountController extends Controller
             $rows = DB::table('sales_lines')
                 ->selectRaw("
                     customer_code,
-                    YEAR(COALESCE(completed_date, order_date)) AS year,
+                    YEAR(order_date) AS year,
                     SUM(sub_total) AS total,
-                    SUM(CASE WHEN MONTH(COALESCE(completed_date, order_date)) BETWEEN 1  AND 3  THEN sub_total ELSE 0 END) AS q1,
-                    SUM(CASE WHEN MONTH(COALESCE(completed_date, order_date)) BETWEEN 4  AND 6  THEN sub_total ELSE 0 END) AS q2,
-                    SUM(CASE WHEN MONTH(COALESCE(completed_date, order_date)) BETWEEN 7  AND 9  THEN sub_total ELSE 0 END) AS q3,
-                    SUM(CASE WHEN MONTH(COALESCE(completed_date, order_date)) BETWEEN 10 AND 12 THEN sub_total ELSE 0 END) AS q4
+                    SUM(CASE WHEN MONTH(order_date) BETWEEN 1  AND 3  THEN sub_total ELSE 0 END) AS q1,
+                    SUM(CASE WHEN MONTH(order_date) BETWEEN 4  AND 6  THEN sub_total ELSE 0 END) AS q2,
+                    SUM(CASE WHEN MONTH(order_date) BETWEEN 7  AND 9  THEN sub_total ELSE 0 END) AS q3,
+                    SUM(CASE WHEN MONTH(order_date) BETWEEN 10 AND 12 THEN sub_total ELSE 0 END) AS q4
                 ")
                 ->whereIn('customer_code', $customerCodes)
-                ->whereRaw('COALESCE(completed_date, order_date) BETWEEN ? AND ?', [$filterFrom, $filterTo])
+                ->whereRaw('order_date BETWEEN ? AND ?', [$filterFrom, $filterTo])
                 ->where('sub_total', '>', 0)
-                ->groupByRaw('customer_code, YEAR(COALESCE(completed_date, order_date))')
+                ->groupByRaw('customer_code, YEAR(order_date)')
                 ->get();
 
             foreach ($rows as $row) {

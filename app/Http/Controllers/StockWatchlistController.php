@@ -34,14 +34,14 @@ class StockWatchlistController extends Controller
             DB::table('sales_lines')
                 ->selectRaw("
                     product_code,
-                    YEAR(COALESCE(completed_date, order_date))  AS year,
-                    MONTH(COALESCE(completed_date, order_date)) AS month,
+                    YEAR(order_date)  AS year,
+                    MONTH(order_date) AS month,
                     SUM(quantity) AS qty_sold
                 ")
                 ->whereIn('product_code', $productCodes)
-                ->whereRaw('COALESCE(completed_date, order_date) BETWEEN ? AND ?', [$filterFrom, $filterTo])
+                ->whereRaw('order_date BETWEEN ? AND ?', [$filterFrom, $filterTo])
                 ->where('quantity', '>', 0)
-                ->groupByRaw('product_code, YEAR(COALESCE(completed_date, order_date)), MONTH(COALESCE(completed_date, order_date))')
+                ->groupByRaw('product_code, YEAR(order_date), MONTH(order_date)')
                 ->get()
                 ->each(function ($s) use (&$salesMap) {
                     $salesMap[$s->product_code][(int)$s->year][(int)$s->month] = (float)$s->qty_sold;
@@ -52,9 +52,9 @@ class StockWatchlistController extends Controller
         $years = [];
         if (!empty($productCodes)) {
             $years = DB::table('sales_lines')
-                ->selectRaw('DISTINCT YEAR(COALESCE(completed_date, order_date)) AS yr')
+                ->selectRaw('DISTINCT YEAR(order_date) AS yr')
                 ->whereIn('product_code', $productCodes)
-                ->whereRaw('COALESCE(completed_date, order_date) BETWEEN ? AND ?', [$filterFrom, $filterTo])
+                ->whereRaw('order_date BETWEEN ? AND ?', [$filterFrom, $filterTo])
                 ->where('quantity', '>', 0)
                 ->orderBy('yr')
                 ->pluck('yr')
