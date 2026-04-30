@@ -33,7 +33,11 @@ class ImportsController extends Controller
             $salesTo   = Carbon::parse($range->max_d)->format('jS M Y');
         }
 
-        return view('imports.index', compact('doKA', 'doStock', 'substitutions', 'salesFrom', 'salesTo'));
+        $lastImport = \App\Models\ActivityLog::whereIn('action', ['imports.sales', 'imports.sales.queued', 'imports.sales.error'])
+            ->latest('created_at')
+            ->first();
+
+        return view('imports.index', compact('doKA', 'doStock', 'substitutions', 'salesFrom', 'salesTo', 'lastImport'));
     }
 
     public function storeSubstitution(Request $request): RedirectResponse
@@ -93,7 +97,7 @@ class ImportsController extends Controller
             $artisan = base_path('artisan');
             exec('nohup ' . $phpBin . ' ' . escapeshellarg($artisan) . ' imports:process-sales ' . escapeshellarg($savedPath) . ' > /dev/null 2>&1 &');
 
-            ActivityLog::record('imports.sales', 'Sales import queued for background processing');
+            ActivityLog::record('imports.sales.queued', 'Sales import queued for background processing');
 
             return back()->with('success', 'Import started — your file is being processed in the background. Data will be updated within a minute or two. Refresh the page to see the updated date range once complete.');
         } catch (\Throwable $e) {

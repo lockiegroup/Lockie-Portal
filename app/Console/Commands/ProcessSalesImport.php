@@ -97,12 +97,18 @@ class ProcessSalesImport extends Command
         $count = count($insertRows);
         $this->info("Building complete — {$count} rows to insert.");
 
-        DB::statement('TRUNCATE TABLE sales_lines');
-        DB::transaction(function () use ($insertRows) {
-            foreach (array_chunk($insertRows, 4000) as $chunk) {
-                DB::table('sales_lines')->insert($chunk);
-            }
-        });
+        try {
+            DB::statement('TRUNCATE TABLE sales_lines');
+            DB::transaction(function () use ($insertRows) {
+                foreach (array_chunk($insertRows, 4000) as $chunk) {
+                    DB::table('sales_lines')->insert($chunk);
+                }
+            });
+        } catch (\Throwable $e) {
+            ActivityLog::record('imports.sales.error', 'Import failed: ' . $e->getMessage());
+            $this->error('Import failed: ' . $e->getMessage());
+            return;
+        }
 
         ActivityLog::record('imports.sales', "Imported {$count} sales line(s)");
         $this->info("Done. Imported {$count} sales line(s).");
