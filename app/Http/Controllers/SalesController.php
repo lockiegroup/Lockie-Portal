@@ -53,9 +53,11 @@ class SalesController extends Controller
                 function () use ($apiFrom, $apiTo) {
                     // Fetch in weekly chunks — avoids Unleashed's bug where date-filtered
                     // queries return an empty page 2, silently capping results at 500.
-                    // Unleashed excludes custom statuses (Proforma, Sleeves) unless
-                    // requested explicitly. Pass all known statuses; filter Deleted in PHP.
-                    $statusParam = ['orderStatus' => 'Parked,Placed,Backordered,Completed,Proforma,Sleeves,Consignment'];
+                    // Unleashed excludes custom statuses unless requested explicitly.
+                    // Standard statuses + any extras configured in UNLEASHED_EXTRA_STATUSES.
+                    $base    = 'Parked,Placed,Backordered,Completed';
+                    $extras  = config('services.unleashed.extra_statuses');
+                    $statusParam = ['orderStatus' => $extras ? "{$base},{$extras}" : $base];
                     $allSales   = $this->unleashed->fetchByDateRange('SalesOrders', $statusParam, $apiFrom, $apiTo);
                     $allCredits = $this->unleashed->fetchByDateRange('CreditNotes', [], $apiFrom, $apiTo);
 
