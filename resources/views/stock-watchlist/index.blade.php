@@ -1,7 +1,7 @@
 <x-layout title="Stock Watchlist — Lockie Portal">
 
 <style>
-.sw-wrap { overflow-x: auto; }
+.sw-wrap { overflow-x: auto; overflow-y: auto; max-height: calc(100vh - 200px); }
 .sw-table { border-collapse: collapse; font-size: 0.8rem; min-width: 100%; white-space: nowrap; }
 .sw-table th {
     background: #0f172a; color: #e2e8f0;
