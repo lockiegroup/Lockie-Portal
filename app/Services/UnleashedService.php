@@ -499,6 +499,49 @@ class UnleashedService
     }
 
     /**
+     * Fetch StockOnHand for specific product codes in parallel batches.
+     * Returns: ['PROD001' => ['on_hand' => 40.0, 'allocated' => 0.0], ...]
+     */
+    public function fetchStockOnHandByCodes(array $productCodes, int $batchSize = 20): array
+    {
+        $result = [];
+
+        foreach (array_chunk($productCodes, $batchSize) as $chunk) {
+            $requests = [];
+            foreach ($chunk as $code) {
+                $qs = http_build_query(['productCode' => $code, 'pageSize' => 50, 'pageNumber' => 1]);
+                $requests[$code] = [
+                    'url'     => self::BASE_URL . '/StockOnHand?' . $qs,
+                    'headers' => $this->headers($qs),
+                ];
+            }
+
+            $responses = Http::pool(function ($pool) use ($requests) {
+                $calls = [];
+                foreach ($requests as $key => $info) {
+                    $calls[] = $pool->as($key)->timeout(30)->withHeaders($info['headers'])->get($info['url']);
+                }
+                return $calls;
+            });
+
+            foreach ($chunk as $code) {
+                $response = $responses[$code] ?? null;
+                if (!$response || $response instanceof \Throwable || $response->failed()) continue;
+
+                $onHand    = 0.0;
+                $allocated = 0.0;
+                foreach ($response->json()['Items'] ?? [] as $item) {
+                    $onHand    += (float) ($item['QtyOnHand']        ?? 0);
+                    $allocated += (float) ($item['AllocatedQuantity'] ?? 0);
+                }
+                $result[$code] = ['on_hand' => $onHand, 'allocated' => $allocated];
+            }
+        }
+
+        return $result;
+    }
+
+    /**
      * Fetch open purchase orders and aggregate remaining qty + earliest due date per ProductCode.
      * Returns: ['PROD001' => ['qty' => 50.0, 'date' => '2026-05-15'], ...]
      */
