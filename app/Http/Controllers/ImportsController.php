@@ -177,11 +177,13 @@ class ImportsController extends Controller
             $count = count($insertRows);
             \Log::info('storeSales: inserting', ['rows' => $count]);
 
-            // TRUNCATE is instant vs DELETE on 100k+ rows
+            // TRUNCATE then wrap all inserts in one transaction (single commit = much faster than 30 auto-commits)
             DB::statement('TRUNCATE TABLE sales_lines');
-            foreach (array_chunk($insertRows, 2000) as $chunk) {
-                DB::table('sales_lines')->insert($chunk);
-            }
+            DB::transaction(function () use ($insertRows) {
+                foreach (array_chunk($insertRows, 5000) as $chunk) {
+                    DB::table('sales_lines')->insert($chunk);
+                }
+            });
             unset($insertRows);
 
             \Log::info('storeSales: done', ['inserted' => $count]);
