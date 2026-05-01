@@ -63,13 +63,13 @@ class PrintScheduleController extends Controller
         }
 
         // Count how many active jobs share each order number (for multi-line badge on cards)
-        $orderLineCounts = PrintJob::active()
-            ->whereNotNull('order_number')
-            ->where('order_number', '!=', 'MANUAL')
-            ->selectRaw('order_number, count(*) as line_count')
-            ->groupBy('order_number')
-            ->pluck('line_count', 'order_number')
-            ->all();
+        $orderLineCounts = array_count_values(
+            PrintJob::active()
+                ->whereNotNull('order_number')
+                ->where('order_number', '!=', 'MANUAL')
+                ->pluck('order_number')
+                ->toArray()
+        );
 
         return view('print-schedule.index', compact(
             'boardJobs',
