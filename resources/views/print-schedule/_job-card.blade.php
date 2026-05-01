@@ -28,7 +28,7 @@
                 @if($job->is_manual)
                     <span style="font-size:0.65rem;font-weight:700;background:#dcfce7;color:#15803d;padding:1px 6px;border-radius:9999px;text-transform:uppercase;letter-spacing:0.05em;">Manual</span>
                 @endif
-                @php $lineCount = $orderLineCounts[$job->order_number] ?? 1; @endphp
+                @php $lineCount = (isset($orderLineCounts) ? ($orderLineCounts[$job->order_number] ?? 1) : 1); @endphp
                 @if($lineCount > 1)
                     <span style="font-size:0.65rem;font-weight:700;background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:9999px;text-transform:uppercase;letter-spacing:0.05em;">{{ $lineCount }} lines</span>
                 @endif
