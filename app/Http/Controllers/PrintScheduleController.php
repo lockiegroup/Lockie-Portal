@@ -62,14 +62,25 @@ class PrintScheduleController extends Controller
             }
         }
 
-        // Count how many active jobs share each order number (for multi-line badge on cards)
-        $orderLineCounts = array_count_values(
-            PrintJob::active()
-                ->whereNotNull('order_number')
-                ->where('order_number', '!=', 'MANUAL')
-                ->pluck('order_number')
-                ->toArray()
-        );
+        // Count active jobs per effective SO number (for multi-line badge on cards).
+        // Regular jobs: group by order_number (e.g. SO-00026477).
+        // Assembly jobs: group by the sales order number extracted from line_comment
+        //   ("Created for Invoice SO-XXXXX."), since each assembly has its own ASM number.
+        $orderLineCounts = [];
+        PrintJob::active()
+            ->whereNotNull('order_number')
+            ->where('order_number', '!=', 'MANUAL')
+            ->select(['order_number', 'line_comment'])
+            ->get()
+            ->each(function ($job) use (&$orderLineCounts) {
+                if (str_starts_with($job->order_number, 'ASM-')
+                    && preg_match('/\b(SO-\d+)\b/', $job->line_comment ?? '', $m)) {
+                    $key = $m[1];
+                } else {
+                    $key = $job->order_number;
+                }
+                $orderLineCounts[$key] = ($orderLineCounts[$key] ?? 0) + 1;
+            });
 
         return view('print-schedule.index', compact(
             'boardJobs',
