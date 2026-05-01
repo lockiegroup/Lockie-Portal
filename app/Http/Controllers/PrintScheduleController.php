@@ -62,6 +62,15 @@ class PrintScheduleController extends Controller
             }
         }
 
+        // Count how many active jobs share each order number (for multi-line badge on cards)
+        $orderLineCounts = PrintJob::active()
+            ->whereNotNull('order_number')
+            ->where('order_number', '!=', 'MANUAL')
+            ->selectRaw('order_number, count(*) as line_count')
+            ->groupBy('order_number')
+            ->pluck('line_count', 'order_number')
+            ->all();
+
         return view('print-schedule.index', compact(
             'boardJobs',
             'boards',
@@ -69,7 +78,8 @@ class PrintScheduleController extends Controller
             'machines',
             'machineLeadTimes',
             'throughputs',
-            'lastSync'
+            'lastSync',
+            'orderLineCounts'
         ));
     }
 

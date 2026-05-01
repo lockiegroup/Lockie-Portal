@@ -141,7 +141,7 @@
                 <div id="sortable-{{ $boardKey }}" style="display:flex;flex-direction:column;gap:16px;" data-board="{{ $boardKey }}">
 
                     @forelse($boardJobs[$boardKey] as $job)
-                        @include('print-schedule._job-card', ['job' => $job, 'boards' => $boards])
+                        @include('print-schedule._job-card', ['job' => $job, 'boards' => $boards, 'orderLineCounts' => $orderLineCounts])
                     @empty
                         <div class="empty-state-{{ $boardKey }} text-center py-12 text-slate-400">
                             <svg class="w-10 h-10 mx-auto mb-3 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
