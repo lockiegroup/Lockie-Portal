@@ -54,7 +54,7 @@ class SequentialFinderController extends Controller
 
         // 2. Unleashed Assemblies (all statuses, not just active)
         try {
-            $assemblies = $this->unleashed->paginate('Assemblies', ['productCode' => $productCode], 200);
+            $assemblies = $this->unleashed->paginateFast('Assemblies', ['productCode' => $productCode], 200);
             foreach ($assemblies as $asm) {
                 $num   = $asm['AssemblyNumber'] ?? null;
                 $range = $this->parseNumbered($asm['Comments'] ?? '');
@@ -71,7 +71,7 @@ class SequentialFinderController extends Controller
 
         // 3. Unleashed Purchase Orders (China orders)
         try {
-            $pos = $this->unleashed->paginate('PurchaseOrders', ['productCode' => $productCode], 200);
+            $pos = $this->unleashed->paginateFast('PurchaseOrders', ['productCode' => $productCode], 200);
             foreach ($pos as $po) {
                 $poNum = $po['OrderNumber'] ?? null;
                 if (!$poNum || isset($seen[$poNum])) continue;
