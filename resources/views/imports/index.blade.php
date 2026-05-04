@@ -17,17 +17,15 @@
 
         {{-- Sales import section --}}
         <div class="p-6">
-            <div class="flex items-start justify-between gap-4 mb-3">
-                <div>
+            <div class="mb-3">
+                <div class="flex flex-wrap items-start justify-between gap-x-4 gap-y-1 mb-1">
                     <h2 class="text-base font-semibold text-slate-800">Sales Enquiry Import</h2>
-                    <p class="text-sm text-slate-500 mt-0.5">Export from <strong>Reports → Sales → Sales Enquiry</strong> in Unleashed.</p>
-                    <p class="text-xs text-slate-400 mt-0.5">Required columns: Order No., Order Date, Required Date, Completed Date, Warehouse, Customer Code, Customer, Customer Type, Product Code, Product Group, Status, Quantity, Sub Total</p>
+                    @if($salesFrom)
+                    <span class="text-xs text-slate-400 whitespace-nowrap">Data covers: <span class="text-slate-500 font-medium">{{ $salesFrom }} – {{ $salesTo }}</span></span>
+                    @endif
                 </div>
-                @if($salesFrom)
-                <div class="text-right text-xs text-slate-400 shrink-0">
-                    <div>Data covers: <span class="text-slate-500 font-medium">{{ $salesFrom }} – {{ $salesTo }}</span></div>
-                </div>
-                @endif
+                <p class="text-sm text-slate-500">Export from <strong>Reports → Sales → Sales Enquiry</strong> in Unleashed.</p>
+                <p class="text-xs text-slate-400 mt-0.5">Required columns: Order No., Order Date, Required Date, Completed Date, Warehouse, Customer Code, Customer, Customer Type, Product Code, Product Group, Status, Quantity, Sub Total</p>
             </div>
 
             <div class="flex flex-wrap gap-2 mb-4">
@@ -45,12 +43,12 @@
                 @endif
             </div>
 
-            <form action="{{ route('imports.sales') }}" method="POST" enctype="multipart/form-data" class="flex items-center gap-3 flex-wrap">
+            <form action="{{ route('imports.sales') }}" method="POST" enctype="multipart/form-data" class="flex flex-col gap-2 sm:flex-row sm:items-center sm:flex-wrap">
                 @csrf
                 <input type="file" name="file" accept=".xlsx,.xls,.csv" required
                     class="block text-sm text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-slate-100 file:text-slate-700 file:font-medium file:cursor-pointer hover:file:bg-slate-200 transition">
                 <button type="submit"
-                    class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-semibold hover:bg-slate-700 transition shrink-0">
+                    class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-semibold hover:bg-slate-700 transition">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                     Import
                 </button>
