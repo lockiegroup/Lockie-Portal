@@ -161,9 +161,9 @@ class AmazonController extends Controller
 
     public function xeroPost(AmazonSettlement $settlement): JsonResponse
     {
-        $this->authorize('amazon-admin');
-
         try {
+            $this->authorize('amazon-admin');
+
             $service = new AmazonSyncService(
                 new AmazonService(),
                 new XeroService(),
