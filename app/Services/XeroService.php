@@ -63,7 +63,9 @@ class XeroService
         $payload = [
             'BankTransactions' => [[
                 'Type'            => 'RECEIVE',
-                'BankAccount'     => ['Code' => config('services.xero.clearing_account_code')],
+                'BankAccount'     => config('services.xero.clearing_account_id')
+                    ? ['AccountID' => config('services.xero.clearing_account_id')]
+                    : ['Code'      => config('services.xero.clearing_account_code')],
                 'Date'            => $settlementData['date'],
                 'Reference'       => 'Amazon Settlement ' . $settlementData['settlement_id'],
                 'LineAmountTypes' => 'EXCLUSIVE',

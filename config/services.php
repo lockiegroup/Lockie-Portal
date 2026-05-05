@@ -56,9 +56,10 @@ return [
     ],
 
     'xero' => [
-        'client_id'             => env('XERO_CLIENT_ID'),
-        'client_secret'         => env('XERO_CLIENT_SECRET'),
-        'clearing_account_code' => env('XERO_CLEARING_ACCOUNT_CODE', 'AMAZON-CLEARING'),
+        'client_id'              => env('XERO_CLIENT_ID'),
+        'client_secret'          => env('XERO_CLIENT_SECRET'),
+        'clearing_account_id'    => env('XERO_CLEARING_ACCOUNT_ID'),
+        'clearing_account_code'  => env('XERO_CLEARING_ACCOUNT_CODE', 'AMAZON'),
     ],
 
 ];
