@@ -135,7 +135,7 @@ class AmazonController extends Controller
             'response_type' => 'code',
             'client_id'     => config('services.xero.client_id'),
             'redirect_uri'  => route('amazon.xero.callback'),
-            'scope'         => 'offline_access accounting.transactions',
+            'scope'         => 'offline_access accounting.transactions.read accounting.transactions.create',
             'state'         => csrf_token(),
         ]);
 
