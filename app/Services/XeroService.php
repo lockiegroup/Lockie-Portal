@@ -79,12 +79,41 @@ class XeroService
             ->post(self::API_BASE . '/BankTransactions', $payload);
 
         if ($response->failed()) {
+            $body = $response->json() ?? [];
+
+            // Extract specific validation messages from Xero's Elements array
+            $validationErrors = [];
+            foreach ($body['Elements'] ?? [] as $element) {
+                foreach ($element['ValidationErrors'] ?? [] as $err) {
+                    if (!empty($err['Message'])) {
+                        $validationErrors[] = $err['Message'];
+                    }
+                }
+            }
+
+            $detail = $validationErrors
+                ? implode('; ', $validationErrors)
+                : $response->body();
+
             throw new \RuntimeException(
-                'Xero BankTransaction error (' . $response->status() . '): ' . $response->body()
+                'Xero error (' . $response->status() . '): ' . $detail
             );
         }
 
-        return ($response->json('BankTransactions') ?? [])[0] ?? [];
+        $transaction = ($response->json('BankTransactions') ?? [])[0] ?? [];
+
+        // Xero returns 200 but with a StatusAttributeString of ERROR on validation failure
+        if (($transaction['StatusAttributeString'] ?? '') === 'ERROR') {
+            $errors = [];
+            foreach ($transaction['ValidationErrors'] ?? [] as $err) {
+                $errors[] = $err['Message'] ?? '';
+            }
+            throw new \RuntimeException(
+                'Xero validation error: ' . implode('; ', array_filter($errors))
+            );
+        }
+
+        return $transaction;
     }
 
     public function getAccounts(): array
