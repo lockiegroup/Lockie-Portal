@@ -13,14 +13,29 @@ class AmazonService
 
     public function getAccessToken(): string
     {
+        // Bust any stale null cached from a previous failed attempt
+        if (Cache::has('amazon_sp_access_token') && !Cache::get('amazon_sp_access_token')) {
+            Cache::forget('amazon_sp_access_token');
+        }
+
         return Cache::remember('amazon_sp_access_token', 55 * 60, function () {
+            $refreshToken = config('services.amazon.refresh_token');
+            $clientId     = config('services.amazon.client_id');
+            $clientSecret = config('services.amazon.client_secret');
+
+            if (!$refreshToken || !$clientId || !$clientSecret) {
+                throw new \RuntimeException(
+                    'Amazon SP-API credentials are not configured. Check AMAZON_CLIENT_ID, AMAZON_CLIENT_SECRET and AMAZON_REFRESH_TOKEN in .env.'
+                );
+            }
+
             $response = Http::retry(3, 1000)
                 ->asForm()
                 ->post(self::LWA_URL, [
                     'grant_type'    => 'refresh_token',
-                    'refresh_token' => config('services.amazon.refresh_token'),
-                    'client_id'     => config('services.amazon.client_id'),
-                    'client_secret' => config('services.amazon.client_secret'),
+                    'refresh_token' => $refreshToken,
+                    'client_id'     => $clientId,
+                    'client_secret' => $clientSecret,
                 ]);
 
             if ($response->failed()) {
@@ -29,20 +44,41 @@ class AmazonService
                 );
             }
 
-            return $response->json('access_token');
+            $token = $response->json('access_token');
+            if (!$token) {
+                throw new \RuntimeException(
+                    'Amazon LWA response missing access_token. Response: ' . $response->body()
+                );
+            }
+
+            return $token;
         });
     }
 
     public function getAdsAccessToken(): string
     {
+        if (Cache::has('amazon_ads_access_token') && !Cache::get('amazon_ads_access_token')) {
+            Cache::forget('amazon_ads_access_token');
+        }
+
         return Cache::remember('amazon_ads_access_token', 55 * 60, function () {
+            $refreshToken = config('services.amazon_ads.refresh_token');
+            $clientId     = config('services.amazon_ads.client_id');
+            $clientSecret = config('services.amazon_ads.client_secret');
+
+            if (!$refreshToken || !$clientId || !$clientSecret) {
+                throw new \RuntimeException(
+                    'Amazon Ads API credentials are not configured. Check AMAZON_ADS_* keys in .env.'
+                );
+            }
+
             $response = Http::retry(3, 1000)
                 ->asForm()
                 ->post(self::LWA_URL, [
                     'grant_type'    => 'refresh_token',
-                    'refresh_token' => config('services.amazon_ads.refresh_token'),
-                    'client_id'     => config('services.amazon_ads.client_id'),
-                    'client_secret' => config('services.amazon_ads.client_secret'),
+                    'refresh_token' => $refreshToken,
+                    'client_id'     => $clientId,
+                    'client_secret' => $clientSecret,
                 ]);
 
             if ($response->failed()) {
@@ -51,7 +87,14 @@ class AmazonService
                 );
             }
 
-            return $response->json('access_token');
+            $token = $response->json('access_token');
+            if (!$token) {
+                throw new \RuntimeException(
+                    'Amazon Ads LWA response missing access_token. Response: ' . $response->body()
+                );
+            }
+
+            return $token;
         });
     }
 
@@ -67,8 +110,7 @@ class AmazonService
     {
         $token = $this->getAccessToken();
 
-        $response = Http::retry(3, 1000, fn($e) => $e->response?->status() === 429)
-            ->withToken($token)
+        $response = Http::retry(3, 1000, fn($e) => $e->response?->status() === 429, false)
             ->withHeaders([
                 'x-amz-access-token'    => $token,
                 'x-amzn-marketplace-id' => config('services.amazon.marketplace_id'),
@@ -96,8 +138,7 @@ class AmazonService
     {
         $token = $this->getAccessToken();
 
-        $docResponse = Http::retry(3, 1000, fn($e) => $e->response?->status() === 429)
-            ->withToken($token)
+        $docResponse = Http::retry(3, 1000, fn($e) => $e->response?->status() === 429, false)
             ->withHeaders(['x-amz-access-token' => $token])
             ->get(self::SP_API_BASE . '/reports/2021-06-30/documents/' . $reportDocumentId);
 
@@ -158,7 +199,7 @@ class AmazonService
             'Amazon-Advertising-API-Scope'    => $profileId,
         ];
 
-        $createResponse = Http::retry(3, 1000, fn($e) => $e->response?->status() === 429)
+        $createResponse = Http::retry(3, 1000, fn($e) => $e->response?->status() === 429, false)
             ->withToken($token)
             ->withHeaders($headers)
             ->post(self::ADS_API_BASE . '/v3/reports', [
@@ -191,7 +232,7 @@ class AmazonService
         for ($i = 0; $i < 10; $i++) {
             sleep(5);
 
-            $statusResponse = Http::retry(2, 1000)
+            $statusResponse = Http::retry(2, 1000, null, false)
                 ->withToken($token)
                 ->withHeaders($headers)
                 ->get(self::ADS_API_BASE . '/v3/reports/' . $reportId);
