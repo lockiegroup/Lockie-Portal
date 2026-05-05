@@ -66,9 +66,9 @@ class AmazonSyncService
 
         $settlement = AmazonSettlement::create([
             'settlement_id'  => $first['settlement-id'],
-            'start_date'     => $first['settlement-start-date'] ?: null,
-            'end_date'       => $first['settlement-end-date'] ?: null,
-            'deposit_amount' => (float) ($first['deposit-amount'] ?? 0),
+            'start_date'     => $this->parseDate($first['settlement-start-date'] ?? ''),
+            'end_date'       => $this->parseDate($first['settlement-end-date'] ?? ''),
+            'deposit_amount' => (float) ($first['total-amount'] ?? $first['deposit-amount'] ?? 0),
             'currency'       => 'GBP',
             'status'         => 'pending',
             'raw_data'       => $rows,
