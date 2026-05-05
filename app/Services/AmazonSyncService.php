@@ -66,8 +66,8 @@ class AmazonSyncService
 
         $settlement = AmazonSettlement::create([
             'settlement_id'  => $first['settlement-id'],
-            'start_date'     => $this->parseDate($first['settlement-start-date'] ?? ''),
-            'end_date'       => $this->parseDate($first['settlement-end-date'] ?? ''),
+            'start_date'     => $this->parseDateStr($first['settlement-start-date'] ?? ''),
+            'end_date'       => $this->parseDateStr($first['settlement-end-date'] ?? ''),
             'deposit_amount' => (float) ($first['total-amount'] ?? $first['deposit-amount'] ?? 0),
             'currency'       => 'GBP',
             'status'         => 'pending',
@@ -102,33 +102,33 @@ class AmazonSyncService
 
     public function classifyLine(array $row): ?array
     {
-        $txnType    = $row['transaction-type'] ?? '';
-        $amountDesc = $row['amount-description'] ?? '';
-        $amount     = (float) ($row['amount'] ?? 0);
+        $txnType = $row['transaction-type'] ?? '';
 
-        // Skip summary/header rows with no amount and no type
-        if ($amount === 0.0 && empty($txnType)) {
-            return null;
-        }
+        // Skip summary rows (no transaction type)
+        if (empty($txnType)) return null;
 
-        $fulfillmentId = $row['fulfillment-id'] ?? '';
-        $channel = match($fulfillmentId) {
+        $channel = match($row['fulfillment-id'] ?? '') {
             'AFN'   => 'FBA',
             'MFN'   => 'FBM',
             default => null,
         };
 
+        // Resolve amount and description from whichever column is populated
+        [$amount, $amountDesc] = $this->resolveAmount($row);
+
+        if ($amount === 0.0) return null;
+
         $accountCode = match(true) {
-            $amountDesc === 'Principal' && $channel === 'FBA'                                                    => '4001',
-            $amountDesc === 'Principal'                                                                          => '4000',
+            $amountDesc === 'Principal' && $channel === 'FBA'                                       => '4001',
+            $amountDesc === 'Principal'                                                              => '4000',
             in_array($amountDesc, ['FBAPerUnitFulfillmentFee', 'FBAPerOrderFulfillmentFee',
-                                   'FBAWeightBasedFee', 'FBATransactionFee'], true)                              => '6100',
+                                   'FBAWeightBasedFee', 'FBATransactionFee'], true)                  => '6100',
             in_array($amountDesc, ['ReferralFeeToAmazon', 'FixedClosingFee',
-                                   'VariableClosingFee', 'Commission'], true)                                    => '6101',
-            $amountDesc === 'Shipping' && $channel === 'FBM'                                                     => '4002',
-            $amountDesc === 'ShippingChargeback'                                                                  => '4002',
-            $txnType === 'advertising'                                                                            => '6102',
-            default                                                                                               => '6199',
+                                   'VariableClosingFee', 'Commission'], true)                        => '6101',
+            $amountDesc === 'Shipping' && $channel === 'FBM'                                        => '4002',
+            $amountDesc === 'ShippingChargeback'                                                     => '4002',
+            $txnType === 'advertising'                                                               => '6102',
+            default                                                                                  => '6199',
         };
 
         return [
@@ -143,6 +143,90 @@ class AmazonSyncService
             'vat_rate'            => 0.00,
             'account_code'        => $accountCode,
         ];
+    }
+
+    /**
+     * Amazon's flat file splits amounts across multiple typed columns.
+     * Find the first populated column and return [amount, description].
+     */
+    private function resolveAmount(array $row): array
+    {
+        $candidates = [
+            ['price-amount',        'price-type'],
+            ['item-related-fee-amount', 'item-related-fee-type'],
+            ['shipment-fee-amount', 'shipment-fee-type'],
+            ['order-fee-amount',    'order-fee-type'],
+            ['promotion-amount',    'promotion-type'],
+            ['other-amount',        null],
+            ['misc-fee-amount',     null],
+            ['direct-payment-amount', 'direct-payment-type'],
+        ];
+
+        foreach ($candidates as [$amtCol, $typeCol]) {
+            $val = $row[$amtCol] ?? '';
+            if ($val !== '' && $val !== '0') {
+                return [(float) $val, $typeCol ? ($row[$typeCol] ?? '') : ''];
+            }
+        }
+
+        return [0.0, ''];
+    }
+
+    /**
+     * Re-parse all existing settlements from stored raw_data using the current classifyLine logic.
+     * Fixes settlements imported before the column mapping was corrected.
+     */
+    public function reprocessAllSettlements(): array
+    {
+        $settlements = AmazonSettlement::all();
+        $count = 0;
+
+        foreach ($settlements as $settlement) {
+            $raw = $settlement->raw_data;
+            if (empty($raw)) continue;
+
+            $first = $raw[0];
+
+            // Fix deposit amount
+            $settlement->update([
+                'deposit_amount' => (float) ($first['total-amount'] ?? $first['deposit-amount'] ?? 0),
+                'start_date'     => $this->parseDateStr($first['settlement-start-date'] ?? ''),
+                'end_date'       => $this->parseDateStr($first['settlement-end-date'] ?? ''),
+            ]);
+
+            // Delete old lines and re-insert
+            $settlement->lines()->delete();
+
+            $lines = [];
+            $now   = now()->toDateTimeString();
+
+            foreach ($raw as $row) {
+                $classified = $this->classifyLine($row);
+                if ($classified === null) continue;
+                $lines[] = array_merge($classified, [
+                    'settlement_id' => $settlement->id,
+                    'created_at'    => $now,
+                    'updated_at'    => $now,
+                ]);
+            }
+
+            foreach (array_chunk($lines, 100) as $chunk) {
+                AmazonSettlementLine::insert($chunk);
+            }
+
+            $settlement->refresh();
+            $this->calculateVat($settlement);
+            $count++;
+        }
+
+        return ['reprocessed' => $count];
+    }
+
+    private function parseDateStr(string $value): ?string
+    {
+        if (!$value) return null;
+        $ts = strtotime($value);
+        return $ts ? date('Y-m-d', $ts) : null;
     }
 
     public function calculateVat(AmazonSettlement $settlement): void

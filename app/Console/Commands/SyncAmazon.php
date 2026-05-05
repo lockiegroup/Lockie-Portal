@@ -17,6 +17,7 @@ class SyncAmazon extends Command
                                 {--ads         : Sync advertising spend only}
                                 {--xero        : Post pending settlements to Xero only}
                                 {--all         : Run all sync operations (default)}
+                                {--reprocess   : Re-parse all existing settlements from stored raw_data}
                                 {--start=      : Start date for ad spend sync (YYYY-MM-DD, default 30 days ago)}
                                 {--end=        : End date for ad spend sync (YYYY-MM-DD, default today)}';
 
@@ -24,6 +25,17 @@ class SyncAmazon extends Command
 
     public function handle(): int
     {
+        if ($this->option('reprocess')) {
+            $service = new AmazonSyncService(
+                new AmazonService(), new XeroService(),
+                new UnleashedService(config('services.unleashed.id'), config('services.unleashed.key'))
+            );
+            $this->info('Re-processing all settlements from raw_data…');
+            $result = $service->reprocessAllSettlements();
+            $this->info("  Done. Reprocessed: {$result['reprocessed']}");
+            return self::SUCCESS;
+        }
+
         $runAll         = $this->option('all') || (!$this->option('settlements') && !$this->option('ads') && !$this->option('xero'));
         $runSettlements = $runAll || $this->option('settlements');
         $runAds         = $runAll || $this->option('ads');
