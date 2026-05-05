@@ -13,3 +13,6 @@ Schedule::command('hs:send-reminders')->dailyAt('08:00');
 
 // Sync A1 print jobs from Unleashed every 30 minutes
 Schedule::command('print:sync')->everyThirtyMinutes();
+
+// Sync Amazon settlements and ad spend daily at 6am
+Schedule::command('amazon:sync --settlements --ads')->dailyAt('06:00');

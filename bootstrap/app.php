@@ -12,7 +12,8 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'otp' => \App\Http\Middleware\OtpVerified::class,
+            'otp'    => \App\Http\Middleware\OtpVerified::class,
+            'module' => \App\Http\Middleware\ModuleAccess::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
