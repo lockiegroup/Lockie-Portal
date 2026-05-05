@@ -55,22 +55,21 @@ class XeroService
         $lineItems = array_map(fn($line) => [
             'Description' => $line['description'],
             'Quantity'    => 1,
-            'UnitAmount'  => round($line['amount_net'], 2),
+            'UnitAmount'  => round((float) $line['amount_net'], 2),
             'AccountCode' => $line['account_code'],
             'TaxType'     => $line['tax_type'],
         ], $settlementData['lines']);
 
         $payload = [
             'BankTransactions' => [[
-                'Type'            => 'RECEIVE',
-                'BankAccount'     => config('services.xero.clearing_account_id')
+                'Type'        => 'RECEIVE',
+                'BankAccount' => config('services.xero.clearing_account_id')
                     ? ['AccountID' => config('services.xero.clearing_account_id')]
                     : ['Code'      => config('services.xero.clearing_account_code')],
-                'Date'            => $settlementData['date'],
-                'Reference'       => 'Amazon Settlement ' . $settlementData['settlement_id'],
-                'LineAmountTypes' => 'NOTAX',
-                'Contact'         => ['Name' => 'Amazon'],
-                'LineItems'       => $lineItems,
+                'Date'        => $settlementData['date'],
+                'Reference'   => 'Amazon Settlement ' . $settlementData['settlement_id'],
+                'Contact'     => ['Name' => 'Amazon'],
+                'LineItems'   => $lineItems,
             ]],
         ];
 
