@@ -19,6 +19,7 @@ use App\Http\Controllers\PolicyController;
 use App\Http\Controllers\Admin\PolicyController as AdminPolicyController;
 use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\StockWatchlistController;
+use App\Http\Controllers\AmazonController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn() => redirect()->route('login'));
@@ -126,6 +127,18 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::delete('/substitutions/{substitution}', [StockWatchlistController::class, 'destroySubstitution'])->name('substitutions.destroy');
         Route::patch('/items/{item}', [StockWatchlistController::class, 'updateItem'])->name('items.update');
         Route::delete('/items/{item}', [StockWatchlistController::class, 'destroyItem'])->name('items.destroy');
+    });
+
+    // Amazon & Xero Reconciliation
+    Route::prefix('amazon')->name('amazon.')->middleware('module:amazon')->group(function () {
+        Route::get('/',                         [AmazonController::class, 'index'])->name('index');
+        Route::post('/sync',                    [AmazonController::class, 'sync'])->name('sync');
+        Route::get('/settlements',              [AmazonController::class, 'settlements'])->name('settlements');
+        Route::get('/settlements/{settlement}', [AmazonController::class, 'settlementDetail'])->name('settlement.detail');
+        Route::get('/profit',                   [AmazonController::class, 'profitReport'])->name('profit');
+        Route::get('/xero/connect',             [AmazonController::class, 'xeroConnect'])->name('xero.connect');
+        Route::get('/xero/callback',            [AmazonController::class, 'xeroCallback'])->name('xero.callback');
+        Route::post('/xero/post/{settlement}',  [AmazonController::class, 'xeroPost'])->name('xero.post');
     });
 
 // Admin — manage users + activity log
