@@ -172,8 +172,14 @@ async function postToXero(settlementId) {
     });
     const data = await res.json();
 
-    alert(data.success ? 'Posted to Xero successfully.' : 'Error: ' + data.message);
-    if (data.success) loadSettlements();
+    if (data.success) {
+        alert('Posted to Xero successfully.');
+        loadSettlements();
+    } else {
+        console.error('Xero post error:', data.message);
+        const short = data.message.length > 300 ? data.message.substring(0, 300) + '…' : data.message;
+        alert('Error: ' + short + '\n\n(Full error in browser console — press F12 → Console)');
+    }
 }
 
 loadSettlements();
