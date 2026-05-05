@@ -107,6 +107,18 @@
         </a>
         @endcan
 
+        @if($user->hasModule('amazon'))
+        <a href="{{ route('amazon.index') }}"
+           class="sb-item{{ request()->routeIs('amazon.*') ? ' sb-active' : '' }}"
+           data-tip="Amazon &amp; Xero">
+            <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                <line x1="7" y1="7" x2="7.01" y2="7"/>
+            </svg>
+            <span class="sb-label">Amazon &amp; Xero</span>
+        </a>
+        @endif
+
         <div style="height:1px;background:#1e293b;margin:10px 4px 8px;"></div>
         <p class="sb-section" style="font-size:0.625rem;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:0.1em;padding:0 10px;margin-bottom:6px;">Operations</p>
 

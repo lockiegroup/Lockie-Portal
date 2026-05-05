@@ -26,6 +26,7 @@ class User extends Authenticatable
         'envelopes'      => 'Church Envelopes',
         'policies'       => 'Policies',
         'print_schedule' => 'Print Schedule',
+        'amazon'         => 'Amazon & Xero',
     ];
 
     protected $fillable = ['name', 'email', 'password', 'role', 'is_active', 'permissions', 'modules', 'last_login_at'];
