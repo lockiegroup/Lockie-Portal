@@ -12,6 +12,7 @@ use App\Services\XeroService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
 class AmazonController extends Controller
@@ -162,7 +163,7 @@ class AmazonController extends Controller
     public function xeroPost(AmazonSettlement $settlement): JsonResponse
     {
         try {
-            $this->authorize('amazon-admin');
+            Gate::authorize('amazon-admin');
 
             $service = new AmazonSyncService(
                 new AmazonService(),
