@@ -72,32 +72,28 @@ class XeroService
             ]],
         ];
 
-        $response = Http::retry(3, 1000)
-            ->withToken($token->access_token)
-            ->withHeaders(['Xero-Tenant-Id' => $token->tenant_id])
-            ->acceptJson()
-            ->post(self::API_BASE . '/BankTransactions', $payload);
-
-        if ($response->failed()) {
+        try {
+            $response = Http::retry(3, 1000, null, false)
+                ->withToken($token->access_token)
+                ->withHeaders(['Xero-Tenant-Id' => $token->tenant_id])
+                ->acceptJson()
+                ->post(self::API_BASE . '/BankTransactions', $payload);
+        } catch (\Illuminate\Http\Client\RequestException $e) {
+            $response = $e->response;
             $body = $response->json() ?? [];
-
-            // Extract specific validation messages from Xero's Elements array
-            $validationErrors = [];
+            $errors = [];
             foreach ($body['Elements'] ?? [] as $element) {
                 foreach ($element['ValidationErrors'] ?? [] as $err) {
-                    if (!empty($err['Message'])) {
-                        $validationErrors[] = $err['Message'];
-                    }
+                    if (!empty($err['Message'])) $errors[] = $err['Message'];
                 }
             }
-
-            $detail = $validationErrors
-                ? implode('; ', $validationErrors)
-                : $response->body();
-
             throw new \RuntimeException(
-                'Xero error (' . $response->status() . '): ' . $detail
+                'Xero validation: ' . ($errors ? implode('; ', $errors) : $response->body())
             );
+        }
+
+        if ($response->failed()) {
+            throw new \RuntimeException('Xero error (' . $response->status() . '): ' . $response->body());
         }
 
         $transaction = ($response->json('BankTransactions') ?? [])[0] ?? [];
