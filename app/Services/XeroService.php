@@ -55,7 +55,7 @@ class XeroService
         $lineItems = array_map(fn($line) => [
             'Description' => $line['description'],
             'Quantity'    => 1,
-            'UnitAmount'  => $line['amount_net'],
+            'UnitAmount'  => round($line['amount_net'], 2),
             'AccountCode' => $line['account_code'],
             'TaxType'     => $line['tax_type'],
         ], $settlementData['lines']);
@@ -68,7 +68,7 @@ class XeroService
                     : ['Code'      => config('services.xero.clearing_account_code')],
                 'Date'            => $settlementData['date'],
                 'Reference'       => 'Amazon Settlement ' . $settlementData['settlement_id'],
-                'LineAmountTypes' => 'EXCLUSIVE',
+                'LineAmountTypes' => 'NOTAX',
                 'Contact'         => ['Name' => 'Amazon'],
                 'LineItems'       => $lineItems,
             ]],
