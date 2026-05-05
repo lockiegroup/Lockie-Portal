@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 class UnleashedService
@@ -64,6 +66,131 @@ class UnleashedService
     }
 
     /**
+     * Fetch all pages in parallel: page 1 sequentially to get the total,
+     * then all remaining pages in a single parallel HTTP pool batch.
+     * Uses GUID dedup to guard against Unleashed's repeated-page bug.
+     */
+    public function paginateFast(string $endpoint, array $params = [], int $pageSize = 200): array
+    {
+        $first    = $this->get($endpoint, array_merge($params, ['pageSize' => $pageSize, 'pageNumber' => 1]));
+        $maxPages = $first['Pagination']['NumberOfPages'] ?? 1;
+        $items    = $first['Items'] ?? [];
+        $seen     = array_flip(array_filter(array_column($items, 'Guid')));
+
+        if ($maxPages <= 1) {
+            return $items;
+        }
+
+        $pages     = range(2, $maxPages);
+        $responses = Http::pool(function ($pool) use ($endpoint, $params, $pageSize, $pages) {
+            $calls = [];
+            foreach ($pages as $page) {
+                $qs      = http_build_query(array_merge($params, ['pageSize' => $pageSize, 'pageNumber' => $page]));
+                $calls[] = $pool->as($page)
+                    ->timeout(30)
+                    ->withHeaders($this->headers($qs))
+                    ->get(self::BASE_URL . '/' . $endpoint . '?' . $qs);
+            }
+            return $calls;
+        });
+
+        foreach ($pages as $page) {
+            $res = $responses[$page] ?? null;
+            if (!$res || $res instanceof \Throwable || $res->failed()) continue;
+            foreach ($res->json()['Items'] ?? [] as $item) {
+                $guid = $item['Guid'] ?? null;
+                if ($guid !== null && isset($seen[$guid])) continue;
+                if ($guid !== null) $seen[$guid] = true;
+                $items[] = $item;
+            }
+        }
+
+        return $items;
+    }
+
+    /**
+     * Fetch an endpoint across a date range by splitting into weekly chunks,
+     * all requested in parallel. Avoids Unleashed's bug where date-filtered
+     * queries return an empty page 2, capping results at 500.
+     */
+    public function fetchByDateRange(string $endpoint, array $baseParams, string $from, string $to): array
+    {
+        $start = Carbon::parse($from);
+        $end   = Carbon::parse($to);
+
+        // Build weekly date chunks. Each chunk's endDate overlaps the next chunk's
+        // startDate by one day so boundary-day orders are captured regardless of
+        // whether Unleashed treats endDate as inclusive or exclusive.
+        // GUID dedup in the merge loop removes any duplicates.
+        $dateChunks = [];
+        $s = $start->copy();
+        while ($s->lte($end)) {
+            $chunkEnd     = $s->copy()->addDays(7)->min($end);
+            $dateChunks[] = ['startDate' => $s->toDateString(), 'endDate' => $chunkEnd->toDateString()];
+            $s->addDays(7);
+        }
+
+        // If customOrderStatus is an array, fan out into one request per status per chunk.
+        // Unleashed does not reliably support comma-separated values for customOrderStatus.
+        $statusVariants = [[]];
+        if (isset($baseParams['customOrderStatus']) && is_array($baseParams['customOrderStatus'])) {
+            $statusVariants = array_map(
+                fn($st) => ['customOrderStatus' => $st],
+                $baseParams['customOrderStatus']
+            );
+            unset($baseParams['customOrderStatus']);
+        }
+
+        // Build all (chunk × variant) request param sets
+        $requests = [];
+        foreach ($dateChunks as $chunk) {
+            foreach ($statusVariants as $variant) {
+                $requests[] = array_merge($baseParams, $chunk, $variant);
+            }
+        }
+
+        // Fire all in a single parallel pool
+        $responses = Http::pool(function ($pool) use ($endpoint, $requests) {
+            $calls     = [];
+            $rawParams = ['orderStatus', 'customOrderStatus'];
+            foreach ($requests as $i => $params) {
+                $raw  = array_intersect_key($params, array_flip($rawParams));
+                $rest = array_diff_key($params, array_flip($rawParams));
+                $qs   = http_build_query(array_merge($rest, ['pageSize' => 500, 'pageNumber' => 1]));
+                foreach ($raw as $key => $val) {
+                    if ($val) {
+                        // rawurlencode encodes spaces as %20 and commas as %2C;
+                        // restore commas so single-value strings pass through cleanly.
+                        $encoded = str_replace('%2C', ',', rawurlencode($val));
+                        $qs .= "&{$key}={$encoded}";
+                    }
+                }
+                $calls[] = $pool->as($i)
+                    ->timeout(30)
+                    ->withHeaders($this->headers($qs))
+                    ->get(self::BASE_URL . "/{$endpoint}?{$qs}");
+            }
+            return $calls;
+        });
+
+        $items = [];
+        $seen  = [];
+
+        foreach (array_keys($requests) as $i) {
+            $res = $responses[$i] ?? null;
+            if (!$res || $res instanceof \Throwable || $res->failed()) continue;
+            foreach ($res->json()['Items'] ?? [] as $item) {
+                $guid = $item['Guid'] ?? null;
+                if ($guid !== null && isset($seen[$guid])) continue;
+                if ($guid !== null) $seen[$guid] = true;
+                $items[] = $item;
+            }
+        }
+
+        return $items;
+    }
+
+    /**
      * Fetch multiple endpoints concurrently, paginating each in parallel batches.
      * $requests: ['key' => ['Endpoint', ['param' => 'value']], ...]
      */
@@ -72,7 +199,6 @@ class UnleashedService
         $keys       = array_keys($requests);
         $results    = array_fill_keys($keys, []);
         $seenGuids  = array_fill_keys($keys, []);
-        $maxPages   = array_fill_keys($keys, 1);
         $activeKeys = $keys;
         $page       = 1;
 
@@ -112,9 +238,10 @@ class UnleashedService
                         "Unleashed API error ({$res->status()}): " . $res->body()
                     );
                 }
-                $data     = $res->json() ?? [];
-                $items    = $data['Items'] ?? [];
-                $newCount = 0;
+                $data      = $res->json() ?? [];
+                $items     = $data['Items'] ?? [];
+                $pageCount = count($items);
+                $newCount  = 0;
                 foreach ($items as $item) {
                     $guid = $item['Guid'] ?? null;
                     if ($guid === null || !isset($seenGuids[$key][$guid])) {
@@ -125,10 +252,10 @@ class UnleashedService
                         $newCount++;
                     }
                 }
-                $maxPages[$key] = $data['Pagination']['NumberOfPages'] ?? 1;
-                // Stop if no new items were added (Unleashed pagination bug: filtered queries
-                // return the same page repeatedly when NumberOfPages > actual filtered pages)
-                if ($newCount > 0 && $page < $maxPages[$key]) {
+                // Continue only when the page was full (partial page = last page) AND
+                // at least one item was new (handles Unleashed's page-repeat bug where
+                // filtered queries return page 1 content for every pageNumber).
+                if ($newCount > 0 && $pageCount >= $pageSize) {
                     $nextActive[] = $key;
                 }
             }
@@ -243,6 +370,82 @@ class UnleashedService
     }
 
     /**
+     * Fetch quarterly sales totals for each customer code for a given year.
+     * Queries per customer using customerCode filter so each response is small
+     * enough to fit on one page — this avoids the Unleashed pagination bug where
+     * date-filtered all-customer queries repeat page 1 on every subsequent page.
+     * Cached per year (1 hour for current year, 24 hours for past years).
+     * Returns ['BESGROUP' => ['total' => 0.0, 'q1' => 0.0, 'q2' => 0.0, 'q3' => 0.0, 'q4' => 0.0], ...]
+     */
+    public function fetchSalesByCustomerCodes(array $customerCodes, int $year): array
+    {
+        if (empty($customerCodes)) return [];
+
+        $ttl      = ($year === (int) date('Y')) ? 3600 : 86400;
+        $cacheKey = "unleashed_ka_sales_year_{$year}";
+        $empty    = ['total' => 0.0, 'q1' => 0.0, 'q2' => 0.0, 'q3' => 0.0, 'q4' => 0.0];
+
+        $yearData = Cache::remember($cacheKey, $ttl, function () use ($year, $customerCodes, $empty) {
+            // Query per customer in parallel. Each customer has far fewer than 200 orders
+            // per year so the result fits in one page — avoiding Unleashed's pagination bug
+            // where date-filtered multi-customer queries repeat page 1 on every page.
+            $responses = Http::pool(function ($pool) use ($customerCodes, $year) {
+                $calls = [];
+                foreach ($customerCodes as $code) {
+                    $qs = http_build_query([
+                        'customerCode' => $code,
+                        'startDate'    => "{$year}-01-01",
+                        'pageSize'     => 200,
+                        'pageNumber'   => 1,
+                    ]);
+                    $calls[] = $pool->as($code)
+                        ->timeout(60)
+                        ->withHeaders($this->headers($qs))
+                        ->get(self::BASE_URL . '/SalesOrders?' . $qs);
+                }
+                return $calls;
+            });
+
+            $aggregated = [];
+
+            foreach ($customerCodes as $code) {
+                $res = $responses[$code] ?? null;
+                if (!$res || $res instanceof \Throwable || $res->failed()) continue;
+
+                foreach ($res->json()['Items'] ?? [] as $order) {
+                    if (strtolower($order['OrderStatus'] ?? '') === 'cancelled') continue;
+
+                    // Guard against customerCode filter being ignored by Unleashed
+                    if (($order['Customer']['CustomerCode'] ?? null) !== $code) continue;
+
+                    $rawDate = $order['OrderDate'] ?? $order['CreatedOn'] ?? null;
+                    $date    = $this->parseDate($rawDate);
+                    if (!$date || (int) substr($date, 0, 4) !== $year) continue;
+
+                    $subtotal = (float) ($order['SubTotal'] ?? 0);
+                    if ($subtotal <= 0) continue;
+
+                    $month   = (int) date('n', strtotime($date));
+                    $quarter = 'q' . (int) ceil($month / 3);
+
+                    $aggregated[$code] ??= $empty;
+                    $aggregated[$code]['total']   += $subtotal;
+                    $aggregated[$code][$quarter]  += $subtotal;
+                }
+            }
+
+            return $aggregated;
+        });
+
+        $results = [];
+        foreach ($customerCodes as $code) {
+            $results[$code] = $yearData[$code] ?? $empty;
+        }
+
+        return $results;
+    }
+
+    /**
      * Parse a date string from Unleashed API.
      * Handles /Date(ms)/ format and ISO strings, returns Y-m-d or null.
      */
@@ -276,19 +479,41 @@ class UnleashedService
      */
     public function fetchA1PrintingOrders(): array
     {
-        // Find A1 Printing warehouse code to filter at API level (avoids fetching all orders)
-        $whData = $this->get('Warehouses', ['pageSize' => 200, 'pageNumber' => 1]);
-        $a1Code = null;
-        foreach ($whData['Items'] ?? [] as $wh) {
-            if (str_contains(strtolower($wh['WarehouseName'] ?? ''), 'a1')) {
-                $a1Code = $wh['WarehouseCode'];
-                break;
+        $a1Code = Cache::remember('unleashed_a1_warehouse_code', 3600, function () {
+            $whData = $this->get('Warehouses', ['pageSize' => 200, 'pageNumber' => 1]);
+            foreach ($whData['Items'] ?? [] as $wh) {
+                if (str_contains(strtolower($wh['WarehouseName'] ?? ''), 'a1')) {
+                    return $wh['WarehouseCode'];
+                }
             }
-        }
+            return null;
+        });
 
         if (!$a1Code) return [];
 
-        return $this->paginate('SalesOrders', ['warehouseCode' => $a1Code], 200);
+        return $this->paginateFast('SalesOrders', ['warehouseCode' => $a1Code], 200);
+    }
+
+    /**
+     * Return the warehouse codes for A1 Printing, JW Products, and Hammond & Harper.
+     * Cached for 1 hour — warehouse names rarely change.
+     */
+    public function fetchPrintWarehouseCodes(): array
+    {
+        return Cache::remember('unleashed_print_warehouse_codes', 3600, function () {
+            $whData = $this->get('Warehouses', ['pageSize' => 200, 'pageNumber' => 1]);
+            $codes  = [];
+            foreach ($whData['Items'] ?? [] as $wh) {
+                $name = strtolower($wh['WarehouseName'] ?? '');
+                $code = $wh['WarehouseCode'] ?? null;
+                if (!$code) continue;
+                if (str_contains($name, 'a1') ||
+                    str_contains($name, 'jw')) {
+                    $codes[] = $code;
+                }
+            }
+            return $codes;
+        });
     }
 
     /**
@@ -354,6 +579,49 @@ class UnleashedService
     public function fetchProducts(): array
     {
         return $this->paginate('Products', [], 500);
+    }
+
+    /**
+     * Fetch StockOnHand for specific product codes in parallel batches.
+     * Returns: ['PROD001' => ['on_hand' => 40.0, 'allocated' => 0.0], ...]
+     */
+    public function fetchStockOnHandByCodes(array $productCodes, int $batchSize = 20): array
+    {
+        $result = [];
+
+        foreach (array_chunk($productCodes, $batchSize) as $chunk) {
+            $requests = [];
+            foreach ($chunk as $code) {
+                $qs = http_build_query(['productCode' => $code, 'pageSize' => 50, 'pageNumber' => 1]);
+                $requests[$code] = [
+                    'url'     => self::BASE_URL . '/StockOnHand?' . $qs,
+                    'headers' => $this->headers($qs),
+                ];
+            }
+
+            $responses = Http::pool(function ($pool) use ($requests) {
+                $calls = [];
+                foreach ($requests as $key => $info) {
+                    $calls[] = $pool->as($key)->timeout(30)->withHeaders($info['headers'])->get($info['url']);
+                }
+                return $calls;
+            });
+
+            foreach ($chunk as $code) {
+                $response = $responses[$code] ?? null;
+                if (!$response || $response instanceof \Throwable || $response->failed()) continue;
+
+                $onHand    = 0.0;
+                $allocated = 0.0;
+                foreach ($response->json()['Items'] ?? [] as $item) {
+                    $onHand    += (float) ($item['QtyOnHand']        ?? 0);
+                    $allocated += (float) ($item['AllocatedQuantity'] ?? 0);
+                }
+                $result[$code] = ['on_hand' => $onHand, 'allocated' => $allocated];
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -493,8 +761,19 @@ class UnleashedService
                 $order = ($res->json()['Items'] ?? [])[0] ?? null;
                 if ($order) {
                     $results[$num] = [
-                        'lines'        => $order['SalesOrderLines'] ?? [],
-                        'requiredDate' => $order['RequiredDate'] ?? null,
+                        'lines'              => $order['SalesOrderLines'] ?? [],
+                        'requiredDate'       => $order['RequiredDate'] ?? null,
+                        'customerName'       => $order['Customer']['CustomerName'] ?? null,
+                        'deliveryName'       => $order['DeliveryName'] ?? null,
+                        'deliveryStreet1'    => $order['DeliveryStreetAddress'] ?? null,
+                        'deliveryStreet2'    => $order['DeliveryStreetAddress2'] ?? null,
+                        'deliverySuburb'     => $order['DeliverySuburb'] ?? null,
+                        'deliveryCity'       => $order['DeliveryCity'] ?? null,
+                        'deliveryRegion'     => $order['DeliveryRegion'] ?? null,
+                        'deliveryPostCode'   => $order['DeliveryPostCode'] ?? null,
+                        'deliveryCountry'    => is_array($order['DeliveryCountry'] ?? null)
+                            ? ($order['DeliveryCountry']['Name'] ?? null)
+                            : ($order['DeliveryCountry'] ?? null),
                     ];
                 }
             }

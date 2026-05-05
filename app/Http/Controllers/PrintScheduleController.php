@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\PrintJobDateChangedMail;
 use App\Models\PrintJob;
 use App\Models\PrintJobDateChange;
 use App\Models\PrintJobNote;
@@ -11,6 +12,7 @@ use App\Services\UnleashedService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
 class PrintScheduleController extends Controller
@@ -60,6 +62,26 @@ class PrintScheduleController extends Controller
             }
         }
 
+        // Count active jobs per effective SO number (for multi-line badge on cards).
+        // Regular jobs: group by order_number (e.g. SO-00026477).
+        // Assembly jobs: group by the sales order number extracted from line_comment
+        //   ("Created for Invoice SO-XXXXX."), since each assembly has its own ASM number.
+        $orderLineCounts = [];
+        PrintJob::active()
+            ->whereNotNull('order_number')
+            ->where('order_number', '!=', 'MANUAL')
+            ->select(['order_number', 'line_comment'])
+            ->get()
+            ->each(function ($job) use (&$orderLineCounts) {
+                if (str_starts_with($job->order_number, 'ASM-')
+                    && preg_match('/\b(SO-\d+)\b/', $job->line_comment ?? '', $m)) {
+                    $key = $m[1];
+                } else {
+                    $key = $job->order_number;
+                }
+                $orderLineCounts[$key] = ($orderLineCounts[$key] ?? 0) + 1;
+            });
+
         return view('print-schedule.index', compact(
             'boardJobs',
             'boards',
@@ -67,7 +89,8 @@ class PrintScheduleController extends Controller
             'machines',
             'machineLeadTimes',
             'throughputs',
-            'lastSync'
+            'lastSync',
+            'orderLineCounts'
         ));
     }
 
@@ -247,6 +270,13 @@ class PrintScheduleController extends Controller
                 'old_date'     => $oldDate,
                 'new_date'     => $newDate,
             ]);
+
+            Mail::to('sales@jwproducts.co.uk')->send(new PrintJobDateChangedMail(
+                job:       $job,
+                oldDate:   $oldDate,
+                newDate:   $newDate,
+                changedBy: auth()->user()->name,
+            ));
         }
 
         $job->update(['required_date' => $newDate]);

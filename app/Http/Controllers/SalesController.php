@@ -40,25 +40,102 @@ class SalesController extends Controller
         }
 
         try {
-            [$salesByWarehouse, $creditsByWarehouse] = Cache::remember(
+            // Unleashed API dates are UTC. Convert the user's UK (Europe/London) dates
+            // to UTC so BST orders near midnight aren't dropped or duplicated.
+            $ukTz    = new \DateTimeZone('Europe/London');
+            $utcTz   = new \DateTimeZone('UTC');
+            $apiFrom = (new \DateTime("{$from} 00:00:00", $ukTz))->setTimezone($utcTz)->format('Y-m-d');
+            $apiTo   = (new \DateTime("{$to} 23:59:59",   $ukTz))->setTimezone($utcTz)->format('Y-m-d');
+
+            [$salesByWarehouse, $creditsByWarehouse, $counts, $debug] = Cache::remember(
                 $cacheKey,
                 1800,
-                function () use ($from, $to) {
-                    $params = ['startDate' => $from, 'endDate' => $to];
+                function () use ($apiFrom, $apiTo, $from, $to) {
+                    // Two calls needed: Unleashed only returns custom-status orders when
+                    // customOrderStatus is passed explicitly (it overrides orderStatus).
+                    // Pass each custom status individually — Unleashed does not support
+                    // comma-separated values for customOrderStatus reliably.
+                    $fixedSales  = $this->unleashed->fetchByDateRange('SalesOrders', [], $apiFrom, $apiTo);
+                    $customSales = $this->unleashed->fetchByDateRange('SalesOrders', [
+                        'customOrderStatus' => [
+                            'Awaiting Proof', 'Call Off', 'Coditherm', 'Hoefon', 'Laser',
+                            'PO Placed', 'Proforma', 'SKD', 'Sleeves', 'Waiting Yoseal',
+                        ],
+                    ], $apiFrom, $apiTo);
+                    $allCredits  = $this->unleashed->fetchByDateRange('CreditNotes',  [], $apiFrom, $apiTo);
 
-                    $fetched = $this->unleashed->parallelPaginate([
-                        'sales'   => ['SalesOrders', $params],
-                        'credits' => ['CreditNotes', $params],
-                    ]);
+                    // Merge, dedup by GUID. Custom-status call wins on status name
+                    // (Unleashed returns the custom name when customOrderStatus is specified,
+                    // but returns "Parked" for the same orders when no filter is used).
+                    $seenGuids = [];
+                    $allSales  = [];
+                    foreach (array_merge($customSales, $fixedSales) as $order) {
+                        $guid = $order['Guid'] ?? null;
+                        if ($guid !== null && isset($seenGuids[$guid])) continue;
+                        if ($guid !== null) $seenGuids[$guid] = true;
+                        $allSales[] = $order;
+                    }
+
+                    // PHP-side date filter: Unleashed's endDate is inclusive so the API
+                    // chunks already cover the full range, but filter to the exact UK date
+                    // range to prevent any boundary-day overshoot appearing in totals.
+                    $ukTz = new \DateTimeZone('Europe/London');
+                    $filterDate = function (array $records, string $field) use ($from, $to, $ukTz): array {
+                        return array_values(array_filter($records, function ($rec) use ($from, $to, $ukTz, $field) {
+                            $raw = $rec[$field] ?? null;
+                            if (!$raw) return true;
+                            try {
+                                if (preg_match('#/Date\((\d+)#', $raw, $m)) {
+                                    $dt = (new \DateTime('@' . (int) ($m[1] / 1000)))->setTimezone($ukTz);
+                                } else {
+                                    $dt = (new \DateTime($raw))->setTimezone($ukTz);
+                                }
+                                $d = $dt->format('Y-m-d');
+                                return $d >= $from && $d <= $to;
+                            } catch (\Throwable) {
+                                return true;
+                            }
+                        }));
+                    };
+                    $allSales   = $filterDate($allSales,  'OrderDate');
+                    $allCredits = $filterDate($allCredits, 'OrderDate');
+
+                    // Count orders and subtotals by status before filtering
+                    $statusBreakdown = [];
+                    foreach ($allSales as $o) {
+                        $s = $o['OrderStatus'] ?? 'Unknown';
+                        $statusBreakdown[$s] = ($statusBreakdown[$s] ?? 0) + 1;
+                    }
+                    $statusSubTotals = [];
+                    foreach ($allSales as $o) {
+                        $s = $o['OrderStatus'] ?? 'Unknown';
+                        $statusSubTotals[$s] = ($statusSubTotals[$s] ?? 0.0) + (float) ($o['SubTotal'] ?? 0);
+                    }
 
                     $salesOrders = array_values(array_filter(
-                        $fetched['sales'],
-                        fn($o) => ($o['OrderStatus'] ?? '') !== 'Cancelled'
+                        $allSales,
+                        fn($o) => strcasecmp($o['OrderStatus'] ?? '', 'Deleted') !== 0
                     ));
+
+                    $rawSubTotal = array_sum(array_column($salesOrders, 'SubTotal'));
 
                     return [
                         $this->groupByWarehouse($salesOrders),
-                        $this->groupByWarehouse($fetched['credits']),
+                        $this->groupByWarehouse($allCredits),
+                        [
+                            'sales'       => count($salesOrders),
+                            'salesRaw'    => count($allSales),
+                            'salesFixed'  => count($fixedSales),
+                            'salesCustom' => count($customSales),
+                            'credits'     => count($allCredits),
+                        ],
+                        [
+                            'statuses'       => $statusBreakdown,
+                            'statusSubTotals' => $statusSubTotals,
+                            'rawSubTotal'    => $rawSubTotal,
+                            'apiFrom'        => $apiFrom,
+                            'apiTo'          => $apiTo,
+                        ],
                     ];
                 }
             );
@@ -67,6 +144,8 @@ class SalesController extends Controller
                 'success'            => true,
                 'salesByWarehouse'   => $salesByWarehouse,
                 'creditsByWarehouse' => $creditsByWarehouse,
+                'counts'             => $counts,
+                'debug'              => $debug,
             ]);
         } catch (\Throwable $e) {
             return response()->json([

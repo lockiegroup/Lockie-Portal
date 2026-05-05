@@ -141,7 +141,7 @@
                 <div id="sortable-{{ $boardKey }}" style="display:flex;flex-direction:column;gap:16px;" data-board="{{ $boardKey }}">
 
                     @forelse($boardJobs[$boardKey] as $job)
-                        @include('print-schedule._job-card', ['job' => $job, 'boards' => $boards])
+                        @include('print-schedule._job-card', ['job' => $job, 'boards' => $boards, 'orderLineCounts' => $orderLineCounts])
                     @empty
                         <div class="empty-state-{{ $boardKey }} text-center py-12 text-slate-400">
                             <svg class="w-10 h-10 mx-auto mb-3 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -447,6 +447,16 @@
             });
         };
 
+        // ─── Toggle delivery address ──────────────────────────────────────
+        window.toggleDelivery = function (jobId) {
+            const detail = document.getElementById('delivery-detail-' + jobId);
+            const label  = document.getElementById('delivery-label-' + jobId);
+            if (!detail) return;
+            const open = detail.style.display === 'none';
+            detail.style.display = open ? 'block' : 'none';
+            if (label) label.textContent = open ? 'Hide address' : (label.dataset.summary || 'Delivery address');
+        };
+
         // ─── Toggle notes panel ───────────────────────────────────────────
         window.toggleNotes = function (jobId) {
             const panel = document.getElementById('notes-panel-' + jobId);
@@ -675,8 +685,12 @@
         if (typeof Sortable !== 'undefined') {
             document.querySelectorAll('[id^="sortable-"]').forEach(function (el) {
                 Sortable.create(el, {
-                    handle:    '.drag-handle',
-                    animation: 150,
+                    handle:          '.drag-handle',
+                    animation:       150,
+                    scroll:          true,
+                    scrollSensitivity: 100,
+                    scrollSpeed:     20,
+                    bubbleScroll:    true,
                     onEnd: function (evt) {
                         const boardKey   = el.dataset.board;
                         const cards      = el.querySelectorAll('.job-card');

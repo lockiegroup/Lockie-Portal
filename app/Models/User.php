@@ -11,11 +11,12 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     const PERMISSIONS = [
-        'manage_users'      => 'Manage Users',
-        'print_settings'    => 'Print Settings',
-        'envelope_settings' => 'Envelope Settings',
-        'cash_flow'         => 'Cash Flow',
-        'policy_settings'   => 'Policy Settings',
+        'manage_users'       => 'Manage Users',
+        'print_settings'     => 'Print Settings',
+        'envelope_settings'  => 'Envelope Settings',
+        'cash_flow'          => 'Cash Flow',
+        'policy_settings'    => 'Policy Settings',
+        'key_accounts_admin' => 'Key Accounts Admin',
     ];
 
     const MODULES = [
@@ -27,6 +28,7 @@ class User extends Authenticatable
         'policies'       => 'Policies',
         'print_schedule' => 'Print Schedule',
         'amazon'         => 'Amazon & Xero',
+        'key_accounts'   => 'Key Accounts',
     ];
 
     protected $fillable = ['name', 'email', 'password', 'role', 'is_active', 'permissions', 'modules', 'last_login_at'];

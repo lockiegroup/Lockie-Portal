@@ -3,9 +3,6 @@
     $isWatchlistSection = request()->routeIs('stock-watchlist.*');
     $user               = auth()->user();
     $initials           = $user ? strtoupper(mb_substr($user->name ?? $user->email, 0, 2)) : '??';
-    $watchlistCategories = ($user && $user->can('stock_ordering'))
-        ? \App\Models\StockWatchlistCategory::orderBy('position')->get(['id', 'name'])
-        : collect();
 @endphp
 
 <aside id="sidebar">
@@ -62,28 +59,6 @@
         @endif
 
 @can('stock_ordering')
-        @if($watchlistCategories->count() > 1)
-        <button onclick="toggleWatchlist()" id="watchlist-toggle"
-            class="sb-item{{ $isWatchlistSection ? ' sb-active' : '' }}"
-            style="width:100%;background:none;border:none;cursor:pointer;font-family:inherit;text-align:left;"
-            data-tip="Stock Watchlist">
-            <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/>
-            </svg>
-            <span class="sb-label" style="flex:1;">Stock Watchlist</span>
-            <svg id="watchlist-chevron" class="sb-label" style="width:13px;height:13px;flex-shrink:0;transition:transform 0.2s;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <polyline points="6 9 12 15 18 9"/>
-            </svg>
-        </button>
-        <div id="watchlist-sub" class="sb-label sb-sub-group" style="display:none;">
-            <a href="{{ route('stock-watchlist.index') }}"
-               class="sb-sub-item{{ $isWatchlistSection ? ' sb-active' : '' }}">All</a>
-            @foreach($watchlistCategories as $cat)
-            <a href="{{ route('stock-watchlist.index') }}#cat-{{ $cat->id }}"
-               class="sb-sub-item">{{ $cat->name }}</a>
-            @endforeach
-        </div>
-        @else
         <a href="{{ route('stock-watchlist.index') }}"
            class="sb-item{{ $isWatchlistSection ? ' sb-active' : '' }}"
            data-tip="Stock Watchlist">
@@ -92,7 +67,6 @@
             </svg>
             <span class="sb-label">Stock Watchlist</span>
         </a>
-        @endif
         @endcan
 
         @can('cash_flow')
@@ -159,6 +133,33 @@
         </a>
         @endif
 
+        @if($user->hasModule('key_accounts'))
+        <a href="{{ route('key-accounts.index') }}"
+           class="sb-item{{ request()->routeIs('key-accounts.*') ? ' sb-active' : '' }}"
+           data-tip="Key Accounts">
+            <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                <path d="M21 21v-2a4 4 0 0 0-3-3.87"/>
+            </svg>
+            <span class="sb-label">Key Accounts</span>
+        </a>
+        @endif
+
+        @if($user->hasModule('key_accounts') || $user->can('stock_ordering'))
+        <a href="{{ route('imports.index') }}"
+           class="sb-item{{ request()->routeIs('imports.*') ? ' sb-active' : '' }}"
+           data-tip="Imports">
+            <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            <span class="sb-label">Imports</span>
+        </a>
+        @endif
+
         @if($user->hasModule('print_schedule'))
         <button onclick="togglePrint()" id="print-toggle"
             class="sb-item{{ $isPrintSection ? ' sb-active' : '' }}"
@@ -185,7 +186,7 @@
         </div>
         @endif
 
-        @canany(['manage_users', 'print_settings', 'envelope_settings', 'policy_settings', 'cash_flow'])
+        @canany(['manage_users', 'print_settings', 'envelope_settings', 'policy_settings', 'cash_flow', 'key_accounts_admin'])
         <div style="height:1px;background:#1e293b;margin:10px 4px 8px;"></div>
         <p class="sb-section" style="font-size:0.625rem;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:0.1em;padding:0 10px;margin-bottom:6px;">Admin</p>
 
@@ -213,6 +214,15 @@
         @endcan
 
         @can('print_settings')
+        <a href="{{ route('sequential.index') }}"
+           class="sb-item{{ request()->routeIs('sequential.*') ? ' sb-active' : '' }}"
+           data-tip="Sequential Finder">
+            <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+                <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+            </svg>
+            <span class="sb-label">Sequential Finder</span>
+        </a>
         <a href="{{ route('admin.print-settings.index') }}"
            class="sb-item{{ request()->routeIs('admin.print-settings*') ? ' sb-active' : '' }}"
            data-tip="Print Settings">
@@ -234,6 +244,18 @@
                 <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
             </svg>
             <span class="sb-label">Policy Settings</span>
+        </a>
+        @endcan
+
+        @can('key_accounts_admin')
+        <a href="{{ route('admin.key-accounts.index') }}"
+           class="sb-item{{ request()->routeIs('admin.key-accounts*') ? ' sb-active' : '' }}"
+           data-tip="Key Accounts Admin">
+            <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+            </svg>
+            <span class="sb-label">Key Accounts</span>
         </a>
         @endcan
 

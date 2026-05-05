@@ -33,6 +33,16 @@ class PrintScheduleSyncService
     {
         $orders = $unleashed->fetchA1PrintingOrders();
 
+        // Pre-fetch all active SO jobs into memory — avoids one DB query per order line
+        $activeJobs  = PrintJob::active()
+            ->where('is_manual', false)
+            ->where('order_number', 'not like', 'ASM-%')
+            ->whereNotNull('unleashed_guid')
+            ->get()
+            ->keyBy(fn($j) => $j->unleashed_guid . ':' . $j->line_number);
+
+        $maxPosition = PrintJob::where('board', 'unplanned')->max('position') ?? 0;
+
         foreach ($orders as $order) {
             $guid = $order['Guid'] ?? null;
             if (!$guid) continue;
@@ -44,6 +54,23 @@ class PrintScheduleSyncService
             $orderTotal   = (float) ($order['SubTotal'] ?? 0);
             $orderStatus  = $order['OrderStatus'] ?? 'Open';
             $requiredDate = $unleashed->parseDate($order['RequiredDate'] ?? null);
+
+            $deliveryName     = trim((string)($order['DeliveryName'] ?? '')) ?: null;
+            $deliveryCity     = trim((string)($order['DeliveryCity'] ?? '')) ?: null;
+            $deliveryPostcode = trim((string)($order['DeliveryPostCode'] ?? '')) ?: null;
+            $addrParts = array_filter([
+                $deliveryName,
+                trim((string)($order['DeliveryStreetAddress']  ?? '')),
+                trim((string)($order['DeliveryStreetAddress2'] ?? '')),
+                trim((string)($order['DeliverySuburb']         ?? '')),
+                $deliveryCity,
+                trim((string)($order['DeliveryRegion']         ?? '')),
+                $deliveryPostcode,
+                is_array($order['DeliveryCountry'] ?? null)
+                    ? trim((string)($order['DeliveryCountry']['Name'] ?? ''))
+                    : trim((string)($order['DeliveryCountry'] ?? '')),
+            ]);
+            $deliveryAddress = $addrParts ? implode(', ', $addrParts) : null;
 
             if (in_array($orderStatus, ['Completed', 'Deleted'], true)) {
                 $completedDate = $unleashed->parseDate($order['CompletedDate'] ?? null);
@@ -71,19 +98,38 @@ class PrintScheduleSyncService
                 if (str_contains(strtolower($productCode), 'carriage')) continue;
                 if (str_starts_with(strtoupper($productCode), 'H-')) continue;
 
-                $lineNumber = (int) ($line['LineNumber'] ?? ($lineIndex + 1));
-                $existing   = PrintJob::active()->where('unleashed_guid', $guid)->where('line_number', $lineNumber)->first();
+                $lineNumber  = (int) ($line['LineNumber'] ?? ($lineIndex + 1));
+                $existing    = $activeJobs->get($guid . ':' . $lineNumber);
+                $shipQty     = (float) ($line['ShipQuantity'] ?? 0);
+                $orderQty    = (float) ($line['OrderQuantity'] ?? 0);
+                $lineShipped = $orderQty > 0 && $shipQty >= $orderQty;
 
+                // If Unleashed shows this line fully shipped and we have an active card, archive it
+                if ($lineShipped && $existing) {
+                    $existing->update(['archived_at' => now(), 'archive_reason' => 'completed']);
+                    $activeJobs->forget($guid . ':' . $lineNumber);
+                    $updated++;
+                    continue;
+                }
+
+                // If fully shipped and no active card, leave it archived — nothing to do
+                if ($lineShipped) {
+                    continue;
+                }
+
+                $anyExisting = null;
                 if (!$existing) {
-                    $swept = PrintJob::where('unleashed_guid', $guid)
+                    $anyExisting = PrintJob::withoutGlobalScopes()
+                        ->where('unleashed_guid', $guid)
                         ->where('line_number', $lineNumber)
-                        ->whereNotNull('archived_at')
-                        ->whereNull('archive_reason')
                         ->first();
-                    if ($swept) {
-                        $swept->update(['archived_at' => null]);
-                        $existing = $swept->fresh();
+                    if ($anyExisting && $anyExisting->archive_reason === null) {
+                        // Auto-swept (no explicit reason): safe to restore
+                        $anyExisting->update(['archived_at' => null]);
+                        $existing = $anyExisting->fresh();
+                        $activeJobs->put($guid . ':' . $lineNumber, $existing);
                     }
+                    // If archived with a reason (e.g. completed): leave it archived
                 }
 
                 if ($existing) {
@@ -95,6 +141,10 @@ class PrintScheduleSyncService
                         'product_code'        => $productCode,
                         'product_description' => $line['Product']['ProductDescription'] ?? null,
                         'line_comment'        => $line['Comments'] ?? $line['LineComment'] ?? null,
+                        'delivery_name'       => $deliveryName,
+                        'delivery_city'       => $deliveryCity,
+                        'delivery_postcode'   => $deliveryPostcode,
+                        'delivery_address'    => $deliveryAddress,
                         'order_total'         => $orderTotal,
                         'line_total'          => (float) ($line['LineTotal'] ?? 0),
                         'order_quantity'      => (int) ($line['OrderQuantity'] ?? 0),
@@ -107,7 +157,8 @@ class PrintScheduleSyncService
                     }
                     $existing->update($update);
                     $updated++;
-                } else {
+                } elseif (!$anyExisting) {
+                    // No record exists at all — create fresh
                     PrintJob::create([
                         'unleashed_guid'         => $guid,
                         'line_number'            => $lineNumber,
@@ -118,6 +169,10 @@ class PrintScheduleSyncService
                         'product_code'           => $productCode,
                         'product_description'    => $line['Product']['ProductDescription'] ?? null,
                         'line_comment'           => $line['Comments'] ?? $line['LineComment'] ?? null,
+                        'delivery_name'          => $deliveryName,
+                        'delivery_city'          => $deliveryCity,
+                        'delivery_postcode'      => $deliveryPostcode,
+                        'delivery_address'       => $deliveryAddress,
                         'order_total'            => $orderTotal,
                         'line_total'             => (float) ($line['LineTotal'] ?? 0),
                         'order_quantity'         => (int) ($line['OrderQuantity'] ?? 0),
@@ -125,28 +180,53 @@ class PrintScheduleSyncService
                         'required_date'          => $requiredDate,
                         'original_required_date' => $requiredDate,
                         'board'                  => 'unplanned',
-                        'position'               => PrintJob::where('board', 'unplanned')->max('position') + 1,
+                        'position'               => ++$maxPosition,
                         'unleashed_status'       => $orderStatus,
                         'synced_at'              => now(),
                     ]);
                     $created++;
                 }
+                // else: archived with a reason (e.g. line completed) — leave it archived, skip
             }
         }
     }
 
     private function syncAssemblies(UnleashedService $unleashed, int &$created, int &$updated): void
     {
-        $assemblies = $unleashed->fetchAssemblies();
-        $seenKeys   = [];
+        // assemblyStatus=Parked returns all open assemblies including custom statuses.
+        // Assemblies that vanish from this list are archived as 'completed'; the daily
+        // print:fix-archive-labels --include-completed cron corrects any that were deleted.
+        $all = $unleashed->paginateFast('Assemblies', ['assemblyStatus' => 'Parked'], 200);
 
-        // Batch-fetch SO totals for all linked sales orders in one parallel round-trip
+        // Only process assemblies for A1 Printing, JW Products, or Hammond & Harper warehouses.
+        $allowedCodes = $unleashed->fetchPrintWarehouseCodes();
+        if (!empty($allowedCodes)) {
+            $all = array_values(array_filter($all, function ($a) use ($allowedCodes) {
+                $src  = $a['SourceWarehouse']['WarehouseCode'] ?? null;
+                $dest = $a['DestinationWarehouse']['WarehouseCode'] ?? null;
+                return in_array($src, $allowedCodes, true) || in_array($dest, $allowedCodes, true);
+            }));
+        }
+
+        // Pre-fetch all active assembly jobs into memory — avoids one DB query per assembly
+        $activeJobs = PrintJob::active()
+            ->where('is_manual', false)
+            ->where('order_number', 'like', 'ASM-%')
+            ->whereNotNull('unleashed_guid')
+            ->get()
+            ->keyBy('unleashed_guid');
+
+        $maxPosition = PrintJob::where('board', 'unplanned')->max('position') ?? 0;
+
+        // Batch-fetch SO data for all active assemblies
         $soNumbers = array_values(array_unique(array_filter(
-            array_column(array_map(fn($a) => ['SalesOrderNumber' => $a['SalesOrderNumber'] ?? null], $assemblies), 'SalesOrderNumber')
+            array_column(array_map(fn($a) => ['SalesOrderNumber' => $a['SalesOrderNumber'] ?? null], $all), 'SalesOrderNumber')
         )));
         $soData = !empty($soNumbers) ? $unleashed->fetchSalesOrderData($soNumbers) : [];
 
-        foreach ($assemblies as $assembly) {
+        $seenGuids = [];
+
+        foreach ($all as $assembly) {
             $guid = $assembly['Guid'] ?? null;
             if (!$guid) continue;
 
@@ -155,21 +235,22 @@ class PrintScheduleSyncService
             $productCode    = $assembly['Product']['ProductCode'] ?? null;
             if (!$productCode) continue;
 
-            $existing = PrintJob::active()
-                ->where('unleashed_guid', $guid)
-                ->where('line_number', 1)
-                ->first();
+            $seenGuids[$guid] = true;
+            $existing         = $activeJobs->get($guid);
+            $anyExisting      = null;
 
-            // Deleted → hard delete and move on
-            if (strtolower($assemblyStatus) === 'deleted') {
-                $existing?->delete();
-                continue;
-            }
-
-            // Completed → archive and move on
-            if (strtolower($assemblyStatus) === 'completed') {
-                $existing?->update(['archived_at' => now(), 'archive_reason' => 'completed']);
-                continue;
+            if (!$existing) {
+                $anyExisting = PrintJob::withoutGlobalScopes()
+                    ->where('unleashed_guid', $guid)
+                    ->where('line_number', 1)
+                    ->first();
+                if ($anyExisting && $anyExisting->archive_reason === null) {
+                    // Auto-swept: safe to restore
+                    $anyExisting->update(['archived_at' => null]);
+                    $existing = $anyExisting->fresh();
+                    $activeJobs->put($guid, $existing);
+                }
+                // If archived with a reason: leave it archived
             }
 
             $productDescription = $assembly['Product']['ProductDescription'] ?? null;
@@ -178,29 +259,62 @@ class PrintScheduleSyncService
             $assemblyDate       = $unleashed->parseDate($assembly['AssemblyDate'] ?? null);
             $comments           = $assembly['Comments'] ?? null;
             $soNumber           = $assembly['SalesOrderNumber'] ?? null;
-            $soTotal            = 0.0;
-            $soRequiredDate     = null;
+            $soTotal             = 0.0;
+            $soRequiredDate      = null;
+            $customerName        = $soNumber ?? '';
+            $asmDeliveryName     = null;
+            $asmDeliveryCity     = null;
+            $asmDeliveryPostcode = null;
+            $asmDeliveryAddress  = null;
             if ($soNumber && isset($soData[$soNumber])) {
-                foreach ($soData[$soNumber]['lines'] as $line) {
+                $sd          = $soData[$soNumber];
+                $matchedLine = null;
+                foreach ($sd['lines'] as $line) {
                     if (($line['Product']['ProductCode'] ?? null) === $productCode) {
-                        $soTotal = (float) ($line['LineTotal'] ?? 0);
-                        break;
+                        if ($matchedLine === null) {
+                            $matchedLine = $line;
+                        }
+                        if ((int)($line['OrderQuantity'] ?? 0) === $assembledQty) {
+                            $matchedLine = $line;
+                            break;
+                        }
                     }
                 }
-                $soRequiredDate = $unleashed->parseDate($soData[$soNumber]['requiredDate'] ?? null);
+                if ($matchedLine) {
+                    $soTotal = (float) ($matchedLine['LineTotal'] ?? 0);
+                }
+                $soRequiredDate      = $unleashed->parseDate($sd['requiredDate'] ?? null);
+                $customerName        = $sd['customerName'] ?? $soNumber;
+                $asmDeliveryName     = $sd['deliveryName'] ?? null;
+                $asmDeliveryCity     = $sd['deliveryCity'] ?? null;
+                $asmDeliveryPostcode = $sd['deliveryPostCode'] ?? null;
+                $asmAddrParts        = array_filter([
+                    $sd['deliveryName']    ?? null,
+                    $sd['deliveryStreet1'] ?? null,
+                    $sd['deliveryStreet2'] ?? null,
+                    $sd['deliverySuburb']  ?? null,
+                    $sd['deliveryCity']    ?? null,
+                    $sd['deliveryRegion']  ?? null,
+                    $sd['deliveryPostCode'] ?? null,
+                    $sd['deliveryCountry'] ?? null,
+                ]);
+                $asmDeliveryAddress = $asmAddrParts ? implode(', ', $asmAddrParts) : null;
             }
 
-            $requiredDate   = $soRequiredDate ?? $assembleBy;
-            $seenKeys[$guid . ':1'] = true;
+            $requiredDate = $soRequiredDate ?? $assembleBy;
 
             if ($existing) {
                 $update = [
                     'order_number'        => $assemblyNumber,
                     'order_date'          => $assemblyDate,
-                    'customer_name'       => $soNumber ?? '',
+                    'customer_name'       => $customerName,
                     'product_code'        => $productCode,
                     'product_description' => $productDescription,
                     'line_comment'        => $comments,
+                    'delivery_name'       => $asmDeliveryName,
+                    'delivery_city'       => $asmDeliveryCity,
+                    'delivery_postcode'   => $asmDeliveryPostcode,
+                    'delivery_address'    => $asmDeliveryAddress,
                     'order_quantity'      => $assembledQty,
                     'order_total'         => $soTotal,
                     'unleashed_status'    => $assemblyStatus,
@@ -212,7 +326,8 @@ class PrintScheduleSyncService
                 }
                 $existing->update($update);
                 $updated++;
-            } else {
+            } elseif (!$anyExisting) {
+                // No record exists at all — create fresh
                 PrintJob::create([
                     'unleashed_guid'         => $guid,
                     'line_number'            => 1,
@@ -223,6 +338,10 @@ class PrintScheduleSyncService
                     'product_code'           => $productCode,
                     'product_description'    => $productDescription,
                     'line_comment'           => $comments,
+                    'delivery_name'          => $asmDeliveryName,
+                    'delivery_city'          => $asmDeliveryCity,
+                    'delivery_postcode'      => $asmDeliveryPostcode,
+                    'delivery_address'       => $asmDeliveryAddress,
                     'order_total'            => $soTotal,
                     'line_total'             => 0,
                     'order_quantity'         => $assembledQty,
@@ -230,28 +349,21 @@ class PrintScheduleSyncService
                     'required_date'          => $requiredDate,
                     'original_required_date' => $requiredDate,
                     'board'                  => 'unplanned',
-                    'position'               => PrintJob::where('board', 'unplanned')->max('position') + 1,
+                    'position'               => ++$maxPosition,
                     'unleashed_status'       => $assemblyStatus,
                     'synced_at'              => now(),
                 ]);
                 $created++;
             }
+            // else: archived with a reason — leave it archived, skip
         }
 
-        // Handle assemblies no longer in the active list — look up each by GUID to distinguish
-        // completed (→ archive) from deleted (→ hard delete)
-        if (!empty($seenKeys)) {
-            PrintJob::active()
-                ->where('is_manual', false)
-                ->where('order_number', 'like', 'ASM-%')
-                ->get()
-                ->each(function ($job) use ($seenKeys, $unleashed) {
-                    if (isset($seenKeys[$job->unleashed_guid . ':' . $job->line_number])) return;
-                    $assembly = $unleashed->fetchAssemblyByGuid($job->unleashed_guid);
-                    $status   = $assembly !== null ? strtolower($assembly['AssemblyStatus'] ?? '') : 'deleted';
-                    $reason   = $status === 'completed' ? 'completed' : 'deleted';
-                    $job->update(['archived_at' => now(), 'archive_reason' => $reason]);
-                });
+        // Sweep using the pre-fetched collection — no extra DB query needed.
+        // Anything active in our DB that wasn't in the active Unleashed list → archive as
+        // 'completed' for now; the daily fix-archive-labels cron will relabel deleted ones.
+        foreach ($activeJobs as $jobGuid => $job) {
+            if (isset($seenGuids[$jobGuid])) continue;
+            $job->update(['archived_at' => now(), 'archive_reason' => 'completed']);
         }
     }
 }

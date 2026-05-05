@@ -87,16 +87,14 @@
         function tableHtml(group, totals) {
             const keys = Object.keys(group);
             if (keys.length === 0) {
-                return `<tbody><tr><td colspan="5" class="px-6 py-10 text-center text-slate-400">No records found for this period.</td></tr></tbody>`;
+                return `<tbody><tr><td colspan="3" class="px-6 py-10 text-center text-slate-400">No records found for this period.</td></tr></tbody>`;
             }
             const rows = keys.map(w => {
                 const d = group[w];
                 return `<tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
                     <td class="px-6 py-4 font-medium text-slate-800">${escHtml(w)}</td>
                     <td class="px-6 py-4 text-right text-slate-600">${fmtInt(d.count)}</td>
-                    <td class="px-6 py-4 text-right text-slate-600">£${fmt(d.sub)}</td>
-                    <td class="px-6 py-4 text-right text-slate-600">£${fmt(d.tax)}</td>
-                    <td class="px-6 py-4 text-right font-semibold text-slate-800">£${fmt(d.total)}</td>
+                    <td class="px-6 py-4 text-right font-semibold text-slate-800">£${fmt(d.sub)}</td>
                 </tr>`;
             }).join('');
             return `<tbody>${rows}</tbody>
@@ -105,16 +103,15 @@
                     <td class="px-6 py-4">Total</td>
                     <td class="px-6 py-4 text-right">${fmtInt(totals.count)}</td>
                     <td class="px-6 py-4 text-right">£${fmt(totals.sub)}</td>
-                    <td class="px-6 py-4 text-right">£${fmt(totals.tax)}</td>
-                    <td class="px-6 py-4 text-right">£${fmt(totals.total)}</td>
                 </tr>
             </tfoot>`;
         }
 
         function renderResults(data, from, to) {
+            const counts  = data.counts || {};
             const sections = [
-                { key: 'salesByWarehouse',  title: 'Sales Enquiry by Warehouse',  note: 'All non-cancelled orders by order date',  dot: 'bg-sky-500', cardLabel: 'Sales Enquiry',  cardCls: 'text-slate-800', unit: 'orders'  },
-                { key: 'creditsByWarehouse', title: 'Credit Enquiry by Warehouse', note: 'All credit notes including free credits', dot: 'bg-red-500', cardLabel: 'Credit Enquiry', cardCls: 'text-red-500',   unit: 'credits' },
+                { key: 'salesByWarehouse',  countKey: 'sales',   title: 'Sales Enquiry by Warehouse',  note: 'All non-cancelled orders by order date',  dot: 'bg-sky-500', cardLabel: 'Sales Enquiry',  cardCls: 'text-slate-800', unit: 'orders'  },
+                { key: 'creditsByWarehouse', countKey: 'credits', title: 'Credit Enquiry by Warehouse', note: 'All credit notes including free credits', dot: 'bg-red-500', cardLabel: 'Credit Enquiry', cardCls: 'text-red-500',   unit: 'credits' },
             ];
 
             const totals = {};
@@ -129,8 +126,8 @@
                 const t = totals[s.key];
                 return `<div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
                     <p class="text-slate-500 text-sm font-medium">${s.cardLabel}</p>
-                    <p class="text-2xl font-bold ${s.cardCls} mt-1">£${fmt(t.total)}</p>
-                    <p class="text-slate-400 text-sm mt-1">${fmtInt(t.count)} ${s.unit} &middot; ex VAT £${fmt(t.sub)}</p>
+                    <p class="text-2xl font-bold ${s.cardCls} mt-1">£${fmt(t.sub)}</p>
+                    <p class="text-slate-400 text-sm mt-1">${fmtInt(t.count)} ${s.unit} &middot; net ex VAT</p>
                 </div>`;
             }).join('');
 
@@ -142,6 +139,8 @@
                         <h2 class="font-semibold text-slate-800">${s.title}</h2>
                         <span class="text-slate-400 text-xs ml-2">${s.note}</span>
                         <div class="ml-auto flex items-center gap-4">
+                            <span class="text-slate-400 text-sm">${fmtInt(counts[s.countKey] ?? 0)} of ${fmtInt(counts.salesRaw ?? 0)} ${s.unit} (excl. cancelled)</span>
+                            <span class="text-slate-300 text-sm">|</span>
                             <span class="text-slate-400 text-sm">${escHtml(from)} — ${escHtml(to)}</span>
                         </div>
                     </div>
@@ -151,9 +150,7 @@
                                 <tr class="bg-slate-50 border-b border-slate-100 text-slate-500 text-xs uppercase tracking-wide">
                                     <th class="px-6 py-3 text-left font-medium">Warehouse</th>
                                     <th class="px-6 py-3 text-right font-medium">Count</th>
-                                    <th class="px-6 py-3 text-right font-medium">Sub-Total</th>
-                                    <th class="px-6 py-3 text-right font-medium">VAT</th>
-                                    <th class="px-6 py-3 text-right font-medium">Total inc VAT</th>
+                                    <th class="px-6 py-3 text-right font-medium">Net (ex VAT)</th>
                                 </tr>
                             </thead>
                             ${tableHtml(group, totals[s.key])}
@@ -162,7 +159,17 @@
                 </div>`;
             }).join('');
 
-            return `<div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">${cards}</div>${tables}`;
+            const statuses    = data.debug?.statuses || {};
+            const subTotals   = data.debug?.statusSubTotals || {};
+            const statusHtml = Object.entries(statuses).sort((a,b)=>b[1]-a[1]).map(([s,n])=>{
+                const sub = subTotals[s] != null ? ` £${fmt(subTotals[s])}` : '';
+                return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-slate-100 text-slate-600"><b>${n}</b> ${escHtml(s)}${sub}</span>`;
+            }).join(' ');
+            const fixedCount  = counts.salesFixed  ?? '?';
+            const customCount = counts.salesCustom ?? '?';
+            const debugHtml = `<div class="text-xs text-slate-400 mb-6">Orders by status (net): ${statusHtml || '—'} &nbsp;·&nbsp; API: ${fixedCount} fixed + ${customCount} custom (before dedup) &nbsp;·&nbsp; dates: ${escHtml(data.debug?.apiFrom||'')} → ${escHtml(data.debug?.apiTo||'')}</div>`;
+
+            return `<div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">${cards}</div>${debugHtml}${tables}`;
         }
 
         // ── Data loading ───────────────────────────────────────────────────────

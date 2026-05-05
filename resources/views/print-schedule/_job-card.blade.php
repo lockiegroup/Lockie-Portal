@@ -9,7 +9,7 @@
      data-current-board="{{ $job->board }}"
      data-remaining="{{ $job->remaining_quantity }}"
      data-required-date="{{ $job->required_date ? $job->required_date->format('Y-m-d') : '' }}"
-     data-search-text="{{ strtolower(collect([$job->order_number, $job->customer_name, $job->customer_ref, $job->product_code, $job->product_description, $job->line_comment])->filter()->implode(' ')) }}"
+     data-search-text="{{ strtolower(collect([$job->order_number, $job->customer_name, $job->customer_ref, $job->product_code, $job->product_description, $job->line_comment, $job->delivery_address])->filter()->implode(' ')) }}"
      id="job-card-{{ $job->id }}">
 
     {{-- Row 1: Drag handle | Order number | Customer | Board select --}}
@@ -27,6 +27,15 @@
                 <span class="text-sm font-medium text-slate-800 truncate">{{ $job->customer_name }}</span>
                 @if($job->is_manual)
                     <span style="font-size:0.65rem;font-weight:700;background:#dcfce7;color:#15803d;padding:1px 6px;border-radius:9999px;text-transform:uppercase;letter-spacing:0.05em;">Manual</span>
+                @endif
+                @php
+                    $badgeKey  = (str_starts_with($job->order_number, 'ASM-') && preg_match('/\b(SO-\d+)\b/', $job->line_comment ?? '', $_m))
+                                    ? $_m[1]
+                                    : $job->order_number;
+                    $lineCount = isset($orderLineCounts) ? ($orderLineCounts[$badgeKey] ?? 1) : 1;
+                @endphp
+                @if($lineCount > 1)
+                    <span style="font-size:0.65rem;font-weight:700;background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:9999px;text-transform:uppercase;letter-spacing:0.05em;">{{ $lineCount }} lines</span>
                 @endif
             </div>
             @if($orderDateFmt || $job->customer_ref)
@@ -83,16 +92,33 @@
     {{-- Row 3: Line comment (print data) --}}
     @if($job->line_comment)
         <div class="mb-3 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
-            <p class="text-xs text-blue-400 font-medium mb-0.5 uppercase tracking-wide">Print data:</p>
             <p class="font-mono text-xs text-blue-800" style="white-space:pre-wrap;word-break:break-word;">{{ $job->line_comment }}</p>
+        </div>
+    @endif
+
+    {{-- Delivery address --}}
+    @if($job->delivery_city || $job->delivery_address)
+        @php $addrSummary = collect([$job->delivery_name, $job->delivery_city, $job->delivery_postcode])->filter()->implode(', ') ?: 'Delivery address'; @endphp
+        <div class="mb-3">
+            <button type="button" onclick="toggleDelivery({{ $job->id }})"
+                style="display:flex;align-items:center;gap:6px;font-size:0.75rem;color:#94a3b8;background:none;border:none;cursor:pointer;padding:0;"
+                onmouseover="this.style.color='#475569'" onmouseout="this.style.color='#94a3b8'">
+                <svg style="width:13px;height:13px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                </svg>
+                <span id="delivery-label-{{ $job->id }}" data-summary="{{ $addrSummary }}">{{ $addrSummary }}</span>
+            </button>
+            <div id="delivery-detail-{{ $job->id }}" style="display:none;margin-top:6px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;">
+                <p style="font-size:0.75rem;color:#475569;white-space:pre-line;margin:0;">{{ $job->delivery_address }}</p>
+            </div>
         </div>
     @endif
 
     {{-- Row 4: Order total · packs · required date --}}
     <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;margin-bottom:0.75rem;font-size:0.875rem;color:#475569;">
         <span>
-            <span class="text-xs text-slate-400">{{ str_starts_with($job->order_number, 'ASM-') ? 'SO Value:' : 'Total Net Price:' }} </span>
-            <span class="font-medium text-slate-700">&pound;{{ number_format((float)$job->order_total, 2) }}</span>
+            <span class="text-xs text-slate-400">{{ str_starts_with($job->order_number, 'ASM-') ? 'SO Value:' : 'Net Price:' }} </span>
+            <span class="font-medium text-slate-700">&pound;{{ number_format(str_starts_with($job->order_number, 'ASM-') ? (float)$job->order_total : (float)$job->line_total, 2) }}</span>
         </span>
         <span>
             <span class="text-xs text-slate-400">Total: </span>

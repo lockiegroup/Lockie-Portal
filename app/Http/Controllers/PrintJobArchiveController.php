@@ -20,7 +20,10 @@ class PrintJobArchiveController extends Controller
                       ->orWhere('customer_ref',        'like', '%' . $search . '%')
                       ->orWhere('product_code',        'like', '%' . $search . '%')
                       ->orWhere('product_description', 'like', '%' . $search . '%')
-                      ->orWhere('line_comment',        'like', '%' . $search . '%');
+                      ->orWhere('line_comment',        'like', '%' . $search . '%')
+                      ->orWhere('delivery_address',    'like', '%' . $search . '%')
+                      ->orWhere('delivery_city',       'like', '%' . $search . '%')
+                      ->orWhere('delivery_postcode',   'like', '%' . $search . '%');
                 });
             })
             ->orderByRaw('CASE WHEN archive_reason = "deleted" THEN order_date ELSE archived_at END DESC')

@@ -24,12 +24,14 @@ class ActivityLogController extends Controller
         $users = User::orderBy('name')->get(['id', 'name']);
 
         $categories = [
-            'auth'     => 'Login / Logout',
-            'envelope' => 'Church Envelopes',
-            'print'    => 'Print Schedule',
-            'policy'   => 'Policies',
-            'cashflow' => 'Cash Flow',
-            'users'    => 'User Management',
+            'auth'         => 'Login / Logout',
+            'envelope'     => 'Church Envelopes',
+            'print'        => 'Print Schedule',
+            'policy'       => 'Policies',
+            'cashflow'     => 'Cash Flow',
+            'users'        => 'User Management',
+            'key_accounts' => 'Key Accounts',
+            'imports'      => 'Imports',
         ];
 
         return view('admin.activity-log.index', compact('logs', 'users', 'categories', 'userId', 'category'));

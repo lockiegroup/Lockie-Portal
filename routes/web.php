@@ -20,6 +20,10 @@ use App\Http\Controllers\Admin\PolicyController as AdminPolicyController;
 use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\StockWatchlistController;
 use App\Http\Controllers\AmazonController;
+use App\Http\Controllers\ImportsController;
+use App\Http\Controllers\KeyAccountController;
+use App\Http\Controllers\Admin\KeyAccountAdminController;
+use App\Http\Controllers\SequentialFinderController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn() => redirect()->route('login'));
@@ -84,6 +88,12 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::post('/jobs/{job}/manual-archive', [PrintScheduleController::class, 'archiveManual'])->name('jobs.manual.archive');
     });
 
+    // Sequential Number Finder
+    Route::prefix('sequential-finder')->name('sequential.')->middleware('can:print_settings')->group(function () {
+        Route::get('/', [SequentialFinderController::class, 'index'])->name('index');
+        Route::get('/search', [SequentialFinderController::class, 'search'])->name('search');
+    });
+
     // Cash Flow
     Route::middleware('can:cash_flow')->prefix('cash-flow')->name('cash-flow.')->group(function () {
         Route::get('/', [CashFlowController::class, 'index'])->name('index');
@@ -114,7 +124,8 @@ Route::middleware(['auth', 'otp'])->group(function () {
     Route::middleware('can:stock_ordering')->prefix('stock-watchlist')->name('stock-watchlist.')->group(function () {
         Route::get('/', [StockWatchlistController::class, 'index'])->name('index');
         Route::post('/sync', [StockWatchlistController::class, 'sync'])->name('sync');
-        Route::post('/import-sales', [StockWatchlistController::class, 'importSales'])->name('import-sales');
+        Route::post('/sales/filter', [StockWatchlistController::class, 'setDateFilter'])->name('sales.filter');
+        Route::get('/categories/{category}', [StockWatchlistController::class, 'showCategory'])->name('categories.show');
         Route::post('/categories', [StockWatchlistController::class, 'storeCategory'])->name('categories.store');
         Route::patch('/categories/{category}', [StockWatchlistController::class, 'updateCategory'])->name('categories.update');
         Route::delete('/categories/{category}', [StockWatchlistController::class, 'destroyCategory'])->name('categories.destroy');
@@ -141,7 +152,34 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::post('/xero/post/{settlement}',  [AmazonController::class, 'xeroPost'])->name('xero.post');
     });
 
-// Admin — manage users + activity log
+    // Shared imports
+    Route::get('/imports', [ImportsController::class, 'index'])->name('imports.index');
+    Route::post('/imports/sales', [ImportsController::class, 'storeSales'])->name('imports.sales');
+    Route::post('/imports/substitutions', [ImportsController::class, 'storeSubstitution'])->name('imports.substitutions.store');
+    Route::delete('/imports/substitutions/{substitution}', [ImportsController::class, 'destroySubstitution'])->name('imports.substitutions.destroy');
+
+    // Key Accounts (admin management)
+    Route::middleware('can:key_accounts_admin')->prefix('admin/key-accounts')->name('admin.key-accounts.')->group(function () {
+        Route::get('/', [KeyAccountAdminController::class, 'index'])->name('index');
+        Route::post('/', [KeyAccountAdminController::class, 'store'])->name('store');
+        Route::post('/reorder', [KeyAccountAdminController::class, 'reorder'])->name('reorder');
+        Route::put('/{keyAccount}', [KeyAccountAdminController::class, 'update'])->name('update');
+        Route::delete('/{keyAccount}', [KeyAccountAdminController::class, 'destroy'])->name('destroy');
+    });
+
+    // Key Accounts (salesperson views)
+    Route::prefix('key-accounts')->name('key-accounts.')->group(function () {
+        Route::get('/', [KeyAccountController::class, 'index'])->name('index');
+        Route::post('/sales/filter', [KeyAccountController::class, 'setDateFilter'])->name('sales.filter');
+        Route::post('/gifts/import', [KeyAccountController::class, 'importGifts'])->name('gifts.import');
+        Route::get('/gifts/export', [KeyAccountController::class, 'exportGifts'])->name('gifts.export');
+        Route::get('/{keyAccount}', [KeyAccountController::class, 'show'])->name('show');
+        Route::post('/{keyAccount}/contacts', [KeyAccountController::class, 'storeContact'])->name('contacts.store');
+        Route::delete('/{keyAccount}/contacts/{contact}', [KeyAccountController::class, 'destroyContact'])->name('contacts.destroy');
+        Route::patch('/{keyAccount}/notes', [KeyAccountController::class, 'updateNotes'])->name('notes.update');
+    });
+
+    // Admin — manage users + activity log
     Route::middleware('can:manage_users')->group(function () {
         Route::resource('admin/users', UserController::class)->names('admin.users');
         Route::get('admin/activity-log', ActivityLogController::class)->name('admin.activity-log');
