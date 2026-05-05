@@ -401,25 +401,22 @@ class AmazonSyncService
             $linesByAccount[$key]['amount_net'] += (float) $line->amount_net;
         }
 
+        if (empty($linesByAccount)) {
+            throw new \RuntimeException('Settlement has no lines to post.');
+        }
+
         $payload = [
             'settlement_id' => $settlement->settlement_id,
-            'date'          => $settlement->end_date->toDateString(),
+            'date'          => $settlement->end_date?->toDateString() ?? now()->toDateString(),
             'lines'         => array_values($linesByAccount),
         ];
 
-        try {
-            $result = $this->xero->postBankTransaction($payload);
+        $result = $this->xero->postBankTransaction($payload);
 
-            $settlement->update([
-                'status'              => 'posted',
-                'xero_transaction_id' => $result['BankTransactionID'] ?? null,
-            ]);
-        } catch (\Throwable $e) {
-            Log::error('AmazonSyncService: Xero post failed', [
-                'settlement_id' => $settlement->settlement_id,
-                'error'         => $e->getMessage(),
-            ]);
-        }
+        $settlement->update([
+            'status'              => 'posted',
+            'xero_transaction_id' => $result['BankTransactionID'] ?? null,
+        ]);
     }
 
     private function resolveTaxType(string $accountCode): string
