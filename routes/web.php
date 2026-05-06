@@ -23,7 +23,6 @@ use App\Http\Controllers\AmazonController;
 use App\Http\Controllers\ImportsController;
 use App\Http\Controllers\KeyAccountController;
 use App\Http\Controllers\Admin\KeyAccountAdminController;
-use App\Http\Controllers\SequentialFinderController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn() => redirect()->route('login'));
@@ -86,12 +85,6 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::delete('/jobs/{job}/manual-delete', [PrintScheduleController::class, 'deleteManual'])->name('jobs.manual.delete');
         Route::post('/jobs/{job}/manual-complete', [PrintScheduleController::class, 'completeManual'])->name('jobs.manual.complete');
         Route::post('/jobs/{job}/manual-archive', [PrintScheduleController::class, 'archiveManual'])->name('jobs.manual.archive');
-    });
-
-    // Sequential Number Finder
-    Route::prefix('sequential-finder')->name('sequential.')->middleware('can:print_settings')->group(function () {
-        Route::get('/', [SequentialFinderController::class, 'index'])->name('index');
-        Route::get('/search', [SequentialFinderController::class, 'search'])->name('search');
     });
 
     // Cash Flow

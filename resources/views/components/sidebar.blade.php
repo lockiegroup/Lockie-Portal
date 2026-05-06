@@ -213,16 +213,6 @@
         </a>
         @endcan
 
-        @can('print_settings')
-        <a href="{{ route('sequential.index') }}"
-           class="sb-item{{ request()->routeIs('sequential.*') ? ' sb-active' : '' }}"
-           data-tip="Sequential Finder">
-            <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
-                <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
-            </svg>
-            <span class="sb-label">Sequential Finder</span>
-        </a>
         <a href="{{ route('admin.print-settings.index') }}"
            class="sb-item{{ request()->routeIs('admin.print-settings*') ? ' sb-active' : '' }}"
            data-tip="Print Settings">
