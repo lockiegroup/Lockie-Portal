@@ -213,6 +213,7 @@
         </a>
         @endcan
 
+        @can('print_settings')
         <a href="{{ route('admin.print-settings.index') }}"
            class="sb-item{{ request()->routeIs('admin.print-settings*') ? ' sb-active' : '' }}"
            data-tip="Print Settings">
