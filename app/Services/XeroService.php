@@ -62,7 +62,7 @@ class XeroService
 
         $payload = [
             'BankTransactions' => [[
-                'Type'        => 'RECEIVE',
+                'Type'        => $settlementData['type'] ?? 'RECEIVE',
                 'BankAccount' => config('services.xero.clearing_account_id')
                     ? ['AccountID' => config('services.xero.clearing_account_id')]
                     : ['Code'      => config('services.xero.clearing_account_code')],

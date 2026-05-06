@@ -410,7 +410,20 @@ class AmazonSyncService
             throw new \RuntimeException('Settlement has no lines to post.');
         }
 
+        // Fees are negative amounts (deductions). If the net total is negative
+        // it must be posted as SPEND with flipped signs rather than RECEIVE.
+        $netTotal = array_sum(array_column($linesByAccount, 'amount_net'));
+        $type     = $netTotal >= 0 ? 'RECEIVE' : 'SPEND';
+
+        if ($type === 'SPEND') {
+            foreach ($linesByAccount as &$l) {
+                $l['amount_net'] = -$l['amount_net'];
+            }
+            unset($l);
+        }
+
         $payload = [
+            'type'          => $type,
             'settlement_id' => $settlement->settlement_id,
             'date'          => $settlement->end_date?->toDateString() ?? now()->toDateString(),
             'lines'         => array_values($linesByAccount),
