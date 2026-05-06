@@ -122,13 +122,13 @@ class AmazonSyncService
             $amountDesc === 'Principal' && $channel === 'FBA'                                       => '4001',
             $amountDesc === 'Principal'                                                              => '4000',
             in_array($amountDesc, ['FBAPerUnitFulfillmentFee', 'FBAPerOrderFulfillmentFee',
-                                   'FBAWeightBasedFee', 'FBATransactionFee'], true)                  => '6100',
+                                   'FBAWeightBasedFee', 'FBATransactionFee'], true)                  => '513',
             in_array($amountDesc, ['ReferralFeeToAmazon', 'FixedClosingFee',
-                                   'VariableClosingFee', 'Commission'], true)                        => '6101',
+                                   'VariableClosingFee', 'Commission'], true)                        => '513',
             $amountDesc === 'Shipping' && $channel === 'FBM'                                        => '4002',
             $amountDesc === 'ShippingChargeback'                                                     => '4002',
-            $txnType === 'advertising'                                                               => '6102',
-            default                                                                                  => '6199',
+            $txnType === 'advertising'                                                               => '502',
+            default                                                                                  => '999',
         };
 
         return [
@@ -231,7 +231,7 @@ class AmazonSyncService
 
     public function calculateVat(AmazonSettlement $settlement): void
     {
-        $feeAccounts = ['6100', '6101', '6102'];
+        $feeAccounts = ['513', '502'];
 
         $settlement->lines()->each(function (AmazonSettlementLine $line) use ($feeAccounts) {
             $gross = (float) $line->amount_gross;
@@ -386,7 +386,12 @@ class AmazonSyncService
     {
         $linesByAccount = [];
 
+        // Sales lines (4000/4001/4002) are posted by Unleashed — skip them here
+        $skipCodes = ['4000', '4001', '4002'];
+
         foreach ($settlement->lines as $line) {
+            if (in_array($line->account_code, $skipCodes, true)) continue;
+
             $key = $line->account_code . '|' . ($line->fulfillment_channel ?? '');
 
             if (!isset($linesByAccount[$key])) {
@@ -422,9 +427,8 @@ class AmazonSyncService
     private function resolveTaxType(string $accountCode): string
     {
         return match(true) {
-            in_array($accountCode, ['4000', '4001', '4002'], true) => 'EXEMPTOUTPUT',
-            in_array($accountCode, ['6100', '6101', '6102'], true) => 'INPUT2',
-            default                                                  => 'NONE',
+            in_array($accountCode, ['513', '502'], true) => 'INPUT2',
+            default                                       => 'NONE',
         };
     }
 }
