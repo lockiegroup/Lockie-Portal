@@ -169,7 +169,14 @@ class AmazonController extends Controller
         $sellerFeeTypes = ['ReferralFeeToAmazon', 'FixedClosingFee', 'VariableClosingFee', 'Commission'];
         $fbaFeeTypes    = ['FBAPerUnitFulfillmentFee', 'FBAPerOrderFulfillmentFee', 'FBAWeightBasedFee', 'FBATransactionFee'];
 
-        $payments     = $settlement->lines->whereIn('account_code', ['4000', '4001', '4002'])->sum('amount_gross');
+        // One row per order (for matching against Unleashed invoices)
+        $orderAmounts = [];
+        foreach ($settlement->lines->whereIn('account_code', ['4000', '4001', '4002']) as $line) {
+            if (!$line->order_id) continue;
+            $orderAmounts[$line->order_id] = ($orderAmounts[$line->order_id] ?? 0.0) + (float) $line->amount_gross;
+        }
+
+        // Summary fee rows
         $sellerFees   = $settlement->lines->filter(fn($l) => in_array($l->product_type, $sellerFeeTypes))->sum('amount_gross');
         $fbaFees      = $settlement->lines->filter(fn($l) => in_array($l->product_type, $fbaFeeTypes))->sum('amount_gross');
         $subscription = $settlement->lines->where('account_code', '513')
@@ -179,23 +186,27 @@ class AmazonController extends Controller
         $other        = $settlement->lines->where('account_code', '999')->sum('amount_gross');
         $transfer     = -(float) $settlement->deposit_amount;
 
-        $rows = [
-            ['description' => 'Payments',                      'amount' => $payments],
-            ['description' => 'Seller Fees',                   'amount' => $sellerFees],
-            ['description' => 'FBA Fees',                      'amount' => $fbaFees],
-            ['description' => 'Subscription',                  'amount' => $subscription],
-            ['description' => 'Advertising',                   'amount' => $advertising],
-            ['description' => 'Other',                         'amount' => $other],
-            ['description' => 'Transfer to Bank of Scotland',  'amount' => $transfer],
+        $feeRows = [
+            ['description' => 'Seller Fees',                  'amount' => $sellerFees],
+            ['description' => 'FBA Fees',                     'amount' => $fbaFees],
+            ['description' => 'Subscription',                 'amount' => $subscription],
+            ['description' => 'Advertising',                  'amount' => $advertising],
+            ['description' => 'Other',                        'amount' => $other],
+            ['description' => 'Transfer to Bank of Scotland', 'amount' => $transfer],
         ];
 
         $filename = 'amazon-settlement-' . $settlement->settlement_id . '.csv';
 
-        return response()->streamDownload(function () use ($rows, $date) {
+        return response()->streamDownload(function () use ($orderAmounts, $feeRows, $date) {
             $out = fopen('php://output', 'w');
             fputcsv($out, ['Date', 'Amount', 'Description', 'Reference']);
 
-            foreach ($rows as $row) {
+            foreach ($orderAmounts as $orderId => $amount) {
+                if (round($amount, 2) == 0) continue;
+                fputcsv($out, [$date, round($amount, 2), $orderId, '']);
+            }
+
+            foreach ($feeRows as $row) {
                 if (round($row['amount'], 2) == 0) continue;
                 fputcsv($out, [$date, round($row['amount'], 2), $row['description'], '']);
             }
