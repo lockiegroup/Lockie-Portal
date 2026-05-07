@@ -168,9 +168,13 @@ class AmazonController extends Controller
         $salesCodes   = ['4000', '4001', '4002'];
 
         // One row per order — use the posted_date of the first line for that order
-        $orderData = [];
+        $orderData    = [];
+        $noOrderLines = []; // sales-coded lines with no order_id (adjustments, reimbursements)
         foreach ($settlement->lines->whereIn('account_code', $salesCodes) as $line) {
-            if (!$line->order_id) continue;
+            if (!$line->order_id) {
+                $noOrderLines[] = $line;
+                continue;
+            }
             if (!isset($orderData[$line->order_id])) {
                 $orderData[$line->order_id] = [
                     'amount' => 0.0,
@@ -196,6 +200,13 @@ class AmazonController extends Controller
                 foreach ($orderData as $orderId => $data) {
                     if (round($data['amount'], 2) == 0) continue;
                     fputcsv($out, [$data['date'], round($data['amount'], 2), $orderId, '']);
+                }
+
+                // Sales-coded lines with no order ID (adjustments, reimbursements etc.)
+                foreach ($noOrderLines as $line) {
+                    if (round((float) $line->amount_gross, 2) == 0) continue;
+                    $date = $line->posted_date?->format('d/m/Y') ?? $fallbackDate;
+                    fputcsv($out, [$date, round((float) $line->amount_gross, 2), $line->product_type ?? $line->transaction_type ?? 'Adjustment', '']);
                 }
 
                 // Fees — individual lines
