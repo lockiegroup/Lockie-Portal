@@ -139,6 +139,7 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::post('/sync',                    [AmazonController::class, 'sync'])->name('sync');
         Route::get('/settlements',              [AmazonController::class, 'settlements'])->name('settlements');
         Route::get('/settlements/{settlement}', [AmazonController::class, 'settlementDetail'])->name('settlement.detail');
+        Route::get('/settlements/{settlement}/csv', [AmazonController::class, 'settlementCsv'])->name('settlement.csv');
         Route::get('/profit',                   [AmazonController::class, 'profitReport'])->name('profit');
         Route::get('/xero/connect',             [AmazonController::class, 'xeroConnect'])->name('xero.connect');
         Route::get('/xero/callback',            [AmazonController::class, 'xeroCallback'])->name('xero.callback');

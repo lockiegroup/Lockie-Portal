@@ -88,8 +88,6 @@
 </main>
 
 <script>
-const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-
 async function loadSettlements(page = 1) {
     const tbody = document.getElementById('settlements-body');
     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:#94a3b8;">Loading…</td></tr>';
@@ -122,9 +120,7 @@ async function loadSettlements(page = 1) {
             </td>
             <td style="padding:0.625rem 1rem;color:#64748b;font-size:0.75rem;">${s.processed_at ?? '—'}</td>
             <td style="padding:0.625rem 1rem;text-align:right;">
-                ${s.status === 'pending' ? `
-                <button onclick="postToXero(${s.id})" style="background:#1e293b;color:#fff;border:none;border-radius:0.375rem;padding:3px 10px;font-size:0.75rem;cursor:pointer;font-weight:600;">Post to Xero</button>
-                ` : ''}
+                <a href="/amazon/settlements/${s.id}/csv" style="background:#1e293b;color:#fff;border-radius:0.375rem;padding:3px 10px;font-size:0.75rem;font-weight:600;text-decoration:none;display:inline-block;">Download CSV</a>
             </td>
         </tr>`;
     });
@@ -164,25 +160,6 @@ async function runSync() {
 
     btn.disabled    = false;
     btn.textContent = 'Sync Settlements';
-}
-
-async function postToXero(settlementId) {
-    if (!confirm('Post this settlement to Xero?')) return;
-
-    const res  = await fetch(`{{ url('amazon/xero/post') }}/${settlementId}`, {
-        method: 'POST',
-        headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
-    });
-    const data = await res.json();
-
-    if (data.success) {
-        alert('Posted to Xero successfully.');
-        loadSettlements();
-    } else {
-        console.error('Xero post error:', data.message);
-        const short = data.message.length > 300 ? data.message.substring(0, 300) + '…' : data.message;
-        alert('Error: ' + short + '\n\n(Full error in browser console — press F12 → Console)');
-    }
 }
 
 loadSettlements();

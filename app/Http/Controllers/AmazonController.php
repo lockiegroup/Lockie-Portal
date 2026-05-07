@@ -136,7 +136,7 @@ class AmazonController extends Controller
             'response_type' => 'code',
             'client_id'     => config('services.xero.client_id'),
             'redirect_uri'  => route('amazon.xero.callback'),
-            'scope'         => 'offline_access accounting.settings bankfeeds',
+            'scope'         => 'offline_access accounting.settings',
             'state'         => csrf_token(),
         ]);
 
@@ -158,6 +158,50 @@ class AmazonController extends Controller
         }
 
         return redirect()->route('amazon.index')->with('success', 'Xero connected successfully.');
+    }
+
+    public function settlementCsv(AmazonSettlement $settlement): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $settlement->load('lines');
+
+        $salesCodes = ['4000', '4001', '4002'];
+        $endDate    = $settlement->end_date?->format('d/m/Y') ?? now()->format('d/m/Y');
+
+        // Order amounts (one row per order)
+        $orderAmounts = [];
+        foreach ($settlement->lines as $line) {
+            if (!in_array($line->account_code, $salesCodes, true) || !$line->order_id) continue;
+            $orderAmounts[$line->order_id] = ($orderAmounts[$line->order_id] ?? 0.0) + (float) $line->amount_gross;
+        }
+
+        // Fee amounts grouped by description
+        $feeGroups = [];
+        foreach ($settlement->lines as $line) {
+            if (in_array($line->account_code, $salesCodes, true)) continue;
+            $label = $line->product_type ?? $line->transaction_type ?? 'Amazon Fee';
+            $key   = $line->account_code . '|' . $label;
+            $feeGroups[$key] = ($feeGroups[$key] ?? ['description' => $label, 'amount' => 0.0]);
+            $feeGroups[$key]['amount'] += (float) $line->amount_gross;
+        }
+
+        $filename = 'amazon-settlement-' . $settlement->settlement_id . '.csv';
+
+        return response()->streamDownload(function () use ($orderAmounts, $feeGroups, $endDate) {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, ['Date', 'Amount', 'Description', 'Reference']);
+
+            foreach ($orderAmounts as $orderId => $amount) {
+                if (round($amount, 2) == 0) continue;
+                fputcsv($out, [$endDate, round($amount, 2), $orderId, '']);
+            }
+
+            foreach ($feeGroups as $fee) {
+                if (round($fee['amount'], 2) == 0) continue;
+                fputcsv($out, [$endDate, round($fee['amount'], 2), $fee['description'], '']);
+            }
+
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv']);
     }
 
     public function xeroPost(AmazonSettlement $settlement): JsonResponse
