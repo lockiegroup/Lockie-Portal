@@ -196,17 +196,17 @@ class AmazonController extends Controller
                 $out = fopen('php://output', 'w');
                 fputcsv($out, ['Date', 'Amount', 'Description', 'Reference']);
 
-                // Sales — one row per order, grossed up × 1.20 to match invoice amounts in Xero
+                // Sales — one row per order (amount_gross is already the gross VAT-inclusive figure from Amazon)
                 foreach ($orderData as $orderId => $data) {
                     if (round($data['amount'], 2) == 0) continue;
-                    fputcsv($out, [$data['date'], round($data['amount'] * 1.20, 2), $orderId, '']);
+                    fputcsv($out, [$data['date'], round($data['amount'], 2), $orderId, '']);
                 }
 
-                // Sales-coded lines with no order ID (adjustments, reimbursements etc.) — also grossed up
+                // Sales-coded lines with no order ID (adjustments, reimbursements etc.)
                 foreach ($noOrderLines as $line) {
                     if (round((float) $line->amount_gross, 2) == 0) continue;
                     $date = $line->posted_date?->format('d/m/Y') ?? $fallbackDate;
-                    fputcsv($out, [$date, round((float) $line->amount_gross * 1.20, 2), $line->product_type ?? $line->transaction_type ?? 'Adjustment', '']);
+                    fputcsv($out, [$date, round((float) $line->amount_gross, 2), $line->product_type ?? $line->transaction_type ?? 'Adjustment', '']);
                 }
 
                 // Fees — individual lines
