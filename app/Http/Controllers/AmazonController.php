@@ -192,7 +192,7 @@ class AmazonController extends Controller
         $filename = 'amazon-settlement-' . $settlement->settlement_id . '.csv';
 
         return response()->streamDownload(
-            function () use ($orderData, $feeLines, $transfer, $fallbackDate) {
+            function () use ($orderData, $noOrderLines, $feeLines, $transfer, $fallbackDate) {
                 $out = fopen('php://output', 'w');
                 fputcsv($out, ['Date', 'Amount', 'Description', 'Reference']);
 
