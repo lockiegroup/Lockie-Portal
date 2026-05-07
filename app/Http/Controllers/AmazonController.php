@@ -164,40 +164,40 @@ class AmazonController extends Controller
     {
         $settlement->load('lines');
 
-        $salesCodes = ['4000', '4001', '4002'];
-        $endDate    = $settlement->end_date?->format('d/m/Y') ?? now()->format('d/m/Y');
+        $date = $settlement->end_date?->format('d/m/Y') ?? now()->format('d/m/Y');
 
-        // Order amounts (one row per order)
-        $orderAmounts = [];
-        foreach ($settlement->lines as $line) {
-            if (!in_array($line->account_code, $salesCodes, true) || !$line->order_id) continue;
-            $orderAmounts[$line->order_id] = ($orderAmounts[$line->order_id] ?? 0.0) + (float) $line->amount_gross;
-        }
+        $sellerFeeTypes = ['ReferralFeeToAmazon', 'FixedClosingFee', 'VariableClosingFee', 'Commission'];
+        $fbaFeeTypes    = ['FBAPerUnitFulfillmentFee', 'FBAPerOrderFulfillmentFee', 'FBAWeightBasedFee', 'FBATransactionFee'];
 
-        // Fee amounts grouped by description
-        $feeGroups = [];
-        foreach ($settlement->lines as $line) {
-            if (in_array($line->account_code, $salesCodes, true)) continue;
-            $label = $line->product_type ?? $line->transaction_type ?? 'Amazon Fee';
-            $key   = $line->account_code . '|' . $label;
-            $feeGroups[$key] = ($feeGroups[$key] ?? ['description' => $label, 'amount' => 0.0]);
-            $feeGroups[$key]['amount'] += (float) $line->amount_gross;
-        }
+        $payments     = $settlement->lines->whereIn('account_code', ['4000', '4001', '4002'])->sum('amount_gross');
+        $sellerFees   = $settlement->lines->filter(fn($l) => in_array($l->product_type, $sellerFeeTypes))->sum('amount_gross');
+        $fbaFees      = $settlement->lines->filter(fn($l) => in_array($l->product_type, $fbaFeeTypes))->sum('amount_gross');
+        $subscription = $settlement->lines->where('account_code', '513')
+                            ->filter(fn($l) => !in_array($l->product_type, array_merge($sellerFeeTypes, $fbaFeeTypes)))
+                            ->sum('amount_gross');
+        $advertising  = $settlement->lines->where('account_code', '502')->sum('amount_gross');
+        $other        = $settlement->lines->where('account_code', '999')->sum('amount_gross');
+        $transfer     = -(float) $settlement->deposit_amount;
+
+        $rows = [
+            ['description' => 'Payments',                      'amount' => $payments],
+            ['description' => 'Seller Fees',                   'amount' => $sellerFees],
+            ['description' => 'FBA Fees',                      'amount' => $fbaFees],
+            ['description' => 'Subscription',                  'amount' => $subscription],
+            ['description' => 'Advertising',                   'amount' => $advertising],
+            ['description' => 'Other',                         'amount' => $other],
+            ['description' => 'Transfer to Bank of Scotland',  'amount' => $transfer],
+        ];
 
         $filename = 'amazon-settlement-' . $settlement->settlement_id . '.csv';
 
-        return response()->streamDownload(function () use ($orderAmounts, $feeGroups, $endDate) {
+        return response()->streamDownload(function () use ($rows, $date) {
             $out = fopen('php://output', 'w');
             fputcsv($out, ['Date', 'Amount', 'Description', 'Reference']);
 
-            foreach ($orderAmounts as $orderId => $amount) {
-                if (round($amount, 2) == 0) continue;
-                fputcsv($out, [$endDate, round($amount, 2), $orderId, '']);
-            }
-
-            foreach ($feeGroups as $fee) {
-                if (round($fee['amount'], 2) == 0) continue;
-                fputcsv($out, [$endDate, round($fee['amount'], 2), $fee['description'], '']);
+            foreach ($rows as $row) {
+                if (round($row['amount'], 2) == 0) continue;
+                fputcsv($out, [$date, round($row['amount'], 2), $row['description'], '']);
             }
 
             fclose($out);
