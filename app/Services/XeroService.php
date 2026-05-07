@@ -7,8 +7,9 @@ use Illuminate\Support\Facades\Http;
 
 class XeroService
 {
-    private const TOKEN_URL = 'https://identity.xero.com/connect/token';
-    private const API_BASE  = 'https://api.xero.com/api.xro/2.0';
+    private const TOKEN_URL      = 'https://identity.xero.com/connect/token';
+    private const API_BASE       = 'https://api.xero.com/api.xro/2.0';
+    private const BANKFEEDS_BASE = 'https://api.xero.com/bankfeeds.xro/1.0';
 
     public function getValidToken(): XeroToken
     {
@@ -48,28 +49,107 @@ class XeroService
         return $token->fresh();
     }
 
-    public function postBankTransaction(array $settlementData): array
+    // -------------------------------------------------------------------------
+    // Bank Feeds API
+    // -------------------------------------------------------------------------
+
+    /**
+     * Returns the feed connection ID for the AMAZON clearing account,
+     * creating one if it doesn't exist yet.
+     */
+    public function getOrCreateFeedConnection(): string
     {
         $token = $this->getValidToken();
 
-        $lineItems = array_map(fn($line) => [
-            'Description' => $line['description'],
-            'Quantity'    => 1,
-            'UnitAmount'  => round((float) $line['amount_net'], 2),
-            'AccountCode' => $line['account_code'],
-            'TaxType'     => $line['tax_type'],
-        ], $settlementData['lines']);
+        if (!empty($token->feed_connection_id)) {
+            return $token->feed_connection_id;
+        }
+
+        // Check for existing active connection
+        $response = Http::retry(3, 1000)
+            ->withToken($token->access_token)
+            ->withHeaders(['Xero-Tenant-Id' => $token->tenant_id])
+            ->acceptJson()
+            ->get(self::BANKFEEDS_BASE . '/FeedConnections');
+
+        if ($response->ok()) {
+            foreach ($response->json('items') ?? [] as $conn) {
+                $status = $conn['status'] ?? '';
+                if (in_array($status, ['ACTIVE', 'PENDING'], true)) {
+                    $id = $conn['id'];
+                    $token->update(['feed_connection_id' => $id]);
+                    return $id;
+                }
+            }
+        }
+
+        // Create a new feed connection linked to the existing AMAZON bank account
+        $accountId = config('services.xero.clearing_account_id');
+
+        $item = [
+            'accountToken' => 'amazon-settlement-feed',
+            'accountType'  => 'BANK',
+            'currency'     => 'GBP',
+            'country'      => 'GB',
+        ];
+
+        if ($accountId) {
+            $item['accountId'] = $accountId;
+        }
+
+        $response = Http::retry(3, 1000)
+            ->withToken($token->access_token)
+            ->withHeaders(['Xero-Tenant-Id' => $token->tenant_id])
+            ->acceptJson()
+            ->post(self::BANKFEEDS_BASE . '/FeedConnections', ['items' => [$item]]);
+
+        if ($response->failed()) {
+            throw new \RuntimeException(
+                'Failed to create Xero feed connection (' . $response->status() . '): ' . $response->body()
+            );
+        }
+
+        $items = $response->json('items') ?? [];
+        $id    = $items[0]['id'] ?? null;
+
+        if (!$id) {
+            throw new \RuntimeException('No feed connection ID returned from Xero: ' . $response->body());
+        }
+
+        $token->update(['feed_connection_id' => $id]);
+
+        return $id;
+    }
+
+    /**
+     * Post a bank-feed statement (for Xero "Reconcile" tab).
+     *
+     * $statementData = [
+     *   'start_date' => 'YYYY-MM-DD',
+     *   'end_date'   => 'YYYY-MM-DD',
+     *   'lines'      => [
+     *     [
+     *       'postedDate'           => 'YYYY-MM-DD',
+     *       'description'          => string,
+     *       'amount'               => float (always positive),
+     *       'creditDebitIndicator' => 'CREDIT'|'DEBIT',
+     *       'transactionId'        => string (unique),
+     *     ],
+     *     ...
+     *   ],
+     * ]
+     */
+    public function postBankFeedStatement(array $statementData): array
+    {
+        $token            = $this->getValidToken();
+        $feedConnectionId = $this->getOrCreateFeedConnection();
 
         $payload = [
-            'BankTransactions' => [[
-                'Type'        => $settlementData['type'] ?? 'RECEIVE',
-                'BankAccount' => config('services.xero.clearing_account_id')
-                    ? ['AccountID' => config('services.xero.clearing_account_id')]
-                    : ['Code'      => config('services.xero.clearing_account_code')],
-                'Date'        => $settlementData['date'],
-                'Reference'   => 'Amazon Settlement ' . $settlementData['settlement_id'],
-                'Contact'     => ['Name' => 'Amazon'],
-                'LineItems'   => $lineItems,
+            'items' => [[
+                'feedConnectionId' => $feedConnectionId,
+                'startDate'        => $statementData['start_date'],
+                'endDate'          => $statementData['end_date'],
+                'statementLines'   => $statementData['lines'],
             ]],
         ];
 
@@ -78,40 +158,35 @@ class XeroService
                 ->withToken($token->access_token)
                 ->withHeaders(['Xero-Tenant-Id' => $token->tenant_id])
                 ->acceptJson()
-                ->post(self::API_BASE . '/BankTransactions', $payload);
+                ->post(self::BANKFEEDS_BASE . '/Statements', $payload);
         } catch (\Illuminate\Http\Client\RequestException $e) {
-            $response = $e->response;
-            $body = $response->json() ?? [];
-            $errors = [];
-            foreach ($body['Elements'] ?? [] as $element) {
-                foreach ($element['ValidationErrors'] ?? [] as $err) {
-                    if (!empty($err['Message'])) $errors[] = $err['Message'];
-                }
-            }
-            throw new \RuntimeException(
-                'Xero validation: ' . ($errors ? implode('; ', $errors) : $response->body())
-            );
+            throw new \RuntimeException('Xero Bank Feeds request failed: ' . $e->getMessage());
         }
 
         if ($response->failed()) {
-            throw new \RuntimeException('Xero error (' . $response->status() . '): ' . $response->body());
-        }
-
-        $transaction = ($response->json('BankTransactions') ?? [])[0] ?? [];
-
-        // Xero returns 200 but with a StatusAttributeString of ERROR on validation failure
-        if (($transaction['StatusAttributeString'] ?? '') === 'ERROR') {
-            $errors = [];
-            foreach ($transaction['ValidationErrors'] ?? [] as $err) {
-                $errors[] = $err['Message'] ?? '';
-            }
             throw new \RuntimeException(
-                'Xero validation error: ' . implode('; ', array_filter($errors))
+                'Xero Bank Feeds error (' . $response->status() . '): ' . $response->body()
             );
         }
 
-        return $transaction;
+        $items = $response->json('items') ?? [];
+
+        // Surface any per-statement validation errors
+        foreach ($items as $item) {
+            if (!empty($item['errors'])) {
+                $msgs = array_column($item['errors'], 'detail');
+                throw new \RuntimeException(
+                    'Xero Bank Feeds validation: ' . implode('; ', array_filter($msgs))
+                );
+            }
+        }
+
+        return $items[0] ?? [];
     }
+
+    // -------------------------------------------------------------------------
+    // Accounting API helpers (kept for reference / future use)
+    // -------------------------------------------------------------------------
 
     public function getAccounts(): array
     {

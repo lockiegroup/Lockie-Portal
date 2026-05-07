@@ -288,7 +288,7 @@ class AmazonSyncService
                 'amount_net'          => $net,
                 'vat_amount'          => $vat,
                 'vat_rate'            => 20.00,
-                'account_code'        => '6102',
+                'account_code'        => '502',
                 'created_at'          => $now,
                 'updated_at'          => $now,
             ];
@@ -384,64 +384,76 @@ class AmazonSyncService
 
     public function postToXero(AmazonSettlement $settlement): void
     {
-        $linesByAccount = [];
+        $settlementId = $settlement->settlement_id;
+        $endDate      = $settlement->end_date?->toDateString()   ?? now()->toDateString();
+        $startDate    = $settlement->start_date?->toDateString() ?? $endDate;
 
-        // Sales lines (4000/4001/4002) are posted by Unleashed — skip them here
-        $skipCodes = ['4000', '4001', '4002'];
+        $statementLines = [];
+        $salesCodes     = ['4000', '4001', '4002'];
 
+        // --- 1. One CREDIT/DEBIT per order (Principal + FBM Shipping) ---
+        // These match against Unleashed invoices in Xero (keyed by order ID).
+        $orderAmounts = [];
         foreach ($settlement->lines as $line) {
-            if (in_array($line->account_code, $skipCodes, true)) continue;
+            if (!in_array($line->account_code, $salesCodes, true)) continue;
+            if (!$line->order_id) continue;
 
-            $key = $line->account_code . '|' . ($line->fulfillment_channel ?? '');
-
-            if (!isset($linesByAccount[$key])) {
-                $linesByAccount[$key] = [
-                    'description'  => $line->product_type ?? $line->transaction_type,
-                    'amount_net'   => 0.0,
-                    'account_code' => $line->account_code,
-                    'tax_type'     => $this->resolveTaxType($line->account_code),
-                ];
-            }
-
-            $linesByAccount[$key]['amount_net'] += (float) $line->amount_net;
+            $orderAmounts[$line->order_id] = ($orderAmounts[$line->order_id] ?? 0.0)
+                + (float) $line->amount_gross;
         }
 
-        if (empty($linesByAccount)) {
+        foreach ($orderAmounts as $orderId => $amount) {
+            if (round($amount, 2) == 0) continue;
+            $statementLines[] = [
+                'postedDate'           => $endDate,
+                'description'          => $orderId,
+                'amount'               => round(abs($amount), 2),
+                'creditDebitIndicator' => $amount >= 0 ? 'CREDIT' : 'DEBIT',
+                'transactionId'        => 'amz-' . $settlementId . '-order-' . $orderId,
+            ];
+        }
+
+        // --- 2. Fee lines grouped by description (subscription, storage, FBA, referral, ads) ---
+        $feeGroups = [];
+        foreach ($settlement->lines as $line) {
+            if (in_array($line->account_code, $salesCodes, true)) continue;
+
+            $label = $line->product_type ?? $line->transaction_type ?? 'Amazon Fee';
+            $key   = $line->account_code . '|' . $label;
+
+            if (!isset($feeGroups[$key])) {
+                $feeGroups[$key] = [
+                    'description' => $label,
+                    'amount'      => 0.0,
+                ];
+            }
+            $feeGroups[$key]['amount'] += (float) $line->amount_gross;
+        }
+
+        foreach ($feeGroups as $key => $fee) {
+            if (round($fee['amount'], 2) == 0) continue;
+            $statementLines[] = [
+                'postedDate'           => $endDate,
+                'description'          => $fee['description'],
+                'amount'               => round(abs($fee['amount']), 2),
+                'creditDebitIndicator' => $fee['amount'] >= 0 ? 'CREDIT' : 'DEBIT',
+                'transactionId'        => 'amz-' . $settlementId . '-fee-' . md5($key),
+            ];
+        }
+
+        if (empty($statementLines)) {
             throw new \RuntimeException('Settlement has no lines to post.');
         }
 
-        // Fees are negative amounts (deductions). If the net total is negative
-        // it must be posted as SPEND with flipped signs rather than RECEIVE.
-        $netTotal = array_sum(array_column($linesByAccount, 'amount_net'));
-        $type     = $netTotal >= 0 ? 'RECEIVE' : 'SPEND';
-
-        if ($type === 'SPEND') {
-            foreach ($linesByAccount as &$l) {
-                $l['amount_net'] = -$l['amount_net'];
-            }
-            unset($l);
-        }
-
-        $payload = [
-            'type'          => $type,
-            'settlement_id' => $settlement->settlement_id,
-            'date'          => $settlement->end_date?->toDateString() ?? now()->toDateString(),
-            'lines'         => array_values($linesByAccount),
-        ];
-
-        $result = $this->xero->postBankTransaction($payload);
+        $result = $this->xero->postBankFeedStatement([
+            'start_date' => $startDate,
+            'end_date'   => $endDate,
+            'lines'      => $statementLines,
+        ]);
 
         $settlement->update([
             'status'              => 'posted',
-            'xero_transaction_id' => $result['BankTransactionID'] ?? null,
+            'xero_transaction_id' => $result['id'] ?? null,
         ]);
-    }
-
-    private function resolveTaxType(string $accountCode): string
-    {
-        return match(true) {
-            in_array($accountCode, ['513', '502'], true) => 'INPUT2',
-            default                                       => 'NONE',
-        };
     }
 }
