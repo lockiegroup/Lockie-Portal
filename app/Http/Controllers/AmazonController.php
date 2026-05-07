@@ -211,13 +211,18 @@ class AmazonController extends Controller
 
                 // Fees — individual lines
                 // Advertising (502) is stored as net in the TSV; gross up × 1.20 to match deposit deduction
+                $commissionTypes = ['ReferralFeeToAmazon', 'FixedClosingFee', 'VariableClosingFee', 'Commission', 'RefundCommission'];
                 foreach ($feeLines as $line) {
                     if (round((float) $line->amount_gross, 2) == 0) continue;
                     $date   = $line->posted_date?->format('d/m/Y') ?? $fallbackDate;
                     $amount = $line->account_code === '502'
                         ? round((float) $line->amount_gross * 1.20, 2)
                         : round((float) $line->amount_gross, 2);
-                    fputcsv($out, [$date, $amount, $line->product_type ?? $line->transaction_type, '']);
+                    $desc = $line->product_type ?? $line->transaction_type;
+                    if (in_array($line->product_type, $commissionTypes) && $line->fulfillment_channel) {
+                        $desc = $line->fulfillment_channel . ' ' . $desc;
+                    }
+                    fputcsv($out, [$date, $amount, $desc, '']);
                 }
 
                 // Transfer to bank — always last
