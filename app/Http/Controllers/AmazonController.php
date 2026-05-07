@@ -166,7 +166,7 @@ class AmazonController extends Controller
 
         $date = $settlement->end_date?->format('d/m/Y') ?? now()->format('d/m/Y');
 
-        $sellerFeeTypes = ['ReferralFeeToAmazon', 'FixedClosingFee', 'VariableClosingFee', 'Commission'];
+        $sellerFeeTypes = ['ReferralFeeToAmazon', 'FixedClosingFee', 'VariableClosingFee', 'Commission', 'RefundCommission'];
         $fbaFeeTypes    = ['FBAPerUnitFulfillmentFee', 'FBAPerOrderFulfillmentFee', 'FBAWeightBasedFee', 'FBATransactionFee'];
 
         // One row per order (for matching against Unleashed invoices)
