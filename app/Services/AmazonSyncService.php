@@ -233,20 +233,21 @@ class AmazonSyncService
 
     public function calculateVat(AmazonSettlement $settlement): void
     {
-        $feeAccounts = ['513', '502'];
-
-        $settlement->lines()->each(function (AmazonSettlementLine $line) use ($feeAccounts) {
+        $settlement->lines()->each(function (AmazonSettlementLine $line) {
             $gross = (float) $line->amount_gross;
 
-            if (in_array($line->account_code, $feeAccounts, true)) {
-                // Amazon charges UK VAT on fees (VAT-inclusive amount in settlement)
+            if ($line->account_code === '502') {
+                // Advertising: settlement TSV shows NET (ex-VAT); actual payout deduction is gross.
+                // Keep amount_gross as the raw TSV net; vat_amount is the 20% addition on top.
+                $vat = round($gross * 0.20, 4);
+                $line->update(['amount_net' => round($gross, 4), 'vat_amount' => $vat, 'vat_rate' => 20.00]);
+            } elseif ($line->account_code === '513') {
+                // FBA / referral / subscription fees: settlement shows GROSS (VAT-inclusive)
                 $net = round($gross / 1.20, 4);
                 $vat = round($gross - $net, 4);
                 $line->update(['amount_net' => $net, 'vat_amount' => $vat, 'vat_rate' => 20.00]);
             } else {
-                // Amazon collects and remits UK VAT under Marketplace Facilitator rules.
-                // These sales are outside the scope of our VAT return.
-                // ** Confirm this treatment with your accountant before filing **
+                // Sales: outside scope under Marketplace Facilitator rules
                 $line->update(['amount_net' => $gross, 'vat_amount' => 0.0, 'vat_rate' => 0.00]);
             }
         });
@@ -276,8 +277,9 @@ class AmazonSyncService
             $spend = (float) ($campaign['spend'] ?? 0);
             if ($spend <= 0) continue;
 
-            $net = round($spend / 1.20, 4);
-            $vat = round($spend - $net, 4);
+            // Advertising API returns net spend (ex-VAT); gross = net * 1.20
+            $net = round($spend, 4);
+            $vat = round($spend * 0.20, 4);
 
             $lines[] = [
                 'settlement_id'       => $settlement->id,
@@ -286,7 +288,7 @@ class AmazonSyncService
                 'sku'                 => null,
                 'product_type'        => $campaign['campaignName'] ?? null,
                 'fulfillment_channel' => null,
-                'amount_gross'        => $spend,
+                'amount_gross'        => $spend,   // raw net from API; CSV grosses up × 1.20
                 'amount_net'          => $net,
                 'vat_amount'          => $vat,
                 'vat_rate'            => 20.00,

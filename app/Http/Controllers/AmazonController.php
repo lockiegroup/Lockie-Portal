@@ -210,10 +210,14 @@ class AmazonController extends Controller
                 }
 
                 // Fees — individual lines
+                // Advertising (502) is stored as net in the TSV; gross up × 1.20 to match deposit deduction
                 foreach ($feeLines as $line) {
                     if (round((float) $line->amount_gross, 2) == 0) continue;
-                    $date = $line->posted_date?->format('d/m/Y') ?? $fallbackDate;
-                    fputcsv($out, [$date, round((float) $line->amount_gross, 2), $line->product_type ?? $line->transaction_type, '']);
+                    $date   = $line->posted_date?->format('d/m/Y') ?? $fallbackDate;
+                    $amount = $line->account_code === '502'
+                        ? round((float) $line->amount_gross * 1.20, 2)
+                        : round((float) $line->amount_gross, 2);
+                    fputcsv($out, [$date, $amount, $line->product_type ?? $line->transaction_type, '']);
                 }
 
                 // Transfer to bank — always last
