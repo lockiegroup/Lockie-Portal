@@ -20,6 +20,9 @@
             <span style="background:#dcfce7;color:#166534;border-radius:0.5rem;padding:0.5rem 1rem;font-size:0.875rem;font-weight:600;">
                 ✓ Xero Connected
             </span>
+            <a href="{{ route('amazon.xero.connect') }}" style="background:#f1f5f9;color:#475569;border-radius:0.5rem;padding:0.5rem 1rem;font-size:0.875rem;font-weight:600;text-decoration:none;">
+                Reconnect Xero
+            </a>
             @endif
             <a href="{{ route('amazon.profit') }}" style="background:#f1f5f9;color:#475569;border-radius:0.5rem;padding:0.5rem 1rem;font-size:0.875rem;font-weight:600;text-decoration:none;">
                 Profit Report →
