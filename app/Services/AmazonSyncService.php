@@ -119,17 +119,19 @@ class AmazonSyncService
         if ($amount === 0.0) return null;
 
         $accountCode = match(true) {
-            $amountDesc === 'Principal' && $channel === 'FBA'                                       => '4001',
-            $amountDesc === 'Principal'                                                              => '4000',
+            $amountDesc === 'Principal' && $channel === 'FBA'                          => '4001',
+            $amountDesc === 'Principal'                                                   => '4000',
+            str_starts_with($amountDesc, 'MarketplaceFacilitatorTax') && $channel === 'FBA' => '4001',
+            str_starts_with($amountDesc, 'MarketplaceFacilitatorTax')                   => '4000',
             in_array($amountDesc, ['FBAPerUnitFulfillmentFee', 'FBAPerOrderFulfillmentFee',
-                                   'FBAWeightBasedFee', 'FBATransactionFee'], true)                  => '513',
+                                   'FBAWeightBasedFee', 'FBATransactionFee'], true)    => '513',
             in_array($amountDesc, ['ReferralFeeToAmazon', 'FixedClosingFee',
                                    'VariableClosingFee', 'Commission',
-                                   'RefundCommission'], true)                                        => '513',
-            $amountDesc === 'Shipping' && $channel === 'FBM'                                        => '4002',
-            $amountDesc === 'ShippingChargeback'                                                     => '4002',
-            $txnType === 'advertising'                                                               => '502',
-            default                                                                                  => '999',
+                                   'RefundCommission'], true)                            => '513',
+            $amountDesc === 'Shipping' && $channel === 'FBM'                          => '4002',
+            $amountDesc === 'ShippingChargeback'                                         => '4002',
+            strcasecmp($txnType, 'advertising') === 0                                   => '502',
+            default                                                                        => '999',
         };
 
         return [
