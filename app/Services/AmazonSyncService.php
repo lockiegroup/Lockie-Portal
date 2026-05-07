@@ -121,16 +121,26 @@ class AmazonSyncService
         $accountCode = match(true) {
             $amountDesc === 'Principal' && $channel === 'FBA'                          => '4001',
             $amountDesc === 'Principal'                                                   => '4000',
+            // Marketplace facilitator tax and UK VAT — bundle into order gross total
             str_starts_with($amountDesc, 'MarketplaceFacilitatorTax') && $channel === 'FBA' => '4001',
             str_starts_with($amountDesc, 'MarketplaceFacilitatorTax')                   => '4000',
+            $amountDesc === 'Tax' && $channel === 'FBA'                                => '4001',
+            $amountDesc === 'Tax'                                                         => '4000',
+            in_array($amountDesc, ['ShippingTax', 'TaxDiscount'], true)                => '4002',
+            // FBA / fulfilment fees
             in_array($amountDesc, ['FBAPerUnitFulfillmentFee', 'FBAPerOrderFulfillmentFee',
                                    'FBAWeightBasedFee', 'FBATransactionFee'], true)    => '513',
+            // Referral / seller fees
             in_array($amountDesc, ['ReferralFeeToAmazon', 'FixedClosingFee',
                                    'VariableClosingFee', 'Commission',
                                    'RefundCommission'], true)                            => '513',
+            // Digital services fee (small per-order charge)
+            in_array($amountDesc, ['DigitalServicesFee', 'Digital Services Fee'], true) => '513',
             $amountDesc === 'Shipping' && $channel === 'FBM'                          => '4002',
             $amountDesc === 'ShippingChargeback'                                         => '4002',
-            strcasecmp($txnType, 'advertising') === 0                                   => '502',
+            // Advertising — match by transaction type OR description (Amazon uses both)
+            strcasecmp($txnType, 'advertising') === 0
+                || stripos($amountDesc, 'advertising') !== false                        => '502',
             default                                                                        => '999',
         };
 
