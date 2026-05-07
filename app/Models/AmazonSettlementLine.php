@@ -10,7 +10,7 @@ class AmazonSettlementLine extends Model
     protected $fillable = [
         'settlement_id', 'transaction_type', 'order_id', 'sku', 'product_type',
         'fulfillment_channel', 'amount_gross', 'amount_net', 'vat_amount',
-        'vat_rate', 'account_code',
+        'vat_rate', 'account_code', 'posted_date',
     ];
 
     protected function casts(): array
@@ -20,6 +20,7 @@ class AmazonSettlementLine extends Model
             'amount_net'   => 'decimal:4',
             'vat_amount'   => 'decimal:4',
             'vat_rate'     => 'decimal:2',
+            'posted_date'  => 'date',
         ];
     }
 

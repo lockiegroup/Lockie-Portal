@@ -164,55 +164,72 @@ class AmazonController extends Controller
     {
         $settlement->load('lines');
 
-        $date = $settlement->end_date?->format('d/m/Y') ?? now()->format('d/m/Y');
+        $fallbackDate = $settlement->end_date?->format('d/m/Y') ?? now()->format('d/m/Y');
+        $salesCodes   = ['4000', '4001', '4002'];
 
-        $sellerFeeTypes = ['ReferralFeeToAmazon', 'FixedClosingFee', 'VariableClosingFee', 'Commission', 'RefundCommission'];
-        $fbaFeeTypes    = ['FBAPerUnitFulfillmentFee', 'FBAPerOrderFulfillmentFee', 'FBAWeightBasedFee', 'FBATransactionFee'];
-
-        // One row per order (for matching against Unleashed invoices)
-        $orderAmounts = [];
-        foreach ($settlement->lines->whereIn('account_code', ['4000', '4001', '4002']) as $line) {
+        // One row per order — use the posted_date of the first line for that order
+        $orderData = [];
+        foreach ($settlement->lines->whereIn('account_code', $salesCodes) as $line) {
             if (!$line->order_id) continue;
-            $orderAmounts[$line->order_id] = ($orderAmounts[$line->order_id] ?? 0.0) + (float) $line->amount_gross;
+            if (!isset($orderData[$line->order_id])) {
+                $orderData[$line->order_id] = [
+                    'amount' => 0.0,
+                    'date'   => $line->posted_date?->format('d/m/Y') ?? $fallbackDate,
+                ];
+            }
+            $orderData[$line->order_id]['amount'] += (float) $line->amount_gross;
         }
 
-        // Summary fee rows
-        $sellerFees   = $settlement->lines->filter(fn($l) => in_array($l->product_type, $sellerFeeTypes))->sum('amount_gross');
-        $fbaFees      = $settlement->lines->filter(fn($l) => in_array($l->product_type, $fbaFeeTypes))->sum('amount_gross');
-        $subscription = $settlement->lines->where('account_code', '513')
-                            ->filter(fn($l) => !in_array($l->product_type, array_merge($sellerFeeTypes, $fbaFeeTypes)))
-                            ->sum('amount_gross');
-        $advertising  = $settlement->lines->where('account_code', '502')->sum('amount_gross');
-        $other        = $settlement->lines->where('account_code', '999')->sum('amount_gross');
-        $transfer     = -(float) $settlement->deposit_amount;
+        // Individual fee lines (one row per settlement line, not grouped)
+        $feeLines = $settlement->lines->whereNotIn('account_code', $salesCodes);
 
-        $feeRows = [
-            ['description' => 'Seller Fees',                  'amount' => $sellerFees],
-            ['description' => 'FBA Fees',                     'amount' => $fbaFees],
-            ['description' => 'Subscription',                 'amount' => $subscription],
-            ['description' => 'Advertising',                  'amount' => $advertising],
-            ['description' => 'Other',                        'amount' => $other],
-            ['description' => 'Transfer to Bank of Scotland', 'amount' => $transfer],
-        ];
+        // Advertising lines from any overlapping ads settlement
+        $adsLines = \App\Models\AmazonSettlementLine::where('account_code', '502')
+            ->whereHas('settlement', fn($q) => $q
+                ->where('settlement_id', 'like', 'ads-%')
+                ->where('start_date', '<=', $settlement->end_date)
+                ->where('end_date',   '>=', $settlement->start_date)
+            )->with('settlement')->get();
+
+        $transfer = -(float) $settlement->deposit_amount;
 
         $filename = 'amazon-settlement-' . $settlement->settlement_id . '.csv';
 
-        return response()->streamDownload(function () use ($orderAmounts, $feeRows, $date) {
-            $out = fopen('php://output', 'w');
-            fputcsv($out, ['Date', 'Amount', 'Description', 'Reference']);
+        return response()->streamDownload(
+            function () use ($orderData, $feeLines, $adsLines, $transfer, $fallbackDate) {
+                $out = fopen('php://output', 'w');
+                fputcsv($out, ['Date', 'Amount', 'Description', 'Reference']);
 
-            foreach ($orderAmounts as $orderId => $amount) {
-                if (round($amount, 2) == 0) continue;
-                fputcsv($out, [$date, round($amount, 2), $orderId, '']);
-            }
+                // Sales — one row per order
+                foreach ($orderData as $orderId => $data) {
+                    if (round($data['amount'], 2) == 0) continue;
+                    fputcsv($out, [$data['date'], round($data['amount'], 2), $orderId, '']);
+                }
 
-            foreach ($feeRows as $row) {
-                if (round($row['amount'], 2) == 0) continue;
-                fputcsv($out, [$date, round($row['amount'], 2), $row['description'], '']);
-            }
+                // Fees — individual lines
+                foreach ($feeLines as $line) {
+                    if (round((float) $line->amount_gross, 2) == 0) continue;
+                    $date = $line->posted_date?->format('d/m/Y') ?? $fallbackDate;
+                    fputcsv($out, [$date, round((float) $line->amount_gross, 2), $line->product_type ?? $line->transaction_type, '']);
+                }
 
-            fclose($out);
-        }, $filename, ['Content-Type' => 'text/csv']);
+                // Advertising from overlapping ads settlement
+                foreach ($adsLines as $line) {
+                    if (round((float) $line->amount_gross, 2) == 0) continue;
+                    $date = $line->posted_date?->format('d/m/Y')
+                        ?? $line->settlement->end_date?->format('d/m/Y')
+                        ?? $fallbackDate;
+                    fputcsv($out, [$date, round((float) $line->amount_gross, 2), $line->product_type ?? 'Advertising', '']);
+                }
+
+                // Transfer to bank — always last
+                fputcsv($out, [$fallbackDate, round($transfer, 2), 'Transfer to Bank of Scotland', '']);
+
+                fclose($out);
+            },
+            $filename,
+            ['Content-Type' => 'text/csv']
+        );
     }
 
     public function xeroPost(AmazonSettlement $settlement): JsonResponse

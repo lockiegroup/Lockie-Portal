@@ -143,6 +143,7 @@ class AmazonSyncService
             'vat_amount'          => 0.0,
             'vat_rate'            => 0.00,
             'account_code'        => $accountCode,
+            'posted_date'         => $this->parseDateStr($row['posted-date'] ?? ''),
         ];
     }
 
