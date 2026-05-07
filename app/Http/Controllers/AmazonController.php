@@ -183,20 +183,12 @@ class AmazonController extends Controller
         // Individual fee lines (one row per settlement line, not grouped)
         $feeLines = $settlement->lines->whereNotIn('account_code', $salesCodes);
 
-        // Advertising lines from any overlapping ads settlement
-        $adsLines = \App\Models\AmazonSettlementLine::where('account_code', '502')
-            ->whereHas('settlement', fn($q) => $q
-                ->where('settlement_id', 'like', 'ads-%')
-                ->where('start_date', '<=', $settlement->end_date)
-                ->where('end_date',   '>=', $settlement->start_date)
-            )->with('settlement')->get();
-
         $transfer = -(float) $settlement->deposit_amount;
 
         $filename = 'amazon-settlement-' . $settlement->settlement_id . '.csv';
 
         return response()->streamDownload(
-            function () use ($orderData, $feeLines, $adsLines, $transfer, $fallbackDate) {
+            function () use ($orderData, $feeLines, $transfer, $fallbackDate) {
                 $out = fopen('php://output', 'w');
                 fputcsv($out, ['Date', 'Amount', 'Description', 'Reference']);
 
@@ -211,15 +203,6 @@ class AmazonController extends Controller
                     if (round((float) $line->amount_gross, 2) == 0) continue;
                     $date = $line->posted_date?->format('d/m/Y') ?? $fallbackDate;
                     fputcsv($out, [$date, round((float) $line->amount_gross, 2), $line->product_type ?? $line->transaction_type, '']);
-                }
-
-                // Advertising from overlapping ads settlement
-                foreach ($adsLines as $line) {
-                    if (round((float) $line->amount_gross, 2) == 0) continue;
-                    $date = $line->posted_date?->format('d/m/Y')
-                        ?? $line->settlement->end_date?->format('d/m/Y')
-                        ?? $fallbackDate;
-                    fputcsv($out, [$date, round((float) $line->amount_gross, 2), $line->product_type ?? 'Advertising', '']);
                 }
 
                 // Transfer to bank — always last
