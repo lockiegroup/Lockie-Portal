@@ -160,6 +160,13 @@ class AmazonSyncService
             $count++;
         }
 
+        $unmatched = array_values(array_diff($amazonIds, array_keys($map)));
+        \Log::info('lookupUnleashedOrders', [
+            'sought'    => count($amazonIds),
+            'matched'   => $count,
+            'unmatched' => $unmatched,
+        ]);
+
         return $count;
     }
 
