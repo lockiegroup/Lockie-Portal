@@ -152,6 +152,30 @@ class StockWatchlistController extends Controller
         }
     }
 
+    public function debugProducts()
+    {
+        $unleashed = new \App\Services\UnleashedService(
+            config('services.unleashed.id'),
+            config('services.unleashed.key'),
+        );
+
+        $pages = [];
+        for ($p = 1; $p <= 15; $p++) {
+            try {
+                $data   = $unleashed->get('Products', ['pageSize' => 100, 'pageNumber' => $p]);
+                $count  = count($data['Items'] ?? []);
+                $pagination = $data['Pagination'] ?? [];
+                $pages[] = ['page' => $p, 'items' => $count, 'pagination' => $pagination];
+                if ($count === 0 || $p >= ($pagination['NumberOfPages'] ?? 1)) break;
+            } catch (\Throwable $e) {
+                $pages[] = ['page' => $p, 'error' => $e->getMessage()];
+                break;
+            }
+        }
+
+        return response()->json(['pages' => $pages, 'db_count' => \App\Models\UnleashedProduct::count()]);
+    }
+
     public function storeCategory(Request $request)
     {
         $data = $request->validate(['name' => 'required|string|max:255']);

@@ -118,6 +118,7 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::get('/', [StockWatchlistController::class, 'index'])->name('index');
         Route::post('/sync', [StockWatchlistController::class, 'sync'])->name('sync');
         Route::post('/sync-products', [StockWatchlistController::class, 'syncProducts'])->name('sync-products');
+        Route::get('/debug-products', [StockWatchlistController::class, 'debugProducts'])->name('debug-products');
         Route::post('/sales/filter', [StockWatchlistController::class, 'setDateFilter'])->name('sales.filter');
         Route::get('/categories/{category}', [StockWatchlistController::class, 'showCategory'])->name('categories.show');
         Route::post('/categories', [StockWatchlistController::class, 'storeCategory'])->name('categories.store');
