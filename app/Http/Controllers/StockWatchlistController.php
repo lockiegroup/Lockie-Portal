@@ -246,7 +246,9 @@ class StockWatchlistController extends Controller
 
         $added    = 0;
         $updated  = 0;
+        $removed  = 0;
         $position = 1;
+        $csvCodes = [];
 
         foreach (array_slice($lines, 1) as $line) {
             $line = trim($line);
@@ -254,6 +256,8 @@ class StockWatchlistController extends Controller
             $row  = str_getcsv($line, $delimiter);
             $code = strtoupper(trim($row[$codeCol] ?? ''));
             if (!$code) continue;
+
+            $csvCodes[] = $code;
 
             $price = ($priceCol !== null && isset($row[$priceCol]))
                 ? (float) preg_replace('/[^0-9.]/', '', $row[$priceCol])
@@ -267,7 +271,7 @@ class StockWatchlistController extends Controller
                 if ($price !== null && $price > 0) $updateData['unit_price'] = $price;
                 $existing->update($updateData);
                 $updated++;
-            } elseif (!StockWatchlistItem::where('product_code', $code)->exists()) {
+            } else {
                 $data = ['product_code' => $code, 'position' => $position];
                 if ($price !== null && $price > 0) $data['unit_price'] = $price;
                 $category->items()->create($data);
@@ -276,7 +280,14 @@ class StockWatchlistController extends Controller
             $position++;
         }
 
-        return response()->json(['ok' => true, 'added' => $added, 'updated' => $updated]);
+        // Remove items in this category that were not in the uploaded file
+        if (!empty($csvCodes)) {
+            $removed = StockWatchlistItem::where('category_id', $category->id)
+                ->whereNotIn('product_code', $csvCodes)
+                ->delete();
+        }
+
+        return response()->json(['ok' => true, 'added' => $added, 'updated' => $updated, 'removed' => $removed]);
     }
 
     public function clearOrders(Request $request)

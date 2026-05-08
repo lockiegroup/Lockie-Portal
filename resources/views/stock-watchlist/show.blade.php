@@ -384,7 +384,7 @@ function importCatItems(input) {
     })
     .then(r => r.json())
     .then(d => {
-        if (d.ok) { alert(`Import complete: ${d.added} added, ${d.updated} updated. Page will reload.`); location.reload(); }
+        if (d.ok) { alert(`Import complete: ${d.added} added, ${d.updated} updated, ${d.removed} removed. Page will reload.`); location.reload(); }
         else alert('Import failed: ' + (d.error || 'Unknown error'));
     })
     .catch(() => alert('Import request failed.'));
