@@ -899,10 +899,12 @@ class UnleashedService
      */
     public function fetchOrderNumbersByAmazonIds(array $amazonIds): array
     {
-        $needle  = array_flip(array_unique($amazonIds)); // O(1) lookup set
-        $results = [];
-        $seen    = [];
-        $page    = 1;
+        $needle     = array_flip(array_unique($amazonIds)); // O(1) lookup set
+        $results    = [];
+        $seen       = [];
+        $page       = 1;
+        $totalUniq  = 0;
+        $amazonLike = [];
 
         do {
             $data     = $this->get('SalesOrders', ['pageSize' => 200, 'pageNumber' => $page]);
@@ -916,17 +918,25 @@ class UnleashedService
                 if ($guid !== null && isset($seen[$guid])) continue;
                 if ($guid !== null) $seen[$guid] = true;
                 $newCount++;
+                $totalUniq++;
 
                 $orderNo = $order['OrderNumber'] ?? null;
                 if (!$orderNo) continue;
 
                 $ref = trim($order['CustomerRef'] ?? '');
+
+                // Collect Amazon-like refs for debugging (first 20)
+                if (count($amazonLike) < 20 && str_contains($ref, '-') && strlen($ref) > 10) {
+                    $amazonLike[] = $orderNo . ' → ' . $ref;
+                }
+
                 if ($ref === '') continue;
 
                 if (isset($needle[$ref]) && !isset($results[$ref])) {
                     $results[$ref] = $orderNo;
                     if (count($results) === count($needle)) {
-                        return $results; // found everything — stop early
+                        \Log::info('fetchOrderNumbersByAmazonIds: found all', ['pages' => $page, 'total_unique' => $totalUniq]);
+                        return $results;
                     }
                 }
             }
@@ -934,6 +944,14 @@ class UnleashedService
             $page++;
             if ($newCount === 0) break; // Unleashed started repeating — stop
         } while ($page <= $maxPages);
+
+        \Log::info('fetchOrderNumbersByAmazonIds: done', [
+            'pages_scanned'  => $page - 1,
+            'total_unique'   => $totalUniq,
+            'seeking'        => array_slice(array_keys($needle), 0, 5),
+            'matched'        => count($results),
+            'amazon_like_refs' => $amazonLike,
+        ]);
 
         return $results;
     }
