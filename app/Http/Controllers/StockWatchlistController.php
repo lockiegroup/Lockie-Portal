@@ -140,6 +140,18 @@ class StockWatchlistController extends Controller
         }
     }
 
+    public function syncProducts()
+    {
+        set_time_limit(300);
+        try {
+            $count = (new StockWatchlistSyncService())->syncAllProducts();
+            return response()->json(['ok' => true, 'products' => $count]);
+        } catch (\Throwable $e) {
+            \Log::error('StockWatchlist product sync failed', ['error' => $e->getMessage()]);
+            return response()->json(['ok' => false, 'error' => $e->getMessage()], 500);
+        }
+    }
+
     public function storeCategory(Request $request)
     {
         $data = $request->validate(['name' => 'required|string|max:255']);

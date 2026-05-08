@@ -14,13 +14,21 @@
                class="inline-flex items-center px-4 py-2 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50 transition">
                 Import Sales
             </a>
+            <button id="sync-skus-btn" onclick="runSyncSkus()"
+                class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-300 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">
+                <svg id="sync-skus-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                </svg>
+                Sync SKUs
+            </button>
             <button id="sync-btn" onclick="runSync()"
                 class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-semibold hover:bg-slate-700 transition">
                 <svg id="sync-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                     <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
                     <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
                 </svg>
-                Sync from Unleashed
+                Sync Sales
             </button>
         </div>
     </div>
@@ -127,7 +135,7 @@ function runSync() {
     const icon = document.getElementById('sync-icon');
     btn.disabled = true;
     icon.style.animation = 'spin 1s linear infinite';
-    document.getElementById('sync-status').textContent = 'Syncing…';
+    document.getElementById('sync-status').textContent = 'Syncing sales…';
 
     fetch('{{ route("stock-watchlist.sync") }}', {
         method: 'POST',
@@ -147,6 +155,37 @@ function runSync() {
     })
     .catch(() => {
         alert('Sync request failed. Check network.');
+        icon.style.animation = '';
+        btn.disabled = false;
+    });
+}
+
+function runSyncSkus() {
+    const btn  = document.getElementById('sync-skus-btn');
+    const icon = document.getElementById('sync-skus-icon');
+    btn.disabled = true;
+    icon.style.animation = 'spin 1s linear infinite';
+    document.getElementById('sync-status').textContent = 'Syncing SKUs…';
+
+    fetch('{{ route("stock-watchlist.sync-products") }}', {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+    })
+    .then(r => r.json())
+    .then(d => {
+        if (d.ok) {
+            document.getElementById('sync-status').textContent = `SKUs synced — ${d.products} products`;
+            btn.disabled = false;
+            icon.style.animation = '';
+            location.reload();
+        } else {
+            alert('SKU sync failed: ' + (d.error || 'Unknown error'));
+            icon.style.animation = '';
+            btn.disabled = false;
+        }
+    })
+    .catch(() => {
+        alert('SKU sync request failed. Check network.');
         icon.style.animation = '';
         btn.disabled = false;
     });

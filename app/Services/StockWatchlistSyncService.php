@@ -17,9 +17,6 @@ class StockWatchlistSyncService
             config('services.unleashed.key'),
         );
 
-        // Always refresh the full product catalogue so the index panel stays current
-        $this->syncAllProducts($unleashed);
-
         $query = StockWatchlistItem::query();
         if ($category) {
             $query->where('category_id', $category->id);
@@ -56,8 +53,13 @@ class StockWatchlistSyncService
         return ['products' => count($productCodes)];
     }
 
-    private function syncAllProducts(UnleashedService $unleashed): void
+    public function syncAllProducts(?UnleashedService $unleashed = null): int
     {
+        $unleashed ??= new UnleashedService(
+            config('services.unleashed.id'),
+            config('services.unleashed.key'),
+        );
+
         $products = $unleashed->fetchProducts();
         $now      = now();
 
@@ -70,5 +72,7 @@ class StockWatchlistSyncService
         foreach (array_chunk($rows, 500) as $chunk) {
             DB::table('unleashed_products')->upsert($chunk, ['product_code'], ['product_name', 'synced_at']);
         }
+
+        return count($products);
     }
 }
