@@ -112,6 +112,13 @@ class AmazonSyncService
             'end_date'       => $this->parseDateStr($first['settlement-end-date'] ?? ''),
         ]);
 
+        // Preserve any Unleashed SO numbers already looked up before deleting lines
+        $soMap = $settlement->lines()
+            ->whereNotNull('order_id')
+            ->whereNotNull('unleashed_order_no')
+            ->pluck('unleashed_order_no', 'order_id')
+            ->all();
+
         $settlement->lines()->delete();
 
         $lines = [];
@@ -119,10 +126,12 @@ class AmazonSyncService
         foreach ($raw as $row) {
             $classified = $this->classifyLine($row);
             if ($classified === null) continue;
+            $orderId = $row['order-id'] ?: null;
             $lines[] = array_merge($classified, [
-                'settlement_id' => $settlement->id,
-                'created_at'    => $now,
-                'updated_at'    => $now,
+                'settlement_id'    => $settlement->id,
+                'unleashed_order_no' => $orderId ? ($soMap[$orderId] ?? null) : null,
+                'created_at'       => $now,
+                'updated_at'       => $now,
             ]);
         }
         foreach (array_chunk($lines, 100) as $chunk) {
@@ -189,12 +198,14 @@ class AmazonSyncService
         if ($amount === 0.0) return null;
 
         $accountCode = match(true) {
-            // Promotional rebates — must come before Principal check because Amazon sometimes
-            // sends rebates as price-type=PromotionalRebate in the price-amount column.
+            // Other promotional discounts → fees
             in_array($amountDesc, [
-                'PromotionalRebate', 'RunLightningDeal', 'Promotion',
+                'RunLightningDeal', 'Promotion',
                 'DiscountedLoyaltyPointsFee', 'FreeShipping',
             ], true)                                                                      => '513',
+            // PromotionalRebate is Amazon's contribution to a promotion — treat as order revenue
+            $amountDesc === 'PromotionalRebate' && $channel === 'FBA'                 => '4001',
+            $amountDesc === 'PromotionalRebate'                                          => '4000',
             $amountDesc === 'Principal' && $channel === 'FBA'                          => '4001',
             $amountDesc === 'Principal'                                                   => '4000',
             // Marketplace facilitator tax and UK VAT — bundle into order gross total
