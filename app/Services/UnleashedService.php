@@ -578,50 +578,59 @@ class UnleashedService
      */
     public function fetchProducts(): array
     {
-        // Unleashed silently caps unfiltered Products queries at ~500 unique results.
-        // Workaround: fetch all product groups, then query Products per group so each
-        // sub-query stays well under the cap. Dedup by ProductCode across groups.
+        // The Products endpoint ignores pageNumber and caps at ~500 unique results
+        // regardless of filters. Instead, query StockOnHand per warehouse (no cap)
+        // to extract the full product list, then top up from Products for zero-stock items.
 
-        // Step 1: get all product groups
-        $groups     = $this->paginate('ProductGroups', [], 200);
-        $groupNames = array_filter(array_column($groups, 'GroupName'));
-
-        // Step 2: fetch products for each group + one catch-all (no group filter)
-        // in a single parallel pool.
-        $slots = array_values($groupNames);
-        $slots[] = null; // null = no filter, catches ungrouped products
-
-        $responses = Http::pool(function ($pool) use ($slots) {
-            $calls = [];
-            foreach ($slots as $i => $group) {
-                $params  = ['pageSize' => 500, 'pageNumber' => 1];
-                if ($group !== null) {
-                    $params['productGroup'] = $group;
-                }
-                $qs      = http_build_query($params);
-                $calls[] = $pool->as($i)
-                    ->timeout(60)
-                    ->withHeaders($this->headers($qs))
-                    ->get(self::BASE_URL . '/Products?' . $qs);
-            }
-            return $calls;
-        });
+        // Step 1: get all warehouse codes
+        $whData  = $this->get('Warehouses', ['pageSize' => 200, 'pageNumber' => 1]);
+        $whCodes = array_values(array_filter(array_column($whData['Items'] ?? [], 'WarehouseCode')));
 
         $all  = [];
         $seen = [];
-        foreach (array_keys($slots) as $i) {
-            $res = $responses[$i] ?? null;
-            if (!$res || $res instanceof \Throwable || $res->failed()) continue;
-            foreach ($res->json()['Items'] ?? [] as $p) {
-                $code = $p['ProductCode'] ?? null;
-                if ($code && !isset($seen[$code])) {
-                    $seen[$code] = true;
-                    $all[] = $p;
+
+        // Step 2: paginate StockOnHand per warehouse in parallel until all pages exhausted
+        $page = 1;
+        do {
+            $responses = Http::pool(function ($pool) use ($whCodes, $page) {
+                $calls = [];
+                foreach ($whCodes as $i => $wh) {
+                    $qs      = http_build_query(['warehouseCode' => $wh, 'pageSize' => 1000, 'pageNumber' => $page]);
+                    $calls[] = $pool->as($i)->timeout(60)->withHeaders($this->headers($qs))
+                                    ->get(self::BASE_URL . '/StockOnHand?' . $qs);
                 }
+                return $calls;
+            });
+
+            $hasMore = false;
+            foreach ($whCodes as $i => $wh) {
+                $res = $responses[$i] ?? null;
+                if (!$res || $res instanceof \Throwable || $res->failed()) continue;
+                $items = $res->json()['Items'] ?? [];
+                foreach ($items as $item) {
+                    $code = $item['ProductCode'] ?? null;
+                    if ($code && !isset($seen[$code])) {
+                        $seen[$code] = true;
+                        $all[] = ['ProductCode' => $code, 'ProductDescription' => $item['ProductDescription'] ?? $code];
+                    }
+                }
+                if (count($items) >= 1000) $hasMore = true;
+            }
+            $page++;
+        } while ($hasMore);
+
+        // Step 3: top up with Products endpoint to catch zero-stock products
+        $qs      = http_build_query(['pageSize' => 500, 'pageNumber' => 1]);
+        $prodRes = Http::timeout(60)->withHeaders($this->headers($qs))->get(self::BASE_URL . '/Products?' . $qs);
+        foreach ($prodRes->json()['Items'] ?? [] as $p) {
+            $code = $p['ProductCode'] ?? null;
+            if ($code && !isset($seen[$code])) {
+                $seen[$code] = true;
+                $all[] = ['ProductCode' => $code, 'ProductDescription' => $p['ProductDescription'] ?? $code];
             }
         }
 
-        \Log::info('fetchProducts', ['groups' => count($groupNames), 'total' => count($all)]);
+        \Log::info('fetchProducts', ['warehouses' => count($whCodes), 'total' => count($all)]);
 
         return $all;
     }
