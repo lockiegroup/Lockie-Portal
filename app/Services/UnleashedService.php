@@ -578,10 +578,44 @@ class UnleashedService
      */
     public function fetchProducts(): array
     {
-        // Sequential paginate with small page size works reliably against Unleashed.
-        // The Pagination.PageNumber in the response is always 1 (Unleashed bug) but
-        // the actual items differ per page — NumberOfPages is accurate.
-        return $this->paginate('Products', [], 100);
+        // Unleashed caps the Products endpoint at ~500 unique results per query,
+        // then silently repeats pages. Work around this by splitting into annual
+        // creation-date chunks (each well under 500) and deduping by ProductCode.
+        $chunks = [];
+        for ($year = 2000; $year <= (int) date('Y'); $year++) {
+            $chunks[] = [
+                'startDate' => "{$year}-01-01",
+                'endDate'   => "{$year}-12-31",
+            ];
+        }
+
+        $responses = Http::pool(function ($pool) use ($chunks) {
+            $calls = [];
+            foreach ($chunks as $i => $chunk) {
+                $qs      = http_build_query(array_merge($chunk, ['pageSize' => 500, 'pageNumber' => 1]));
+                $calls[] = $pool->as($i)
+                    ->timeout(60)
+                    ->withHeaders($this->headers($qs))
+                    ->get(self::BASE_URL . '/Products?' . $qs);
+            }
+            return $calls;
+        });
+
+        $all  = [];
+        $seen = [];
+        foreach (array_keys($chunks) as $i) {
+            $res = $responses[$i] ?? null;
+            if (!$res || $res instanceof \Throwable || $res->failed()) continue;
+            foreach ($res->json()['Items'] ?? [] as $p) {
+                $code = $p['ProductCode'] ?? null;
+                if ($code && !isset($seen[$code])) {
+                    $seen[$code] = true;
+                    $all[] = $p;
+                }
+            }
+        }
+
+        return $all;
     }
 
     /**
@@ -598,7 +632,10 @@ class UnleashedService
             $codes    = array_values($chunk);
             $requests = [];
             foreach ($codes as $i => $code) {
-                $qs           = http_build_query(['productCode' => $code, 'pageSize' => 50, 'pageNumber' => 1]);
+                // Build QS manually to avoid http_build_query percent-encoding
+                // special characters (e.g. / → %2F) which Unleashed rejects with 403.
+                $qs           = 'productCode=' . str_replace('%2F', '/', rawurlencode($code))
+                              . '&pageSize=50&pageNumber=1';
                 $requests[$i] = [
                     'url'     => self::BASE_URL . '/StockOnHand?' . $qs,
                     'headers' => $this->headers($qs),
