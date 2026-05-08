@@ -910,12 +910,33 @@ class UnleashedService
             'endDate'   => $endDate,
         ], 200);
 
+        // Log a sample order so we can identify the correct Customer Reference field name
+        if (!empty($orders)) {
+            $sample = $orders[0];
+            \Log::info('UnleashedService::fetchOrderNumbersByAmazonIds sample order', [
+                'total_fetched' => count($orders),
+                'date_range'    => "$startDate → $endDate",
+                'OrderNumber'   => $sample['OrderNumber'] ?? null,
+                'CustomerRef'   => $sample['CustomerRef'] ?? '(missing)',
+                'CustomerOrderNo' => $sample['CustomerOrderNo'] ?? '(missing)',
+                'CustomerOrderNumber' => $sample['CustomerOrderNumber'] ?? '(missing)',
+                'CustomerReference'  => $sample['CustomerReference'] ?? '(missing)',
+                'Reference'          => $sample['Reference'] ?? '(missing)',
+                'all_keys'           => array_keys($sample),
+            ]);
+        } else {
+            \Log::info('UnleashedService::fetchOrderNumbersByAmazonIds no orders returned', [
+                'date_range'    => "$startDate → $endDate",
+                'amazon_ids'    => array_slice($amazonIds, 0, 3),
+            ]);
+        }
+
         foreach ($orders as $order) {
             $orderNo = $order['OrderNumber'] ?? null;
             if (!$orderNo) continue;
 
             // CustomerRef is the field Unleashed calls "Customer Reference" in the UI
-            $ref = trim($order['CustomerRef'] ?? $order['CustomerOrderNo'] ?? '');
+            $ref = trim($order['CustomerRef'] ?? $order['CustomerOrderNo'] ?? $order['CustomerReference'] ?? '');
             if ($ref === '') continue;
 
             if (isset($needle[$ref]) && !isset($results[$ref])) {
@@ -923,6 +944,11 @@ class UnleashedService
                 if (count($results) === count($needle)) break; // found them all
             }
         }
+
+        \Log::info('UnleashedService::fetchOrderNumbersByAmazonIds results', [
+            'matched' => count($results),
+            'sought'  => count($needle),
+        ]);
 
         return $results;
     }
