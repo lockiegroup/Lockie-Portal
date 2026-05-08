@@ -888,7 +888,7 @@ class UnleashedService
     /**
      * Given a list of Amazon order IDs (e.g. "206-8309509-3453916"), look up the
      * matching Unleashed sales order number (e.g. "SO-00026477") by querying
-     * SalesOrders with customerRef — where Amazon order IDs are typically stored.
+     * SalesOrders with customerRef — Unleashed stores Amazon order IDs in this field.
      * Returns ['amazon-id' => 'SO-00012345', ...]  (missing entries are not found).
      */
     public function fetchOrderNumbersByAmazonIds(array $amazonIds, int $batchSize = 20): array
@@ -898,13 +898,13 @@ class UnleashedService
         foreach (array_chunk(array_values(array_unique($amazonIds)), $batchSize) as $batch) {
             $responses = Http::pool(function ($pool) use ($batch) {
                 $calls = [];
-                foreach ($batch as $i => $amazonId) {
+                foreach ($batch as $amazonId) {
                     $qs = http_build_query([
                         'customerRef' => $amazonId,
-                        'pageSize'    => 1,
+                        'pageSize'    => 5,
                         'pageNumber'  => 1,
                     ]);
-                    $calls[] = $pool->as($i)
+                    $calls[] = $pool->as($amazonId)
                         ->timeout(30)
                         ->withHeaders($this->headers($qs))
                         ->get(self::BASE_URL . '/SalesOrders?' . $qs);
@@ -912,12 +912,25 @@ class UnleashedService
                 return $calls;
             });
 
-            foreach ($batch as $i => $amazonId) {
-                $res = $responses[$i] ?? null;
+            foreach ($batch as $amazonId) {
+                $res = $responses[$amazonId] ?? null;
                 if (!$res || $res instanceof \Throwable || $res->failed()) continue;
-                $order = ($res->json()['Items'] ?? [])[0] ?? null;
-                if ($order && !empty($order['OrderNumber'])) {
-                    $results[$amazonId] = $order['OrderNumber'];
+
+                foreach ($res->json()['Items'] ?? [] as $order) {
+                    if (empty($order['OrderNumber'])) continue;
+
+                    // Verify the returned order actually references this Amazon ID —
+                    // guards against Unleashed ignoring the customerRef filter and
+                    // returning unrelated orders.
+                    $ref = $order['CustomerRef']
+                        ?? $order['CustomerOrderNumber']
+                        ?? $order['CustomerOrderNo']
+                        ?? null;
+
+                    if ($ref !== null && trim($ref) === $amazonId) {
+                        $results[$amazonId] = $order['OrderNumber'];
+                        break;
+                    }
                 }
             }
         }

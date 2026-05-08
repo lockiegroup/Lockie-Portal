@@ -26,6 +26,10 @@
                 </p>
             </div>
             <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
+                <button id="lookup-btn" onclick="lookupUnleashed()"
+                    style="background:#e0f2fe;color:#0369a1;border:none;border-radius:0.5rem;padding:0.5rem 1rem;font-size:0.875rem;font-weight:600;cursor:pointer;">
+                    ⟳ Lookup SO Numbers
+                </button>
                 <button id="reprocess-btn" onclick="reprocess()"
                     style="background:#fef9c3;color:#854d0e;border:none;border-radius:0.5rem;padding:0.5rem 1rem;font-size:0.875rem;font-weight:600;cursor:pointer;">
                     ↺ Recalculate
@@ -111,9 +115,38 @@
 </main>
 
 <script>
-const csrfToken    = '{{ csrf_token() }}';
-const settlementId = {{ $settlement->id }};
-const reprocessUrl = `/amazon/settlements/${settlementId}/reprocess`;
+const csrfToken      = '{{ csrf_token() }}';
+const settlementId   = {{ $settlement->id }};
+const reprocessUrl   = `/amazon/settlements/${settlementId}/reprocess`;
+const lookupUrl      = `/amazon/settlements/${settlementId}/lookup-unleashed`;
+
+async function lookupUnleashed() {
+    const btn = document.getElementById('lookup-btn');
+    const msg = document.getElementById('status-msg');
+    btn.disabled = true;
+    btn.textContent = 'Looking up…';
+
+    try {
+        const res  = await fetch(lookupUrl, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+        });
+        const data = await res.json();
+        if (data.ok) {
+            msg.style.cssText = 'display:block;background:#dcfce7;border:1px solid #86efac;color:#166534;padding:0.75rem 1rem;border-radius:0.5rem;font-size:0.875rem;margin-bottom:1rem;';
+            msg.textContent = `Matched ${data.matched} order(s) to Unleashed SO numbers.`;
+            if (data.matched > 0) location.reload();
+        } else {
+            msg.style.cssText = 'display:block;background:#fee2e2;border:1px solid #fca5a5;color:#991b1b;padding:0.75rem 1rem;border-radius:0.5rem;font-size:0.875rem;margin-bottom:1rem;';
+            msg.textContent = 'Lookup failed: ' + data.message;
+        }
+    } catch (e) {
+        msg.style.cssText = 'display:block;background:#fee2e2;border:1px solid #fca5a5;color:#991b1b;padding:0.75rem 1rem;border-radius:0.5rem;font-size:0.875rem;margin-bottom:1rem;';
+        msg.textContent = 'Request failed: ' + e.message;
+    }
+    btn.disabled = false;
+    btn.textContent = '⟳ Lookup SO Numbers';
+}
 
 async function reprocess() {
     if (!confirm('Recalculate all order amounts from the original Amazon data? This will reload the page when done.')) return;
