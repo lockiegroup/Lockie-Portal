@@ -578,7 +578,29 @@ class UnleashedService
      */
     public function fetchProducts(): array
     {
-        return $this->paginateFast('Products', [], 200);
+        // Unleashed has a known bug where queries with >500 results return an empty
+        // page 2, capping the total at 500. Splitting by obsolete status keeps each
+        // sub-query well under that threshold for most catalogues.
+        $active      = $this->paginateFast('Products', ['obsolete' => 'false'], 200);
+        $discontinued = $this->paginateFast('Products', ['obsolete' => 'true'],  200);
+
+        $all  = [];
+        $seen = [];
+        foreach (array_merge($active, $discontinued) as $p) {
+            $code = $p['ProductCode'] ?? null;
+            if ($code && !isset($seen[$code])) {
+                $seen[$code] = true;
+                $all[] = $p;
+            }
+        }
+
+        \Log::info('Unleashed fetchProducts', [
+            'active'       => count($active),
+            'discontinued' => count($discontinued),
+            'total'        => count($all),
+        ]);
+
+        return $all;
     }
 
     /**
