@@ -52,10 +52,11 @@ class StockWatchlistSyncService
             StockWatchlistStock::updateOrCreate(
                 ['product_code' => $code],
                 [
-                    'qty_on_hand'      => $s  ? $s['on_hand']   : 0,
-                    'qty_allocated'    => $s  ? $s['allocated']  : 0,
-                    'qty_on_order'     => $po ? $po['qty']       : 0,
-                    'po_expected_date' => $po ? $po['date']      : null,
+                    'qty_on_hand'      => $s  ? $s['on_hand']    : 0,
+                    'qty_allocated'    => $s  ? $s['allocated']   : 0,
+                    'total_cost'       => $s  ? $s['total_cost']  : 0,
+                    'qty_on_order'     => $po ? $po['qty']        : 0,
+                    'po_expected_date' => $po ? $po['date']       : null,
                     'synced_at'        => $now,
                 ]
             );

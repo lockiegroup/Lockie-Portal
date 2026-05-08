@@ -157,6 +157,7 @@
                         @endforeach
                         <th>Avg/Mo</th>
                         <th>On Hand</th>
+                        <th>Stock Value</th>
                         <th>Alloc'd</th>
                         <th>On Order</th>
                         <th style="cursor:pointer;user-select:none;" onclick="fillAllRequired()" title="Fill all To Order from Required">Required<br><small style="font-weight:400;opacity:0.7;">click→order</small></th>
@@ -176,14 +177,15 @@
                         @endforeach
                         <td style="padding:3px 4px;"><input class="col-filter" data-col="{{ 3+$yc }}" data-type="num" placeholder=">0" style="width:52px;border:1px solid #334155;border-radius:3px;padding:2px 4px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;text-align:right;" oninput="applyFilters()"></td>
                         <td style="padding:3px 4px;"><input class="col-filter" data-col="{{ 3+$yc+1 }}" data-type="num" placeholder="=0" style="width:52px;border:1px solid #334155;border-radius:3px;padding:2px 4px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;text-align:right;" oninput="applyFilters()"></td>
+                        <td></td>{{-- Stock Value --}}
                         <td></td>{{-- Alloc'd --}}
                         <td></td>{{-- On Order --}}
-                        <td style="padding:3px 4px;"><input class="col-filter" data-col="{{ 3+$yc+4 }}" data-type="num" placeholder=">0" style="width:52px;border:1px solid #334155;border-radius:3px;padding:2px 4px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;text-align:right;" oninput="applyFilters()"></td>
+                        <td style="padding:3px 4px;"><input class="col-filter" data-col="{{ 3+$yc+5 }}" data-type="num" placeholder=">0" style="width:52px;border:1px solid #334155;border-radius:3px;padding:2px 4px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;text-align:right;" oninput="applyFilters()"></td>
                         <td></td>{{-- To Order --}}
                         <td></td>{{-- Price --}}
                         <td></td>{{-- Total --}}
                         <td style="padding:3px 4px;">
-                            <select class="col-filter" data-col="{{ 3+$yc+8 }}" data-type="select" style="width:100%;border:1px solid #334155;border-radius:3px;padding:2px 3px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;" onchange="applyFilters()">
+                            <select class="col-filter" data-col="{{ 3+$yc+9 }}" data-type="select" style="width:100%;border:1px solid #334155;border-radius:3px;padding:2px 3px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;" onchange="applyFilters()">
                                 <option value="">All</option>
                                 <option value="OK">OK</option>
                                 <option value="Order Needed">Order Needed</option>
@@ -250,6 +252,10 @@
                     <td class="sw-num {{ ($onHand !== null && ($onHand - $allocated) <= 0) ? 'text-red-600' : '' }}">
                         {{ $onHand !== null ? number_format($onHand, 0) : '—' }}
                     </td>
+                    @php $stockValue = $stock ? (float)$stock->total_cost : null; @endphp
+                    <td class="sw-num" style="color:#475569;font-weight:500;">
+                        {{ $stockValue ? ($category->currency ?? '£') . number_format($stockValue, 2) : '—' }}
+                    </td>
                     <td class="sw-num" style="color:#94a3b8;">
                         {{ $allocated > 0 ? number_format($allocated, 0) : '—' }}
                     </td>
@@ -287,7 +293,7 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="{{ 13 + count($years) }}" style="padding:2rem;text-align:center;color:#94a3b8;">
+                <tr><td colspan="{{ 14 + count($years) }}" style="padding:2rem;text-align:center;color:#94a3b8;">
                     No products yet. Add one below.
                 </td></tr>
                 @endforelse
@@ -301,6 +307,7 @@
                     }
                     $subAvg     = $category->items->sum(fn($i) => $i->avg_monthly);
                     $subOnHand  = $category->items->sum(fn($i) => $i->stock ? (float)$i->stock->qty_on_hand : 0);
+                    $subStockVal= $category->items->sum(fn($i) => $i->stock ? (float)$i->stock->total_cost : 0);
                     $subAllocd  = $category->items->sum(fn($i) => $i->stock ? (float)$i->stock->qty_allocated : 0);
                     $subOnOrder = $category->items->sum(fn($i) => $i->stock ? (float)$i->stock->qty_on_order : 0);
                     $subReq     = $category->items->sum(fn($i) => $i->required_qty);
@@ -317,6 +324,7 @@
                         @endforeach
                         <td class="sw-num">{{ $subAvg > 0 ? number_format($subAvg, 1) : '—' }}</td>
                         <td class="sw-num">{{ $subOnHand > 0 ? number_format($subOnHand, 0) : '—' }}</td>
+                        <td class="sw-num" style="font-weight:700;">{{ $subStockVal > 0 ? ($category->currency ?? '£') . number_format($subStockVal, 2) : '—' }}</td>
                         <td class="sw-num">{{ $subAllocd > 0 ? number_format($subAllocd, 0) : '—' }}</td>
                         <td class="sw-num">{{ $subOnOrder > 0 ? number_format($subOnOrder, 0) : '—' }}</td>
                         <td class="sw-num">{{ $subReq > 0 ? number_format($subReq, 0) : '—' }}</td>
@@ -331,7 +339,7 @@
                 {{-- Add product row --}}
                 <tbody>
                     <tr class="sw-add-row">
-                        <td colspan="{{ 13 + count($years) }}" style="padding:6px 10px;">
+                        <td colspan="{{ 14 + count($years) }}" style="padding:6px 10px;">
                             <form style="display:inline-flex;gap:8px;align-items:center;"
                                 onsubmit="addItem(event, this)">
                                 <input type="text" name="product_code" placeholder="Product code…"

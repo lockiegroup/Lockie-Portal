@@ -675,13 +675,15 @@ class UnleashedService
                 $response = $responses[$i] ?? null;
                 if (!$response || $response instanceof \Throwable || $response->failed()) continue;
 
-                $onHand    = 0.0;
-                $allocated = 0.0;
+                $onHand     = 0.0;
+                $allocated  = 0.0;
+                $totalCost  = 0.0;
                 foreach ($response->json()['Items'] ?? [] as $item) {
                     $onHand    += (float) ($item['QtyOnHand']        ?? 0);
                     $allocated += (float) ($item['AllocatedQuantity'] ?? 0);
+                    $totalCost += (float) ($item['TotalCost']         ?? 0);
                 }
-                $result[$code] = ['on_hand' => $onHand, 'allocated' => $allocated];
+                $result[$code] = ['on_hand' => $onHand, 'allocated' => $allocated, 'total_cost' => $totalCost];
             }
         }
 
