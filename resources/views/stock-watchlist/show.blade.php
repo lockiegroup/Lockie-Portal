@@ -130,13 +130,31 @@
         </div>
     </div>
 
-    {{-- Search --}}
-    <div style="margin-bottom:8px;">
-        <input type="search" id="sw-search" placeholder="Search by product code or notes…"
-            style="width:280px;border:1px solid #cbd5e1;border-radius:8px;padding:6px 12px;font-size:0.82rem;color:#1e293b;outline:none;"
-            oninput="filterRows(this.value)"
+    {{-- Filters --}}
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+        <input type="search" id="sw-search" placeholder="Search code or notes…"
+            style="width:240px;border:1px solid #cbd5e1;border-radius:8px;padding:6px 12px;font-size:0.82rem;color:#1e293b;outline:none;"
+            oninput="applyFilters()"
             onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='#cbd5e1'">
-        <span id="sw-search-count" style="margin-left:10px;font-size:0.75rem;color:#94a3b8;"></span>
+        @if(count($productGroups))
+        <select id="sw-group-filter" onchange="applyFilters()"
+            style="border:1px solid #cbd5e1;border-radius:8px;padding:6px 12px;font-size:0.82rem;color:#1e293b;background:white;outline:none;cursor:pointer;">
+            <option value="">All product groups</option>
+            @foreach($productGroups as $g)
+            <option value="{{ $g }}">{{ $g }}</option>
+            @endforeach
+        </select>
+        @endif
+        <select id="sw-status-filter" onchange="applyFilters()"
+            style="border:1px solid #cbd5e1;border-radius:8px;padding:6px 12px;font-size:0.82rem;color:#1e293b;background:white;outline:none;cursor:pointer;">
+            <option value="">All statuses</option>
+            <option value="OK">OK</option>
+            <option value="Order Needed">Order Needed</option>
+            <option value="Out of Stock">Out of Stock</option>
+            <option value="No Data">No Data</option>
+            <option value="Discontinued">Discontinued</option>
+        </select>
+        <span id="sw-search-count" style="font-size:0.75rem;color:#94a3b8;"></span>
     </div>
 
     {{-- Table --}}
@@ -147,6 +165,7 @@
                     <tr>
                         <th style="text-align:left;min-width:110px;">Code</th>
                         <th style="text-align:left;min-width:140px;">Notes</th>
+                        <th style="text-align:left;min-width:120px;">Product Group</th>
                         @foreach($years as $yr)
                             <th>{{ $yr }}<br><small style="font-weight:400;opacity:0.7;">units</small></th>
                         @endforeach
@@ -189,7 +208,9 @@
                         $badgeClass = 'sw-badge-ok'; $badgeText = 'OK';
                     }
                 @endphp
-                <tr class="{{ $item->discontinued ? 'sw-disc-row' : '' }}" data-id="{{ $item->id }}">
+                <tr class="{{ $item->discontinued ? 'sw-disc-row' : '' }}" data-id="{{ $item->id }}"
+                    data-group="{{ $item->product_group ?? '' }}"
+                    data-status="{{ $badgeText }}">
                     <td style="font-weight:600;color:#0f172a;">{{ $item->product_code }}</td>
                     <td>
                         <input type="text" class="info-input"
@@ -198,6 +219,7 @@
                             onblur="saveField({{ $item->id }}, 'info', this.value)"
                             onkeydown="if(event.key==='Enter')this.blur()">
                     </td>
+                    <td style="color:#64748b;font-size:0.78rem;">{{ $item->product_group ?? '—' }}</td>
                     @foreach($years as $yr)
                     <td class="sw-num">
                         @php $yrQty = $item->yearly[$yr] ?? 0; @endphp
@@ -245,7 +267,7 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="{{ 12 + count($years) }}" style="padding:2rem;text-align:center;color:#94a3b8;">
+                <tr><td colspan="{{ 13 + count($years) }}" style="padding:2rem;text-align:center;color:#94a3b8;">
                     No products yet. Add one below.
                 </td></tr>
                 @endforelse
@@ -269,6 +291,7 @@
                     <tr id="subtotal-row" style="font-weight:700;background:#f1f5f9;border-top:2px solid #e2e8f0;">
                         <td style="font-size:0.7rem;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Subtotal</td>
                         <td></td>
+                        <td></td>
                         @foreach($years as $yr)
                         <td class="sw-num">{{ $subYearly[$yr] > 0 ? number_format($subYearly[$yr], 0) : '—' }}</td>
                         @endforeach
@@ -288,7 +311,7 @@
                 {{-- Add product row --}}
                 <tbody>
                     <tr class="sw-add-row">
-                        <td colspan="{{ 12 + count($years) }}" style="padding:6px 10px;">
+                        <td colspan="{{ 13 + count($years) }}" style="padding:6px 10px;">
                             <form style="display:inline-flex;gap:8px;align-items:center;"
                                 onsubmit="addItem(event, this)">
                                 <input type="text" name="product_code" placeholder="Product code…"
@@ -513,19 +536,27 @@ function escHtml(str) {
 }
 
 // ── Search / filter ───────────────────────────────────────────────────────────
-function filterRows(query) {
-    const q    = query.trim().toLowerCase();
-    const rows = document.querySelectorAll('#sortable-items tr[data-id]');
-    let visible = 0;
+function applyFilters() {
+    const q      = (document.getElementById('sw-search')?.value || '').trim().toLowerCase();
+    const group  = (document.getElementById('sw-group-filter')?.value || '');
+    const status = (document.getElementById('sw-status-filter')?.value || '');
+    const rows   = document.querySelectorAll('#sortable-items tr[data-id]');
+    let visible  = 0;
     rows.forEach(row => {
-        const code  = (row.cells[0]?.textContent || '').toLowerCase();
-        const notes = (row.cells[1]?.querySelector('input')?.value || row.cells[1]?.textContent || '').toLowerCase();
-        const match = !q || code.includes(q) || notes.includes(q);
+        const code      = (row.cells[0]?.textContent || '').toLowerCase();
+        const notes     = (row.cells[1]?.querySelector('input')?.value || row.cells[1]?.textContent || '').toLowerCase();
+        const rowGroup  = row.dataset.group || '';
+        const rowStatus = row.dataset.status || '';
+        const matchQ      = !q      || code.includes(q) || notes.includes(q);
+        const matchGroup  = !group  || rowGroup === group;
+        const matchStatus = !status || rowStatus === status;
+        const match = matchQ && matchGroup && matchStatus;
         row.style.display = match ? '' : 'none';
         if (match) visible++;
     });
+    const anyFilter = q || group || status;
     const countEl = document.getElementById('sw-search-count');
-    if (countEl) countEl.textContent = q ? `${visible} of ${rows.length} shown` : '';
+    if (countEl) countEl.textContent = anyFilter ? `${visible} of ${rows.length} shown` : '';
 }
 </script>
 

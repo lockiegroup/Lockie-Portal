@@ -45,6 +45,22 @@ class StockWatchlistController extends Controller
 
         $stockMap = StockWatchlistStock::whereIn('product_code', $productCodes)->get()->keyBy('product_code');
 
+        // Product group from most recent sales line per product
+        $productGroupMap = [];
+        if (!empty($productCodes)) {
+            DB::table('sales_lines')
+                ->select('product_code', 'product_group')
+                ->whereIn('product_code', $productCodes)
+                ->whereNotNull('product_group')
+                ->where('product_group', '!=', '')
+                ->orderByDesc('order_date')
+                ->get()
+                ->unique('product_code')
+                ->each(function ($row) use (&$productGroupMap) {
+                    $productGroupMap[$row->product_code] = $row->product_group;
+                });
+        }
+
         $salesMap = [];
         if (!empty($productCodes)) {
             DB::table('sales_lines')
@@ -76,10 +92,11 @@ class StockWatchlistController extends Controller
         }
 
         $leadDays = max(1, (int)($category->lead_time_days ?? 30));
-        $category->items->each(function ($item) use ($stockMap, $salesMap, $years, $now, $leadDays) {
+        $category->items->each(function ($item) use ($stockMap, $salesMap, $years, $now, $leadDays, $productGroupMap) {
             $code  = $item->product_code;
             $stock = $stockMap[$code] ?? null;
             $item->stock = $stock;
+            $item->product_group = $productGroupMap[$code] ?? null;
 
             $yearly = [];
             foreach ($years as $yr) {
@@ -113,7 +130,9 @@ class StockWatchlistController extends Controller
             $salesTo   = Carbon::parse($range->max_d)->format('jS M Y');
         }
 
-        return view('stock-watchlist.show', compact('category', 'years', 'syncedAt', 'filterFrom', 'filterTo', 'salesFrom', 'salesTo'));
+        $productGroups = collect($productGroupMap)->unique()->sort()->values()->all();
+
+        return view('stock-watchlist.show', compact('category', 'years', 'syncedAt', 'filterFrom', 'filterTo', 'salesFrom', 'salesTo', 'productGroups'));
     }
 
     public function setDateFilter(Request $request): RedirectResponse
