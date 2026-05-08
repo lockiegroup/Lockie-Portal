@@ -578,27 +578,10 @@ class UnleashedService
      */
     public function fetchProducts(): array
     {
-        // Split by obsolete status so each sequential paginate call stays well under
-        // Unleashed's ~500-result page bug threshold.
-        $active       = $this->paginate('Products', ['obsolete' => 'false'], 100);
-        $discontinued = $this->paginate('Products', ['obsolete' => 'true'],  100);
-
-        \Log::info('Unleashed fetchProducts', [
-            'active'       => count($active),
-            'discontinued' => count($discontinued),
-        ]);
-
-        $all  = [];
-        $seen = [];
-        foreach (array_merge($active, $discontinued) as $p) {
-            $code = $p['ProductCode'] ?? null;
-            if ($code && !isset($seen[$code])) {
-                $seen[$code] = true;
-                $all[] = $p;
-            }
-        }
-
-        return $all;
+        // Sequential paginate with small page size works reliably against Unleashed.
+        // The Pagination.PageNumber in the response is always 1 (Unleashed bug) but
+        // the actual items differ per page — NumberOfPages is accurate.
+        return $this->paginate('Products', [], 100);
     }
 
     /**
@@ -610,10 +593,13 @@ class UnleashedService
         $result = [];
 
         foreach (array_chunk($productCodes, $batchSize) as $chunk) {
+            // Build requests as a numerically-indexed list so pool keys are never
+            // affected by special characters (/, ., etc.) in product codes.
+            $codes    = array_values($chunk);
             $requests = [];
-            foreach ($chunk as $code) {
-                $qs = http_build_query(['productCode' => $code, 'pageSize' => 50, 'pageNumber' => 1]);
-                $requests[$code] = [
+            foreach ($codes as $i => $code) {
+                $qs           = http_build_query(['productCode' => $code, 'pageSize' => 50, 'pageNumber' => 1]);
+                $requests[$i] = [
                     'url'     => self::BASE_URL . '/StockOnHand?' . $qs,
                     'headers' => $this->headers($qs),
                 ];
@@ -621,14 +607,14 @@ class UnleashedService
 
             $responses = Http::pool(function ($pool) use ($requests) {
                 $calls = [];
-                foreach ($requests as $key => $info) {
-                    $calls[] = $pool->as($key)->timeout(30)->withHeaders($info['headers'])->get($info['url']);
+                foreach ($requests as $i => $info) {
+                    $calls[] = $pool->as($i)->timeout(30)->withHeaders($info['headers'])->get($info['url']);
                 }
                 return $calls;
             });
 
-            foreach ($chunk as $code) {
-                $response = $responses[$code] ?? null;
+            foreach ($codes as $i => $code) {
+                $response = $responses[$i] ?? null;
                 if (!$response || $response instanceof \Throwable || $response->failed()) continue;
 
                 $onHand    = 0.0;
