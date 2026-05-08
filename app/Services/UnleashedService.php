@@ -910,26 +910,24 @@ class UnleashedService
             'endDate'   => $endDate,
         ], 200);
 
-        // Log a sample order so we can identify the correct Customer Reference field name
-        if (!empty($orders)) {
-            $sample = $orders[0];
-            \Log::info('UnleashedService::fetchOrderNumbersByAmazonIds sample order', [
-                'total_fetched' => count($orders),
-                'date_range'    => "$startDate → $endDate",
-                'OrderNumber'   => $sample['OrderNumber'] ?? null,
-                'CustomerRef'   => $sample['CustomerRef'] ?? '(missing)',
-                'CustomerOrderNo' => $sample['CustomerOrderNo'] ?? '(missing)',
-                'CustomerOrderNumber' => $sample['CustomerOrderNumber'] ?? '(missing)',
-                'CustomerReference'  => $sample['CustomerReference'] ?? '(missing)',
-                'Reference'          => $sample['Reference'] ?? '(missing)',
-                'all_keys'           => array_keys($sample),
-            ]);
-        } else {
-            \Log::info('UnleashedService::fetchOrderNumbersByAmazonIds no orders returned', [
-                'date_range'    => "$startDate → $endDate",
-                'amazon_ids'    => array_slice($amazonIds, 0, 3),
-            ]);
+        // Log seeking IDs and scan for matches
+        \Log::info('UnleashedService::fetchOrderNumbersByAmazonIds seeking', [
+            'total_fetched' => count($orders),
+            'date_range'    => "$startDate → $endDate",
+            'seeking_count' => count($needle),
+            'seeking_sample'=> array_slice(array_keys($needle), 0, 3),
+        ]);
+
+        // Log up to 10 orders that have a dash-format CustomerRef (Amazon order ID pattern)
+        $amazonLike = [];
+        foreach ($orders as $order) {
+            $ref = trim($order['CustomerRef'] ?? '');
+            if (str_contains($ref, '-') && strlen($ref) > 10) {
+                $amazonLike[] = ['OrderNumber' => $order['OrderNumber'], 'CustomerRef' => $ref];
+                if (count($amazonLike) >= 10) break;
+            }
         }
+        \Log::info('UnleashedService::fetchOrderNumbersByAmazonIds amazon-like refs', $amazonLike ?: ['none found']);
 
         foreach ($orders as $order) {
             $orderNo = $order['OrderNumber'] ?? null;
