@@ -96,8 +96,34 @@ class AmazonSyncService
         }
 
         $this->calculateVat($settlement);
+        $this->lookupUnleashedOrders($settlement);
 
         return $settlement;
+    }
+
+    public function lookupUnleashedOrders(AmazonSettlement $settlement): int
+    {
+        $amazonIds = $settlement->lines()
+            ->whereNotNull('order_id')
+            ->whereNull('unleashed_order_no')
+            ->pluck('order_id')
+            ->unique()
+            ->values()
+            ->all();
+
+        if (empty($amazonIds)) return 0;
+
+        $map   = $this->unleashed->fetchOrderNumbersByAmazonIds($amazonIds);
+        $count = 0;
+
+        foreach ($map as $amazonId => $unleashedNo) {
+            $settlement->lines()
+                ->where('order_id', $amazonId)
+                ->update(['unleashed_order_no' => $unleashedNo]);
+            $count++;
+        }
+
+        return $count;
     }
 
     public function classifyLine(array $row): ?array
@@ -407,22 +433,33 @@ class AmazonSyncService
         $statementLines = [];
         $salesCodes     = ['4000', '4001', '4002'];
 
+        // Load manual overrides keyed by amazon_order_id
+        $overrides = \App\Models\AmazonOrderOverride::where('settlement_id', $settlement->id)
+            ->pluck('amount_override', 'amazon_order_id');
+
         // --- 1. One CREDIT/DEBIT per order (Principal + FBM Shipping) ---
-        // These match against Unleashed invoices in Xero (keyed by order ID).
-        $orderAmounts = [];
+        $orderAmounts  = [];
+        $orderLabels   = []; // amazon_order_id => unleashed_order_no (or amazon id as fallback)
+        $orderPostedAt = [];
+
         foreach ($settlement->lines as $line) {
             if (!in_array($line->account_code, $salesCodes, true)) continue;
             if (!$line->order_id) continue;
 
-            $orderAmounts[$line->order_id] = ($orderAmounts[$line->order_id] ?? 0.0)
-                + (float) $line->amount_gross;
+            $id = $line->order_id;
+            $orderAmounts[$id]  = ($orderAmounts[$id] ?? 0.0) + (float) $line->amount_gross;
+            $orderLabels[$id]   = $line->unleashed_order_no ?? $id;
+            $orderPostedAt[$id] = $orderPostedAt[$id] ?? ($line->posted_date?->toDateString() ?? $endDate);
         }
 
-        foreach ($orderAmounts as $orderId => $amount) {
+        foreach ($orderAmounts as $orderId => $computed) {
+            $amount = isset($overrides[$orderId])
+                ? (float) $overrides[$orderId]
+                : $computed;
             if (round($amount, 2) == 0) continue;
             $statementLines[] = [
-                'postedDate'           => $endDate,
-                'description'          => $orderId,
+                'postedDate'           => $orderPostedAt[$orderId] ?? $endDate,
+                'description'          => $orderLabels[$orderId],
                 'amount'               => round(abs($amount), 2),
                 'creditDebitIndicator' => $amount >= 0 ? 'CREDIT' : 'DEBIT',
                 'transactionId'        => 'amz-' . $settlementId . '-order-' . $orderId,

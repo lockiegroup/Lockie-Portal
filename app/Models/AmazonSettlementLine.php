@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class AmazonSettlementLine extends Model
 {
     protected $fillable = [
-        'settlement_id', 'transaction_type', 'order_id', 'sku', 'product_type',
+        'settlement_id', 'transaction_type', 'order_id', 'unleashed_order_no', 'sku', 'product_type',
         'fulfillment_channel', 'amount_gross', 'amount_net', 'vat_amount',
         'vat_rate', 'account_code', 'posted_date',
     ];
