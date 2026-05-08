@@ -888,65 +888,52 @@ class UnleashedService
     /**
      * Given a list of Amazon order IDs (e.g. "206-8309509-3453916"), find the
      * matching Unleashed sales order number (e.g. "SO-00026477") by scanning all
-     * orders in the given date range and matching locally on the CustomerRef field.
+     * orders and matching locally on the CustomerRef field.
      *
-     * Unleashed's SalesOrders API does not support filtering by CustomerRef, so
-     * per-ID queries always return unfiltered results. Scanning by date range and
-     * matching in PHP is the only reliable approach.
+     * Unleashed's SalesOrders API doesn't support filtering by CustomerRef, and
+     * date-filtered paginated queries trigger a known bug where every page past
+     * the first returns the same records. We fetch all orders without a date
+     * filter, using GUID deduplication to stop when pages start repeating.
      *
-     * $startDate / $endDate: Y-m-d strings, should bracket the settlement period
-     * with a generous buffer (e.g. 60 days before, 7 days after) since orders are
-     * placed before they appear in a settlement.
-     *
-     * Returns ['amazon-id' => 'SO-00012345', ...]  (missing = no matching order found).
+     * Returns ['amazon-id' => 'SO-00012345', ...]  (missing = no match found).
      */
-    public function fetchOrderNumbersByAmazonIds(array $amazonIds, string $startDate, string $endDate): array
+    public function fetchOrderNumbersByAmazonIds(array $amazonIds): array
     {
         $needle  = array_flip(array_unique($amazonIds)); // O(1) lookup set
         $results = [];
+        $seen    = [];
+        $page    = 1;
 
-        $orders = $this->paginate('SalesOrders', [
-            'startDate' => $startDate,
-            'endDate'   => $endDate,
-        ], 200);
+        do {
+            $data     = $this->get('SalesOrders', ['pageSize' => 200, 'pageNumber' => $page]);
+            $maxPages = $data['Pagination']['NumberOfPages'] ?? 1;
+            $items    = $data['Items'] ?? [];
+            $newCount = 0;
 
-        // Log seeking IDs and scan for matches
-        \Log::info('UnleashedService::fetchOrderNumbersByAmazonIds seeking', [
-            'total_fetched' => count($orders),
-            'date_range'    => "$startDate → $endDate",
-            'seeking_count' => count($needle),
-            'seeking_sample'=> array_slice(array_keys($needle), 0, 3),
-        ]);
+            foreach ($items as $order) {
+                // GUID dedup — Unleashed repeats page 1 on paginated queries
+                $guid = $order['Guid'] ?? null;
+                if ($guid !== null && isset($seen[$guid])) continue;
+                if ($guid !== null) $seen[$guid] = true;
+                $newCount++;
 
-        // Log up to 10 orders that have a dash-format CustomerRef (Amazon order ID pattern)
-        $amazonLike = [];
-        foreach ($orders as $order) {
-            $ref = trim($order['CustomerRef'] ?? '');
-            if (str_contains($ref, '-') && strlen($ref) > 10) {
-                $amazonLike[] = ['OrderNumber' => $order['OrderNumber'], 'CustomerRef' => $ref];
-                if (count($amazonLike) >= 10) break;
+                $orderNo = $order['OrderNumber'] ?? null;
+                if (!$orderNo) continue;
+
+                $ref = trim($order['CustomerRef'] ?? '');
+                if ($ref === '') continue;
+
+                if (isset($needle[$ref]) && !isset($results[$ref])) {
+                    $results[$ref] = $orderNo;
+                    if (count($results) === count($needle)) {
+                        return $results; // found everything — stop early
+                    }
+                }
             }
-        }
-        \Log::info('UnleashedService::fetchOrderNumbersByAmazonIds amazon-like refs', $amazonLike ?: ['none found']);
 
-        foreach ($orders as $order) {
-            $orderNo = $order['OrderNumber'] ?? null;
-            if (!$orderNo) continue;
-
-            // CustomerRef is the field Unleashed calls "Customer Reference" in the UI
-            $ref = trim($order['CustomerRef'] ?? $order['CustomerOrderNo'] ?? $order['CustomerReference'] ?? '');
-            if ($ref === '') continue;
-
-            if (isset($needle[$ref]) && !isset($results[$ref])) {
-                $results[$ref] = $orderNo;
-                if (count($results) === count($needle)) break; // found them all
-            }
-        }
-
-        \Log::info('UnleashedService::fetchOrderNumbersByAmazonIds results', [
-            'matched' => count($results),
-            'sought'  => count($needle),
-        ]);
+            $page++;
+            if ($newCount === 0) break; // Unleashed started repeating — stop
+        } while ($page <= $maxPages);
 
         return $results;
     }
