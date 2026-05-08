@@ -18,7 +18,17 @@ class StockWatchlistController extends Controller
     {
         $categories = StockWatchlistCategory::withCount('items')->orderBy('position')->get();
         $syncedAt   = StockWatchlistStock::max('synced_at');
-        return view('stock-watchlist.index', compact('categories', 'syncedAt'));
+
+        // All synced products with their category name (null = unallocated)
+        $allProducts = StockWatchlistStock::query()
+            ->select('stock_watchlist_stock.product_code', 'stock_watchlist_stock.product_name')
+            ->leftJoin('stock_watchlist_items as wi', 'wi.product_code', '=', 'stock_watchlist_stock.product_code')
+            ->leftJoin('stock_watchlist_categories as wc', 'wc.id', '=', 'wi.category_id')
+            ->selectRaw('wc.name as category_name')
+            ->orderByRaw('wc.name IS NULL DESC, wc.name ASC, stock_watchlist_stock.product_code ASC')
+            ->get();
+
+        return view('stock-watchlist.index', compact('categories', 'syncedAt', 'allProducts'));
     }
 
     public function showCategory(StockWatchlistCategory $category)

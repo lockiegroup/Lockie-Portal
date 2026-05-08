@@ -4,7 +4,7 @@
     <div class="flex items-start justify-between gap-4 mb-8 flex-wrap">
         <div>
             <h1 class="text-2xl font-bold text-slate-800">Stock Watchlist</h1>
-            <p class="text-slate-500 mt-1">JW Products stock ordering tracker — select a category to view and manage products.</p>
+            <p class="text-slate-500 mt-1">Lockie Group stock ordering tracker — select a category to view and manage products.</p>
         </div>
         <div class="flex items-center gap-3 flex-wrap">
             <span id="sync-status" class="text-sm text-slate-400">
@@ -68,6 +68,55 @@
         </div>
     </div>
 
+    {{-- All Products --}}
+    <div class="mt-10">
+        <div class="flex items-center justify-between mb-3 flex-wrap gap-3">
+            <h2 class="text-lg font-semibold text-slate-800">All Unleashed Products</h2>
+            <div class="flex items-center gap-3">
+                <label class="flex items-center gap-2 text-sm text-slate-600 cursor-pointer select-none">
+                    <input type="checkbox" id="unallocated-only" class="rounded" onchange="filterProducts()">
+                    Unallocated only
+                </label>
+                <input type="text" id="product-search" placeholder="Search code or name…"
+                    oninput="filterProducts()"
+                    class="border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-64">
+            </div>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="bg-slate-900 text-white text-left">
+                        <th class="px-4 py-3 font-semibold">Code</th>
+                        <th class="px-4 py-3 font-semibold">Name</th>
+                        <th class="px-4 py-3 font-semibold">Category</th>
+                    </tr>
+                </thead>
+                <tbody id="products-tbody">
+                    @foreach($allProducts as $p)
+                    <tr class="border-t border-slate-100 hover:bg-slate-50 product-row"
+                        data-code="{{ strtolower($p->product_code) }}"
+                        data-name="{{ strtolower($p->product_name ?? '') }}"
+                        data-allocated="{{ $p->category_name ? '1' : '0' }}">
+                        <td class="px-4 py-2.5 font-mono text-xs text-slate-700">{{ $p->product_code }}</td>
+                        <td class="px-4 py-2.5 text-slate-600">{{ $p->product_name }}</td>
+                        <td class="px-4 py-2.5">
+                            @if($p->category_name)
+                                <span class="text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full font-medium">{{ $p->category_name }}</span>
+                            @else
+                                <span class="text-xs bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full font-medium">Unallocated</span>
+                            @endif
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+            <div id="no-results" class="hidden px-6 py-8 text-center text-slate-400 text-sm">No products match your search.</div>
+            <div class="px-4 py-2 border-t border-slate-100 bg-slate-50 text-xs text-slate-400">
+                <span id="products-count">{{ $allProducts->count() }}</span> products shown
+            </div>
+        </div>
+    </div>
+
 </main>
 
 <script>
@@ -125,6 +174,24 @@ function deleteCategory(id) {
     })
     .then(r => r.json())
     .then(d => { if (d.ok) location.reload(); else alert('Delete failed'); });
+}
+
+function filterProducts() {
+    const q             = document.getElementById('product-search').value.toLowerCase().trim();
+    const unallocOnly   = document.getElementById('unallocated-only').checked;
+    const rows          = document.querySelectorAll('.product-row');
+    let visible         = 0;
+
+    rows.forEach(row => {
+        const matchSearch    = !q || row.dataset.code.includes(q) || row.dataset.name.includes(q);
+        const matchAlloc     = !unallocOnly || row.dataset.allocated === '0';
+        const show           = matchSearch && matchAlloc;
+        row.style.display    = show ? '' : 'none';
+        if (show) visible++;
+    });
+
+    document.getElementById('products-count').textContent = visible;
+    document.getElementById('no-results').classList.toggle('hidden', visible > 0);
 }
 </script>
 
