@@ -74,6 +74,10 @@ class StockWatchlistSyncService
             DB::table('unleashed_products')->upsert($chunk, ['product_code'], ['product_name', 'synced_at']);
         }
 
+        // Remove products no longer returned by Unleashed (obsoleted, deleted, etc.)
+        $fetchedCodes = array_column($products, 'ProductCode');
+        DB::table('unleashed_products')->whereNotIn('product_code', $fetchedCodes)->delete();
+
         $dbCount = DB::table('unleashed_products')->count();
 
         \Log::info('syncAllProducts', ['fetched' => $fetched, 'db_count' => $dbCount]);
