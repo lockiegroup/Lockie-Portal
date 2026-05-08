@@ -44,12 +44,6 @@
     line-height:0; transition: color 0.15s;
 }
 .btn-del:hover { color: #ef4444; }
-.sw-drag-handle {
-    color: #cbd5e1; cursor: grab; padding: 0 6px; text-align: center;
-    transition: color 0.15s;
-}
-.sw-drag-handle:active { cursor: grabbing; }
-.sw-drag-handle:hover { color: #94a3b8; }
 .btn-ghost {
     background: none; border: 1px solid #e2e8f0; color: #64748b;
     padding: 5px 12px; border-radius: 6px; font-size: 0.8rem;
@@ -151,7 +145,6 @@
             <table class="sw-table">
                 <thead>
                     <tr>
-                        <th style="width:24px;"></th>
                         <th style="text-align:left;min-width:110px;">Code</th>
                         <th style="text-align:left;min-width:140px;">Notes</th>
                         @foreach($years as $yr)
@@ -197,13 +190,6 @@
                     }
                 @endphp
                 <tr class="{{ $item->discontinued ? 'sw-disc-row' : '' }}" data-id="{{ $item->id }}">
-                    <td class="sw-drag-handle">
-                        <svg style="width:14px;height:14px;" viewBox="0 0 24 24" fill="currentColor">
-                            <circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/>
-                            <circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/>
-                            <circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/>
-                        </svg>
-                    </td>
                     <td style="font-weight:600;color:#0f172a;">{{ $item->product_code }}</td>
                     <td>
                         <input type="text" class="info-input"
@@ -259,7 +245,7 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="{{ 13 + count($years) }}" style="padding:2rem;text-align:center;color:#94a3b8;">
+                <tr><td colspan="{{ 12 + count($years) }}" style="padding:2rem;text-align:center;color:#94a3b8;">
                     No products yet. Add one below.
                 </td></tr>
                 @endforelse
@@ -281,7 +267,6 @@
                 @endphp
                 <tbody>
                     <tr id="subtotal-row" style="font-weight:700;background:#f1f5f9;border-top:2px solid #e2e8f0;">
-                        <td></td>
                         <td style="font-size:0.7rem;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Subtotal</td>
                         <td></td>
                         @foreach($years as $yr)
@@ -303,7 +288,7 @@
                 {{-- Add product row --}}
                 <tbody>
                     <tr class="sw-add-row">
-                        <td colspan="{{ 13 + count($years) }}" style="padding:6px 10px;">
+                        <td colspan="{{ 12 + count($years) }}" style="padding:6px 10px;">
                             <form style="display:inline-flex;gap:8px;align-items:center;"
                                 onsubmit="addItem(event, this)">
                                 <input type="text" name="product_code" placeholder="Product code…"
@@ -522,15 +507,6 @@ function toggleDiscontinued(checkbox, itemId) {
     saveField(itemId, 'discontinued', isDisc ? 1 : 0);
 }
 
-// ── Reorder ───────────────────────────────────────────────────────────────────
-function saveItemOrder(tbody) {
-    const ids = [...tbody.querySelectorAll('tr[data-id]')].map(r => r.dataset.id);
-    fetch('{{ route("stock-watchlist.items.reorder") }}', {
-        method: 'POST',
-        headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ ids }),
-    });
-}
 
 function escHtml(str) {
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -542,27 +518,17 @@ function filterRows(query) {
     const rows = document.querySelectorAll('#sortable-items tr[data-id]');
     let visible = 0;
     rows.forEach(row => {
-        const code  = (row.cells[1]?.textContent || '').toLowerCase();
-        const notes = (row.cells[2]?.querySelector('input')?.value || row.cells[2]?.textContent || '').toLowerCase();
+        const code  = (row.cells[0]?.textContent || '').toLowerCase();
+        const notes = (row.cells[1]?.querySelector('input')?.value || row.cells[1]?.textContent || '').toLowerCase();
         const match = !q || code.includes(q) || notes.includes(q);
         row.style.display = match ? '' : 'none';
         if (match) visible++;
     });
     const countEl = document.getElementById('sw-search-count');
     if (countEl) countEl.textContent = q ? `${visible} of ${rows.length} shown` : '';
-    // Disable drag while searching so order isn't accidentally changed
-    document.getElementById('sortable-items').style.pointerEvents = q ? 'none' : '';
 }
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
-<script>
-Sortable.create(document.getElementById('sortable-items'), {
-    handle: '.sw-drag-handle',
-    animation: 150,
-    onEnd(e) { saveItemOrder(e.from); },
-});
-</script>
 
 <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
 </x-layout>
