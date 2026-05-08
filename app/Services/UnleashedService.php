@@ -886,52 +886,41 @@ class UnleashedService
     }
 
     /**
-     * Given a list of Amazon order IDs (e.g. "206-8309509-3453916"), look up the
-     * matching Unleashed sales order number (e.g. "SO-00026477") by querying
-     * SalesOrders with customerRef — Unleashed stores Amazon order IDs in this field.
-     * Returns ['amazon-id' => 'SO-00012345', ...]  (missing entries are not found).
+     * Given a list of Amazon order IDs (e.g. "206-8309509-3453916"), find the
+     * matching Unleashed sales order number (e.g. "SO-00026477") by scanning all
+     * orders in the given date range and matching locally on the CustomerRef field.
+     *
+     * Unleashed's SalesOrders API does not support filtering by CustomerRef, so
+     * per-ID queries always return unfiltered results. Scanning by date range and
+     * matching in PHP is the only reliable approach.
+     *
+     * $startDate / $endDate: Y-m-d strings, should bracket the settlement period
+     * with a generous buffer (e.g. 60 days before, 7 days after) since orders are
+     * placed before they appear in a settlement.
+     *
+     * Returns ['amazon-id' => 'SO-00012345', ...]  (missing = no matching order found).
      */
-    public function fetchOrderNumbersByAmazonIds(array $amazonIds, int $batchSize = 20): array
+    public function fetchOrderNumbersByAmazonIds(array $amazonIds, string $startDate, string $endDate): array
     {
+        $needle  = array_flip(array_unique($amazonIds)); // O(1) lookup set
         $results = [];
 
-        foreach (array_chunk(array_values(array_unique($amazonIds)), $batchSize) as $batch) {
-            $responses = Http::pool(function ($pool) use ($batch) {
-                $calls = [];
-                foreach ($batch as $amazonId) {
-                    $qs = http_build_query([
-                        'customerRef' => $amazonId,
-                        'pageSize'    => 5,
-                        'pageNumber'  => 1,
-                    ]);
-                    $calls[] = $pool->as($amazonId)
-                        ->timeout(30)
-                        ->withHeaders($this->headers($qs))
-                        ->get(self::BASE_URL . '/SalesOrders?' . $qs);
-                }
-                return $calls;
-            });
+        $orders = $this->paginate('SalesOrders', [
+            'startDate' => $startDate,
+            'endDate'   => $endDate,
+        ], 200);
 
-            foreach ($batch as $amazonId) {
-                $res = $responses[$amazonId] ?? null;
-                if (!$res || $res instanceof \Throwable || $res->failed()) continue;
+        foreach ($orders as $order) {
+            $orderNo = $order['OrderNumber'] ?? null;
+            if (!$orderNo) continue;
 
-                foreach ($res->json()['Items'] ?? [] as $order) {
-                    if (empty($order['OrderNumber'])) continue;
+            // CustomerRef is the field Unleashed calls "Customer Reference" in the UI
+            $ref = trim($order['CustomerRef'] ?? $order['CustomerOrderNo'] ?? '');
+            if ($ref === '') continue;
 
-                    // Verify the returned order actually references this Amazon ID —
-                    // guards against Unleashed ignoring the customerRef filter and
-                    // returning unrelated orders.
-                    $ref = $order['CustomerRef']
-                        ?? $order['CustomerOrderNumber']
-                        ?? $order['CustomerOrderNo']
-                        ?? null;
-
-                    if ($ref !== null && trim($ref) === $amazonId) {
-                        $results[$amazonId] = $order['OrderNumber'];
-                        break;
-                    }
-                }
+            if (isset($needle[$ref]) && !isset($results[$ref])) {
+                $results[$ref] = $orderNo;
+                if (count($results) === count($needle)) break; // found them all
             }
         }
 

@@ -145,7 +145,13 @@ class AmazonSyncService
 
         if (empty($amazonIds)) return 0;
 
-        $map   = $this->unleashed->fetchOrderNumbersByAmazonIds($amazonIds);
+        // Scan orders in a generous window around the settlement period.
+        // Amazon orders are placed weeks before they appear in a settlement,
+        // so we look back 60 days before the settlement start date.
+        $start = ($settlement->start_date ?? now())->copy()->subDays(60)->toDateString();
+        $end   = ($settlement->end_date   ?? now())->copy()->addDays(7)->toDateString();
+
+        $map   = $this->unleashed->fetchOrderNumbersByAmazonIds($amazonIds, $start, $end);
         $count = 0;
 
         foreach ($map as $amazonId => $unleashedNo) {
