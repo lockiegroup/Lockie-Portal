@@ -135,7 +135,7 @@
 </main>
 
 {{-- Adjustment Log Modal --}}
-<div id="log-modal" class="fixed inset-0 bg-black/40 z-50 hidden items-center justify-center p-4" onclick="if(event.target===this)closeLogModal()">
+<div id="log-modal" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onclick="if(event.target===this)closeLogModal()">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-lg">
         <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
             <h3 class="font-semibold text-slate-800">Adjustment Log</h3>
@@ -146,7 +146,7 @@
 </div>
 
 {{-- Edit Product Modal --}}
-<div id="edit-modal" class="fixed inset-0 bg-black/40 z-50 hidden items-center justify-center p-4" onclick="if(event.target===this)closeEditModal()">
+<div id="edit-modal" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onclick="if(event.target===this)closeEditModal()">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-lg">
         <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
             <h3 class="font-semibold text-slate-800">Product Settings</h3>
@@ -224,7 +224,7 @@
 </div>
 
 {{-- Works Order Modal --}}
-<div id="wo-modal" class="fixed inset-0 bg-black/40 z-50 hidden items-center justify-center p-4" onclick="if(event.target===this)closeWoModal()">
+<div id="wo-modal" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onclick="if(event.target===this)closeWoModal()">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
         <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 flex-shrink-0">
             <h3 class="font-semibold text-slate-800">New Works Order</h3>
@@ -313,7 +313,6 @@ function applyAdjust(input) {
 }
 
 function viewLog(id) {
-    document.getElementById('log-modal').style.display = 'flex';
     document.getElementById('log-modal').classList.remove('hidden');
     const body = document.getElementById('log-modal-body');
     body.innerHTML = 'Loading…';
@@ -327,9 +326,7 @@ function viewLog(id) {
     });
 }
 function closeLogModal() {
-    const m = document.getElementById('log-modal');
-    m.style.display = '';
-    m.classList.add('hidden');
+    document.getElementById('log-modal').classList.add('hidden');
 }
 
 // Edit modal data loaded from PHP
@@ -374,15 +371,11 @@ function openEditModal(id) {
     const avg = count > 0 ? (total / (count * 12)).toFixed(1) : '—';
     document.getElementById('edit-sales-avg').textContent = avg;
 
-    const m = document.getElementById('edit-modal');
-    m.style.display = 'flex';
-    m.classList.remove('hidden');
+    document.getElementById('edit-modal').classList.remove('hidden');
 }
 
 function closeEditModal() {
-    const m = document.getElementById('edit-modal');
-    m.style.display = '';
-    m.classList.add('hidden');
+    document.getElementById('edit-modal').classList.add('hidden');
 }
 
 function saveEditModal() {
@@ -454,14 +447,10 @@ function openWorksOrderModal() {
     document.getElementById('wo-notes').value = '';
     // Reset quantities
     document.querySelectorAll('.wo-qty').forEach(i => i.value = '');
-    const m = document.getElementById('wo-modal');
-    m.style.display = 'flex';
-    m.classList.remove('hidden');
+    document.getElementById('wo-modal').classList.remove('hidden');
 }
 function closeWoModal() {
-    const m = document.getElementById('wo-modal');
-    m.style.display = '';
-    m.classList.add('hidden');
+    document.getElementById('wo-modal').classList.add('hidden');
 }
 
 function saveWorksOrder() {
