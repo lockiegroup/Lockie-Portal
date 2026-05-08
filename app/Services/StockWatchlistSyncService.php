@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\StockWatchlistCategory;
 use App\Models\StockWatchlistItem;
 use App\Models\StockWatchlistStock;
+use App\Models\UnleashedProduct;
+use Illuminate\Support\Facades\DB;
 
 class StockWatchlistSyncService
 {
@@ -14,6 +16,9 @@ class StockWatchlistSyncService
             config('services.unleashed.id'),
             config('services.unleashed.key'),
         );
+
+        // Always refresh the full product catalogue so the index panel stays current
+        $this->syncAllProducts($unleashed);
 
         $query = StockWatchlistItem::query();
         if ($category) {
@@ -49,5 +54,21 @@ class StockWatchlistSyncService
         }
 
         return ['products' => count($productCodes)];
+    }
+
+    private function syncAllProducts(UnleashedService $unleashed): void
+    {
+        $products = $unleashed->fetchProducts();
+        $now      = now();
+
+        $rows = array_map(fn($p) => [
+            'product_code' => $p['ProductCode'],
+            'product_name' => $p['ProductDescription'] ?? $p['ProductCode'],
+            'synced_at'    => $now,
+        ], $products);
+
+        foreach (array_chunk($rows, 500) as $chunk) {
+            DB::table('unleashed_products')->upsert($chunk, ['product_code'], ['product_name', 'synced_at']);
+        }
     }
 }

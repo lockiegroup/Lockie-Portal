@@ -6,6 +6,7 @@ use App\Models\StockWatchlistCategory;
 use App\Models\StockWatchlistItem;
 use App\Models\StockWatchlistStock;
 use App\Models\StockWatchlistSubstitution;
+use App\Models\UnleashedProduct;
 use App\Services\StockWatchlistSyncService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -19,13 +20,13 @@ class StockWatchlistController extends Controller
         $categories = StockWatchlistCategory::withCount('items')->orderBy('position')->get();
         $syncedAt   = StockWatchlistStock::max('synced_at');
 
-        // All synced products with their category name (null = unallocated)
-        $allProducts = StockWatchlistStock::query()
-            ->select('stock_watchlist_stock.product_code', 'stock_watchlist_stock.product_name')
-            ->leftJoin('stock_watchlist_items as wi', 'wi.product_code', '=', 'stock_watchlist_stock.product_code')
+        // All Unleashed products with their watchlist category (null = unallocated)
+        $allProducts = UnleashedProduct::query()
+            ->select('unleashed_products.product_code', 'unleashed_products.product_name')
+            ->leftJoin('stock_watchlist_items as wi', 'wi.product_code', '=', 'unleashed_products.product_code')
             ->leftJoin('stock_watchlist_categories as wc', 'wc.id', '=', 'wi.category_id')
             ->selectRaw('wc.name as category_name')
-            ->orderByRaw('wc.name IS NULL DESC, wc.name ASC, stock_watchlist_stock.product_code ASC')
+            ->orderByRaw('wc.name IS NULL DESC, wc.name ASC, unleashed_products.product_code ASC')
             ->get();
 
         return view('stock-watchlist.index', compact('categories', 'syncedAt', 'allProducts'));
