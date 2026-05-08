@@ -38,6 +38,15 @@
 .sw-disc-row td { background: #fecaca; color: #7f1d1d; }
 .sw-disc-row:hover td { background: #fca5a5; }
 .sw-add-row td { background: #fafafa; }
+.sw-filter-input {
+    width: 100%; box-sizing: border-box;
+    border: 1px solid #334155; border-radius: 3px;
+    padding: 2px 5px; font-size: 0.72rem; color: #e2e8f0;
+    background: #1e293b;
+}
+.sw-filter-input:focus { outline: none; border-color: #6366f1; }
+.sw-filter-input::placeholder { color: #64748b; }
+.sw-filter-input option { background: #1e293b; color: #e2e8f0; }
 .btn-del {
     background: none; border: none; cursor: pointer;
     color: #cbd5e1; padding: 2px 4px; border-radius: 4px;
@@ -130,35 +139,12 @@
         </div>
     </div>
 
-    {{-- Filters --}}
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
-        <input type="search" id="sw-search" placeholder="Search code or notes…"
-            style="width:240px;border:1px solid #cbd5e1;border-radius:8px;padding:6px 12px;font-size:0.82rem;color:#1e293b;outline:none;"
-            oninput="applyFilters()"
-            onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='#cbd5e1'">
-        @if(count($productGroups))
-        <select id="sw-group-filter" onchange="applyFilters()"
-            style="border:1px solid #cbd5e1;border-radius:8px;padding:6px 12px;font-size:0.82rem;color:#1e293b;background:white;outline:none;cursor:pointer;">
-            <option value="">All product groups</option>
-            @foreach($productGroups as $g)
-            <option value="{{ $g }}">{{ $g }}</option>
-            @endforeach
-        </select>
-        @endif
-        <select id="sw-status-filter" onchange="applyFilters()"
-            style="border:1px solid #cbd5e1;border-radius:8px;padding:6px 12px;font-size:0.82rem;color:#1e293b;background:white;outline:none;cursor:pointer;">
-            <option value="">All statuses</option>
-            <option value="OK">OK</option>
-            <option value="Order Needed">Order Needed</option>
-            <option value="Out of Stock">Out of Stock</option>
-            <option value="No Data">No Data</option>
-            <option value="Discontinued">Discontinued</option>
-        </select>
-        <span id="sw-search-count" style="font-size:0.75rem;color:#94a3b8;"></span>
-    </div>
-
     {{-- Table --}}
     <div style="background:white;border:1px solid #e2e8f0;border-radius:12px;overflow:clip;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid #f1f5f9;background:#f8fafc;">
+            <span id="sw-filter-count" style="font-size:0.75rem;color:#94a3b8;"></span>
+            <button onclick="clearFilters()" style="font-size:0.75rem;color:#6366f1;background:none;border:none;cursor:pointer;padding:0;">Clear filters</button>
+        </div>
         <div class="sw-wrap">
             <table class="sw-table">
                 <thead>
@@ -179,6 +165,40 @@
                         <th>Total</th>
                         <th>Status</th>
                         <th>Disc</th>
+                    </tr>
+                    @php $yc = count($years); @endphp
+                    <tr style="background:#1e293b;">
+                        <td style="padding:3px 4px;"><input class="col-filter" data-col="0" data-type="text" placeholder="Code…" style="width:100%;box-sizing:border-box;border:1px solid #334155;border-radius:3px;padding:2px 5px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;" oninput="applyFilters()"></td>
+                        <td style="padding:3px 4px;"><input class="col-filter" data-col="1" data-type="text" placeholder="Notes…" style="width:100%;box-sizing:border-box;border:1px solid #334155;border-radius:3px;padding:2px 5px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;" oninput="applyFilters()"></td>
+                        <td style="padding:3px 4px;"><input class="col-filter" data-col="2" data-type="text" placeholder="Group…" style="width:100%;box-sizing:border-box;border:1px solid #334155;border-radius:3px;padding:2px 5px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;" oninput="applyFilters()"></td>
+                        @foreach($years as $yi => $yr)
+                        <td style="padding:3px 4px;"><input class="col-filter" data-col="{{ 3 + $yi }}" data-type="gte" type="number" min="0" placeholder="≥" style="width:52px;border:1px solid #334155;border-radius:3px;padding:2px 4px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;text-align:right;" oninput="applyFilters()"></td>
+                        @endforeach
+                        <td style="padding:3px 4px;"><input class="col-filter" data-col="{{ 3+$yc }}" data-type="gte" type="number" min="0" step="0.1" placeholder="≥" style="width:52px;border:1px solid #334155;border-radius:3px;padding:2px 4px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;text-align:right;" oninput="applyFilters()"></td>
+                        <td style="padding:3px 4px;"><input class="col-filter" data-col="{{ 3+$yc+1 }}" data-type="lte" type="number" min="0" placeholder="≤" style="width:52px;border:1px solid #334155;border-radius:3px;padding:2px 4px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;text-align:right;" oninput="applyFilters()"></td>
+                        <td></td>{{-- Alloc'd --}}
+                        <td></td>{{-- On Order --}}
+                        <td style="padding:3px 4px;"><input class="col-filter" data-col="{{ 3+$yc+4 }}" data-type="gte" type="number" min="0" placeholder="≥" style="width:52px;border:1px solid #334155;border-radius:3px;padding:2px 4px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;text-align:right;" oninput="applyFilters()"></td>
+                        <td></td>{{-- To Order --}}
+                        <td></td>{{-- Price --}}
+                        <td></td>{{-- Total --}}
+                        <td style="padding:3px 4px;">
+                            <select class="col-filter" data-col="{{ 3+$yc+8 }}" data-type="select" style="width:100%;border:1px solid #334155;border-radius:3px;padding:2px 3px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;" onchange="applyFilters()">
+                                <option value="">All</option>
+                                <option value="OK">OK</option>
+                                <option value="Order Needed">Order Needed</option>
+                                <option value="Out of Stock">Out of Stock</option>
+                                <option value="No Data">No Data</option>
+                                <option value="Discontinued">Discontinued</option>
+                            </select>
+                        </td>
+                        <td style="padding:3px 4px;">
+                            <select class="col-filter" data-type="disc" style="width:100%;border:1px solid #334155;border-radius:3px;padding:2px 3px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;" onchange="applyFilters()">
+                                <option value="">All</option>
+                                <option value="active">Active</option>
+                                <option value="disc">Disc'd</option>
+                            </select>
+                        </td>
                     </tr>
                 </thead>
 
@@ -491,6 +511,7 @@ function renderTotal(td) {
 
 document.querySelectorAll('.sw-total').forEach(renderTotal);
 updateSubtotal();
+applyFilters();
 
 // ── Clear To Order (this category only) ──────────────────────────────────────
 function clearCatOrders() {
@@ -535,28 +556,53 @@ function escHtml(str) {
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// ── Search / filter ───────────────────────────────────────────────────────────
+// ── Column filters ────────────────────────────────────────────────────────────
+function cellText(cell) {
+    if (!cell) return '';
+    const inp = cell.querySelector('input[type="text"]');
+    if (inp) return inp.value;
+    return cell.textContent.trim();
+}
+function cellNum(cell) {
+    return parseFloat((cellText(cell) || '0').replace(/,/g, '')) || 0;
+}
+
 function applyFilters() {
-    const q      = (document.getElementById('sw-search')?.value || '').trim().toLowerCase();
-    const group  = (document.getElementById('sw-group-filter')?.value || '');
-    const status = (document.getElementById('sw-status-filter')?.value || '');
-    const rows   = document.querySelectorAll('#sortable-items tr[data-id]');
-    let visible  = 0;
+    const filters = [...document.querySelectorAll('.col-filter')].map(el => ({
+        col:   el.dataset.col !== undefined ? parseInt(el.dataset.col) : null,
+        type:  el.dataset.type,
+        value: el.value.trim(),
+    })).filter(f => f.value !== '');
+
+    const rows = document.querySelectorAll('#sortable-items tr[data-id]');
+    let visible = 0;
     rows.forEach(row => {
-        const code      = (row.cells[0]?.textContent || '').toLowerCase();
-        const notes     = (row.cells[1]?.querySelector('input')?.value || row.cells[1]?.textContent || '').toLowerCase();
-        const rowGroup  = row.dataset.group || '';
-        const rowStatus = row.dataset.status || '';
-        const matchQ      = !q      || code.includes(q) || notes.includes(q);
-        const matchGroup  = !group  || rowGroup === group;
-        const matchStatus = !status || rowStatus === status;
-        const match = matchQ && matchGroup && matchStatus;
-        row.style.display = match ? '' : 'none';
-        if (match) visible++;
+        let show = true;
+        for (const f of filters) {
+            if (!show) break;
+            if (f.type === 'disc') {
+                const isDisc = row.classList.contains('sw-disc-row');
+                if (f.value === 'active' && isDisc)  { show = false; break; }
+                if (f.value === 'disc'   && !isDisc) { show = false; break; }
+                continue;
+            }
+            const cell = row.cells[f.col];
+            if (f.type === 'text')   { if (!cellText(cell).toLowerCase().includes(f.value.toLowerCase())) show = false; }
+            else if (f.type === 'gte')    { if (cellNum(cell) < parseFloat(f.value)) show = false; }
+            else if (f.type === 'lte')    { if (cellNum(cell) > parseFloat(f.value)) show = false; }
+            else if (f.type === 'select') { if (!cellText(cell).includes(f.value))   show = false; }
+        }
+        row.style.display = show ? '' : 'none';
+        if (show) visible++;
     });
-    const anyFilter = q || group || status;
-    const countEl = document.getElementById('sw-search-count');
-    if (countEl) countEl.textContent = anyFilter ? `${visible} of ${rows.length} shown` : '';
+
+    const countEl = document.getElementById('sw-filter-count');
+    if (countEl) countEl.textContent = filters.length ? `${visible} of ${rows.length} rows shown` : `${rows.length} rows`;
+}
+
+function clearFilters() {
+    document.querySelectorAll('.col-filter').forEach(el => { el.value = ''; });
+    applyFilters();
 }
 </script>
 

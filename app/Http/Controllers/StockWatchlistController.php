@@ -141,9 +141,7 @@ class StockWatchlistController extends Controller
             $salesTo   = Carbon::parse($range->max_d)->format('jS M Y');
         }
 
-        $productGroups = collect($productGroupMap)->unique()->sort()->values()->all();
-
-        return view('stock-watchlist.show', compact('category', 'years', 'syncedAt', 'filterFrom', 'filterTo', 'salesFrom', 'salesTo', 'productGroups'));
+        return view('stock-watchlist.show', compact('category', 'years', 'syncedAt', 'filterFrom', 'filterTo', 'salesFrom', 'salesTo'));
     }
 
     public function setDateFilter(Request $request): RedirectResponse
