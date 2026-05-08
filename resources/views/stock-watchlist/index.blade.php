@@ -174,7 +174,7 @@ function runSyncSkus() {
     .then(r => r.json())
     .then(d => {
         if (d.ok) {
-            document.getElementById('sync-status').textContent = `SKUs synced — ${d.products} products`;
+            document.getElementById('sync-status').textContent = `SKUs synced — fetched ${d.products} from Unleashed, ${d.db_count} in DB`;
             btn.disabled = false;
             icon.style.animation = '';
             location.reload();

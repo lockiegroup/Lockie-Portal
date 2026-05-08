@@ -53,7 +53,7 @@ class StockWatchlistSyncService
         return ['products' => count($productCodes)];
     }
 
-    public function syncAllProducts(?UnleashedService $unleashed = null): int
+    public function syncAllProducts(?UnleashedService $unleashed = null): array
     {
         $unleashed ??= new UnleashedService(
             config('services.unleashed.id'),
@@ -61,6 +61,7 @@ class StockWatchlistSyncService
         );
 
         $products = $unleashed->fetchProducts();
+        $fetched  = count($products);
         $now      = now();
 
         $rows = array_map(fn($p) => [
@@ -73,6 +74,10 @@ class StockWatchlistSyncService
             DB::table('unleashed_products')->upsert($chunk, ['product_code'], ['product_name', 'synced_at']);
         }
 
-        return count($products);
+        $dbCount = DB::table('unleashed_products')->count();
+
+        \Log::info('syncAllProducts', ['fetched' => $fetched, 'db_count' => $dbCount]);
+
+        return ['fetched' => $fetched, 'db_count' => $dbCount];
     }
 }

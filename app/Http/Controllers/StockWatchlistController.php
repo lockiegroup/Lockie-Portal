@@ -142,14 +142,44 @@ class StockWatchlistController extends Controller
 
     public function syncProducts()
     {
-        set_time_limit(300);
+        set_time_limit(600);
         try {
-            $count = (new StockWatchlistSyncService())->syncAllProducts();
-            return response()->json(['ok' => true, 'products' => $count]);
+            $result = (new StockWatchlistSyncService())->syncAllProducts();
+            return response()->json(['ok' => true, 'products' => $result['fetched'], 'db_count' => $result['db_count']]);
         } catch (\Throwable $e) {
             \Log::error('StockWatchlist product sync failed', ['error' => $e->getMessage()]);
             return response()->json(['ok' => false, 'error' => $e->getMessage()], 500);
         }
+    }
+
+    public function debugStock(Request $request)
+    {
+        $code      = $request->input('code', 'H-BSTON-20/20.5');
+        $unleashed = new \App\Services\UnleashedService(
+            config('services.unleashed.id'),
+            config('services.unleashed.key'),
+        );
+
+        // Test 1: raw API response for this product code
+        $qs       = http_build_query(['productCode' => $code, 'pageSize' => 50, 'pageNumber' => 1]);
+        $rawUrl   = 'https://api.unleashedsoftware.com/StockOnHand?' . $qs;
+        try {
+            $raw = $unleashed->get('StockOnHand', ['productCode' => $code, 'pageSize' => 50, 'pageNumber' => 1]);
+        } catch (\Throwable $e) {
+            $raw = ['error' => $e->getMessage()];
+        }
+
+        // Test 2: via fetchStockOnHandByCodes (the pool method)
+        $stockMap = $unleashed->fetchStockOnHandByCodes([$code]);
+
+        return response()->json([
+            'code'       => $code,
+            'qs'         => $qs,
+            'raw_url'    => $rawUrl,
+            'raw_items'  => $raw['Items'] ?? $raw,
+            'stock_map'  => $stockMap,
+            'db_record'  => \App\Models\StockWatchlistStock::where('product_code', $code)->first(),
+        ]);
     }
 
     public function debugProducts()
