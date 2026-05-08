@@ -6,6 +6,7 @@
 
 <div class="job-card bg-white rounded-xl border shadow-sm select-none {{ $job->is_manual ? 'border-green-300' : 'border-slate-200' }}" style="padding: 1.25rem 1.5rem;"
      data-job-id="{{ $job->id }}"
+     data-order-number="{{ $job->order_number }}"
      data-current-board="{{ $job->board }}"
      data-remaining="{{ $job->remaining_quantity }}"
      data-required-date="{{ $job->required_date ? $job->required_date->format('Y-m-d') : '' }}"

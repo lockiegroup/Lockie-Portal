@@ -349,7 +349,7 @@
         }
 
         // ─── Move board ───────────────────────────────────────────────────
-        window.moveBoard = function (jobId, board) {
+        function doMoveBoard(jobId, board) {
             fetch('/print-schedule/jobs/' + jobId + '/board', {
                 method:  'POST',
                 headers: {
@@ -364,15 +364,12 @@
                 if (data.success) {
                     const card = document.querySelector('.job-card[data-job-id="' + jobId + '"]');
                     if (card) {
-                        // Move card to new board's sortable list
                         const target = document.getElementById('sortable-' + board);
                         if (target) {
-                            // Remove empty state if present
                             const emptyState = target.querySelector('[class*="empty-state"]');
                             if (emptyState) emptyState.remove();
                             target.appendChild(card);
                         }
-                        // Update old board empty state if needed
                         const oldBoard = card.dataset.currentBoard;
                         if (oldBoard) {
                             const oldSortable = document.getElementById('sortable-' + oldBoard);
@@ -390,6 +387,35 @@
                     }
                 }
             });
+        }
+
+        window.moveBoard = function (jobId, board) {
+            const card        = document.querySelector('.job-card[data-job-id="' + jobId + '"]');
+            const orderNumber = card?.dataset.orderNumber;
+            const oldBoard    = card?.dataset.currentBoard;
+
+            // Find other cards for the same order still on the same board
+            const siblings = orderNumber ? [...document.querySelectorAll('.job-card')].filter(c =>
+                c.dataset.orderNumber === orderNumber &&
+                c.dataset.jobId      != jobId &&
+                c.dataset.currentBoard === oldBoard
+            ) : [];
+
+            if (siblings.length > 0) {
+                const total      = siblings.length + 1;
+                const select     = card?.querySelector('select');
+                const boardLabel = select ? ([...select.options].find(o => o.value === board)?.text || board) : board;
+                const doAll      = confirm(`Move all ${total} lines for ${orderNumber} to "${boardLabel}"?\n\nOK = move all lines\nCancel = move this line only`);
+                if (doAll) {
+                    siblings.forEach(sib => {
+                        const sibSelect = sib.querySelector('select');
+                        if (sibSelect) sibSelect.value = board;
+                        doMoveBoard(parseInt(sib.dataset.jobId), board);
+                    });
+                }
+            }
+
+            doMoveBoard(jobId, board);
         };
 
         function updateTabCount(boardKey) {
