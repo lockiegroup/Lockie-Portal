@@ -578,7 +578,7 @@ class UnleashedService
      */
     public function fetchProducts(): array
     {
-        return $this->paginate('Products', [], 500);
+        return $this->paginateFast('Products', [], 200);
     }
 
     /**
