@@ -578,21 +578,27 @@ class UnleashedService
      */
     public function fetchProducts(): array
     {
-        // Unleashed caps the Products endpoint at ~500 unique results per query,
-        // then silently repeats pages. Work around this by splitting into annual
-        // creation-date chunks (each well under 500) and deduping by ProductCode.
-        $chunks = [];
-        for ($year = 2000; $year <= (int) date('Y'); $year++) {
-            $chunks[] = [
-                'startDate' => "{$year}-01-01",
-                'endDate'   => "{$year}-12-31",
-            ];
-        }
+        // Unleashed silently caps unfiltered Products queries at ~500 unique results.
+        // Workaround: fetch all product groups, then query Products per group so each
+        // sub-query stays well under the cap. Dedup by ProductCode across groups.
 
-        $responses = Http::pool(function ($pool) use ($chunks) {
+        // Step 1: get all product groups
+        $groups     = $this->paginate('ProductGroups', [], 200);
+        $groupNames = array_filter(array_column($groups, 'GroupName'));
+
+        // Step 2: fetch products for each group + one catch-all (no group filter)
+        // in a single parallel pool.
+        $slots = array_values($groupNames);
+        $slots[] = null; // null = no filter, catches ungrouped products
+
+        $responses = Http::pool(function ($pool) use ($slots) {
             $calls = [];
-            foreach ($chunks as $i => $chunk) {
-                $qs      = http_build_query(array_merge($chunk, ['pageSize' => 500, 'pageNumber' => 1]));
+            foreach ($slots as $i => $group) {
+                $params  = ['pageSize' => 500, 'pageNumber' => 1];
+                if ($group !== null) {
+                    $params['productGroup'] = $group;
+                }
+                $qs      = http_build_query($params);
                 $calls[] = $pool->as($i)
                     ->timeout(60)
                     ->withHeaders($this->headers($qs))
@@ -603,7 +609,7 @@ class UnleashedService
 
         $all  = [];
         $seen = [];
-        foreach (array_keys($chunks) as $i) {
+        foreach (array_keys($slots) as $i) {
             $res = $responses[$i] ?? null;
             if (!$res || $res instanceof \Throwable || $res->failed()) continue;
             foreach ($res->json()['Items'] ?? [] as $p) {
@@ -614,6 +620,8 @@ class UnleashedService
                 }
             }
         }
+
+        \Log::info('fetchProducts', ['groups' => count($groupNames), 'total' => count($all)]);
 
         return $all;
     }
