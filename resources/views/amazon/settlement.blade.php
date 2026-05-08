@@ -30,11 +30,7 @@
                     style="background:#fef9c3;color:#854d0e;border:none;border-radius:0.5rem;padding:0.5rem 1rem;font-size:0.875rem;font-weight:600;cursor:pointer;">
                     ↺ Recalculate
                 </button>
-                <button id="lookup-btn" onclick="lookupUnleashed()"
-                    style="background:#f1f5f9;color:#475569;border:none;border-radius:0.5rem;padding:0.5rem 1rem;font-size:0.875rem;font-weight:600;cursor:pointer;">
-                    🔍 Lookup Unleashed Orders
-                </button>
-                <a href="{{ route('amazon.settlement.csv', $settlement) }}"
+<a href="{{ route('amazon.settlement.csv', $settlement) }}"
                     style="background:#1e293b;color:#fff;border-radius:0.5rem;padding:0.5rem 1rem;font-size:0.875rem;font-weight:600;text-decoration:none;display:inline-block;">
                     ↓ Download CSV
                 </a>
@@ -118,7 +114,6 @@
 const csrfToken    = '{{ csrf_token() }}';
 const settlementId = {{ $settlement->id }};
 const reprocessUrl = `/amazon/settlements/${settlementId}/reprocess`;
-const lookupUrl    = `/amazon/settlements/${settlementId}/lookup-unleashed`;
 
 async function reprocess() {
     if (!confirm('Recalculate all order amounts from the original Amazon data? This will reload the page when done.')) return;
@@ -145,31 +140,6 @@ async function reprocess() {
     }
     btn.disabled = false;
     btn.textContent = '↺ Recalculate';
-}
-
-async function lookupUnleashed() {
-    const btn = document.getElementById('lookup-btn');
-    const msg = document.getElementById('status-msg');
-    btn.disabled = true;
-    btn.textContent = 'Looking up…';
-
-    try {
-        const res  = await fetch(lookupUrl, {
-            method: 'POST',
-            headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
-        });
-        const data = await res.json();
-        msg.style.cssText = `display:block;background:${data.ok ? '#dcfce7' : '#fee2e2'};border:1px solid ${data.ok ? '#86efac' : '#fca5a5'};color:${data.ok ? '#166534' : '#991b1b'};padding:0.75rem 1rem;border-radius:0.5rem;font-size:0.875rem;`;
-        msg.textContent = data.ok
-            ? `Matched ${data.matched} order(s) to Unleashed. Reload to see updated order numbers.`
-            : 'Lookup failed: ' + data.message;
-        if (data.ok && data.matched > 0) setTimeout(() => location.reload(), 1500);
-    } catch (e) {
-        msg.style.cssText = 'display:block;background:#fee2e2;border:1px solid #fca5a5;color:#991b1b;padding:0.75rem 1rem;border-radius:0.5rem;font-size:0.875rem;';
-        msg.textContent = 'Request failed: ' + e.message;
-    }
-    btn.disabled = false;
-    btn.textContent = '🔍 Lookup Unleashed Orders';
 }
 
 async function postToXero() {

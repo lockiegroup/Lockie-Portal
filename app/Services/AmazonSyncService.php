@@ -96,7 +96,6 @@ class AmazonSyncService
         }
 
         $this->calculateVat($settlement);
-        $this->lookupUnleashedOrders($settlement);
 
         return $settlement;
     }
@@ -132,7 +131,6 @@ class AmazonSyncService
 
         $settlement->refresh();
         $this->calculateVat($settlement);
-        $this->lookupUnleashedOrders($settlement);
     }
 
     public function lookupUnleashedOrders(AmazonSettlement $settlement): int
