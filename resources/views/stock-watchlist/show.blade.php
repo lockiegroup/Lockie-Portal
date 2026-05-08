@@ -254,7 +254,7 @@
                     </td>
                     @php $stockValue = $stock ? (float)$stock->total_cost : null; @endphp
                     <td class="sw-num" style="color:#475569;font-weight:500;">
-                        {{ $stockValue ? ($category->currency ?? '£') . number_format($stockValue, 2) : '—' }}
+                        {{ $stockValue ? '£' . number_format($stockValue, 2) : '—' }}
                     </td>
                     <td class="sw-num" style="color:#94a3b8;">
                         {{ $allocated > 0 ? number_format($allocated, 0) : '—' }}
@@ -324,7 +324,7 @@
                         @endforeach
                         <td class="sw-num">{{ $subAvg > 0 ? number_format($subAvg, 1) : '—' }}</td>
                         <td class="sw-num">{{ $subOnHand > 0 ? number_format($subOnHand, 0) : '—' }}</td>
-                        <td class="sw-num" style="font-weight:700;">{{ $subStockVal > 0 ? ($category->currency ?? '£') . number_format($subStockVal, 2) : '—' }}</td>
+                        <td class="sw-num" style="font-weight:700;">{{ $subStockVal > 0 ? '£' . number_format($subStockVal, 2) : '—' }}</td>
                         <td class="sw-num">{{ $subAllocd > 0 ? number_format($subAllocd, 0) : '—' }}</td>
                         <td class="sw-num">{{ $subOnOrder > 0 ? number_format($subOnOrder, 0) : '—' }}</td>
                         <td class="sw-num">{{ $subReq > 0 ? number_format($subReq, 0) : '—' }}</td>
