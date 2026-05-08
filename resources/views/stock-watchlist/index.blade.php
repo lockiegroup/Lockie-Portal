@@ -177,7 +177,7 @@ function runSyncSkus() {
             document.getElementById('sync-status').textContent = `SKUs synced — fetched ${d.products} from Unleashed, ${d.db_count} in DB`;
             btn.disabled = false;
             icon.style.animation = '';
-            location.reload();
+            setTimeout(() => location.reload(), 5000);
         } else {
             alert('SKU sync failed: ' + (d.error || 'Unknown error'));
             icon.style.animation = '';
