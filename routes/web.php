@@ -20,7 +20,6 @@ use App\Http\Controllers\Admin\PolicyController as AdminPolicyController;
 use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\StockWatchlistController;
 use App\Http\Controllers\AmazonController;
-use App\Http\Controllers\CollarController;
 use App\Http\Controllers\ImportsController;
 use App\Http\Controllers\KeyAccountController;
 use App\Http\Controllers\Admin\KeyAccountAdminController;
@@ -134,20 +133,6 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::delete('/substitutions/{substitution}', [StockWatchlistController::class, 'destroySubstitution'])->name('substitutions.destroy');
         Route::patch('/items/{item}', [StockWatchlistController::class, 'updateItem'])->name('items.update');
         Route::delete('/items/{item}', [StockWatchlistController::class, 'destroyItem'])->name('items.destroy');
-    });
-
-    // Collar Production
-    Route::prefix('collars')->name('collars.')->middleware('module:collars')->group(function () {
-        Route::get('/',                                    [CollarController::class, 'index'])->name('index');
-        Route::post('/',                                   [CollarController::class, 'store'])->name('store');
-        Route::patch('/{collar}',                          [CollarController::class, 'update'])->name('update');
-        Route::delete('/{collar}',                         [CollarController::class, 'destroy'])->name('destroy');
-        Route::post('/{collar}/adjust',                    [CollarController::class, 'adjust'])->name('adjust');
-        Route::get('/{collar}/adjustments',                [CollarController::class, 'adjustments'])->name('adjustments');
-        Route::post('/import',                             [CollarController::class, 'importCsv'])->name('import');
-        Route::post('/works-orders',                       [CollarController::class, 'worksOrderCreate'])->name('works-orders.store');
-        Route::get('/works-orders/{worksOrder}',           [CollarController::class, 'worksOrderShow'])->name('works-orders.show');
-        Route::delete('/works-orders/{worksOrder}',        [CollarController::class, 'worksOrderDestroy'])->name('works-orders.destroy');
     });
 
     // Amazon & Xero Reconciliation

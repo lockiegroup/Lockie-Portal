@@ -1,7 +1,6 @@
 @php
     $isPrintSection     = request()->routeIs('print.*');
     $isWatchlistSection = request()->routeIs('stock-watchlist.*');
-    $isCollarsSection   = request()->routeIs('collars.*');
     $user               = auth()->user();
     $initials           = $user ? strtoupper(mb_substr($user->name ?? $user->email, 0, 2)) : '??';
 @endphp
@@ -70,17 +69,6 @@
         </a>
         @endcan
 
-        @if($user->hasModule('collars'))
-        <a href="{{ route('collars.index') }}"
-           class="sb-item{{ $isCollarsSection ? ' sb-active' : '' }}"
-           data-tip="Collar Production">
-            <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
-                <path d="M8 12c0-2.21 1.79-4 4-4s4 1.79 4 4-1.79 4-4 4-4-1.79-4-4z"/>
-            </svg>
-            <span class="sb-label">Collar Production</span>
-        </a>
-        @endif
 
         @can('cash_flow')
         <a href="{{ route('cash-flow.index') }}"
