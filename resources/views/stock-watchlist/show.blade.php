@@ -136,6 +136,15 @@
         </div>
     </div>
 
+    {{-- Search --}}
+    <div style="margin-bottom:8px;">
+        <input type="search" id="sw-search" placeholder="Search by product code or notes…"
+            style="width:280px;border:1px solid #cbd5e1;border-radius:8px;padding:6px 12px;font-size:0.82rem;color:#1e293b;outline:none;"
+            oninput="filterRows(this.value)"
+            onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='#cbd5e1'">
+        <span id="sw-search-count" style="margin-left:10px;font-size:0.75rem;color:#94a3b8;"></span>
+    </div>
+
     {{-- Table --}}
     <div style="background:white;border:1px solid #e2e8f0;border-radius:12px;overflow:clip;">
         <div class="sw-wrap">
@@ -525,6 +534,24 @@ function saveItemOrder(tbody) {
 
 function escHtml(str) {
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Search / filter ───────────────────────────────────────────────────────────
+function filterRows(query) {
+    const q    = query.trim().toLowerCase();
+    const rows = document.querySelectorAll('#sortable-items tr[data-id]');
+    let visible = 0;
+    rows.forEach(row => {
+        const code  = (row.cells[1]?.textContent || '').toLowerCase();
+        const notes = (row.cells[2]?.querySelector('input')?.value || row.cells[2]?.textContent || '').toLowerCase();
+        const match = !q || code.includes(q) || notes.includes(q);
+        row.style.display = match ? '' : 'none';
+        if (match) visible++;
+    });
+    const countEl = document.getElementById('sw-search-count');
+    if (countEl) countEl.textContent = q ? `${visible} of ${rows.length} shown` : '';
+    // Disable drag while searching so order isn't accidentally changed
+    document.getElementById('sortable-items').style.pointerEvents = q ? 'none' : '';
 }
 </script>
 
