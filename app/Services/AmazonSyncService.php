@@ -477,13 +477,9 @@ class AmazonSyncService
         $statementLines = [];
         $salesCodes     = ['4000', '4001', '4002'];
 
-        // Load manual overrides keyed by amazon_order_id
-        $overrides = \App\Models\AmazonOrderOverride::where('settlement_id', $settlement->id)
-            ->pluck('amount_override', 'amazon_order_id');
-
         // --- 1. One CREDIT/DEBIT per order (Principal + FBM Shipping) ---
         $orderAmounts  = [];
-        $orderLabels   = []; // amazon_order_id => unleashed_order_no (or amazon id as fallback)
+        $orderLabels   = [];
         $orderPostedAt = [];
 
         foreach ($settlement->lines as $line) {
@@ -496,10 +492,7 @@ class AmazonSyncService
             $orderPostedAt[$id] = $orderPostedAt[$id] ?? ($line->posted_date?->toDateString() ?? $endDate);
         }
 
-        foreach ($orderAmounts as $orderId => $computed) {
-            $amount = isset($overrides[$orderId])
-                ? (float) $overrides[$orderId]
-                : $computed;
+        foreach ($orderAmounts as $orderId => $amount) {
             if (round($amount, 2) == 0) continue;
             $statementLines[] = [
                 'postedDate'           => $orderPostedAt[$orderId] ?? $endDate,

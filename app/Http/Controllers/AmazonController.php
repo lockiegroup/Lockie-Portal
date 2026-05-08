@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AmazonOrderOverride;
 use App\Models\AmazonProfitSnapshot;
 use App\Models\AmazonSettlement;
 use App\Models\XeroToken;
@@ -99,32 +98,21 @@ class AmazonController extends Controller
         $settlement->load('lines');
         $salesCodes = ['4000', '4001', '4002'];
 
-        // Build per-order aggregation
         $orders = [];
         foreach ($settlement->lines->whereIn('account_code', $salesCodes) as $line) {
             if (!$line->order_id) continue;
             $id = $line->order_id;
             if (!isset($orders[$id])) {
                 $orders[$id] = [
-                    'amazon_order_id'   => $id,
-                    'unleashed_order_no'=> $line->unleashed_order_no,
-                    'date'              => $line->posted_date?->format('d/m/Y') ?? $settlement->end_date?->format('d/m/Y'),
-                    'computed_amount'   => 0.0,
+                    'amazon_order_id'    => $id,
+                    'unleashed_order_no' => $line->unleashed_order_no,
+                    'date'               => $line->posted_date?->format('d/m/Y') ?? $settlement->end_date?->format('d/m/Y'),
+                    'computed_amount'    => 0.0,
                 ];
             }
             $orders[$id]['computed_amount'] += (float) $line->amount_gross;
         }
 
-        $overrides = AmazonOrderOverride::where('settlement_id', $settlement->id)
-            ->pluck('amount_override', 'amazon_order_id');
-
-        foreach ($orders as &$o) {
-            $o['override']       = isset($overrides[$o['amazon_order_id']]) ? (float) $overrides[$o['amazon_order_id']] : null;
-            $o['display_amount'] = $o['override'] ?? $o['computed_amount'];
-        }
-        unset($o);
-
-        // Fee summary
         $feeSummary = $settlement->lines->whereNotIn('account_code', $salesCodes)
             ->groupBy('account_code')
             ->map(fn($lines) => [
@@ -134,28 +122,6 @@ class AmazonController extends Controller
             ])->values();
 
         return view('amazon.settlement', compact('settlement', 'orders', 'feeSummary'));
-    }
-
-    public function setOrderOverride(Request $request, AmazonSettlement $settlement): JsonResponse
-    {
-        $data = $request->validate([
-            'amazon_order_id' => 'required|string|max:50',
-            'amount_override' => 'nullable|numeric',
-            'notes'           => 'nullable|string|max:500',
-        ]);
-
-        if ($data['amount_override'] === null) {
-            AmazonOrderOverride::where('settlement_id', $settlement->id)
-                ->where('amazon_order_id', $data['amazon_order_id'])
-                ->delete();
-        } else {
-            AmazonOrderOverride::updateOrCreate(
-                ['settlement_id' => $settlement->id, 'amazon_order_id' => $data['amazon_order_id']],
-                ['amount_override' => $data['amount_override'], 'notes' => $data['notes'] ?? null]
-            );
-        }
-
-        return response()->json(['ok' => true]);
     }
 
     public function reprocessSettlement(AmazonSettlement $settlement): JsonResponse
@@ -262,10 +228,6 @@ class AmazonController extends Controller
         $fallbackDate = $settlement->end_date?->format('d/m/Y') ?? now()->format('d/m/Y');
         $salesCodes   = ['4000', '4001', '4002'];
 
-        // Load manual overrides
-        $overrides = AmazonOrderOverride::where('settlement_id', $settlement->id)
-            ->pluck('amount_override', 'amazon_order_id');
-
         // One row per order — use the posted_date of the first line for that order
         $orderData    = [];
         $noOrderLines = []; // sales-coded lines with no order_id (adjustments, reimbursements)
@@ -276,19 +238,12 @@ class AmazonController extends Controller
             }
             if (!isset($orderData[$line->order_id])) {
                 $orderData[$line->order_id] = [
-                    'amount'  => 0.0,
-                    'date'    => $line->posted_date?->format('d/m/Y') ?? $fallbackDate,
-                    'label'   => $line->unleashed_order_no ?? $line->order_id,
+                    'amount' => 0.0,
+                    'date'   => $line->posted_date?->format('d/m/Y') ?? $fallbackDate,
+                    'label'  => $line->unleashed_order_no ?? $line->order_id,
                 ];
             }
             $orderData[$line->order_id]['amount'] += (float) $line->amount_gross;
-        }
-
-        // Apply manual overrides to the computed amounts
-        foreach ($overrides as $amazonOrderId => $override) {
-            if (isset($orderData[$amazonOrderId])) {
-                $orderData[$amazonOrderId]['amount'] = (float) $override;
-            }
         }
 
         // Individual fee lines (one row per settlement line, not grouped)
