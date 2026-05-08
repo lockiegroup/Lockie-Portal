@@ -143,7 +143,10 @@
     <div style="background:white;border:1px solid #e2e8f0;border-radius:12px;overflow:clip;">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid #f1f5f9;background:#f8fafc;">
             <span id="sw-filter-count" style="font-size:0.75rem;color:#94a3b8;"></span>
-            <button onclick="clearFilters()" style="font-size:0.75rem;color:#6366f1;background:none;border:none;cursor:pointer;padding:0;">Clear filters</button>
+            <div style="display:flex;align-items:center;gap:12px;">
+                <button onclick="exportTableCsv()" style="font-size:0.75rem;color:#0891b2;background:none;border:none;cursor:pointer;padding:0;">↓ Export table</button>
+                <button onclick="clearFilters()" style="font-size:0.75rem;color:#6366f1;background:none;border:none;cursor:pointer;padding:0;">Clear filters</button>
+            </div>
         </div>
         <div class="sw-wrap">
             <table class="sw-table">
@@ -630,6 +633,51 @@ function applyFilters() {
 function clearFilters() {
     document.querySelectorAll('.col-filter').forEach(el => { el.value = ''; });
     applyFilters();
+}
+
+// ── Export visible rows to CSV ────────────────────────────────────────────────
+function exportTableCsv() {
+    const headerRow = document.querySelector('.sw-table thead tr:first-child');
+    const headers = [...headerRow.cells].map(th => {
+        return th.innerText.replace(/\n/g, ' ').trim();
+    });
+
+    const rows = [...document.querySelectorAll('#sortable-items tr[data-id]')]
+        .filter(r => r.style.display !== 'none');
+
+    const csvRows = [headers];
+    rows.forEach(row => {
+        const cols = [...row.cells].map((cell, i) => {
+            // Notes input
+            const textInput = cell.querySelector('input[type="text"]');
+            if (textInput) return textInput.value;
+            // To Order / Price inputs
+            const numInput = cell.querySelector('input[type="number"]');
+            if (numInput) return numInput.value;
+            // Disc checkbox
+            const chk = cell.querySelector('input[type="checkbox"]');
+            if (chk) return chk.checked ? 'Yes' : 'No';
+            // Badge (Status)
+            const badge = cell.querySelector('.sw-badge');
+            if (badge) return badge.textContent.trim();
+            // General text — strip currency symbol for numeric columns
+            return cell.textContent.trim().replace(/^[£$€]/, '').replace(/,/g, '').replace('—', '');
+        });
+        csvRows.push(cols);
+    });
+
+    const csv = csvRows.map(r => r.map(v => {
+        const s = String(v).replace(/"/g, '""');
+        return /[,"\n]/.test(s) ? `"${s}"` : s;
+    }).join(',')).join('\r\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = '{{ Str::slug($category->name) }}-stock-watchlist.csv';
+    a.click();
+    URL.revokeObjectURL(url);
 }
 </script>
 
