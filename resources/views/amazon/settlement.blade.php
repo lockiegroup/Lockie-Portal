@@ -31,6 +31,10 @@
                 </p>
             </div>
             <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
+                <button id="reprocess-btn" onclick="reprocess()"
+                    style="background:#fef9c3;color:#854d0e;border:none;border-radius:0.5rem;padding:0.5rem 1rem;font-size:0.875rem;font-weight:600;cursor:pointer;">
+                    ↺ Recalculate
+                </button>
                 <button id="lookup-btn" onclick="lookupUnleashed()"
                     style="background:#f1f5f9;color:#475569;border:none;border-radius:0.5rem;padding:0.5rem 1rem;font-size:0.875rem;font-weight:600;cursor:pointer;">
                     🔍 Lookup Unleashed Orders
@@ -139,6 +143,7 @@ const csrfToken   = '{{ csrf_token() }}';
 const settlementId = {{ $settlement->id }};
 const overrideUrl  = `/amazon/settlements/${settlementId}/order-override`;
 const lookupUrl    = `/amazon/settlements/${settlementId}/lookup-unleashed`;
+const reprocessUrl = `/amazon/settlements/${settlementId}/reprocess`;
 
 function saveOverride(amazonOrderId, input) {
     const raw = input.value.trim();
@@ -177,6 +182,33 @@ function updateOverrideTotal() {
     });
     const el = document.getElementById('override-total');
     el.textContent = hasAny ? '£' + total.toFixed(2) : '';
+}
+
+async function reprocess() {
+    if (!confirm('Recalculate all order amounts from the original Amazon data? This will reload the page when done.')) return;
+    const btn = document.getElementById('reprocess-btn');
+    const msg = document.getElementById('lookup-msg');
+    btn.disabled = true;
+    btn.textContent = 'Recalculating…';
+
+    try {
+        const res  = await fetch(reprocessUrl, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+        });
+        const data = await res.json();
+        if (data.ok) {
+            location.reload();
+        } else {
+            msg.style.cssText = 'display:block;background:#fee2e2;border:1px solid #fca5a5;color:#991b1b;padding:0.75rem 1rem;border-radius:0.5rem;font-size:0.875rem;margin-bottom:1rem;';
+            msg.textContent = 'Recalculate failed: ' + data.message;
+        }
+    } catch (e) {
+        msg.style.cssText = 'display:block;background:#fee2e2;border:1px solid #fca5a5;color:#991b1b;padding:0.75rem 1rem;border-radius:0.5rem;font-size:0.875rem;margin-bottom:1rem;';
+        msg.textContent = 'Request failed: ' + e.message;
+    }
+    btn.disabled = false;
+    btn.textContent = '↺ Recalculate';
 }
 
 async function lookupUnleashed() {

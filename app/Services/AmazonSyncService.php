@@ -101,6 +101,40 @@ class AmazonSyncService
         return $settlement;
     }
 
+    public function reprocessSettlement(AmazonSettlement $settlement): void
+    {
+        $raw = $settlement->raw_data;
+        if (empty($raw)) return;
+
+        $first = $raw[0];
+        $settlement->update([
+            'deposit_amount' => (float) ($first['total-amount'] ?? $first['deposit-amount'] ?? 0),
+            'start_date'     => $this->parseDateStr($first['settlement-start-date'] ?? ''),
+            'end_date'       => $this->parseDateStr($first['settlement-end-date'] ?? ''),
+        ]);
+
+        $settlement->lines()->delete();
+
+        $lines = [];
+        $now   = now()->toDateTimeString();
+        foreach ($raw as $row) {
+            $classified = $this->classifyLine($row);
+            if ($classified === null) continue;
+            $lines[] = array_merge($classified, [
+                'settlement_id' => $settlement->id,
+                'created_at'    => $now,
+                'updated_at'    => $now,
+            ]);
+        }
+        foreach (array_chunk($lines, 100) as $chunk) {
+            AmazonSettlementLine::insert($chunk);
+        }
+
+        $settlement->refresh();
+        $this->calculateVat($settlement);
+        $this->lookupUnleashedOrders($settlement);
+    }
+
     public function lookupUnleashedOrders(AmazonSettlement $settlement): int
     {
         $amazonIds = $settlement->lines()
@@ -145,11 +179,19 @@ class AmazonSyncService
         if ($amount === 0.0) return null;
 
         $accountCode = match(true) {
+            // Promotional rebates — must come before Principal check because Amazon sometimes
+            // sends rebates as price-type=PromotionalRebate in the price-amount column.
+            in_array($amountDesc, [
+                'PromotionalRebate', 'RunLightningDeal', 'Promotion',
+                'DiscountedLoyaltyPointsFee', 'FreeShipping',
+            ], true)                                                                      => '513',
             $amountDesc === 'Principal' && $channel === 'FBA'                          => '4001',
             $amountDesc === 'Principal'                                                   => '4000',
             // Marketplace facilitator tax and UK VAT — bundle into order gross total
             str_starts_with($amountDesc, 'MarketplaceFacilitatorTax') && $channel === 'FBA' => '4001',
             str_starts_with($amountDesc, 'MarketplaceFacilitatorTax')                   => '4000',
+            str_starts_with($amountDesc, 'MarketplaceFacilitatorVAT') && $channel === 'FBA' => '4001',
+            str_starts_with($amountDesc, 'MarketplaceFacilitatorVAT')                   => '4000',
             $amountDesc === 'Tax' && $channel === 'FBA'                                => '4001',
             $amountDesc === 'Tax'                                                         => '4000',
             in_array($amountDesc, ['ShippingTax', 'TaxDiscount'], true)                => '4002',
@@ -162,7 +204,9 @@ class AmazonSyncService
                                    'RefundCommission'], true)                            => '513',
             // Digital services fee (small per-order charge)
             in_array($amountDesc, ['DigitalServicesFee', 'Digital Services Fee'], true) => '513',
-            $amountDesc === 'Shipping' && $channel === 'FBM'                          => '4002',
+            // Shipping revenue — include regardless of channel; FBA rows rarely have this but
+            // FBM rows sometimes lack a fulfillment-id, causing channel to be null.
+            in_array($amountDesc, ['Shipping', 'ShippingHB'], true)                   => '4002',
             $amountDesc === 'ShippingChargeback'                                         => '4002',
             // Advertising — match by transaction type OR description (Amazon uses both)
             strcasecmp($txnType, 'advertising') === 0

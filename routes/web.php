@@ -147,6 +147,7 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::get('/settlements/{settlement}/view',                  [AmazonController::class, 'settlementView'])->name('settlement.view');
         Route::post('/settlements/{settlement}/order-override',       [AmazonController::class, 'setOrderOverride'])->name('settlement.order-override');
         Route::post('/settlements/{settlement}/lookup-unleashed',     [AmazonController::class, 'lookupUnleashedOrders'])->name('settlement.lookup-unleashed');
+        Route::post('/settlements/{settlement}/reprocess',           [AmazonController::class, 'reprocessSettlement'])->name('settlement.reprocess');
         Route::get('/profit',                   [AmazonController::class, 'profitReport'])->name('profit');
         Route::get('/xero/connect',             [AmazonController::class, 'xeroConnect'])->name('xero.connect');
         Route::get('/xero/callback',            [AmazonController::class, 'xeroCallback'])->name('xero.callback');

@@ -158,6 +158,21 @@ class AmazonController extends Controller
         return response()->json(['ok' => true]);
     }
 
+    public function reprocessSettlement(AmazonSettlement $settlement): JsonResponse
+    {
+        try {
+            $service = new AmazonSyncService(
+                new AmazonService(),
+                new XeroService(),
+                new UnleashedService(config('services.unleashed.id'), config('services.unleashed.key'))
+            );
+            $service->reprocessSettlement($settlement);
+            return response()->json(['ok' => true]);
+        } catch (\Throwable $e) {
+            return response()->json(['ok' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
     public function lookupUnleashedOrders(AmazonSettlement $settlement): JsonResponse
     {
         try {
