@@ -213,7 +213,7 @@
                     $allocated = $stock ? (float)$stock->qty_allocated : 0;
                     $onOrder   = $stock ? (float)$stock->qty_on_order : 0;
                     $avgMo     = $item->avg_monthly;
-                    $reqQty    = $item->required_qty;
+                    $reqQty    = $item->discontinued ? 0 : $item->required_qty;
                     $toOrder   = (float)($item->to_order_qty ?? 0);
                     $price     = (float)($item->unit_price ?? 0);
                     $total     = $toOrder * $price;
@@ -223,7 +223,11 @@
                     } elseif ($onHand === null) {
                         $badgeClass = 'sw-badge-low'; $badgeText = 'No Data';
                     } elseif (($onHand - $allocated) <= 0) {
-                        $badgeClass = 'sw-badge-out'; $badgeText = 'Out of Stock';
+                        if ($reqQty > 0) {
+                            $badgeClass = 'sw-badge-low'; $badgeText = 'Order Needed';
+                        } else {
+                            $badgeClass = 'sw-badge-out'; $badgeText = 'Out of Stock';
+                        }
                     } elseif ($reqQty > 0) {
                         $badgeClass = 'sw-badge-low'; $badgeText = 'Order Needed';
                     } else {
@@ -310,7 +314,7 @@
                     $subStockVal= $category->items->sum(fn($i) => $i->stock ? (float)$i->stock->total_cost : 0);
                     $subAllocd  = $category->items->sum(fn($i) => $i->stock ? (float)$i->stock->qty_allocated : 0);
                     $subOnOrder = $category->items->sum(fn($i) => $i->stock ? (float)$i->stock->qty_on_order : 0);
-                    $subReq     = $category->items->sum(fn($i) => $i->required_qty);
+                    $subReq     = $category->items->sum(fn($i) => $i->discontinued ? 0 : $i->required_qty);
                     $subToOrder = $category->items->sum(fn($i) => (float)($i->to_order_qty ?? 0));
                     $subTotal   = $category->items->sum(fn($i) => (float)($i->to_order_qty ?? 0) * (float)($i->unit_price ?? 0));
                 @endphp
