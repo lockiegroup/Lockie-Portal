@@ -887,71 +887,65 @@ class UnleashedService
 
     /**
      * Given a list of Amazon order IDs (e.g. "206-8309509-3453916"), find the
-     * matching Unleashed sales order number (e.g. "SO-00026477") by scanning all
-     * orders and matching locally on the CustomerRef field.
+     * matching Unleashed sales order number (e.g. "SO-00026477") by scanning
+     * orders within $startDate–$endDate and matching on CustomerRef.
      *
-     * Unleashed's SalesOrders API doesn't support filtering by CustomerRef, and
-     * date-filtered paginated queries trigger a known bug where every page past
-     * the first returns the same records. We fetch all orders without a date
-     * filter, using GUID deduplication to stop when pages start repeating.
+     * Unleashed's pagination bug means every page past the first for a filtered
+     * query returns the same records — so each filtered query only yields ~200
+     * unique orders. We work around this by splitting the date range into
+     * weekly chunks and firing them all in parallel; each chunk's page 1 returns
+     * a different 200 orders, giving comprehensive coverage.
      *
      * Returns ['amazon-id' => 'SO-00012345', ...]  (missing = no match found).
      */
-    public function fetchOrderNumbersByAmazonIds(array $amazonIds): array
+    public function fetchOrderNumbersByAmazonIds(array $amazonIds, string $startDate, string $endDate): array
     {
-        $needle     = array_flip(array_unique($amazonIds)); // O(1) lookup set
-        $results    = [];
-        $seen       = [];
-        $page       = 1;
-        $totalUniq  = 0;
-        $amazonLike = [];
+        $needle  = array_flip(array_unique($amazonIds));
+        $results = [];
+        $seen    = [];
 
-        do {
-            $data     = $this->get('SalesOrders', ['pageSize' => 200, 'pageNumber' => $page]);
-            $maxPages = $data['Pagination']['NumberOfPages'] ?? 1;
-            $items    = $data['Items'] ?? [];
-            $newCount = 0;
+        // Build weekly date chunks
+        $chunks = [];
+        $cur    = \Carbon\Carbon::parse($startDate);
+        $end    = \Carbon\Carbon::parse($endDate);
+        while ($cur->lte($end)) {
+            $chunkEnd = $cur->copy()->addDays(6)->min($end);
+            $chunks[] = [$cur->toDateString(), $chunkEnd->toDateString()];
+            $cur->addDays(7);
+        }
 
-            foreach ($items as $order) {
-                // GUID dedup — Unleashed repeats page 1 on paginated queries
+        // Fire all chunks in parallel — each returns a different set of orders
+        $responses = Http::pool(function ($pool) use ($chunks) {
+            $calls = [];
+            foreach ($chunks as $i => [$from, $to]) {
+                $qs      = http_build_query(['startDate' => $from, 'endDate' => $to, 'pageSize' => 200, 'pageNumber' => 1]);
+                $calls[] = $pool->as($i)->timeout(30)->withHeaders($this->headers($qs))
+                               ->get(self::BASE_URL . '/SalesOrders?' . $qs);
+            }
+            return $calls;
+        });
+
+        foreach ($chunks as $i => [$from, $to]) {
+            $res = $responses[$i] ?? null;
+            if (!$res || $res instanceof \Throwable || $res->failed()) continue;
+
+            foreach ($res->json()['Items'] ?? [] as $order) {
                 $guid = $order['Guid'] ?? null;
                 if ($guid !== null && isset($seen[$guid])) continue;
                 if ($guid !== null) $seen[$guid] = true;
-                $newCount++;
-                $totalUniq++;
+
+                $ref = trim($order['CustomerRef'] ?? '');
+                if ($ref === '' || !isset($needle[$ref])) continue;
 
                 $orderNo = $order['OrderNumber'] ?? null;
                 if (!$orderNo) continue;
 
-                $ref = trim($order['CustomerRef'] ?? '');
-
-                // Collect Amazon-like refs for debugging (first 20)
-                if (count($amazonLike) < 20 && str_contains($ref, '-') && strlen($ref) > 10) {
-                    $amazonLike[] = $orderNo . ' → ' . $ref;
-                }
-
-                if ($ref === '') continue;
-
-                if (isset($needle[$ref]) && !isset($results[$ref])) {
+                if (!isset($results[$ref])) {
                     $results[$ref] = $orderNo;
-                    if (count($results) === count($needle)) {
-                        \Log::info('fetchOrderNumbersByAmazonIds: found all', ['pages' => $page, 'total_unique' => $totalUniq]);
-                        return $results;
-                    }
+                    if (count($results) === count($needle)) return $results;
                 }
             }
-
-            $page++;
-            if ($newCount === 0) break; // Unleashed started repeating — stop
-        } while ($page <= $maxPages);
-
-        \Log::info('fetchOrderNumbersByAmazonIds: done', [
-            'pages_scanned'  => $page - 1,
-            'total_unique'   => $totalUniq,
-            'seeking'        => array_slice(array_keys($needle), 0, 5),
-            'matched'        => count($results),
-            'amazon_like_refs' => $amazonLike,
-        ]);
+        }
 
         return $results;
     }
