@@ -172,13 +172,13 @@
                         <td style="padding:3px 4px;"><input class="col-filter" data-col="1" data-type="text" placeholder="Notes…" style="width:100%;box-sizing:border-box;border:1px solid #334155;border-radius:3px;padding:2px 5px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;" oninput="applyFilters()"></td>
                         <td style="padding:3px 4px;"><input class="col-filter" data-col="2" data-type="text" placeholder="Group…" style="width:100%;box-sizing:border-box;border:1px solid #334155;border-radius:3px;padding:2px 5px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;" oninput="applyFilters()"></td>
                         @foreach($years as $yi => $yr)
-                        <td style="padding:3px 4px;"><input class="col-filter" data-col="{{ 3 + $yi }}" data-type="gte" type="number" min="0" placeholder="≥" style="width:52px;border:1px solid #334155;border-radius:3px;padding:2px 4px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;text-align:right;" oninput="applyFilters()"></td>
+                        <td style="padding:3px 4px;"><input class="col-filter" data-col="{{ 3 + $yi }}" data-type="num" placeholder=">0" style="width:52px;border:1px solid #334155;border-radius:3px;padding:2px 4px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;text-align:right;" oninput="applyFilters()"></td>
                         @endforeach
-                        <td style="padding:3px 4px;"><input class="col-filter" data-col="{{ 3+$yc }}" data-type="gte" type="number" min="0" step="0.1" placeholder="≥" style="width:52px;border:1px solid #334155;border-radius:3px;padding:2px 4px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;text-align:right;" oninput="applyFilters()"></td>
-                        <td style="padding:3px 4px;"><input class="col-filter" data-col="{{ 3+$yc+1 }}" data-type="lte" type="number" min="0" placeholder="≤" style="width:52px;border:1px solid #334155;border-radius:3px;padding:2px 4px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;text-align:right;" oninput="applyFilters()"></td>
+                        <td style="padding:3px 4px;"><input class="col-filter" data-col="{{ 3+$yc }}" data-type="num" placeholder=">0" style="width:52px;border:1px solid #334155;border-radius:3px;padding:2px 4px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;text-align:right;" oninput="applyFilters()"></td>
+                        <td style="padding:3px 4px;"><input class="col-filter" data-col="{{ 3+$yc+1 }}" data-type="num" placeholder="=0" style="width:52px;border:1px solid #334155;border-radius:3px;padding:2px 4px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;text-align:right;" oninput="applyFilters()"></td>
                         <td></td>{{-- Alloc'd --}}
                         <td></td>{{-- On Order --}}
-                        <td style="padding:3px 4px;"><input class="col-filter" data-col="{{ 3+$yc+4 }}" data-type="gte" type="number" min="0" placeholder="≥" style="width:52px;border:1px solid #334155;border-radius:3px;padding:2px 4px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;text-align:right;" oninput="applyFilters()"></td>
+                        <td style="padding:3px 4px;"><input class="col-filter" data-col="{{ 3+$yc+4 }}" data-type="num" placeholder=">0" style="width:52px;border:1px solid #334155;border-radius:3px;padding:2px 4px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;text-align:right;" oninput="applyFilters()"></td>
                         <td></td>{{-- To Order --}}
                         <td></td>{{-- Price --}}
                         <td></td>{{-- Total --}}
@@ -564,7 +564,23 @@ function cellText(cell) {
     return cell.textContent.trim();
 }
 function cellNum(cell) {
-    return parseFloat((cellText(cell) || '0').replace(/,/g, '')) || 0;
+    const t = cellText(cell).replace(/,/g, '').replace('—', '0');
+    return parseFloat(t) || 0;
+}
+
+// Parse Excel-style numeric filter: =0  >10  >=10  <5  <=100  or plain 42 (exact)
+function numMatches(cellVal, raw) {
+    const v = raw.trim();
+    if (!v) return true;
+    const m = v.match(/^([><]=?|=)?(-?\d+(\.\d+)?)$/);
+    if (!m) return true; // unparseable — don't filter
+    const op  = m[1] || '=';
+    const num = parseFloat(m[2]);
+    if (op === '>')  return cellVal >  num;
+    if (op === '>=') return cellVal >= num;
+    if (op === '<')  return cellVal <  num;
+    if (op === '<=') return cellVal <= num;
+    return cellVal === num; // = or bare number → exact
 }
 
 function applyFilters() {
@@ -587,10 +603,9 @@ function applyFilters() {
                 continue;
             }
             const cell = row.cells[f.col];
-            if (f.type === 'text')   { if (!cellText(cell).toLowerCase().includes(f.value.toLowerCase())) show = false; }
-            else if (f.type === 'gte')    { if (cellNum(cell) < parseFloat(f.value)) show = false; }
-            else if (f.type === 'lte')    { if (cellNum(cell) > parseFloat(f.value)) show = false; }
-            else if (f.type === 'select') { if (!cellText(cell).includes(f.value))   show = false; }
+            if      (f.type === 'text')   { if (!cellText(cell).toLowerCase().includes(f.value.toLowerCase())) show = false; }
+            else if (f.type === 'num')    { if (!numMatches(cellNum(cell), f.value)) show = false; }
+            else if (f.type === 'select') { if (!cellText(cell).includes(f.value)) show = false; }
         }
         row.style.display = show ? '' : 'none';
         if (show) visible++;
