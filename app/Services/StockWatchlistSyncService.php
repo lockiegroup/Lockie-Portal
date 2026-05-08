@@ -33,7 +33,18 @@ class StockWatchlistSyncService
         // Open PO data — placed, receiving, parked
         $poMap = $unleashed->fetchOpenPurchaseOrders();
 
+        // Product groups — fetch and store in unleashed_products
+        $groupMap = $unleashed->fetchProductGroupsByCodes($productCodes);
         $now = now();
+        foreach ($groupMap as $code => $group) {
+            if ($group !== null) {
+                DB::table('unleashed_products')->updateOrInsert(
+                    ['product_code' => $code],
+                    ['product_group' => $group, 'synced_at' => $now]
+                );
+            }
+        }
+
         foreach ($productCodes as $code) {
             $s  = $stockMap[$code] ?? null;
             $po = $poMap[$code]    ?? null;
@@ -65,13 +76,14 @@ class StockWatchlistSyncService
         $now      = now();
 
         $rows = array_map(fn($p) => [
-            'product_code' => $p['ProductCode'],
-            'product_name' => $p['ProductDescription'] ?? $p['ProductCode'],
-            'synced_at'    => $now,
+            'product_code'  => $p['ProductCode'],
+            'product_name'  => $p['ProductDescription'] ?? $p['ProductCode'],
+            'product_group' => $p['ProductGroup'] ?? null,
+            'synced_at'     => $now,
         ], $products);
 
         foreach (array_chunk($rows, 500) as $chunk) {
-            DB::table('unleashed_products')->upsert($chunk, ['product_code'], ['product_name', 'synced_at']);
+            DB::table('unleashed_products')->upsert($chunk, ['product_code'], ['product_name', 'product_group', 'synced_at']);
         }
 
         // Remove products no longer returned by Unleashed (obsoleted, deleted, etc.)

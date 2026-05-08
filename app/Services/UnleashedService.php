@@ -626,7 +626,11 @@ class UnleashedService
             $code = $p['ProductCode'] ?? null;
             if ($code && !isset($seen[$code])) {
                 $seen[$code] = true;
-                $all[] = ['ProductCode' => $code, 'ProductDescription' => $p['ProductDescription'] ?? $code];
+                $all[] = [
+                    'ProductCode'        => $code,
+                    'ProductDescription' => $p['ProductDescription'] ?? $code,
+                    'ProductGroup'       => $p['ProductGroup']['GroupName'] ?? null,
+                ];
             }
         }
 
@@ -678,6 +682,43 @@ class UnleashedService
                     $allocated += (float) ($item['AllocatedQuantity'] ?? 0);
                 }
                 $result[$code] = ['on_hand' => $onHand, 'allocated' => $allocated];
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Fetch ProductGroup.GroupName for an array of product codes.
+     * Returns: ['PROD001' => 'Group Name', ...]
+     */
+    public function fetchProductGroupsByCodes(array $productCodes, int $batchSize = 20): array
+    {
+        $result = [];
+
+        foreach (array_chunk($productCodes, $batchSize) as $chunk) {
+            $codes    = array_values($chunk);
+            $requests = [];
+            foreach ($codes as $i => $code) {
+                $qs           = 'productCode=' . str_replace('%2F', '/', rawurlencode($code)) . '&pageSize=1&pageNumber=1';
+                $requests[$i] = ['url' => self::BASE_URL . '/Products?' . $qs, 'headers' => $this->headers($qs)];
+            }
+
+            $responses = Http::pool(function ($pool) use ($requests) {
+                $calls = [];
+                foreach ($requests as $i => $info) {
+                    $calls[] = $pool->as($i)->timeout(30)->withHeaders($info['headers'])->get($info['url']);
+                }
+                return $calls;
+            });
+
+            foreach ($codes as $i => $code) {
+                $response = $responses[$i] ?? null;
+                if (!$response || $response instanceof \Throwable || $response->failed()) continue;
+                $items = $response->json()['Items'] ?? [];
+                if (!empty($items)) {
+                    $result[$code] = $items[0]['ProductGroup']['GroupName'] ?? null;
+                }
             }
         }
 

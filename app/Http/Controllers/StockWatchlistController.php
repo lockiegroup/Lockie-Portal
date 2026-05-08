@@ -45,20 +45,31 @@ class StockWatchlistController extends Controller
 
         $stockMap = StockWatchlistStock::whereIn('product_code', $productCodes)->get()->keyBy('product_code');
 
-        // Product group from most recent sales line per product
+        // Product group — primary: unleashed_products (populated on sync), fallback: sales_lines
         $productGroupMap = [];
         if (!empty($productCodes)) {
-            DB::table('sales_lines')
-                ->select('product_code', 'product_group')
+            DB::table('unleashed_products')
                 ->whereIn('product_code', $productCodes)
                 ->whereNotNull('product_group')
-                ->where('product_group', '!=', '')
-                ->orderByDesc('order_date')
-                ->get()
-                ->unique('product_code')
-                ->each(function ($row) use (&$productGroupMap) {
-                    $productGroupMap[$row->product_code] = $row->product_group;
+                ->pluck('product_group', 'product_code')
+                ->each(function ($group, $code) use (&$productGroupMap) {
+                    $productGroupMap[$code] = $group;
                 });
+
+            $missing = array_diff($productCodes, array_keys($productGroupMap));
+            if (!empty($missing)) {
+                DB::table('sales_lines')
+                    ->select('product_code', 'product_group')
+                    ->whereIn('product_code', $missing)
+                    ->whereNotNull('product_group')
+                    ->where('product_group', '!=', '')
+                    ->orderByDesc('order_date')
+                    ->get()
+                    ->unique('product_code')
+                    ->each(function ($row) use (&$productGroupMap) {
+                        $productGroupMap[$row->product_code] = $row->product_group;
+                    });
+            }
         }
 
         $salesMap = [];
