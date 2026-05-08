@@ -1,5 +1,5 @@
 <x-layout title="Collar Production — Lockie Portal">
-<main class="max-w-screen-2xl mx-auto px-6 py-10">
+<main class="max-w-screen-xl mx-auto px-6 py-10">
 
     <div class="flex items-start justify-between gap-4 mb-6 flex-wrap">
         <div>
@@ -22,16 +22,16 @@
     {{-- Works Order history --}}
     @if($worksOrders->count())
     <div class="bg-white rounded-xl border border-slate-200 overflow-hidden mb-6">
-        <div class="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
+        <div class="px-5 py-3 border-b border-slate-100">
             <h2 class="text-sm font-semibold text-slate-700">Recent Works Orders</h2>
         </div>
         <div class="divide-y divide-slate-100">
             @foreach($worksOrders as $wo)
             <div class="flex items-center justify-between px-5 py-3">
-                <div class="flex items-center gap-4">
+                <div class="flex items-center gap-4 flex-wrap">
                     <span class="font-medium text-slate-800 text-sm">{{ $wo->title }}</span>
                     <span class="text-xs text-slate-400">{{ $wo->period->format('F Y') }}</span>
-                    <span class="text-xs text-slate-400">{{ $wo->lines->count() ?? '—' }} lines</span>
+                    <span class="text-xs text-slate-400">{{ $wo->lines->count() }} lines</span>
                     @if($wo->created_by)<span class="text-xs text-slate-400">by {{ $wo->created_by }}</span>@endif
                 </div>
                 <div class="flex items-center gap-3">
@@ -51,110 +51,72 @@
     @endif
 
     {{-- Products table --}}
-    <div class="bg-white rounded-xl border border-slate-200 overflow-x-auto">
-        <table class="w-full text-sm whitespace-nowrap">
+    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <table class="w-full text-sm">
             <thead>
                 <tr class="bg-slate-900 text-white text-left text-xs">
-                    <th class="px-3 py-3 font-semibold">Code</th>
-                    <th class="px-3 py-3 font-semibold">Description</th>
-                    <th class="px-3 py-3 font-semibold">Reel</th>
-                    <th class="px-3 py-3 font-semibold text-center">Stock Line</th>
-                    @foreach($years as $yr)
-                    <th class="px-3 py-3 font-semibold text-right">{{ $yr }}</th>
-                    @endforeach
-                    <th class="px-3 py-3 font-semibold text-right">Avg/Mo</th>
-                    <th class="px-3 py-3 font-semibold border-l border-slate-700 bg-slate-800">Cut Blank Stock</th>
-                    <th class="px-3 py-3 font-semibold bg-slate-800">CB Reorder</th>
-                    <th class="px-3 py-3 font-semibold bg-slate-800">CB MOQ</th>
-                    <th class="px-3 py-3 font-semibold bg-slate-800">CB Status</th>
-                    <th class="px-3 py-3 font-semibold bg-slate-800">Adjust</th>
-                    <th class="px-3 py-3 font-semibold border-l border-slate-700">Made Stock</th>
-                    <th class="px-3 py-3 font-semibold">Made Reorder</th>
-                    <th class="px-3 py-3 font-semibold">Made MOQ</th>
-                    <th class="px-3 py-3 font-semibold">Made Status</th>
-                    <th class="px-3 py-3 font-semibold"></th>
+                    <th class="px-4 py-3 font-semibold">Product</th>
+                    <th class="px-4 py-3 font-semibold text-right">Cut Blank Stock</th>
+                    <th class="px-4 py-3 font-semibold">CB Status</th>
+                    <th class="px-4 py-3 font-semibold">Adjust Stock</th>
+                    <th class="px-4 py-3 font-semibold text-right border-l border-slate-700">Made Stock</th>
+                    <th class="px-4 py-3 font-semibold">Made Status</th>
+                    <th class="px-4 py-3 font-semibold w-16"></th>
                 </tr>
             </thead>
             <tbody id="collar-tbody">
             @forelse($products as $p)
             @php
                 $madeStock  = $stockMap[$p->product_code]->qty_on_hand ?? null;
-                $totalSales = 0;
-                $salesCols  = [];
-                foreach ($years as $yr) {
-                    $qty = $salesData[$p->product_code][$yr] ?? 0;
-                    $salesCols[] = $qty;
-                    $totalSales += $qty;
-                }
-                $avgMo = count($years) > 0 ? round($totalSales / (count($years) * 12), 1) : 0;
-                $cbStock = (float) $p->cut_blank_stock;
-                $cbStatus = $p->cutBlankStatus((int)$cbStock);
+                $cbStock    = (float) $p->cut_blank_stock;
+                $cbStatus   = $p->cutBlankStatus((int)$cbStock);
                 $madeStatus = $madeStock !== null ? $p->madeStatus((int)$madeStock) : 'unknown';
             @endphp
             <tr class="border-t border-slate-100 hover:bg-slate-50 collar-row" data-id="{{ $p->id }}">
-                <td class="px-3 py-2 font-mono text-xs text-slate-600">{{ $p->product_code ?? '—' }}</td>
-                <td class="px-3 py-2 text-slate-800 font-medium">{{ $p->description }}</td>
-                <td class="px-3 py-2 text-slate-500 text-xs">{{ $p->reel_width ?? '—' }}</td>
-                <td class="px-3 py-2 text-center">
-                    <input type="checkbox" {{ $p->is_stock_line ? 'checked' : '' }}
-                           onchange="toggleStockLine({{ $p->id }}, this.checked)"
-                           class="rounded accent-indigo-600">
+                <td class="px-4 py-3">
+                    <div class="font-medium text-slate-800">{{ $p->description }}</div>
+                    <div class="flex items-center gap-2 mt-0.5">
+                        @if($p->product_code)<span class="font-mono text-xs text-slate-400">{{ $p->product_code }}</span>@endif
+                        @if($p->reel_width)<span class="text-xs text-slate-400">· {{ $p->reel_width }}</span>@endif
+                        @if($p->is_stock_line)<span class="text-xs bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded font-medium">Stock Line</span>@endif
+                    </div>
                 </td>
-                @foreach($salesCols as $qty)
-                <td class="px-3 py-2 text-right text-slate-600">{{ $qty ?: '—' }}</td>
-                @endforeach
-                <td class="px-3 py-2 text-right font-medium text-slate-700">{{ $avgMo }}</td>
-
-                {{-- Cut Blank --}}
-                <td class="px-3 py-2 border-l border-slate-100 font-semibold text-slate-800 cb-stock-cell" data-id="{{ $p->id }}">{{ number_format($cbStock) }}</td>
-                <td class="px-3 py-2">
-                    <input type="number" value="{{ $p->cut_blank_reorder_level }}" placeholder="—" min="0"
-                           class="w-16 border border-slate-200 rounded px-1.5 py-0.5 text-xs text-center focus:outline-none focus:ring-1 focus:ring-indigo-400"
-                           onblur="saveField({{ $p->id }}, 'cut_blank_reorder_level', this.value)">
+                <td class="px-4 py-3 text-right font-semibold text-slate-800 cb-stock-cell" data-id="{{ $p->id }}">
+                    {{ number_format($cbStock) }}
                 </td>
-                <td class="px-3 py-2">
-                    <input type="number" value="{{ $p->cut_blank_moq }}" placeholder="—" min="0"
-                           class="w-16 border border-slate-200 rounded px-1.5 py-0.5 text-xs text-center focus:outline-none focus:ring-1 focus:ring-indigo-400"
-                           onblur="saveField({{ $p->id }}, 'cut_blank_moq', this.value)">
-                </td>
-                <td class="px-3 py-2">@include('collars._status', ['status' => $cbStatus])</td>
-                <td class="px-3 py-2">
-                    <div class="flex items-center gap-1">
+                <td class="px-4 py-3">@include('collars._status', ['status' => $cbStatus])</td>
+                <td class="px-4 py-3">
+                    <div class="flex items-center gap-1.5">
                         <input type="number" placeholder="+/−"
-                               class="w-16 border border-slate-200 rounded px-1.5 py-0.5 text-xs text-center focus:outline-none focus:ring-1 focus:ring-indigo-400 cb-adjust-input"
+                               class="w-20 border border-slate-200 rounded px-2 py-1 text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-400 cb-adjust-input"
                                data-id="{{ $p->id }}" data-type="cut_blank"
                                onkeydown="if(event.key==='Enter'){applyAdjust(this);}">
                         <button onclick="applyAdjust(this.previousElementSibling)"
-                                class="text-xs px-1.5 py-0.5 bg-slate-100 hover:bg-slate-200 rounded transition">✓</button>
-                        <button onclick="viewLog({{ $p->id }})" class="text-xs text-slate-400 hover:text-indigo-600 px-1" title="View log">📋</button>
+                                class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded text-sm transition">✓</button>
+                        <button onclick="viewLog({{ $p->id }})" class="text-slate-400 hover:text-indigo-600 px-1" title="View adjustment log">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                        </button>
                     </div>
                 </td>
-
-                {{-- Made --}}
-                <td class="px-3 py-2 border-l border-slate-100 font-semibold text-slate-800">
+                <td class="px-4 py-3 text-right font-semibold text-slate-800 border-l border-slate-100">
                     {{ $madeStock !== null ? number_format((float)$madeStock) : '—' }}
                 </td>
-                <td class="px-3 py-2">
-                    <input type="number" value="{{ $p->made_reorder_level }}" placeholder="—" min="0"
-                           class="w-16 border border-slate-200 rounded px-1.5 py-0.5 text-xs text-center focus:outline-none focus:ring-1 focus:ring-indigo-400"
-                           onblur="saveField({{ $p->id }}, 'made_reorder_level', this.value)">
-                </td>
-                <td class="px-3 py-2">
-                    <input type="number" value="{{ $p->made_moq }}" placeholder="—" min="0"
-                           class="w-16 border border-slate-200 rounded px-1.5 py-0.5 text-xs text-center focus:outline-none focus:ring-1 focus:ring-indigo-400"
-                           onblur="saveField({{ $p->id }}, 'made_moq', this.value)">
-                </td>
-                <td class="px-3 py-2">@include('collars._status', ['status' => $madeStatus])</td>
-                <td class="px-3 py-2">
-                    <button onclick="deleteCollar({{ $p->id }})" class="text-slate-300 hover:text-red-500 transition p-1">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
-                        </svg>
-                    </button>
+                <td class="px-4 py-3">@include('collars._status', ['status' => $madeStatus])</td>
+                <td class="px-4 py-3 text-right">
+                    <div class="flex items-center justify-end gap-1">
+                        <button onclick="openEditModal({{ $p->id }})" class="text-slate-400 hover:text-indigo-600 p-1 transition" title="Edit settings">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        </button>
+                        <button onclick="deleteCollar({{ $p->id }})" class="text-slate-300 hover:text-red-500 transition p-1">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
+                            </svg>
+                        </button>
+                    </div>
                 </td>
             </tr>
             @empty
-            <tr><td colspan="16" class="px-6 py-12 text-center text-slate-400">No collar products yet. Import a CSV or add one below.</td></tr>
+            <tr><td colspan="7" class="px-6 py-12 text-center text-slate-400">No collar products yet. Import a CSV or add one below.</td></tr>
             @endforelse
             </tbody>
         </table>
@@ -163,9 +125,9 @@
         <div class="border-t border-slate-100 bg-slate-50 px-4 py-3">
             <form onsubmit="addCollar(event, this)" class="flex items-center gap-2 flex-wrap">
                 <input name="product_code" placeholder="Product code" class="border border-slate-300 rounded px-2 py-1.5 text-sm w-36 focus:outline-none focus:ring-2 focus:ring-indigo-400">
-                <input name="description" placeholder="Description *" required class="border border-slate-300 rounded px-2 py-1.5 text-sm w-56 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                <input name="description" placeholder="Description *" required class="border border-slate-300 rounded px-2 py-1.5 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-indigo-400">
                 <input name="reel_width" placeholder="Reel width" class="border border-slate-300 rounded px-2 py-1.5 text-sm w-28 focus:outline-none focus:ring-2 focus:ring-indigo-400">
-                <button type="submit" class="px-3 py-1.5 bg-slate-900 text-white text-sm rounded hover:bg-slate-700 transition">Add</button>
+                <button type="submit" class="px-3 py-1.5 bg-slate-900 text-white text-sm rounded hover:bg-slate-700 transition">+ Add Product</button>
             </form>
         </div>
     </div>
@@ -176,19 +138,97 @@
 <div id="log-modal" class="fixed inset-0 bg-black/40 z-50 hidden items-center justify-center p-4" onclick="if(event.target===this)closeLogModal()">
     <div class="bg-white rounded-xl shadow-xl w-full max-w-lg">
         <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-            <h3 class="font-semibold text-slate-800" id="log-modal-title">Adjustment Log</h3>
-            <button onclick="closeLogModal()" class="text-slate-400 hover:text-slate-600">✕</button>
+            <h3 class="font-semibold text-slate-800">Adjustment Log</h3>
+            <button onclick="closeLogModal()" class="text-slate-400 hover:text-slate-600 text-xl leading-none">×</button>
         </div>
         <div id="log-modal-body" class="px-5 py-4 max-h-80 overflow-y-auto text-sm text-slate-600">Loading…</div>
     </div>
 </div>
 
+{{-- Edit Product Modal --}}
+<div id="edit-modal" class="fixed inset-0 bg-black/40 z-50 hidden items-center justify-center p-4" onclick="if(event.target===this)closeEditModal()">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-lg">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+            <h3 class="font-semibold text-slate-800">Product Settings</h3>
+            <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600 text-xl leading-none">×</button>
+        </div>
+        <div class="px-5 py-4 space-y-4">
+            <input type="hidden" id="edit-id">
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Description</label>
+                    <input id="edit-description" type="text" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Product Code</label>
+                    <input id="edit-product-code" type="text" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 mb-1">Reel Width</label>
+                    <input id="edit-reel-width" type="text" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div class="flex items-end pb-2">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input id="edit-stock-line" type="checkbox" class="rounded accent-indigo-600 w-4 h-4">
+                        <span class="text-sm text-slate-700">Is Stock Line</span>
+                    </label>
+                </div>
+            </div>
+            <div class="border-t border-slate-100 pt-3">
+                <p class="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-2">Cut Blank Settings</p>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Reorder Level</label>
+                        <input id="edit-cb-reorder" type="number" min="0" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">MOQ (Min Order Qty)</label>
+                        <input id="edit-cb-moq" type="number" min="0" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-slate-100 pt-3">
+                <p class="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-2">Made Collar Settings</p>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Reorder Level</label>
+                        <input id="edit-made-reorder" type="number" min="0" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">MOQ (Min Order Qty)</label>
+                        <input id="edit-made-moq" type="number" min="0" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-slate-100 pt-3">
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Sales History</p>
+                <div class="grid grid-cols-3 gap-2 text-center text-sm">
+                    @foreach($years as $yr)
+                    <div class="bg-slate-50 rounded-lg py-2">
+                        <div class="text-xs text-slate-400 mb-0.5">{{ $yr }}</div>
+                        <div id="edit-sales-{{ $yr }}" class="font-semibold text-slate-700">—</div>
+                    </div>
+                    @endforeach
+                </div>
+                <div class="mt-2 text-center bg-indigo-50 rounded-lg py-2">
+                    <div class="text-xs text-slate-400 mb-0.5">Avg / Month</div>
+                    <div id="edit-sales-avg" class="font-semibold text-indigo-700">—</div>
+                </div>
+            </div>
+        </div>
+        <div class="px-5 py-4 border-t border-slate-100 flex justify-end gap-3">
+            <button onclick="closeEditModal()" class="px-4 py-2 text-sm text-slate-600 hover:text-slate-800">Cancel</button>
+            <button onclick="saveEditModal()" class="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition">Save Changes</button>
+        </div>
+    </div>
+</div>
+
 {{-- Works Order Modal --}}
 <div id="wo-modal" class="fixed inset-0 bg-black/40 z-50 hidden items-center justify-center p-4" onclick="if(event.target===this)closeWoModal()">
-    <div class="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
         <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 flex-shrink-0">
             <h3 class="font-semibold text-slate-800">New Works Order</h3>
-            <button onclick="closeWoModal()" class="text-slate-400 hover:text-slate-600">✕</button>
+            <button onclick="closeWoModal()" class="text-slate-400 hover:text-slate-600 text-xl leading-none">×</button>
         </div>
         <div class="px-5 py-4 overflow-y-auto flex-1">
             <div class="grid grid-cols-2 gap-4 mb-4">
@@ -204,46 +244,39 @@
                 </div>
             </div>
             <div class="mb-4">
-                <label class="block text-xs font-medium text-slate-600 mb-1">Notes</label>
+                <label class="block text-xs font-medium text-slate-600 mb-1">Notes (optional)</label>
                 <textarea id="wo-notes" rows="2" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
             </div>
-            <p class="text-xs text-slate-500 mb-2">Add lines below — leave qty blank to skip a product.</p>
-            <table class="w-full text-sm">
-                <thead>
-                    <tr class="bg-slate-100 text-left text-xs">
-                        <th class="px-3 py-2">Product</th>
-                        <th class="px-3 py-2 text-center">Type</th>
-                        <th class="px-3 py-2 text-center w-24">Qty</th>
-                        <th class="px-3 py-2">Note</th>
-                    </tr>
-                </thead>
-                <tbody id="wo-lines">
-                @foreach($products->where('is_stock_line', true) as $p)
-                <tr class="border-t border-slate-100" data-id="{{ $p->id }}">
-                    <td class="px-3 py-1.5">
-                        <div class="font-medium text-slate-800 text-xs">{{ $p->description }}</div>
-                        @if($p->product_code)<div class="text-slate-400 text-xs font-mono">{{ $p->product_code }}</div>@endif
-                    </td>
-                    <td class="px-3 py-1.5 text-center">
-                        <select class="wo-type border border-slate-200 rounded px-1.5 py-0.5 text-xs focus:outline-none">
+
+            @if($products->count())
+            <p class="text-xs text-slate-500 mb-3">Enter quantities for the products you want to include. Leave blank to skip.</p>
+            <div class="space-y-2" id="wo-lines">
+                @foreach($products as $p)
+                <div class="flex items-center gap-3 p-3 rounded-lg border border-slate-100 hover:border-slate-200 bg-slate-50 wo-product-row" data-id="{{ $p->id }}">
+                    <div class="flex-1 min-w-0">
+                        <div class="font-medium text-slate-800 text-sm truncate">{{ $p->description }}</div>
+                        @if($p->product_code)<div class="text-xs text-slate-400 font-mono">{{ $p->product_code }}</div>@endif
+                    </div>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        <select class="wo-type border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white">
                             <option value="cut_blank">Cut Blanks</option>
                             <option value="made">Made</option>
                         </select>
-                    </td>
-                    <td class="px-3 py-1.5 text-center">
-                        <input type="number" min="1" class="wo-qty w-20 border border-slate-200 rounded px-1.5 py-0.5 text-xs text-center focus:outline-none focus:ring-1 focus:ring-indigo-400" placeholder="—">
-                    </td>
-                    <td class="px-3 py-1.5">
-                        <input type="text" class="wo-note w-full border border-slate-200 rounded px-1.5 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400" placeholder="Optional note">
-                    </td>
-                </tr>
+                        <input type="number" min="1" class="wo-qty w-20 border border-slate-200 rounded-lg px-2 py-1.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white" placeholder="Qty">
+                    </div>
+                </div>
                 @endforeach
-                </tbody>
-            </table>
+            </div>
+            @else
+            <div class="text-center py-8 text-slate-400">
+                <p class="text-sm">No collar products added yet.</p>
+                <p class="text-xs mt-1">Add products to the list first, then create a works order.</p>
+            </div>
+            @endif
         </div>
         <div class="px-5 py-4 border-t border-slate-100 flex justify-end gap-3 flex-shrink-0">
             <button onclick="closeWoModal()" class="px-4 py-2 text-sm text-slate-600 hover:text-slate-800">Cancel</button>
-            <button onclick="saveWorksOrder()" class="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition">Save Works Order</button>
+            <button onclick="saveWorksOrder()" class="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition">Create Works Order</button>
         </div>
     </div>
 </div>
@@ -251,21 +284,9 @@
 <script>
 const csrfToken = '{{ csrf_token() }}';
 
-function saveField(id, field, value) {
-    fetch(`/collars/${id}`, {
-        method: 'PATCH',
-        headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ [field]: value === '' ? null : parseInt(value) }),
-    });
-}
-
-function toggleStockLine(id, checked) {
-    fetch(`/collars/${id}`, {
-        method: 'PATCH',
-        headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ is_stock_line: checked }),
-    });
-}
+// Sales data passed from PHP for edit modal
+const salesData = @json($salesData);
+const productYears = @json($years);
 
 function applyAdjust(input) {
     const qty = parseFloat(input.value);
@@ -292,7 +313,8 @@ function applyAdjust(input) {
 }
 
 function viewLog(id) {
-    document.getElementById('log-modal').classList.replace('hidden', 'flex');
+    document.getElementById('log-modal').style.display = 'flex';
+    document.getElementById('log-modal').classList.remove('hidden');
     const body = document.getElementById('log-modal-body');
     body.innerHTML = 'Loading…';
     fetch(`/collars/${id}/adjustments`, { headers: { 'Accept': 'application/json' } })
@@ -304,7 +326,90 @@ function viewLog(id) {
             '</tbody></table>';
     });
 }
-function closeLogModal() { document.getElementById('log-modal').classList.replace('flex', 'hidden'); }
+function closeLogModal() {
+    const m = document.getElementById('log-modal');
+    m.style.display = '';
+    m.classList.add('hidden');
+}
+
+// Edit modal data loaded from PHP
+const productData = {
+    @foreach($products as $p)
+    {{ $p->id }}: {
+        description: @json($p->description),
+        product_code: @json($p->product_code),
+        reel_width: @json($p->reel_width),
+        is_stock_line: {{ $p->is_stock_line ? 'true' : 'false' }},
+        cut_blank_reorder_level: {{ $p->cut_blank_reorder_level ?? 'null' }},
+        cut_blank_moq: {{ $p->cut_blank_moq ?? 'null' }},
+        made_reorder_level: {{ $p->made_reorder_level ?? 'null' }},
+        made_moq: {{ $p->made_moq ?? 'null' }},
+    },
+    @endforeach
+};
+
+function openEditModal(id) {
+    const d = productData[id];
+    if (!d) return;
+    document.getElementById('edit-id').value = id;
+    document.getElementById('edit-description').value = d.description || '';
+    document.getElementById('edit-product-code').value = d.product_code || '';
+    document.getElementById('edit-reel-width').value = d.reel_width || '';
+    document.getElementById('edit-stock-line').checked = d.is_stock_line;
+    document.getElementById('edit-cb-reorder').value = d.cut_blank_reorder_level ?? '';
+    document.getElementById('edit-cb-moq').value = d.cut_blank_moq ?? '';
+    document.getElementById('edit-made-reorder').value = d.made_reorder_level ?? '';
+    document.getElementById('edit-made-moq').value = d.made_moq ?? '';
+
+    // Sales
+    const pCode = d.product_code;
+    let total = 0, count = 0;
+    productYears.forEach(yr => {
+        const qty = (salesData[pCode] && salesData[pCode][yr]) ? salesData[pCode][yr] : 0;
+        const el = document.getElementById('edit-sales-' + yr);
+        if (el) el.textContent = qty ? qty.toLocaleString() : '—';
+        total += qty;
+        count++;
+    });
+    const avg = count > 0 ? (total / (count * 12)).toFixed(1) : '—';
+    document.getElementById('edit-sales-avg').textContent = avg;
+
+    const m = document.getElementById('edit-modal');
+    m.style.display = 'flex';
+    m.classList.remove('hidden');
+}
+
+function closeEditModal() {
+    const m = document.getElementById('edit-modal');
+    m.style.display = '';
+    m.classList.add('hidden');
+}
+
+function saveEditModal() {
+    const id = document.getElementById('edit-id').value;
+    const data = {
+        description: document.getElementById('edit-description').value.trim(),
+        product_code: document.getElementById('edit-product-code').value.trim() || null,
+        reel_width: document.getElementById('edit-reel-width').value.trim() || null,
+        is_stock_line: document.getElementById('edit-stock-line').checked,
+        cut_blank_reorder_level: document.getElementById('edit-cb-reorder').value !== '' ? parseInt(document.getElementById('edit-cb-reorder').value) : null,
+        cut_blank_moq: document.getElementById('edit-cb-moq').value !== '' ? parseInt(document.getElementById('edit-cb-moq').value) : null,
+        made_reorder_level: document.getElementById('edit-made-reorder').value !== '' ? parseInt(document.getElementById('edit-made-reorder').value) : null,
+        made_moq: document.getElementById('edit-made-moq').value !== '' ? parseInt(document.getElementById('edit-made-moq').value) : null,
+    };
+    if (!data.description) { alert('Description is required.'); return; }
+
+    fetch(`/collars/${id}`, {
+        method: 'PATCH',
+        headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(data),
+    })
+    .then(r => r.json())
+    .then(d => {
+        if (d.ok) { closeEditModal(); location.reload(); }
+        else alert('Failed to save: ' + (d.message || 'Unknown error'));
+    });
+}
 
 function deleteCollar(id) {
     if (!confirm('Delete this product?')) return;
@@ -314,24 +419,50 @@ function deleteCollar(id) {
 
 function addCollar(e, form) {
     e.preventDefault();
-    const data = { product_code: form.product_code.value.trim() || null, description: form.description.value.trim(), reel_width: form.reel_width.value.trim() || null };
+    const data = {
+        product_code: form.product_code.value.trim() || null,
+        description: form.description.value.trim(),
+        reel_width: form.reel_width.value.trim() || null,
+    };
     if (!data.description) return;
-    fetch('/collars', { method: 'POST', headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify(data) })
+    fetch('/collars', {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(data),
+    })
     .then(r => r.json()).then(() => location.reload());
 }
 
 function importCsv(input) {
-    const form = new FormData(); form.append('file', input.files[0]);
-    fetch('/collars/import', { method: 'POST', headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }, body: form })
-    .then(r => r.json()).then(d => { if (d.ok) { alert(`Imported ${d.imported} products.`); location.reload(); } else alert('Import failed: ' + (d.error || 'Unknown error')); });
+    const form = new FormData();
+    form.append('file', input.files[0]);
+    fetch('/collars/import', {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+        body: form,
+    })
+    .then(r => r.json())
+    .then(d => {
+        if (d.ok) { alert(`Imported ${d.imported} products.`); location.reload(); }
+        else alert('Import failed: ' + (d.error || 'Unknown error'));
+    });
 }
 
 // Works Order Modal
 function openWorksOrderModal() {
     document.getElementById('wo-title').value = '';
-    document.getElementById('wo-modal').classList.replace('hidden', 'flex');
+    document.getElementById('wo-notes').value = '';
+    // Reset quantities
+    document.querySelectorAll('.wo-qty').forEach(i => i.value = '');
+    const m = document.getElementById('wo-modal');
+    m.style.display = 'flex';
+    m.classList.remove('hidden');
 }
-function closeWoModal() { document.getElementById('wo-modal').classList.replace('flex', 'hidden'); }
+function closeWoModal() {
+    const m = document.getElementById('wo-modal');
+    m.style.display = '';
+    m.classList.add('hidden');
+}
 
 function saveWorksOrder() {
     const title  = document.getElementById('wo-title').value.trim();
@@ -340,17 +471,17 @@ function saveWorksOrder() {
     if (!title) { alert('Please enter a title.'); return; }
 
     const lines = [];
-    document.querySelectorAll('#wo-lines tr[data-id]').forEach(row => {
+    document.querySelectorAll('.wo-product-row[data-id]').forEach(row => {
         const qty = parseInt(row.querySelector('.wo-qty').value);
         if (!qty || qty < 1) return;
         lines.push({
             collar_product_id: parseInt(row.dataset.id),
             type: row.querySelector('.wo-type').value,
             qty,
-            note: row.querySelector('.wo-note').value.trim() || null,
+            note: null,
         });
     });
-    if (!lines.length) { alert('Add at least one line with a quantity.'); return; }
+    if (!lines.length) { alert('Enter a quantity for at least one product.'); return; }
 
     fetch('/collars/works-orders', {
         method: 'POST',
@@ -359,8 +490,13 @@ function saveWorksOrder() {
     })
     .then(r => r.json())
     .then(d => {
-        if (d.ok) { closeWoModal(); window.open(`/collars/works-orders/${d.id}`, '_blank'); location.reload(); }
-        else alert('Failed: ' + (d.message || 'Unknown error'));
+        if (d.ok) {
+            closeWoModal();
+            window.open(`/collars/works-orders/${d.id}`, '_blank');
+            location.reload();
+        } else {
+            alert('Failed: ' + (d.message || 'Unknown error'));
+        }
     });
 }
 

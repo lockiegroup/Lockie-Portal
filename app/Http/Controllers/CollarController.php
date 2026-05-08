@@ -71,7 +71,7 @@ class CollarController extends Controller
             'made_reorder_level'      => 'nullable|integer|min:0',
         ]);
         $collar->update($data);
-        return response()->json($collar->fresh());
+        return response()->json(['ok' => true]);
     }
 
     public function destroy(CollarProduct $collar)
