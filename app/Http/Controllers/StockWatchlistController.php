@@ -152,60 +152,6 @@ class StockWatchlistController extends Controller
         }
     }
 
-    public function debugStock(Request $request)
-    {
-        $code      = $request->input('code', 'H-BSTON-20/20.5');
-        $unleashed = new \App\Services\UnleashedService(
-            config('services.unleashed.id'),
-            config('services.unleashed.key'),
-        );
-
-        // Test 1: raw API response for this product code
-        $qs       = http_build_query(['productCode' => $code, 'pageSize' => 50, 'pageNumber' => 1]);
-        $rawUrl   = 'https://api.unleashedsoftware.com/StockOnHand?' . $qs;
-        try {
-            $raw = $unleashed->get('StockOnHand', ['productCode' => $code, 'pageSize' => 50, 'pageNumber' => 1]);
-        } catch (\Throwable $e) {
-            $raw = ['error' => $e->getMessage()];
-        }
-
-        // Test 2: via fetchStockOnHandByCodes (the pool method)
-        $stockMap = $unleashed->fetchStockOnHandByCodes([$code]);
-
-        return response()->json([
-            'code'       => $code,
-            'qs'         => $qs,
-            'raw_url'    => $rawUrl,
-            'raw_items'  => $raw['Items'] ?? $raw,
-            'stock_map'  => $stockMap,
-            'db_record'  => \App\Models\StockWatchlistStock::where('product_code', $code)->first(),
-        ]);
-    }
-
-    public function debugProducts()
-    {
-        $unleashed = new \App\Services\UnleashedService(
-            config('services.unleashed.id'),
-            config('services.unleashed.key'),
-        );
-
-        $pages = [];
-        for ($p = 1; $p <= 15; $p++) {
-            try {
-                $data   = $unleashed->get('Products', ['pageSize' => 100, 'pageNumber' => $p]);
-                $count  = count($data['Items'] ?? []);
-                $pagination = $data['Pagination'] ?? [];
-                $pages[] = ['page' => $p, 'items' => $count, 'pagination' => $pagination];
-                if ($count === 0 || $p >= ($pagination['NumberOfPages'] ?? 1)) break;
-            } catch (\Throwable $e) {
-                $pages[] = ['page' => $p, 'error' => $e->getMessage()];
-                break;
-            }
-        }
-
-        return response()->json(['pages' => $pages, 'db_count' => \App\Models\UnleashedProduct::count()]);
-    }
-
     public function storeCategory(Request $request)
     {
         $data = $request->validate(['name' => 'required|string|max:255']);
