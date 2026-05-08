@@ -105,6 +105,21 @@
                         style="background:none;border:none;font-size:0.78rem;color:#3b82f6;cursor:pointer;padding:0;">↑ Import CSV</button>
                     <input type="file" id="cat-import-file" accept=".csv,.txt" style="display:none"
                         onchange="importCatItems(this)">
+                    <span style="color:#e2e8f0;">|</span>
+                    <button onclick="document.getElementById('shopify-upload-file').click()"
+                        style="background:none;border:none;font-size:0.78rem;color:#7c3aed;cursor:pointer;padding:0;"
+                        title="Upload Shopify products export CSV">
+                        🌐 Shopify: <span id="shopify-sku-count">{{ $category->shopify_skus !== null ? number_format(count($category->shopify_skus)) . ' SKUs' : 'not set' }}</span>
+                    </button>
+                    <input type="file" id="shopify-upload-file" accept=".csv,.txt" style="display:none"
+                        onchange="uploadPlatformFile(this, 'shopify', 'shopify-sku-count')">
+                    <button onclick="document.getElementById('amazon-upload-file').click()"
+                        style="background:none;border:none;font-size:0.78rem;color:#d97706;cursor:pointer;padding:0;"
+                        title="Upload Amazon inventory report TXT">
+                        📦 Amazon: <span id="amazon-sku-count">{{ $category->amazon_skus !== null ? number_format(count($category->amazon_skus)) . ' SKUs' : 'not set' }}</span>
+                    </button>
+                    <input type="file" id="amazon-upload-file" accept=".csv,.txt" style="display:none"
+                        onchange="uploadPlatformFile(this, 'amazon', 'amazon-sku-count')">
                 </div>
                 <form method="POST" action="{{ route('stock-watchlist.sales.filter') }}"
                       style="display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap;">
@@ -169,6 +184,8 @@
                         <th>Total</th>
                         <th>Status</th>
                         <th>Disc</th>
+                        <th>On Web</th>
+                        <th>On Amazon</th>
                     </tr>
                     @php $yc = count($years); @endphp
                     <tr style="background:#1e293b;">
@@ -204,10 +221,28 @@
                                 <option value="disc">Disc'd</option>
                             </select>
                         </td>
+                        <td style="padding:3px 4px;">
+                            <select class="col-filter" data-type="platform" data-platform="shopify" style="width:100%;border:1px solid #334155;border-radius:3px;padding:2px 3px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;" onchange="applyFilters()">
+                                <option value="">All</option>
+                                <option value="yes">Yes</option>
+                                <option value="no">No</option>
+                            </select>
+                        </td>
+                        <td style="padding:3px 4px;">
+                            <select class="col-filter" data-type="platform" data-platform="amazon" style="width:100%;border:1px solid #334155;border-radius:3px;padding:2px 3px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;" onchange="applyFilters()">
+                                <option value="">All</option>
+                                <option value="yes">Yes</option>
+                                <option value="no">No</option>
+                            </select>
+                        </td>
                     </tr>
                 </thead>
 
                 {{-- Sortable item rows --}}
+                @php
+                    $shopifySet = $category->shopify_skus !== null ? array_flip($category->shopify_skus) : null;
+                    $amazonSet  = $category->amazon_skus  !== null ? array_flip($category->amazon_skus)  : null;
+                @endphp
                 <tbody class="sw-sortable" id="sortable-items">
                 @forelse($category->items as $item)
                 @php
@@ -298,9 +333,31 @@
                             onchange="toggleDiscontinued(this, {{ $item->id }})"
                             style="width:14px;height:14px;cursor:pointer;accent-color:#6366f1;">
                     </td>
+                    @php
+                        $onWeb     = $shopifySet !== null ? isset($shopifySet[$item->product_code]) : null;
+                        $onAmazon  = $amazonSet  !== null ? isset($amazonSet[$item->product_code])  : null;
+                    @endphp
+                    <td style="text-align:center;" data-platform-shopify="{{ $onWeb === null ? '' : ($onWeb ? 'yes' : 'no') }}">
+                        @if($onWeb === null)
+                            <span style="color:#cbd5e1;font-size:0.75rem;">—</span>
+                        @elseif($onWeb)
+                            <span class="sw-badge sw-badge-ok">Yes</span>
+                        @else
+                            <span class="sw-badge sw-badge-out">No</span>
+                        @endif
+                    </td>
+                    <td style="text-align:center;" data-platform-amazon="{{ $onAmazon === null ? '' : ($onAmazon ? 'yes' : 'no') }}">
+                        @if($onAmazon === null)
+                            <span style="color:#cbd5e1;font-size:0.75rem;">—</span>
+                        @elseif($onAmazon)
+                            <span class="sw-badge sw-badge-ok">Yes</span>
+                        @else
+                            <span class="sw-badge sw-badge-out">No</span>
+                        @endif
+                    </td>
                 </tr>
                 @empty
-                <tr><td colspan="{{ 14 + count($years) }}" style="padding:2rem;text-align:center;color:#94a3b8;">
+                <tr><td colspan="{{ 16 + count($years) }}" style="padding:2rem;text-align:center;color:#94a3b8;">
                     No products yet. Add one below.
                 </td></tr>
                 @endforelse
@@ -340,13 +397,15 @@
                         <td class="sw-num sw-sub-total" data-currency="{{ $category->currency ?? '£' }}" data-amount="{{ $subTotal > 0 ? number_format($subTotal, 2, '.', '') : '' }}"></td>
                         <td></td>
                         <td></td>
+                        <td></td>
+                        <td></td>
                     </tr>
                 </tbody>
 
                 {{-- Add product row --}}
                 <tbody>
                     <tr class="sw-add-row">
-                        <td colspan="{{ 14 + count($years) }}" style="padding:6px 10px;">
+                        <td colspan="{{ 16 + count($years) }}" style="padding:6px 10px;">
                             <form style="display:inline-flex;gap:8px;align-items:center;"
                                 onsubmit="addItem(event, this)">
                                 <input type="text" name="product_code" placeholder="Product code…"
@@ -603,6 +662,7 @@ function applyFilters() {
         col:   el.dataset.col !== undefined ? parseInt(el.dataset.col) : null,
         type:  el.dataset.type,
         value: el.value.trim(),
+        el,
     })).filter(f => f.value !== '');
 
     const rows = document.querySelectorAll('#sortable-items tr[data-id]');
@@ -615,6 +675,13 @@ function applyFilters() {
                 const isDisc = row.classList.contains('sw-disc-row');
                 if (f.value === 'active' && isDisc)  { show = false; break; }
                 if (f.value === 'disc'   && !isDisc) { show = false; break; }
+                continue;
+            }
+            if (f.type === 'platform') {
+                const p = f.el.dataset.platform;
+                const td = row.querySelector(`td[data-platform-${p}]`);
+                const val = td ? td.getAttribute(`data-platform-${p}`) : '';
+                if (val !== f.value) { show = false; break; }
                 continue;
             }
             const cell = row.cells[f.col];
@@ -633,6 +700,28 @@ function applyFilters() {
 function clearFilters() {
     document.querySelectorAll('.col-filter').forEach(el => { el.value = ''; });
     applyFilters();
+}
+
+// ── Platform SKU uploads ──────────────────────────────────────────────────────
+function uploadPlatformFile(input, platform, countElId) {
+    const file = input.files[0];
+    if (!file) return;
+    input.value = '';
+    const form = new FormData();
+    form.append('file', file);
+    form.append('_token', csrfToken);
+    const url = `${categoryUrl}/upload-${platform}`;
+    fetch(url, { method: 'POST', headers: { 'Accept': 'application/json' }, body: form })
+        .then(r => r.json())
+        .then(d => {
+            if (d.ok) {
+                document.getElementById(countElId).textContent = d.count.toLocaleString() + ' SKUs';
+                location.reload();
+            } else {
+                alert('Upload failed: ' + (d.error || 'Unknown error'));
+            }
+        })
+        .catch(() => alert('Upload request failed.'));
 }
 
 // ── Export visible rows to CSV ────────────────────────────────────────────────

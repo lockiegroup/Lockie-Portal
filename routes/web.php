@@ -126,6 +126,8 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::post('/categories/{category}/items', [StockWatchlistController::class, 'storeItem'])->name('items.store');
         Route::get('/categories/{category}/items/download', [StockWatchlistController::class, 'downloadItems'])->name('items.download');
         Route::post('/categories/{category}/items/import', [StockWatchlistController::class, 'importItems'])->name('items.import');
+        Route::post('/categories/{category}/upload-shopify', [StockWatchlistController::class, 'uploadShopify'])->name('categories.upload-shopify');
+        Route::post('/categories/{category}/upload-amazon', [StockWatchlistController::class, 'uploadAmazon'])->name('categories.upload-amazon');
         Route::post('/items/reorder', [StockWatchlistController::class, 'reorderItems'])->name('items.reorder');
         Route::post('/categories/reorder', [StockWatchlistController::class, 'reorderCategories'])->name('categories.reorder');
         Route::post('/items/clear-orders', [StockWatchlistController::class, 'clearOrders'])->name('items.clear-orders');

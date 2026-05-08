@@ -327,6 +327,47 @@ class StockWatchlistController extends Controller
         return response()->json(['ok' => true, 'added' => $added, 'updated' => $updated, 'removed' => $removed]);
     }
 
+    public function uploadShopify(Request $request, StockWatchlistCategory $category)
+    {
+        $request->validate(['file' => 'required|file|max:10240']);
+        $skus = $this->parsePlatformFile($request->file('file')->getRealPath(), 'sku');
+        $category->update(['shopify_skus' => $skus]);
+        return response()->json(['ok' => true, 'count' => count($skus)]);
+    }
+
+    public function uploadAmazon(Request $request, StockWatchlistCategory $category)
+    {
+        $request->validate(['file' => 'required|file|max:10240']);
+        $skus = $this->parsePlatformFile($request->file('file')->getRealPath(), 'sku');
+        $category->update(['amazon_skus' => $skus]);
+        return response()->json(['ok' => true, 'count' => count($skus)]);
+    }
+
+    private function parsePlatformFile(string $path, string $skuHeader): array
+    {
+        $content   = file_get_contents($path);
+        $content   = ltrim($content, "\xEF\xBB\xBF");
+        $content   = str_replace(["\r\n", "\r"], "\n", $content);
+        $lines     = explode("\n", trim($content));
+        $firstLine = $lines[0] ?? '';
+        $delimiter = str_contains($firstLine, "\t") ? "\t" : ',';
+        $headers   = array_map('trim', str_getcsv($firstLine, $delimiter));
+        $colMap    = array_flip(array_map('strtolower', $headers));
+        $col       = $colMap[strtolower($skuHeader)] ?? 0;
+
+        $skus = [];
+        foreach (array_slice($lines, 1) as $line) {
+            $line = trim($line);
+            if ($line === '') continue;
+            $row = str_getcsv($line, $delimiter);
+            $sku = strtoupper(trim($row[$col] ?? ''));
+            if ($sku !== '') {
+                $skus[] = $sku;
+            }
+        }
+        return array_values(array_unique($skus));
+    }
+
     public function clearOrders(Request $request)
     {
         $query = StockWatchlistItem::query();
