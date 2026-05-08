@@ -201,6 +201,15 @@ class StockWatchlistController extends Controller
         return response()->json(['ok' => true]);
     }
 
+    public function reorderCategories(Request $request)
+    {
+        $ids = $request->validate(['ids' => 'required|array', 'ids.*' => 'integer'])['ids'];
+        foreach ($ids as $position => $id) {
+            StockWatchlistCategory::where('id', $id)->update(['position' => $position + 1]);
+        }
+        return response()->json(['ok' => true]);
+    }
+
     public function updateItem(Request $request, StockWatchlistItem $item)
     {
         $data = $request->validate([

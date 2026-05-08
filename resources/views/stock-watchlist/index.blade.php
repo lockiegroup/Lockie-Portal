@@ -33,14 +33,24 @@
         </div>
     </div>
 
-    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden mb-6">
+    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden mb-6" id="categories-list">
         @forelse($categories as $cat)
-        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 hover:bg-slate-50 transition group">
-            <div class="flex items-center gap-4 min-w-0">
-                <a href="{{ route('stock-watchlist.categories.show', $cat) }}"
-                   class="font-semibold text-slate-900 hover:text-indigo-600 transition text-base">
-                    {{ $cat->name }}
-                </a>
+        <div class="flex items-center justify-between px-4 py-4 border-b border-slate-100 hover:bg-slate-50 transition group category-row"
+             data-id="{{ $cat->id }}">
+            <div class="flex items-center gap-3 min-w-0">
+                {{-- Drag handle --}}
+                <div class="drag-handle cursor-grab text-slate-300 hover:text-slate-500 transition flex-shrink-0" title="Drag to reorder">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/>
+                        <circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/>
+                        <circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/>
+                    </svg>
+                </div>
+                {{-- Inline rename --}}
+                <span class="cat-name font-semibold text-slate-900 text-base cursor-pointer hover:text-indigo-600 transition"
+                      onclick="startRename(this, {{ $cat->id }})" title="Click to rename">{{ $cat->name }}</span>
+                <input class="cat-name-input hidden border border-indigo-400 rounded px-2 py-0.5 text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-48"
+                       data-id="{{ $cat->id }}" onblur="saveRename(this)" onkeydown="renameKeydown(event, this)">
                 <span class="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{{ $cat->items_count }} products</span>
                 <span class="text-xs text-slate-400">Lead time: {{ $cat->lead_time_days ?? 30 }} days</span>
             </div>
@@ -127,8 +137,61 @@
 
 </main>
 
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script>
 const csrfToken = '{{ csrf_token() }}';
+
+// Drag-to-reorder categories
+Sortable.create(document.getElementById('categories-list'), {
+    handle: '.drag-handle',
+    animation: 150,
+    onEnd() {
+        const ids = [...document.querySelectorAll('.category-row')].map(r => +r.dataset.id);
+        fetch('{{ route("stock-watchlist.categories.reorder") }}', {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({ ids }),
+        });
+    },
+});
+
+// Inline rename
+function startRename(el, id) {
+    const input = el.nextElementSibling;
+    input.value = el.textContent.trim();
+    el.classList.add('hidden');
+    input.classList.remove('hidden');
+    input.focus();
+    input.select();
+}
+
+function saveRename(input) {
+    const name = input.value.trim();
+    const id   = input.dataset.id;
+    const span = input.previousElementSibling;
+    if (!name) { cancelRename(input, span); return; }
+    fetch(`/stock-watchlist/categories/${id}`, {
+        method: 'PATCH',
+        headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ name }),
+    })
+    .then(r => r.json())
+    .then(cat => {
+        span.textContent = cat.name;
+        cancelRename(input, span);
+    })
+    .catch(() => cancelRename(input, span));
+}
+
+function cancelRename(input, span) {
+    input.classList.add('hidden');
+    span.classList.remove('hidden');
+}
+
+function renameKeydown(e, input) {
+    if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+    if (e.key === 'Escape') { cancelRename(input, input.previousElementSibling); }
+}
 
 function runSync() {
     const btn  = document.getElementById('sync-btn');
