@@ -177,32 +177,41 @@ class AmazonController extends Controller
             config('services.unleashed.key')
         );
 
+        $unmatched = $settlement->lines()
+            ->whereNotNull('order_id')
+            ->whereNull('unleashed_order_no')
+            ->pluck('order_id')
+            ->unique()
+            ->values()
+            ->all();
+
         try {
-            // Fetch a known Amazon-referenced order by order number to see ALL its fields
-            $data  = $unleashed->get('SalesOrders', ['orderNumber' => 'SO-00026163', 'pageSize' => 1]);
-            $order = $data['Items'][0] ?? null;
+            // Test each unmatched ID: fetch with startDate/endDate around the settlement
+            // and also try a wider ±30 day window to see which dates return hits.
+            $results = [];
+            $dates = [
+                '2026-04-13', '2026-04-14', '2026-04-15',
+                '2026-03-13', '2026-03-14', '2026-03-15',
+            ];
 
-            if (!$order) {
-                // Try scanning for any order whose fields might contain an Amazon ID
-                $data  = $unleashed->get('SalesOrders', ['pageSize' => 1, 'pageNumber' => 1]);
-                $order = $data['Items'][0] ?? null;
+            foreach ($dates as $d) {
+                $data  = $unleashed->get('SalesOrders', ['startDate' => $d, 'endDate' => $d, 'pageSize' => 200]);
+                $items = $data['Items'] ?? [];
+                $refs  = array_filter(array_column($items, 'CustomerRef'));
+                $hits  = array_values(array_intersect($refs, $unmatched));
+                $results[$d] = ['count' => count($items), 'hits' => $hits];
             }
 
-            // Return every key/value of the order so we can find the right field
-            $fields = [];
-            if ($order) {
-                foreach ($order as $key => $value) {
-                    if (!is_array($value)) {
-                        $fields[$key] = $value;
-                    } else {
-                        $fields[$key] = '[array of ' . count($value) . ']';
-                    }
-                }
-            }
+            // Also check what single-request returns for a specific unmatched order
+            // Use SO-00026163 which we know has CustomerRef 206-8309509-3453916
+            $direct = $unleashed->get('SalesOrders', ['startDate' => '2026-04-01', 'endDate' => '2026-04-30', 'pageSize' => 200]);
+            $directRefs = array_filter(array_column($direct['Items'] ?? [], 'CustomerRef'));
+            $directHits = array_values(array_intersect($directRefs, $unmatched));
 
             return response()->json([
-                'order_number' => $order['OrderNumber'] ?? null,
-                'all_fields'   => $fields,
+                'unmatched'       => $unmatched,
+                'per_day_results' => $results,
+                'april_range'     => ['count' => count($direct['Items'] ?? []), 'hits' => $directHits],
             ]);
         } catch (\Throwable $e) {
             return response()->json(['error' => $e->getMessage()], 500);
