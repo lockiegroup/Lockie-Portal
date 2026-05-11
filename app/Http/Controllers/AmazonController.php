@@ -186,32 +186,37 @@ class AmazonController extends Controller
             ->all();
 
         try {
-            // Test each unmatched ID: fetch with startDate/endDate around the settlement
-            // and also try a wider ±30 day window to see which dates return hits.
-            $results = [];
-            $dates = [
-                '2026-04-13', '2026-04-14', '2026-04-15',
-                '2026-03-13', '2026-03-14', '2026-03-15',
-            ];
+            // Check statuses of April 14 orders — theory: date filter excludes Completed orders
+            $apr14 = $unleashed->get('SalesOrders', ['startDate' => '2026-04-14', 'endDate' => '2026-04-14', 'pageSize' => 200]);
+            $statuses = array_count_values(array_column($apr14['Items'] ?? [], 'OrderStatus'));
 
-            foreach ($dates as $d) {
-                $data  = $unleashed->get('SalesOrders', ['startDate' => $d, 'endDate' => $d, 'pageSize' => 200]);
-                $items = $data['Items'] ?? [];
-                $refs  = array_filter(array_column($items, 'CustomerRef'));
-                $hits  = array_values(array_intersect($refs, $unmatched));
-                $results[$d] = ['count' => count($items), 'hits' => $hits];
+            // Try orderStatus=Completed filter to see if it's supported and returns different results
+            $completed = $unleashed->get('SalesOrders', [
+                'startDate'   => '2026-04-14',
+                'endDate'     => '2026-04-14',
+                'orderStatus' => 'Completed',
+                'pageSize'    => 200,
+            ]);
+            $completedItems = $completed['Items'] ?? [];
+            $completedRefs  = array_filter(array_column($completedItems, 'CustomerRef'));
+            $completedHits  = array_values(array_intersect($completedRefs, $unmatched));
+
+            // Try SalesInvoices endpoint (completed orders often live here)
+            try {
+                $invoices     = $unleashed->get('SalesInvoices', ['startDate' => '2026-04-01', 'endDate' => '2026-05-11', 'pageSize' => 200]);
+                $invoiceItems = $invoices['Items'] ?? [];
+                $invoiceRefs  = array_filter(array_map(fn($i) => $i['CustomerRef'] ?? null, $invoiceItems));
+                $invoiceHits  = array_values(array_intersect($invoiceRefs, $unmatched));
+                $invoiceInfo  = ['count' => count($invoiceItems), 'hits' => $invoiceHits,
+                                 'sample_refs' => array_slice(array_values($invoiceRefs), 0, 5)];
+            } catch (\Throwable $e) {
+                $invoiceInfo = ['error' => $e->getMessage()];
             }
 
-            // Also check what single-request returns for a specific unmatched order
-            // Use SO-00026163 which we know has CustomerRef 206-8309509-3453916
-            $direct = $unleashed->get('SalesOrders', ['startDate' => '2026-04-01', 'endDate' => '2026-04-30', 'pageSize' => 200]);
-            $directRefs = array_filter(array_column($direct['Items'] ?? [], 'CustomerRef'));
-            $directHits = array_values(array_intersect($directRefs, $unmatched));
-
             return response()->json([
-                'unmatched'       => $unmatched,
-                'per_day_results' => $results,
-                'april_range'     => ['count' => count($direct['Items'] ?? []), 'hits' => $directHits],
+                'apr14_statuses'         => $statuses,
+                'apr14_completed_filter' => ['count' => count($completedItems), 'hits' => $completedHits],
+                'sales_invoices'         => $invoiceInfo,
             ]);
         } catch (\Throwable $e) {
             return response()->json(['error' => $e->getMessage()], 500);
