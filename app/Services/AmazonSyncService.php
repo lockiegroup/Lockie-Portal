@@ -141,15 +141,6 @@ class AmazonSyncService
         $settlement->refresh();
         $this->calculateVat($settlement);
 
-        // Temporary debug: log all lines for order 204-7016929-9052335
-        $debugLines = $settlement->lines()->where('order_id', '204-7016929-9052335')->get();
-        if ($debugLines->isNotEmpty()) {
-            \Log::info('DEBUG lines for 204-7016929-9052335', $debugLines->map(fn($l) => [
-                'product_type' => $l->product_type,
-                'account_code' => $l->account_code,
-                'amount_gross' => $l->amount_gross,
-            ])->toArray());
-        }
     }
 
     public function lookupUnleashedOrders(AmazonSettlement $settlement): int
@@ -238,7 +229,7 @@ class AmazonSyncService
             // Shipping revenue — include regardless of channel; FBA rows rarely have this but
             // FBM rows sometimes lack a fulfillment-id, causing channel to be null.
             in_array($amountDesc, ['Shipping', 'ShippingHB'], true)                   => '4002',
-            $amountDesc === 'ShippingChargeback'                                         => '4002',
+            $amountDesc === 'ShippingChargeback'                                         => '513',
             // Advertising — match by transaction type OR description (Amazon uses both)
             strcasecmp($txnType, 'advertising') === 0
                 || stripos($amountDesc, 'advertising') !== false                        => '502',
