@@ -122,8 +122,8 @@ async function loadSettlements(page = 1) {
             </td>
             <td style="padding:0.625rem 1rem;color:#64748b;font-size:0.75rem;">${s.processed_at ?? '—'}</td>
             <td style="padding:0.625rem 1rem;text-align:right;white-space:nowrap;">
-                <a href="/amazon/settlements/${s.id}/view" style="background:#f1f5f9;color:#475569;border-radius:0.375rem;padding:3px 10px;font-size:0.75rem;font-weight:600;text-decoration:none;display:inline-block;margin-right:4px;">View</a>
-                <a href="/amazon/settlements/${s.id}/csv" style="background:#1e293b;color:#fff;border-radius:0.375rem;padding:3px 10px;font-size:0.75rem;font-weight:600;text-decoration:none;display:inline-block;">Download CSV</a>
+                <a href="/amazon/settlements/${s.settlement_id}/view" style="background:#f1f5f9;color:#475569;border-radius:0.375rem;padding:3px 10px;font-size:0.75rem;font-weight:600;text-decoration:none;display:inline-block;margin-right:4px;">View</a>
+                <a href="/amazon/settlements/${s.settlement_id}/csv" style="background:#1e293b;color:#fff;border-radius:0.375rem;padding:3px 10px;font-size:0.75rem;font-weight:600;text-decoration:none;display:inline-block;">Download CSV</a>
             </td>
         </tr>`;
     });

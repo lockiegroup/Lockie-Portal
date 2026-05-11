@@ -22,6 +22,11 @@ class AmazonSettlement extends Model
         ];
     }
 
+    public function getRouteKeyName(): string
+    {
+        return 'settlement_id';
+    }
+
     public function lines(): HasMany
     {
         return $this->hasMany(AmazonSettlementLine::class, 'settlement_id');
