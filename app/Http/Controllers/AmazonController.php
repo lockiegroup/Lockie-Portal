@@ -170,6 +170,48 @@ class AmazonController extends Controller
         }
     }
 
+    public function debugUnleashedLookup(AmazonSettlement $settlement): JsonResponse
+    {
+        $unleashed = new UnleashedService(
+            config('services.unleashed.id'),
+            config('services.unleashed.key')
+        );
+
+        $unmatched = $settlement->lines()
+            ->whereNotNull('order_id')
+            ->whereNull('unleashed_order_no')
+            ->pluck('order_id')
+            ->unique()
+            ->values()
+            ->all();
+
+        // Check what the unfiltered first page actually returns
+        try {
+            $data  = $unleashed->get('SalesOrders', ['pageSize' => 200, 'pageNumber' => 1]);
+            $items = $data['Items'] ?? [];
+
+            $sample = array_slice(array_map(fn($o) => [
+                'OrderNumber' => $o['OrderNumber'] ?? null,
+                'CustomerRef' => $o['CustomerRef'] ?? null,
+                'CreatedOn'   => $o['CreatedOn'] ?? null,
+            ], $items), 0, 20);
+
+            $allRefs = array_column($items, 'CustomerRef');
+            $hits    = array_intersect($allRefs, $unmatched);
+
+            return response()->json([
+                'unmatched_count' => count($unmatched),
+                'unmatched_ids'   => $unmatched,
+                'page1_count'     => count($items),
+                'page1_sample'    => $sample,
+                'hits_in_page1'   => array_values($hits),
+                'total_pages'     => $data['Pagination']['NumberOfPages'] ?? null,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
     public function profitReport(Request $request): JsonResponse
     {
         $query = AmazonProfitSnapshot::query();
