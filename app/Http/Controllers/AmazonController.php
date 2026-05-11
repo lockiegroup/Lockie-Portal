@@ -240,7 +240,9 @@ class AmazonController extends Controller
                 $orderData[$line->order_id] = [
                     'amount' => 0.0,
                     'date'   => $line->posted_date?->format('d/m/Y') ?? $fallbackDate,
-                    'label'  => $line->unleashed_order_no ?? $line->order_id,
+                    'label'  => $line->unleashed_order_no
+                                    ? $line->unleashed_order_no . ' / ' . $line->order_id
+                                    : $line->order_id,
                 ];
             }
             $orderData[$line->order_id]['amount'] += (float) $line->amount_gross;
