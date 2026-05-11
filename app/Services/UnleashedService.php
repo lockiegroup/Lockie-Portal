@@ -926,11 +926,23 @@ class UnleashedService
             return $calls;
         });
 
+        $debugDates = ['2026-04-14', '2026-04-11', '2026-03-24'];
+
         foreach ($chunks as $i => [$from, $to]) {
             $res = $responses[$i] ?? null;
             if (!$res || $res instanceof \Throwable || $res->failed()) continue;
 
-            foreach ($res->json()['Items'] ?? [] as $order) {
+            $items = $res->json()['Items'] ?? [];
+
+            // Debug: log what came back for the 3 known problem dates
+            if (in_array($from, $debugDates)) {
+                \Log::info("SO lookup chunk $from", [
+                    'count' => count($items),
+                    'refs'  => array_slice(array_map(fn($o) => $o['OrderNumber'] . '=' . ($o['CustomerRef'] ?? ''), $items), 0, 10),
+                ]);
+            }
+
+            foreach ($items as $order) {
                 $guid = $order['Guid'] ?? null;
                 if ($guid !== null && isset($seen[$guid])) continue;
                 if ($guid !== null) $seen[$guid] = true;
