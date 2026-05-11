@@ -139,6 +139,22 @@ class AmazonController extends Controller
         }
     }
 
+    public function setOrderSo(AmazonSettlement $settlement, Request $request): JsonResponse
+    {
+        $amazonOrderId = $request->input('amazon_order_id');
+        $soNumber      = trim($request->input('so_number', ''));
+
+        if (!$amazonOrderId) {
+            return response()->json(['ok' => false, 'message' => 'Missing amazon_order_id'], 422);
+        }
+
+        $settlement->lines()
+            ->where('order_id', $amazonOrderId)
+            ->update(['unleashed_order_no' => $soNumber ?: null]);
+
+        return response()->json(['ok' => true]);
+    }
+
     public function lookupUnleashedOrders(AmazonSettlement $settlement): JsonResponse
     {
         try {

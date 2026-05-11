@@ -926,21 +926,11 @@ class UnleashedService
             return $calls;
         });
 
-        $debugDates = ['2026-04-14', '2026-04-11', '2026-03-24'];
-
         foreach ($chunks as $i => [$from, $to]) {
             $res = $responses[$i] ?? null;
             if (!$res || $res instanceof \Throwable || $res->failed()) continue;
 
             $items = $res->json()['Items'] ?? [];
-
-            // Debug: log what came back for the 3 known problem dates
-            if (in_array($from, $debugDates)) {
-                \Log::info("SO lookup chunk $from", [
-                    'count' => count($items),
-                    'refs'  => array_slice(array_map(fn($o) => $o['OrderNumber'] . '=' . ($o['CustomerRef'] ?? ''), $items), 0, 10),
-                ]);
-            }
 
             foreach ($items as $order) {
                 $guid = $order['Guid'] ?? null;
@@ -960,32 +950,30 @@ class UnleashedService
             }
         }
 
-        // Phase 2: for any still-unmatched IDs, try a direct per-ID query.
-        // Unleashed's customerRef filter is unreliable (often returns unrelated
-        // orders), so we validate the returned order's CustomerRef before using it.
+        // Phase 2: unfiltered scan of the most recent orders — catches orders
+        // missed by phase 1 because Unleashed's date filter uses CreatedOn, not
+        // OrderDate, so orders entered after their displayed date are invisible
+        // to the chunked date queries above.
         $unmatched = array_diff_key($needle, array_flip(array_keys($results)));
         if (!empty($unmatched)) {
-            $remaining = array_keys($unmatched);
-            $responses = Http::pool(function ($pool) use ($remaining) {
-                $calls = [];
-                foreach ($remaining as $amazonId) {
-                    $qs      = http_build_query(['customerRef' => $amazonId, 'pageSize' => 10, 'pageNumber' => 1]);
-                    $calls[] = $pool->as($amazonId)->timeout(30)->withHeaders($this->headers($qs))
-                                   ->get(self::BASE_URL . '/SalesOrders?' . $qs);
-                }
-                return $calls;
-            });
+            // Fetch up to 3 pages of 500 (1500 most recent orders) to find matches.
+            for ($page = 1; $page <= 3 && !empty($unmatched); $page++) {
+                $qs   = http_build_query(['pageSize' => 500, 'pageNumber' => $page]);
+                $res  = Http::timeout(60)->withHeaders($this->headers($qs))
+                            ->get(self::BASE_URL . '/SalesOrders?' . $qs);
 
-            foreach ($remaining as $amazonId) {
-                $res = $responses[$amazonId] ?? null;
-                if (!$res || $res instanceof \Throwable || $res->failed()) continue;
-                foreach ($res->json()['Items'] ?? [] as $order) {
+                if (!$res || $res->failed()) break;
+
+                $items = $res->json()['Items'] ?? [];
+                if (empty($items)) break;
+
+                foreach ($items as $order) {
                     $ref     = trim($order['CustomerRef'] ?? '');
                     $orderNo = $order['OrderNumber'] ?? null;
-                    if ($orderNo && $ref === $amazonId) {
-                        $results[$amazonId] = $orderNo;
-                        break;
-                    }
+                    if (!$orderNo || $ref === '' || !isset($unmatched[$ref])) continue;
+                    $results[$ref] = $orderNo;
+                    unset($unmatched[$ref]);
+                    if (empty($unmatched)) break;
                 }
             }
         }
