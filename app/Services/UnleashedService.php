@@ -949,6 +949,36 @@ class UnleashedService
             }
         }
 
+        // Phase 2: for any still-unmatched IDs, try a direct per-ID query.
+        // Unleashed's customerRef filter is unreliable (often returns unrelated
+        // orders), so we validate the returned order's CustomerRef before using it.
+        $unmatched = array_diff_key($needle, array_flip(array_keys($results)));
+        if (!empty($unmatched)) {
+            $remaining = array_keys($unmatched);
+            $responses = Http::pool(function ($pool) use ($remaining) {
+                $calls = [];
+                foreach ($remaining as $amazonId) {
+                    $qs      = http_build_query(['customerRef' => $amazonId, 'pageSize' => 10, 'pageNumber' => 1]);
+                    $calls[] = $pool->as($amazonId)->timeout(30)->withHeaders($this->headers($qs))
+                                   ->get(self::BASE_URL . '/SalesOrders?' . $qs);
+                }
+                return $calls;
+            });
+
+            foreach ($remaining as $amazonId) {
+                $res = $responses[$amazonId] ?? null;
+                if (!$res || $res instanceof \Throwable || $res->failed()) continue;
+                foreach ($res->json()['Items'] ?? [] as $order) {
+                    $ref     = trim($order['CustomerRef'] ?? '');
+                    $orderNo = $order['OrderNumber'] ?? null;
+                    if ($orderNo && $ref === $amazonId) {
+                        $results[$amazonId] = $orderNo;
+                        break;
+                    }
+                }
+            }
+        }
+
         return $results;
     }
 }
