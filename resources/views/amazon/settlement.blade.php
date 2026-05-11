@@ -116,7 +116,7 @@
 
 <script>
 const csrfToken      = '{{ csrf_token() }}';
-const settlementId   = {{ $settlement->id }};
+const settlementId   = '{{ $settlement->settlement_id }}';
 const reprocessUrl   = `/amazon/settlements/${settlementId}/reprocess`;
 const lookupUrl      = `/amazon/settlements/${settlementId}/lookup-unleashed`;
 
