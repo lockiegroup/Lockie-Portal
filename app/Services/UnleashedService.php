@@ -20,6 +20,11 @@ class UnleashedService
         return base64_encode(hash_hmac('sha256', $queryString, $this->apiKey, true));
     }
 
+    public function headersForQuery(string $queryString = ''): array
+    {
+        return $this->headers($queryString);
+    }
+
     private function headers(string $queryString = ''): array
     {
         return [

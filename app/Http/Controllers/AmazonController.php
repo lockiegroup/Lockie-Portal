@@ -177,35 +177,67 @@ class AmazonController extends Controller
             config('services.unleashed.key')
         );
 
-        $unmatched = $settlement->lines()
+        $needle = $settlement->lines()
             ->whereNotNull('order_id')
             ->whereNull('unleashed_order_no')
             ->pluck('order_id')
             ->unique()
-            ->values()
+            ->flip()
             ->all();
 
-        // Check what the unfiltered first page actually returns
+        if (empty($needle)) {
+            return response()->json(['message' => 'No unmatched orders.']);
+        }
+
         try {
-            $data  = $unleashed->get('SalesOrders', ['pageSize' => 200, 'pageNumber' => 1]);
-            $items = $data['Items'] ?? [];
+            // Get total pages first
+            $first = $unleashed->get('SalesOrders', ['pageSize' => 200, 'pageNumber' => 1]);
+            $totalPages = $first['Pagination']['NumberOfPages'] ?? 1;
 
-            $sample = array_slice(array_map(fn($o) => [
-                'OrderNumber' => $o['OrderNumber'] ?? null,
-                'CustomerRef' => $o['CustomerRef'] ?? null,
-                'CreatedOn'   => $o['CreatedOn'] ?? null,
-            ], $items), 0, 20);
+            // Fetch all pages in parallel batches of 20
+            $found = [];
+            $batchSize = 20;
 
-            $allRefs = array_column($items, 'CustomerRef');
-            $hits    = array_intersect($allRefs, $unmatched);
+            for ($batch = 0; $batch < ceil($totalPages / $batchSize); $batch++) {
+                $pageStart = $batch * $batchSize + 1;
+                $pageEnd   = min($pageStart + $batchSize - 1, $totalPages);
+
+                $responses = \Illuminate\Support\Facades\Http::pool(function ($pool) use ($pageStart, $pageEnd, $unleashed) {
+                    $calls = [];
+                    for ($p = $pageStart; $p <= $pageEnd; $p++) {
+                        $qs = http_build_query(['pageSize' => 200, 'pageNumber' => $p]);
+                        // Use reflection to get headers — or just re-sign here
+                        $calls[] = $pool->as($p)
+                            ->timeout(30)
+                            ->withHeaders($unleashed->headersForQuery($qs))
+                            ->get('https://api.unleashedsoftware.com/SalesOrders?' . $qs);
+                    }
+                    return $calls;
+                });
+
+                for ($p = $pageStart; $p <= $pageEnd; $p++) {
+                    $res = $responses[$p] ?? null;
+                    if (!$res || $res instanceof \Throwable || $res->failed()) continue;
+                    foreach ($res->json()['Items'] ?? [] as $order) {
+                        $ref = trim($order['CustomerRef'] ?? '');
+                        if ($ref !== '' && isset($needle[$ref])) {
+                            $found[$ref] = [
+                                'page'        => $p,
+                                'OrderNumber' => $order['OrderNumber'],
+                                'CreatedOn'   => $order['CreatedOn'] ?? null,
+                            ];
+                            unset($needle[$ref]);
+                        }
+                    }
+                }
+
+                if (empty($needle)) break;
+            }
 
             return response()->json([
-                'unmatched_count' => count($unmatched),
-                'unmatched_ids'   => $unmatched,
-                'page1_count'     => count($items),
-                'page1_sample'    => $sample,
-                'hits_in_page1'   => array_values($hits),
-                'total_pages'     => $data['Pagination']['NumberOfPages'] ?? null,
+                'total_pages'   => $totalPages,
+                'found'         => $found,
+                'still_missing' => array_keys($needle),
             ]);
         } catch (\Throwable $e) {
             return response()->json(['error' => $e->getMessage()], 500);
