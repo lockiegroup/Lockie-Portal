@@ -157,7 +157,7 @@ class AmazonSyncService
 
         // Look back 90 days before settlement start — Amazon orders are placed
         // and fulfilled weeks before they appear in a settlement report.
-        $start = ($settlement->start_date ?? now())->copy()->subDays(365)->toDateString();
+        $start = ($settlement->start_date ?? now())->copy()->subDays(120)->toDateString();
         $end   = ($settlement->end_date   ?? now())->toDateString();
 
         $map   = $this->unleashed->fetchOrderNumbersByAmazonIds($amazonIds, $start, $end);

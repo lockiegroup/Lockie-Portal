@@ -904,16 +904,15 @@ class UnleashedService
         $results = [];
         $seen    = [];
 
-        // Build 3-day date chunks — narrow enough that each chunk's page 1
-        // (200 orders) captures all orders in that window, working around
-        // Unleashed's bug where page 2+ repeats page 1 on filtered queries.
+        // Build 1-day date chunks — ensures each chunk's page 1 (200 orders)
+        // captures all orders in that day, working around Unleashed's bug
+        // where page 2+ repeats page 1 on filtered queries.
         $chunks = [];
         $cur    = \Carbon\Carbon::parse($startDate);
         $end    = \Carbon\Carbon::parse($endDate);
         while ($cur->lte($end)) {
-            $chunkEnd = $cur->copy()->addDays(2)->min($end);
-            $chunks[] = [$cur->toDateString(), $chunkEnd->toDateString()];
-            $cur->addDays(3);
+            $chunks[] = [$cur->toDateString(), $cur->toDateString()];
+            $cur->addDay();
         }
 
         // Fire all chunks in parallel — each returns a different set of orders
