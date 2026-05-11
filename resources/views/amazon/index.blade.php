@@ -88,6 +88,8 @@
 </main>
 
 <script>
+const csrfToken = '{{ csrf_token() }}';
+
 async function loadSettlements(page = 1) {
     const tbody = document.getElementById('settlements-body');
     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:#94a3b8;">Loading…</td></tr>';
