@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\KeyActionBucket;
 use App\Models\KeyActionComment;
 use App\Models\KeyActionGroup;
 use App\Models\KeyActionTask;
@@ -61,14 +62,24 @@ class KeyActionController extends Controller
             ->orderBy('created_at')
             ->get();
 
+        $buckets = $group->buckets()->get();
+
         $columns = $group->members->map(fn($member) => [
+            'type'  => 'user',
             'user'  => $member,
-            'tasks' => $tasks->where('assigned_to', $member->id)->where('completed', false)->values(),
-            'done'  => $tasks->where('assigned_to', $member->id)->where('completed', true)->values(),
+            'tasks' => $tasks->where('assigned_to', $member->id)->whereNull('bucket_id')->where('completed', false)->values(),
+            'done'  => $tasks->where('assigned_to', $member->id)->whereNull('bucket_id')->where('completed', true)->values(),
         ]);
 
-        $unassigned     = $tasks->whereNull('assigned_to')->where('completed', false)->values();
-        $unassignedDone = $tasks->whereNull('assigned_to')->where('completed', true)->values();
+        $bucketColumns = $buckets->map(fn($bucket) => [
+            'type'   => 'bucket',
+            'bucket' => $bucket,
+            'tasks'  => $tasks->where('bucket_id', $bucket->id)->where('completed', false)->values(),
+            'done'   => $tasks->where('bucket_id', $bucket->id)->where('completed', true)->values(),
+        ]);
+
+        $unassigned     = $tasks->whereNull('assigned_to')->whereNull('bucket_id')->where('completed', false)->values();
+        $unassignedDone = $tasks->whereNull('assigned_to')->whereNull('bucket_id')->where('completed', true)->values();
 
         $isGroupAdmin = $user->isMaster() || $group->isAdmin($user);
         $allUsers     = $user->isMaster()
@@ -76,7 +87,7 @@ class KeyActionController extends Controller
             : collect();
 
         return view('key-actions.show', compact(
-            'group', 'columns', 'unassigned', 'unassignedDone', 'isGroupAdmin', 'allUsers'
+            'group', 'columns', 'bucketColumns', 'unassigned', 'unassignedDone', 'isGroupAdmin', 'allUsers'
         ));
     }
 
@@ -98,6 +109,46 @@ class KeyActionController extends Controller
 
         $group->delete();
         return redirect()->route('key-actions.index');
+    }
+
+    // ── Buckets ───────────────────────────────────────────────────────────────
+
+    public function storeBucket(Request $request, KeyActionGroup $group): JsonResponse
+    {
+        $user = auth()->user();
+        abort_unless($user->isMaster() || $group->isAdmin($user), 403);
+
+        $data = $request->validate(['name' => 'required|string|max:100']);
+
+        $maxOrder = $group->buckets()->max('sort_order') ?? 0;
+        $bucket   = $group->buckets()->create([
+            'name'       => $data['name'],
+            'sort_order' => $maxOrder + 1,
+        ]);
+
+        return response()->json(['ok' => true, 'bucket' => ['id' => $bucket->id, 'name' => $bucket->name]]);
+    }
+
+    public function updateBucket(Request $request, KeyActionGroup $group, KeyActionBucket $bucket): JsonResponse
+    {
+        $user = auth()->user();
+        abort_unless($user->isMaster() || $group->isAdmin($user), 403);
+        abort_unless($bucket->group_id === $group->id, 404);
+
+        $data = $request->validate(['name' => 'required|string|max:100']);
+        $bucket->update($data);
+
+        return response()->json(['ok' => true, 'name' => $bucket->name]);
+    }
+
+    public function destroyBucket(KeyActionGroup $group, KeyActionBucket $bucket): JsonResponse
+    {
+        $user = auth()->user();
+        abort_unless($user->isMaster() || $group->isAdmin($user), 403);
+        abort_unless($bucket->group_id === $group->id, 404);
+
+        $bucket->delete();
+        return response()->json(['ok' => true]);
     }
 
     // ── Members ───────────────────────────────────────────────────────────────
@@ -158,19 +209,17 @@ class KeyActionController extends Controller
         $data = $request->validate([
             'title'       => 'required|string|max:255',
             'assigned_to' => 'nullable|exists:users,id',
+            'bucket_id'   => 'nullable|exists:key_action_buckets,id',
             'label'       => 'in:none,yellow,red,green',
-            'due_date'    => 'nullable|date',
-            'description' => 'nullable|string',
         ]);
 
         $maxOrder = $group->tasks()->max('sort_order') ?? 0;
 
         $task = $group->tasks()->create([
             'title'       => $data['title'],
-            'assigned_to' => $data['assigned_to'] ?? null,
+            'assigned_to' => $data['bucket_id'] ? null : ($data['assigned_to'] ?? null),
+            'bucket_id'   => $data['bucket_id'] ?? null,
             'label'       => $data['label'] ?? 'none',
-            'due_date'    => $data['due_date'] ?? null,
-            'description' => $data['description'] ?? null,
             'created_by'  => auth()->id(),
             'sort_order'  => $maxOrder + 1,
         ]);
@@ -230,17 +279,26 @@ class KeyActionController extends Controller
         abort_unless($user->isMaster() || $group->hasMember($user), 403);
 
         $data = $request->validate([
-            'tasks'              => 'required|array',
-            'tasks.*.id'         => 'required|integer',
-            'tasks.*.sort_order' => 'required|integer',
-            'tasks.*.assigned_to' => 'nullable|integer',
+            'tasks'               => 'required|array',
+            'tasks.*.id'          => 'required|integer',
+            'tasks.*.sort_order'  => 'required|integer',
+            'tasks.*.col_type'    => 'required|in:unassigned,user,bucket',
+            'tasks.*.col_id'      => 'nullable|integer',
         ]);
 
         foreach ($data['tasks'] as $item) {
-            KeyActionTask::where('id', $item['id'])->where('group_id', $group->id)->update([
-                'sort_order'  => $item['sort_order'],
-                'assigned_to' => $item['assigned_to'] ?? null,
-            ]);
+            $update = ['sort_order' => $item['sort_order']];
+            if ($item['col_type'] === 'user') {
+                $update['assigned_to'] = $item['col_id'];
+                $update['bucket_id']   = null;
+            } elseif ($item['col_type'] === 'bucket') {
+                $update['bucket_id']   = $item['col_id'];
+                $update['assigned_to'] = null;
+            } else {
+                $update['assigned_to'] = null;
+                $update['bucket_id']   = null;
+            }
+            KeyActionTask::where('id', $item['id'])->where('group_id', $group->id)->update($update);
         }
 
         return response()->json(['ok' => true]);
@@ -291,15 +349,13 @@ class KeyActionController extends Controller
         return [
             'id'            => $task->id,
             'title'         => $task->title,
-            'description'   => $task->description,
             'label'         => $task->label,
-            'due_date'      => $task->due_date?->toDateString(),
             'completed'     => $task->completed,
             'sort_order'    => $task->sort_order,
             'assigned_to'   => $task->assigned_to,
+            'bucket_id'     => $task->bucket_id,
             'assignee_name' => $task->assignee?->name,
             'comment_count' => $task->comments->count(),
-            'overdue'       => $task->isOverdue(),
         ];
     }
 }

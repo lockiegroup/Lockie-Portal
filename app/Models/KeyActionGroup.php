@@ -22,6 +22,11 @@ class KeyActionGroup extends Model
         return $this->hasMany(KeyActionTask::class, 'group_id');
     }
 
+    public function buckets(): HasMany
+    {
+        return $this->hasMany(KeyActionBucket::class, 'group_id')->orderBy('sort_order')->orderBy('name');
+    }
+
     public function hasMember(User $user): bool
     {
         return $this->members()->where('user_id', $user->id)->exists();

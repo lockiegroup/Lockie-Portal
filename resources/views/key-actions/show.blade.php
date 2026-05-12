@@ -35,10 +35,10 @@
         @if($isGroupAdmin)
         <button onclick="openManageMembers()"
                 style="background:#f1f5f9;color:#475569;border:none;border-radius:0.5rem;padding:0.4rem 0.875rem;font-size:0.8125rem;font-weight:600;cursor:pointer;">
-            Manage Members
+            Manage Group
         </button>
         @endif
-        <button onclick="openAddTask(null)"
+        <button onclick="openAddTask(null, null)"
                 style="background:#1e293b;color:#fff;border:none;border-radius:0.5rem;padding:0.4rem 0.875rem;font-size:0.8125rem;font-weight:600;cursor:pointer;">
             + Add Task
         </button>
@@ -47,7 +47,7 @@
 
 <div class="board" id="board">
     {{-- Unassigned column --}}
-    <div class="col" data-user-id="">
+    <div class="col" data-col-type="unassigned" data-col-id="">
         <div class="col-header">
             <span class="col-title">Unassigned</span>
             <span style="background:#e2e8f0;color:#64748b;border-radius:9999px;padding:1px 8px;font-size:0.7rem;font-weight:700;" id="count-unassigned">{{ $unassigned->count() }}</span>
@@ -57,7 +57,7 @@
                 @include('key-actions._task', ['task' => $task])
             @endforeach
         </div>
-        <button class="add-task-btn" onclick="openAddTask(null)">+ Add task</button>
+        <button class="add-task-btn" onclick="openAddTask(null, null)">+ Add task</button>
         @if($unassignedDone->count())
         <div class="done-toggle" onclick="toggleDone('unassigned')">▸ Completed ({{ $unassignedDone->count() }})</div>
         <div id="done-unassigned" style="display:none;">
@@ -70,7 +70,7 @@
 
     {{-- Per-member columns --}}
     @foreach($columns as $col)
-    <div class="col" data-user-id="{{ $col['user']->id }}">
+    <div class="col" data-col-type="user" data-col-id="{{ $col['user']->id }}">
         <div class="col-header">
             <span class="col-title">{{ $col['user']->name }}</span>
             <span style="background:#e2e8f0;color:#64748b;border-radius:9999px;padding:1px 8px;font-size:0.7rem;font-weight:700;" id="count-{{ $col['user']->id }}">{{ $col['tasks']->count() }}</span>
@@ -80,7 +80,7 @@
                 @include('key-actions._task', ['task' => $task])
             @endforeach
         </div>
-        <button class="add-task-btn" onclick="openAddTask({{ $col['user']->id }})">+ Add task</button>
+        <button class="add-task-btn" onclick="openAddTask({{ $col['user']->id }}, null)">+ Add task</button>
         @if($col['done']->count())
         <div class="done-toggle" onclick="toggleDone('{{ $col['user']->id }}')">▸ Completed ({{ $col['done']->count() }})</div>
         <div id="done-{{ $col['user']->id }}" style="display:none;">
@@ -91,6 +91,48 @@
         @endif
     </div>
     @endforeach
+
+    {{-- Custom bucket columns --}}
+    @foreach($bucketColumns as $col)
+    <div class="col" data-col-type="bucket" data-col-id="{{ $col['bucket']->id }}">
+        <div class="col-header">
+            <span class="col-title">{{ $col['bucket']->name }}</span>
+            <div style="display:flex;align-items:center;gap:0.4rem;">
+                <span style="background:#e2e8f0;color:#64748b;border-radius:9999px;padding:1px 8px;font-size:0.7rem;font-weight:700;">{{ $col['tasks']->count() }}</span>
+                @if($isGroupAdmin)
+                <button onclick="renameBucket({{ $col['bucket']->id }}, '{{ addslashes($col['bucket']->name) }}')"
+                        title="Rename" style="background:none;border:none;cursor:pointer;color:#94a3b8;padding:0;font-size:0.75rem;line-height:1;">✎</button>
+                <button onclick="deleteBucket({{ $col['bucket']->id }})"
+                        title="Delete column" style="background:none;border:none;cursor:pointer;color:#fca5a5;padding:0;font-size:0.75rem;line-height:1;">✕</button>
+                @endif
+            </div>
+        </div>
+        <div class="task-list" id="list-bucket-{{ $col['bucket']->id }}">
+            @foreach($col['tasks'] as $task)
+                @include('key-actions._task', ['task' => $task])
+            @endforeach
+        </div>
+        <button class="add-task-btn" onclick="openAddTask(null, {{ $col['bucket']->id }})">+ Add task</button>
+        @if($col['done']->count())
+        <div class="done-toggle" onclick="toggleDone('bucket-{{ $col['bucket']->id }}')">▸ Completed ({{ $col['done']->count() }})</div>
+        <div id="done-bucket-{{ $col['bucket']->id }}" style="display:none;">
+            @foreach($col['done'] as $task)
+                @include('key-actions._task', ['task' => $task])
+            @endforeach
+        </div>
+        @endif
+    </div>
+    @endforeach
+
+    {{-- Add column button --}}
+    @if($isGroupAdmin)
+    <div style="flex:0 0 200px;display:flex;align-items:flex-start;padding-top:0.5rem;">
+        <button onclick="openAddBucket()"
+                style="width:100%;background:rgba(255,255,255,0.6);border:1px dashed #cbd5e1;border-radius:0.75rem;padding:0.75rem;font-size:0.8rem;color:#94a3b8;cursor:pointer;font-weight:600;">
+            + Add Column
+        </button>
+    </div>
+    @endif
 </div>
 
 {{-- Task Panel --}}
@@ -275,6 +317,28 @@
 </div>
 @endif
 
+{{-- Add Column Modal --}}
+@if($isGroupAdmin)
+<div id="add-bucket-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:0.75rem;padding:1.5rem;width:100%;max-width:380px;margin:1rem;box-sizing:border-box;">
+        <h2 style="font-size:1rem;font-weight:700;color:#1e293b;margin:0 0 1rem;">New Column</h2>
+        <input id="new-bucket-name" type="text" placeholder="Column name (e.g. Notes, Backlog)"
+               style="width:100%;border:1px solid #d1d5db;border-radius:0.5rem;padding:0.5rem 0.75rem;font-size:0.875rem;box-sizing:border-box;margin-bottom:1rem;"
+               onkeydown="if(event.key==='Enter')submitNewBucket()">
+        <div style="display:flex;gap:0.5rem;justify-content:flex-end;">
+            <button onclick="document.getElementById('add-bucket-modal').style.display='none'"
+                    style="background:#f1f5f9;color:#475569;border:none;border-radius:0.5rem;padding:0.5rem 1rem;font-size:0.875rem;font-weight:600;cursor:pointer;">
+                Cancel
+            </button>
+            <button onclick="submitNewBucket()"
+                    style="background:#1e293b;color:#fff;border:none;border-radius:0.5rem;padding:0.5rem 1rem;font-size:0.875rem;font-weight:600;cursor:pointer;">
+                Create
+            </button>
+        </div>
+    </div>
+</div>
+@endif
+
 <script>
 const csrf       = '{{ csrf_token() }}';
 const groupId    = {{ $group->id }};
@@ -421,10 +485,12 @@ async function submitComment() {
 
 // ── Add Task ─────────────────────────────────────────────────────────────────
 
-let addTaskAssignee = null;
+let addTaskAssignee  = null;
+let addTaskBucketId  = null;
 
-function openAddTask(userId) {
+function openAddTask(userId, bucketId) {
     addTaskAssignee = userId;
+    addTaskBucketId = bucketId;
     document.getElementById('new-task-title').value    = '';
     document.getElementById('new-task-assignee').value = userId ?? '';
     document.getElementById('new-task-label').value    = 'none';
@@ -442,7 +508,8 @@ async function submitNewTask() {
 
     const payload = {
         title,
-        assigned_to: document.getElementById('new-task-assignee').value || null,
+        assigned_to: addTaskBucketId ? null : (document.getElementById('new-task-assignee').value || null),
+        bucket_id:   addTaskBucketId ?? null,
         label:       document.getElementById('new-task-label').value,
     };
 
@@ -547,6 +614,48 @@ async function quickComplete(taskId, event) {
     const json = await res.json();
     if (json.ok) location.reload();
 }
+
+// ── Buckets ───────────────────────────────────────────────────────────────────
+
+function openAddBucket() {
+    document.getElementById('new-bucket-name').value = '';
+    document.getElementById('add-bucket-modal').style.display = 'flex';
+    setTimeout(() => document.getElementById('new-bucket-name').focus(), 50);
+}
+
+async function submitNewBucket() {
+    const name = document.getElementById('new-bucket-name').value.trim();
+    if (!name) return;
+    const res  = await fetch(`${baseUrl}/buckets`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
+        body: JSON.stringify({ name }),
+    });
+    const json = await res.json();
+    if (json.ok) location.reload();
+}
+
+async function renameBucket(bucketId, currentName) {
+    const name = prompt('Rename column:', currentName);
+    if (!name || name === currentName) return;
+    const res  = await fetch(`${baseUrl}/buckets/${bucketId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
+        body: JSON.stringify({ name }),
+    });
+    const json = await res.json();
+    if (json.ok) location.reload();
+}
+
+async function deleteBucket(bucketId) {
+    if (!confirm('Delete this column? Tasks inside will become unassigned.')) return;
+    const res  = await fetch(`${baseUrl}/buckets/${bucketId}`, {
+        method: 'DELETE',
+        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
+    });
+    const json = await res.json();
+    if (json.ok) location.reload();
+}
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
@@ -566,12 +675,14 @@ async function saveOrder() {
     const tasks = [];
     let order   = 0;
     document.querySelectorAll('.col').forEach(col => {
-        const userId = col.dataset.userId || null;
+        const colType = col.dataset.colType;
+        const colId   = col.dataset.colId ? parseInt(col.dataset.colId) : null;
         col.querySelectorAll('.task-list .task-card').forEach(card => {
             tasks.push({
-                id:          parseInt(card.id.replace('task-', '')),
-                sort_order:  order++,
-                assigned_to: userId ? parseInt(userId) : null,
+                id:         parseInt(card.id.replace('task-', '')),
+                sort_order: order++,
+                col_type:   colType,
+                col_id:     colId,
             });
         });
     });

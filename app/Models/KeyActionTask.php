@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class KeyActionTask extends Model
 {
     protected $fillable = [
-        'group_id', 'assigned_to', 'created_by', 'title', 'description',
+        'group_id', 'assigned_to', 'bucket_id', 'created_by', 'title', 'description',
         'label', 'due_date', 'completed', 'completed_at', 'sort_order',
     ];
 
@@ -30,6 +30,11 @@ class KeyActionTask extends Model
     public function assignee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    public function bucket(): BelongsTo
+    {
+        return $this->belongsTo(KeyActionBucket::class, 'bucket_id');
     }
 
     public function creator(): BelongsTo
