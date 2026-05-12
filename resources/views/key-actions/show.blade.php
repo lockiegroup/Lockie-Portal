@@ -4,8 +4,11 @@
 .col { flex:0 0 280px; background:#f8fafc; border-radius:0.75rem; padding:0.75rem; }
 .col-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem; }
 .col-title { font-size:0.8125rem; font-weight:700; color:#1e293b; }
-.task-card { background:#fff; border-radius:0.5rem; box-shadow:0 1px 3px rgba(0,0,0,0.07); padding:0.75rem; margin-bottom:0.5rem; cursor:pointer; border-left:3px solid transparent; transition:box-shadow 0.15s; }
+.task-card { background:#fff; border-radius:0.5rem; box-shadow:0 1px 3px rgba(0,0,0,0.07); padding:0.75rem; margin-bottom:0.5rem; cursor:grab; border-left:3px solid transparent; transition:box-shadow 0.15s; }
 .task-card:hover { box-shadow:0 3px 8px rgba(0,0,0,0.12); }
+.task-card.sortable-ghost { opacity:0.35; background:#e0e7ff; }
+.task-card.sortable-drag  { cursor:grabbing; box-shadow:0 8px 24px rgba(0,0,0,0.18); }
+.task-list { min-height:40px; }
 .task-card.label-yellow { border-left-color:#f59e0b; }
 .task-card.label-red    { border-left-color:#ef4444; }
 .task-card.label-green  { border-left-color:#22c55e; }
@@ -526,11 +529,45 @@ function buildMetaHTML(task) {
 }
 </script>
 
-{{-- Route for task detail (used by panel) --}}
-@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script>
-// Expose task detail endpoint
+document.querySelectorAll('.task-list').forEach(list => {
+    Sortable.create(list, {
+        group:      'tasks',
+        animation:  150,
+        ghostClass: 'sortable-ghost',
+        dragClass:  'sortable-drag',
+        onStart() { window._dragging = true; },
+        onEnd()    { setTimeout(() => { window._dragging = false; }, 50); saveOrder(); },
+    });
+});
+
+async function saveOrder() {
+    const tasks = [];
+    let order   = 0;
+    document.querySelectorAll('.col').forEach(col => {
+        const userId = col.dataset.userId || null;
+        col.querySelectorAll('.task-list .task-card').forEach(card => {
+            tasks.push({
+                id:          parseInt(card.id.replace('task-', '')),
+                sort_order:  order++,
+                assigned_to: userId ? parseInt(userId) : null,
+            });
+        });
+    });
+    await fetch(`${baseUrl}/tasks/reorder`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
+        body:    JSON.stringify({ tasks }),
+    });
+}
+
+// Suppress panel open when the pointer was a drag not a click
+document.querySelectorAll('.task-list').forEach(list => {
+    list.addEventListener('click', e => {
+        if (window._dragging) e.stopImmediatePropagation();
+    }, true);
+});
 </script>
-@endpush
 
 </x-layout>
