@@ -491,11 +491,25 @@ async function submitComment() {
     if (json.ok) {
         inp.value = '';
         document.getElementById('comments-list').appendChild(buildComment(json.comment));
-        // update comment count badge on card
         const card = document.getElementById('task-' + activeTaskId);
         if (card) {
-            const badge = card.querySelector('.comment-badge');
-            if (badge) badge.textContent = '💬 ' + ((parseInt(badge.dataset.count || 0) + 1));
+            let badge = card.querySelector('.comment-badge');
+            if (badge) {
+                const n = parseInt(badge.dataset.count || 0) + 1;
+                badge.dataset.count = n;
+                badge.textContent   = '💬 ' + n;
+            } else {
+                // First comment — create the meta row and badge from scratch
+                const meta = document.createElement('div');
+                meta.className    = 'task-meta';
+                meta.style.cssText = 'margin-top:0.35rem;padding-left:1.25rem;';
+                badge = document.createElement('span');
+                badge.className      = 'badge due-ok comment-badge';
+                badge.dataset.count  = '1';
+                badge.textContent    = '💬 1';
+                meta.appendChild(badge);
+                card.appendChild(meta);
+            }
         }
     }
 }
