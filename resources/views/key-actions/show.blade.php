@@ -145,22 +145,15 @@
                 @endforeach
             </select>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
-            <div>
-                <label style="font-size:0.75rem;font-weight:600;color:#64748b;display:block;margin-bottom:3px;">Label</label>
-                <select id="panel-label" onchange="saveField('label', this.value)"
-                        style="width:100%;border:1px solid #d1d5db;border-radius:0.375rem;padding:0.375rem 0.5rem;font-size:0.8125rem;">
-                    <option value="none">None</option>
-                    <option value="yellow">🟡 Yellow</option>
-                    <option value="red">🔴 Red</option>
-                    <option value="green">🟢 Green</option>
-                </select>
-            </div>
-            <div>
-                <label style="font-size:0.75rem;font-weight:600;color:#64748b;display:block;margin-bottom:3px;">Due Date</label>
-                <input type="date" id="panel-due" onchange="saveField('due_date', this.value || null)"
-                       style="width:100%;border:1px solid #d1d5db;border-radius:0.375rem;padding:0.375rem 0.5rem;font-size:0.8125rem;box-sizing:border-box;">
-            </div>
+        <div>
+            <label style="font-size:0.75rem;font-weight:600;color:#64748b;display:block;margin-bottom:3px;">Label</label>
+            <select id="panel-label" onchange="saveField('label', this.value)"
+                    style="width:100%;border:1px solid #d1d5db;border-radius:0.375rem;padding:0.375rem 0.5rem;font-size:0.8125rem;">
+                <option value="none">None</option>
+                <option value="yellow">🟡 Yellow</option>
+                <option value="red">🔴 Red</option>
+                <option value="green">🟢 Green</option>
+            </select>
         </div>
 
     </div>
