@@ -60,6 +60,17 @@ class SyncAmazon extends Command
                 if ($result['errors'] > 0) {
                     $this->warn("  {$result['errors']} report(s) failed — check logs for details.");
                 }
+
+                // Auto-lookup Unleashed SO numbers for each newly imported settlement
+                foreach ($result['settlements'] ?? [] as $settlement) {
+                    $this->info("  Looking up Unleashed SO numbers for {$settlement->settlement_id}…");
+                    try {
+                        $matched = $service->lookupUnleashedOrders($settlement);
+                        $this->info("    Matched {$matched} order(s).");
+                    } catch (\Throwable $e) {
+                        $this->warn("    SO lookup failed: " . $e->getMessage());
+                    }
+                }
             } catch (\Throwable $e) {
                 $this->error('Settlement sync failed: ' . $e->getMessage());
                 return self::FAILURE;

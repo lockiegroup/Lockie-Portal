@@ -21,6 +21,7 @@ class AmazonSyncService
         $imported = 0;
         $skipped  = 0;
         $errors   = 0;
+        $newSettlements = [];
 
         foreach ($reports as $report) {
             $documentId = $report['reportDocumentId'] ?? null;
@@ -34,7 +35,6 @@ class AmazonSyncService
                     continue;
                 }
 
-                // The settlement-id is the same on every data row
                 $settlementId = $rows[0]['settlement-id'] ?? null;
                 if (!$settlementId) {
                     $skipped++;
@@ -46,7 +46,8 @@ class AmazonSyncService
                     continue;
                 }
 
-                $this->processSettlement($rows);
+                $settlement = $this->processSettlement($rows);
+                $newSettlements[] = $settlement;
                 $imported++;
             } catch (\Throwable $e) {
                 Log::error('AmazonSyncService: settlement import failed', [
@@ -57,7 +58,7 @@ class AmazonSyncService
             }
         }
 
-        return ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors];
+        return ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors, 'settlements' => $newSettlements];
     }
 
     public function processSettlement(array $rows): AmazonSettlement

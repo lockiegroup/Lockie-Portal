@@ -72,7 +72,7 @@
                         <th style="text-align:left;padding:0.625rem 1rem;font-weight:700;color:#334155;border-bottom:2px solid #e2e8f0;white-space:nowrap;">Settlement ID</th>
                         <th style="text-align:left;padding:0.625rem 1rem;font-weight:700;color:#334155;border-bottom:2px solid #e2e8f0;white-space:nowrap;">Period</th>
                         <th style="text-align:right;padding:0.625rem 1rem;font-weight:700;color:#334155;border-bottom:2px solid #e2e8f0;white-space:nowrap;">Deposit</th>
-                        <th style="text-align:center;padding:0.625rem 1rem;font-weight:700;color:#334155;border-bottom:2px solid #e2e8f0;white-space:nowrap;">Status</th>
+                        <th style="text-align:center;padding:0.625rem 1rem;font-weight:700;color:#334155;border-bottom:2px solid #e2e8f0;white-space:nowrap;">CSV</th>
                         <th style="text-align:left;padding:0.625rem 1rem;font-weight:700;color:#334155;border-bottom:2px solid #e2e8f0;white-space:nowrap;">Processed</th>
                         <th style="text-align:right;padding:0.625rem 1rem;font-weight:700;color:#334155;border-bottom:2px solid #e2e8f0;white-space:nowrap;">Actions</th>
                     </tr>
@@ -104,26 +104,23 @@ async function loadSettlements(page = 1) {
         return;
     }
 
-    const statusColors = {
-        pending:    'background:#fef9c3;color:#854d0e;',
-        posted:     'background:#dbeafe;color:#1e40af;',
-        reconciled: 'background:#dcfce7;color:#166534;',
-    };
+    const downloaded = JSON.parse(localStorage.getItem('amazon_csv_downloaded') || '{}');
 
     data.data.forEach(s => {
-        const statusStyle = statusColors[s.status] || 'background:#f1f5f9;color:#475569;';
+        const isDownloaded = !!downloaded[s.settlement_id];
+        const badge = isDownloaded
+            ? '<span style="padding:2px 10px;border-radius:9999px;font-size:0.7rem;font-weight:700;background:#dcfce7;color:#166534;">downloaded</span>'
+            : '<span style="padding:2px 10px;border-radius:9999px;font-size:0.7rem;font-weight:700;background:#f1f5f9;color:#94a3b8;">not downloaded</span>';
         tbody.innerHTML += `
         <tr style="border-bottom:1px solid #f8fafc;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
             <td style="padding:0.625rem 1rem;font-family:monospace;font-size:0.75rem;color:#475569;">${s.settlement_id}</td>
             <td style="padding:0.625rem 1rem;color:#334155;">${s.start_date} → ${s.end_date}</td>
             <td style="padding:0.625rem 1rem;text-align:right;font-weight:600;color:#1e293b;">£${parseFloat(s.deposit_amount).toFixed(2)}</td>
-            <td style="padding:0.625rem 1rem;text-align:center;">
-                <span style="padding:2px 10px;border-radius:9999px;font-size:0.7rem;font-weight:700;${statusStyle}">${s.status}</span>
-            </td>
+            <td style="padding:0.625rem 1rem;text-align:center;" id="badge-${s.settlement_id}">${badge}</td>
             <td style="padding:0.625rem 1rem;color:#64748b;font-size:0.75rem;">${s.processed_at ?? '—'}</td>
             <td style="padding:0.625rem 1rem;text-align:right;white-space:nowrap;">
                 <a href="/amazon/settlements/${s.settlement_id}/view" style="background:#f1f5f9;color:#475569;border-radius:0.375rem;padding:3px 10px;font-size:0.75rem;font-weight:600;text-decoration:none;display:inline-block;margin-right:4px;">View</a>
-                <a href="/amazon/settlements/${s.settlement_id}/csv" style="background:#1e293b;color:#fff;border-radius:0.375rem;padding:3px 10px;font-size:0.75rem;font-weight:600;text-decoration:none;display:inline-block;">Download CSV</a>
+                <a href="/amazon/settlements/${s.settlement_id}/csv" onclick="markDownloaded('${s.settlement_id}')" style="background:#1e293b;color:#fff;border-radius:0.375rem;padding:3px 10px;font-size:0.75rem;font-weight:600;text-decoration:none;display:inline-block;">Download CSV</a>
             </td>
         </tr>`;
     });
@@ -163,6 +160,14 @@ async function runSync() {
 
     btn.disabled    = false;
     btn.textContent = 'Sync Settlements';
+}
+
+function markDownloaded(settlementId) {
+    const downloaded = JSON.parse(localStorage.getItem('amazon_csv_downloaded') || '{}');
+    downloaded[settlementId] = true;
+    localStorage.setItem('amazon_csv_downloaded', JSON.stringify(downloaded));
+    const cell = document.getElementById('badge-' + settlementId);
+    if (cell) cell.innerHTML = '<span style="padding:2px 10px;border-radius:9999px;font-size:0.7rem;font-weight:700;background:#dcfce7;color:#166534;">downloaded</span>';
 }
 
 loadSettlements();
