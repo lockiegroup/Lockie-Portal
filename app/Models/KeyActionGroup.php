@@ -8,7 +8,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class KeyActionGroup extends Model
 {
-    protected $fillable = ['name', 'created_by'];
+    protected $fillable = ['name', 'created_by', 'column_order'];
+
+    protected function casts(): array
+    {
+        return ['column_order' => 'array'];
+    }
 
     public function members(): BelongsToMany
     {

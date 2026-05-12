@@ -2,8 +2,12 @@
 <style>
 .board { display:flex; gap:1rem; overflow-x:auto; padding:0 1.5rem 2rem; align-items:flex-start; }
 .col { flex:0 0 280px; background:#f8fafc; border-radius:0.75rem; padding:0.75rem; }
+.col.col-ghost { opacity:0.35; background:#e0e7ff; }
+.col.col-drag  { box-shadow:0 8px 24px rgba(0,0,0,0.18); cursor:grabbing; }
 .col-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem; }
 .col-title { font-size:0.8125rem; font-weight:700; color:#1e293b; }
+.col-drag-handle { cursor:grab; color:#d1d5db; padding:2px 4px; font-size:1rem; line-height:1; user-select:none; flex-shrink:0; }
+.col-drag-handle:hover { color:#94a3b8; }
 .task-card { background:#fff; border-radius:0.5rem; box-shadow:0 1px 3px rgba(0,0,0,0.07); padding:0.75rem; margin-bottom:0.5rem; cursor:grab; border-left:3px solid transparent; transition:box-shadow 0.15s; }
 .task-card:hover { box-shadow:0 3px 8px rgba(0,0,0,0.12); }
 .task-card.sortable-ghost { opacity:0.35; background:#e0e7ff; }
@@ -46,34 +50,14 @@
 </div>
 
 <div class="board" id="board">
-    {{-- Unassigned column --}}
-    <div class="col" data-col-type="unassigned" data-col-id="">
-        <div class="col-header">
-            <span class="col-title">Unassigned</span>
-            <span style="background:#e2e8f0;color:#64748b;border-radius:9999px;padding:1px 8px;font-size:0.7rem;font-weight:700;" id="count-unassigned">{{ $unassigned->count() }}</span>
-        </div>
-        <div class="task-list" id="list-unassigned">
-            @foreach($unassigned as $task)
-                @include('key-actions._task', ['task' => $task])
-            @endforeach
-        </div>
-        <button class="add-task-btn" onclick="openAddTask(null, null)">+ Add task</button>
-        @if($unassignedDone->count())
-        <div class="done-toggle" onclick="toggleDone('unassigned')">▸ Completed ({{ $unassignedDone->count() }})</div>
-        <div id="done-unassigned" style="display:none;">
-            @foreach($unassignedDone as $task)
-                @include('key-actions._task', ['task' => $task])
-            @endforeach
-        </div>
-        @endif
-    </div>
-
-    {{-- Per-member columns --}}
-    @foreach($columns as $col)
+    {{-- All columns (members + buckets) in saved order --}}
+    @foreach($allColumns as $col)
+    @if($col['type'] === 'user')
     <div class="col" data-col-type="user" data-col-id="{{ $col['user']->id }}">
         <div class="col-header">
+            <span class="col-drag-handle" title="Drag to reorder">⠿</span>
             <span class="col-title">{{ $col['user']->name }}</span>
-            <span style="background:#e2e8f0;color:#64748b;border-radius:9999px;padding:1px 8px;font-size:0.7rem;font-weight:700;" id="count-{{ $col['user']->id }}">{{ $col['tasks']->count() }}</span>
+            <span style="background:#e2e8f0;color:#64748b;border-radius:9999px;padding:1px 8px;font-size:0.7rem;font-weight:700;">{{ $col['tasks']->count() }}</span>
         </div>
         <div class="task-list" id="list-{{ $col['user']->id }}">
             @foreach($col['tasks'] as $task)
@@ -82,20 +66,18 @@
         </div>
         <button class="add-task-btn" onclick="openAddTask({{ $col['user']->id }}, null)">+ Add task</button>
         @if($col['done']->count())
-        <div class="done-toggle" onclick="toggleDone('{{ $col['user']->id }}')">▸ Completed ({{ $col['done']->count() }})</div>
-        <div id="done-{{ $col['user']->id }}" style="display:none;">
+        <div class="done-toggle" onclick="toggleDone('u{{ $col['user']->id }}')">▸ Completed ({{ $col['done']->count() }})</div>
+        <div id="done-u{{ $col['user']->id }}" style="display:none;">
             @foreach($col['done'] as $task)
                 @include('key-actions._task', ['task' => $task])
             @endforeach
         </div>
         @endif
     </div>
-    @endforeach
-
-    {{-- Custom bucket columns --}}
-    @foreach($bucketColumns as $col)
+    @else
     <div class="col" data-col-type="bucket" data-col-id="{{ $col['bucket']->id }}">
         <div class="col-header">
+            <span class="col-drag-handle" title="Drag to reorder">⠿</span>
             <span class="col-title">{{ $col['bucket']->name }}</span>
             <div style="display:flex;align-items:center;gap:0.4rem;">
                 <span style="background:#e2e8f0;color:#64748b;border-radius:9999px;padding:1px 8px;font-size:0.7rem;font-weight:700;">{{ $col['tasks']->count() }}</span>
@@ -103,30 +85,31 @@
                 <button onclick="renameBucket({{ $col['bucket']->id }}, '{{ addslashes($col['bucket']->name) }}')"
                         title="Rename" style="background:none;border:none;cursor:pointer;color:#94a3b8;padding:0;font-size:0.75rem;line-height:1;">✎</button>
                 <button onclick="deleteBucket({{ $col['bucket']->id }})"
-                        title="Delete column" style="background:none;border:none;cursor:pointer;color:#fca5a5;padding:0;font-size:0.75rem;line-height:1;">✕</button>
+                        title="Delete" style="background:none;border:none;cursor:pointer;color:#fca5a5;padding:0;font-size:0.75rem;line-height:1;">✕</button>
                 @endif
             </div>
         </div>
-        <div class="task-list" id="list-bucket-{{ $col['bucket']->id }}">
+        <div class="task-list" id="list-b{{ $col['bucket']->id }}">
             @foreach($col['tasks'] as $task)
                 @include('key-actions._task', ['task' => $task])
             @endforeach
         </div>
         <button class="add-task-btn" onclick="openAddTask(null, {{ $col['bucket']->id }})">+ Add task</button>
         @if($col['done']->count())
-        <div class="done-toggle" onclick="toggleDone('bucket-{{ $col['bucket']->id }}')">▸ Completed ({{ $col['done']->count() }})</div>
-        <div id="done-bucket-{{ $col['bucket']->id }}" style="display:none;">
+        <div class="done-toggle" onclick="toggleDone('b{{ $col['bucket']->id }}')">▸ Completed ({{ $col['done']->count() }})</div>
+        <div id="done-b{{ $col['bucket']->id }}" style="display:none;">
             @foreach($col['done'] as $task)
                 @include('key-actions._task', ['task' => $task])
             @endforeach
         </div>
         @endif
     </div>
+    @endif
     @endforeach
 
     {{-- Add column button --}}
     @if($isGroupAdmin)
-    <div style="flex:0 0 200px;display:flex;align-items:flex-start;padding-top:0.5rem;">
+    <div class="col-add-btn" style="flex:0 0 200px;display:flex;align-items:flex-start;padding-top:0.5rem;">
         <button onclick="openAddBucket()"
                 style="width:100%;background:rgba(255,255,255,0.6);border:1px dashed #cbd5e1;border-radius:0.75rem;padding:0.75rem;font-size:0.8rem;color:#94a3b8;cursor:pointer;font-weight:600;">
             + Add Column
@@ -660,6 +643,7 @@ async function deleteBucket(bucketId) {
 
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script>
+// ── Task drag-and-drop ────────────────────────────────────────────────────────
 document.querySelectorAll('.task-list').forEach(list => {
     Sortable.create(list, {
         group:      'tasks',
@@ -667,14 +651,14 @@ document.querySelectorAll('.task-list').forEach(list => {
         ghostClass: 'sortable-ghost',
         dragClass:  'sortable-drag',
         onStart() { window._dragging = true; },
-        onEnd()    { setTimeout(() => { window._dragging = false; }, 50); saveOrder(); },
+        onEnd()    { setTimeout(() => { window._dragging = false; }, 50); saveTaskOrder(); },
     });
 });
 
-async function saveOrder() {
+async function saveTaskOrder() {
     const tasks = [];
     let order   = 0;
-    document.querySelectorAll('.col').forEach(col => {
+    document.querySelectorAll('.col[data-col-type]').forEach(col => {
         const colType = col.dataset.colType;
         const colId   = col.dataset.colId ? parseInt(col.dataset.colId) : null;
         col.querySelectorAll('.task-list .task-card').forEach(card => {
@@ -690,6 +674,28 @@ async function saveOrder() {
         method:  'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
         body:    JSON.stringify({ tasks }),
+    });
+}
+
+// ── Column drag-and-drop ──────────────────────────────────────────────────────
+Sortable.create(document.getElementById('board'), {
+    animation:  150,
+    handle:     '.col-drag-handle',
+    filter:     '.col-add-btn',
+    ghostClass: 'col-ghost',
+    dragClass:  'col-drag',
+    onEnd() { saveColumnOrder(); },
+});
+
+async function saveColumnOrder() {
+    const columns = [];
+    document.querySelectorAll('#board .col[data-col-type]').forEach(col => {
+        columns.push({ type: col.dataset.colType, id: parseInt(col.dataset.colId) });
+    });
+    await fetch(`${baseUrl}/columns/reorder`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
+        body:    JSON.stringify({ columns }),
     });
 }
 

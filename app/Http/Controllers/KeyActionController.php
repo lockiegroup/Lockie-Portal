@@ -64,22 +64,40 @@ class KeyActionController extends Controller
 
         $buckets = $group->buckets()->get();
 
-        $columns = $group->members->map(fn($member) => [
-            'type'  => 'user',
-            'user'  => $member,
-            'tasks' => $tasks->where('assigned_to', $member->id)->whereNull('bucket_id')->where('completed', false)->values(),
-            'done'  => $tasks->where('assigned_to', $member->id)->whereNull('bucket_id')->where('completed', true)->values(),
+        $memberCols = $group->members->map(fn($member) => [
+            'type'   => 'user',
+            'id'     => $member->id,
+            'user'   => $member,
+            'tasks'  => $tasks->where('assigned_to', $member->id)->whereNull('bucket_id')->where('completed', false)->values(),
+            'done'   => $tasks->where('assigned_to', $member->id)->whereNull('bucket_id')->where('completed', true)->values(),
         ]);
 
-        $bucketColumns = $buckets->map(fn($bucket) => [
+        $bucketCols = $buckets->map(fn($bucket) => [
             'type'   => 'bucket',
+            'id'     => $bucket->id,
             'bucket' => $bucket,
             'tasks'  => $tasks->where('bucket_id', $bucket->id)->where('completed', false)->values(),
             'done'   => $tasks->where('bucket_id', $bucket->id)->where('completed', true)->values(),
         ]);
 
-        $unassigned     = $tasks->whereNull('assigned_to')->whereNull('bucket_id')->where('completed', false)->values();
-        $unassignedDone = $tasks->whereNull('assigned_to')->whereNull('bucket_id')->where('completed', true)->values();
+        $allRaw = $memberCols->concat($bucketCols);
+
+        if ($group->column_order) {
+            $ordered = collect();
+            foreach ($group->column_order as $entry) {
+                $found = $allRaw->first(fn($c) => $c['type'] === $entry['type'] && (int)$c['id'] === (int)$entry['id']);
+                if ($found) $ordered->push($found);
+            }
+            // Append columns added after the order was last saved
+            $allRaw->each(function ($col) use ($ordered) {
+                if (!$ordered->contains(fn($c) => $c['type'] === $col['type'] && $c['id'] === $col['id'])) {
+                    $ordered->push($col);
+                }
+            });
+            $allColumns = $ordered;
+        } else {
+            $allColumns = $allRaw;
+        }
 
         $isGroupAdmin = $user->isMaster() || $group->isAdmin($user);
         $allUsers     = $user->isMaster()
@@ -87,7 +105,7 @@ class KeyActionController extends Controller
             : collect();
 
         return view('key-actions.show', compact(
-            'group', 'columns', 'bucketColumns', 'unassigned', 'unassignedDone', 'isGroupAdmin', 'allUsers'
+            'group', 'allColumns', 'isGroupAdmin', 'allUsers'
         ));
     }
 
@@ -148,6 +166,21 @@ class KeyActionController extends Controller
         abort_unless($bucket->group_id === $group->id, 404);
 
         $bucket->delete();
+        return response()->json(['ok' => true]);
+    }
+
+    public function reorderColumns(Request $request, KeyActionGroup $group): JsonResponse
+    {
+        $user = auth()->user();
+        abort_unless($user->isMaster() || $group->isAdmin($user), 403);
+
+        $data = $request->validate([
+            'columns'        => 'required|array',
+            'columns.*.type' => 'required|in:user,bucket',
+            'columns.*.id'   => 'required|integer',
+        ]);
+
+        $group->update(['column_order' => $data['columns']]);
         return response()->json(['ok' => true]);
     }
 

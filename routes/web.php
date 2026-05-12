@@ -190,6 +190,7 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::get('/{group}',                                               [KeyActionController::class, 'show'])->name('show');
         Route::patch('/{group}',                                             [KeyActionController::class, 'update'])->name('update');
         Route::delete('/{group}',                                            [KeyActionController::class, 'destroy'])->name('destroy');
+        Route::post('/{group}/columns/reorder',                              [KeyActionController::class, 'reorderColumns'])->name('columns.reorder');
         Route::post('/{group}/buckets',                                      [KeyActionController::class, 'storeBucket'])->name('buckets.store');
         Route::patch('/{group}/buckets/{bucket}',                            [KeyActionController::class, 'updateBucket'])->name('buckets.update');
         Route::delete('/{group}/buckets/{bucket}',                           [KeyActionController::class, 'destroyBucket'])->name('buckets.destroy');
