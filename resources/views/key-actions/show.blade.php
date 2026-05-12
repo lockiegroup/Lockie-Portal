@@ -263,8 +263,13 @@
             <div id="member-row-{{ $m->id }}" style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f1f5f9;">
                 <span style="font-size:0.875rem;color:#1e293b;">{{ $m->name }}</span>
                 <div style="display:flex;align-items:center;gap:0.5rem;">
-                    <span style="font-size:0.7rem;color:#94a3b8;">{{ $m->pivot->role }}</span>
+                    <span id="role-label-{{ $m->id }}" style="font-size:0.7rem;color:#94a3b8;">{{ $m->pivot->role }}</span>
                     @if($m->id !== auth()->id())
+                    <button id="role-btn-{{ $m->id }}"
+                            onclick="toggleRole({{ $m->id }}, '{{ $m->pivot->role }}')"
+                            style="background:#e0f2fe;color:#0369a1;border:none;border-radius:0.375rem;padding:2px 8px;font-size:0.75rem;cursor:pointer;">
+                        {{ $m->pivot->role === 'admin' ? 'Make Member' : 'Make Admin' }}
+                    </button>
                     <button onclick="removeMember({{ $m->id }})"
                             style="background:#fee2e2;color:#991b1b;border:none;border-radius:0.375rem;padding:2px 8px;font-size:0.75rem;cursor:pointer;">Remove</button>
                     @endif
@@ -555,6 +560,22 @@ async function addMember() {
     });
     const json = await res.json();
     if (json.ok) location.reload();
+}
+
+async function toggleRole(userId, currentRole) {
+    const newRole = currentRole === 'admin' ? 'member' : 'admin';
+    const res  = await fetch(`${baseUrl}/members/${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
+        body: JSON.stringify({ role: newRole }),
+    });
+    const json = await res.json();
+    if (json.ok) {
+        document.getElementById('role-label-' + userId).textContent = newRole;
+        const btn = document.getElementById('role-btn-' + userId);
+        btn.textContent = newRole === 'admin' ? 'Make Member' : 'Make Admin';
+        btn.setAttribute('onclick', `toggleRole(${userId}, '${newRole}')`);
+    }
 }
 
 async function removeMember(userId) {

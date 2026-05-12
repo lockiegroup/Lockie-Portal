@@ -198,6 +198,7 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::patch('/{group}/buckets/{bucket}',                            [KeyActionController::class, 'updateBucket'])->name('buckets.update');
         Route::delete('/{group}/buckets/{bucket}',                           [KeyActionController::class, 'destroyBucket'])->name('buckets.destroy');
         Route::post('/{group}/members',                                      [KeyActionController::class, 'addMember'])->name('members.add');
+        Route::patch('/{group}/members/{member}',                            [KeyActionController::class, 'updateMember'])->name('members.update');
         Route::delete('/{group}/members/{member}',                           [KeyActionController::class, 'removeMember'])->name('members.remove');
         Route::post('/{group}/tasks',                                        [KeyActionController::class, 'storeTask'])->name('tasks.store');
         Route::get('/{group}/tasks/{task}',                                  [KeyActionController::class, 'showTask'])->name('tasks.show');

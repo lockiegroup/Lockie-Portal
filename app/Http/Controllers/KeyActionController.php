@@ -267,6 +267,17 @@ class KeyActionController extends Controller
         return response()->json(['ok' => true]);
     }
 
+    public function updateMember(Request $request, KeyActionGroup $group, User $member): JsonResponse
+    {
+        $user = auth()->user();
+        abort_unless($user->isMaster() || $group->isAdmin($user), 403);
+
+        $data = $request->validate(['role' => 'required|in:admin,member']);
+        $group->members()->updateExistingPivot($member->id, ['role' => $data['role']]);
+
+        return response()->json(['ok' => true, 'role' => $data['role']]);
+    }
+
     // ── Tasks ─────────────────────────────────────────────────────────────────
 
     public function showTask(KeyActionGroup $group, KeyActionTask $task): JsonResponse
