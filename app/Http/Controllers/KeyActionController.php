@@ -71,7 +71,7 @@ class KeyActionController extends Controller
             'id'     => $member->id,
             'user'   => $member,
             'tasks'  => $tasks->where('assigned_to', $member->id)->whereNull('bucket_id')->where('completed', false)->values(),
-            'done'   => $tasks->where('assigned_to', $member->id)->whereNull('bucket_id')->where('completed', true)->values(),
+            'done'   => $tasks->where('assigned_to', $member->id)->whereNull('bucket_id')->where('completed', true)->sortByDesc('completed_at')->values(),
         ]);
 
         $bucketCols = $buckets->map(fn($bucket) => [
@@ -79,7 +79,7 @@ class KeyActionController extends Controller
             'id'     => $bucket->id,
             'bucket' => $bucket,
             'tasks'  => $tasks->where('bucket_id', $bucket->id)->where('completed', false)->values(),
-            'done'   => $tasks->where('bucket_id', $bucket->id)->where('completed', true)->values(),
+            'done'   => $tasks->where('bucket_id', $bucket->id)->where('completed', true)->sortByDesc('completed_at')->values(),
         ]);
 
         $allRaw = $memberCols->concat($bucketCols);
