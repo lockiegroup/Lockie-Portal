@@ -36,8 +36,9 @@ return [
     ],
 
     'unleashed' => [
-        'id'  => env('UNLEASHED_API_ID'),
-        'key' => env('UNLEASHED_API_KEY'),
+        'id'                    => env('UNLEASHED_API_ID'),
+        'key'                   => env('UNLEASHED_API_KEY'),
+        'amazon_customer_codes' => env('UNLEASHED_AMAZON_CUSTOMER_CODES', 'JWFBA'),
     ],
 
     'amazon' => [

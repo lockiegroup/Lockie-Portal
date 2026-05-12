@@ -20,11 +20,6 @@ class UnleashedService
         return base64_encode(hash_hmac('sha256', $queryString, $this->apiKey, true));
     }
 
-    public function headersForQuery(string $queryString = ''): array
-    {
-        return $this->headers($queryString);
-    }
-
     private function headers(string $queryString = ''): array
     {
         return [
@@ -891,94 +886,59 @@ class UnleashedService
     }
 
     /**
-     * Given a list of Amazon order IDs (e.g. "206-8309509-3453916"), find the
-     * matching Unleashed sales order number (e.g. "SO-00026477") by scanning
-     * orders within $startDate–$endDate and matching on CustomerRef.
+     * Given a list of Amazon order IDs, find matching Unleashed SO numbers by
+     * scanning all SalesOrders for each configured Amazon customer code.
      *
-     * Unleashed's pagination bug means every page past the first for a filtered
-     * query returns the same records — so each filtered query only yields ~200
-     * unique orders. We work around this by splitting the date range into
-     * weekly chunks and firing them all in parallel; each chunk's page 1 returns
-     * a different 200 orders, giving comprehensive coverage.
+     * Unleashed's date filter is unreliable for API-imported orders (they do not
+     * appear in date-range queries matching their OrderDate). Filtering by
+     * customerCode is reliable and covers all Amazon orders across all pages.
      *
-     * Returns ['amazon-id' => 'SO-00012345', ...]  (missing = no match found).
+     * Returns ['amazon-id' => 'SO-00012345', ...]
      */
-    public function fetchOrderNumbersByAmazonIds(array $amazonIds, string $startDate, string $endDate): array
+    public function fetchOrderNumbersByAmazonIds(array $amazonIds, array $customerCodes): array
     {
         $needle  = array_flip(array_unique($amazonIds));
         $results = [];
-        $seen    = [];
 
-        // Build 1-day date chunks — ensures each chunk's page 1 (200 orders)
-        // captures all orders in that day, working around Unleashed's bug
-        // where page 2+ repeats page 1 on filtered queries.
-        $chunks = [];
-        $cur    = \Carbon\Carbon::parse($startDate);
-        $end    = \Carbon\Carbon::parse($endDate);
-        while ($cur->lte($end)) {
-            $chunks[] = [$cur->toDateString(), $cur->toDateString()];
-            $cur->addDay();
-        }
+        foreach ($customerCodes as $code) {
+            if (empty($needle)) break;
 
-        // Fire all chunks in parallel — each returns a different set of orders
-        $responses = Http::pool(function ($pool) use ($chunks) {
-            $calls = [];
-            foreach ($chunks as $i => [$from, $to]) {
-                $qs      = http_build_query(['startDate' => $from, 'endDate' => $to, 'pageSize' => 200, 'pageNumber' => 1]);
-                $calls[] = $pool->as($i)->timeout(30)->withHeaders($this->headers($qs))
-                               ->get(self::BASE_URL . '/SalesOrders?' . $qs);
-            }
-            return $calls;
-        });
+            // Fetch page 1 to get total page count
+            $first      = $this->get('SalesOrders', ['customerCode' => $code, 'pageSize' => 200, 'pageNumber' => 1]);
+            $totalPages = $first['Pagination']['NumberOfPages'] ?? 1;
 
-        foreach ($chunks as $i => [$from, $to]) {
-            $res = $responses[$i] ?? null;
-            if (!$res || $res instanceof \Throwable || $res->failed()) continue;
-
-            $items = $res->json()['Items'] ?? [];
-
-            foreach ($items as $order) {
-                $guid = $order['Guid'] ?? null;
-                if ($guid !== null && isset($seen[$guid])) continue;
-                if ($guid !== null) $seen[$guid] = true;
-
-                $ref = trim($order['CustomerRef'] ?? '');
-                if ($ref === '' || !isset($needle[$ref])) continue;
-
+            foreach ($first['Items'] ?? [] as $order) {
+                $ref     = trim($order['CustomerRef'] ?? '');
                 $orderNo = $order['OrderNumber'] ?? null;
-                if (!$orderNo) continue;
-
-                if (!isset($results[$ref])) {
+                if ($orderNo && $ref !== '' && isset($needle[$ref]) && !isset($results[$ref])) {
                     $results[$ref] = $orderNo;
-                    if (count($results) === count($needle)) return $results;
+                    unset($needle[$ref]);
                 }
             }
-        }
 
-        // Phase 2: unfiltered scan of the most recent orders — catches orders
-        // missed by phase 1 because Unleashed's date filter uses CreatedOn, not
-        // OrderDate, so orders entered after their displayed date are invisible
-        // to the chunked date queries above.
-        $unmatched = array_diff_key($needle, array_flip(array_keys($results)));
-        if (!empty($unmatched)) {
-            // Fetch up to 3 pages of 500 (1500 most recent orders) to find matches.
-            for ($page = 1; $page <= 3 && !empty($unmatched); $page++) {
-                $qs   = http_build_query(['pageSize' => 500, 'pageNumber' => $page]);
-                $res  = Http::timeout(60)->withHeaders($this->headers($qs))
-                            ->get(self::BASE_URL . '/SalesOrders?' . $qs);
+            if (empty($needle) || $totalPages <= 1) continue;
 
-                if (!$res || $res->failed()) break;
+            // Fetch remaining pages in parallel
+            $responses = Http::pool(function ($pool) use ($code, $totalPages) {
+                $calls = [];
+                for ($p = 2; $p <= $totalPages; $p++) {
+                    $qs      = http_build_query(['customerCode' => $code, 'pageSize' => 200, 'pageNumber' => $p]);
+                    $calls[] = $pool->as($p)->timeout(30)->withHeaders($this->headers($qs))
+                                   ->get(self::BASE_URL . '/SalesOrders?' . $qs);
+                }
+                return $calls;
+            });
 
-                $items = $res->json()['Items'] ?? [];
-                if (empty($items)) break;
-
-                foreach ($items as $order) {
+            for ($p = 2; $p <= $totalPages && !empty($needle); $p++) {
+                $res = $responses[$p] ?? null;
+                if (!$res || $res instanceof \Throwable || $res->failed()) continue;
+                foreach ($res->json()['Items'] ?? [] as $order) {
                     $ref     = trim($order['CustomerRef'] ?? '');
                     $orderNo = $order['OrderNumber'] ?? null;
-                    if (!$orderNo || $ref === '' || !isset($unmatched[$ref])) continue;
-                    $results[$ref] = $orderNo;
-                    unset($unmatched[$ref]);
-                    if (empty($unmatched)) break;
+                    if ($orderNo && $ref !== '' && isset($needle[$ref]) && !isset($results[$ref])) {
+                        $results[$ref] = $orderNo;
+                        unset($needle[$ref]);
+                    }
                 }
             }
         }

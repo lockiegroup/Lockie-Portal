@@ -170,58 +170,7 @@ class AmazonController extends Controller
         }
     }
 
-    public function debugUnleashedLookup(AmazonSettlement $settlement): JsonResponse
-    {
-        $unleashed = new UnleashedService(
-            config('services.unleashed.id'),
-            config('services.unleashed.key')
-        );
-
-        $unmatched = $settlement->lines()
-            ->whereNotNull('order_id')
-            ->whereNull('unleashed_order_no')
-            ->pluck('order_id')
-            ->unique()
-            ->values()
-            ->all();
-
-        try {
-            // Fetch SO-00026163 to get the Amazon customer code
-            $known = $unleashed->get('SalesOrders', ['orderNumber' => 'SO-00026163', 'pageSize' => 1]);
-            $order = $known['Items'][0] ?? null;
-            $customerCode = $order['Customer']['CustomerCode'] ?? null;
-
-            if (!$customerCode) {
-                return response()->json(['error' => 'Could not find customer code on SO-00026163', 'order' => $order]);
-            }
-
-            // Scan all orders for this customer, day by day, looking for unmatched Amazon IDs
-            $hits   = [];
-            $needle = array_flip($unmatched);
-
-            // Also try: filter SalesOrders by customer code directly
-            $byCustomer = $unleashed->get('SalesOrders', ['customerCode' => $customerCode, 'pageSize' => 200, 'pageNumber' => 1]);
-            $total = $byCustomer['Pagination']['NumberOfPages'] ?? 1;
-            foreach ($byCustomer['Items'] ?? [] as $o) {
-                $ref = trim($o['CustomerRef'] ?? '');
-                if ($ref && isset($needle[$ref])) {
-                    $hits[$ref] = ['method' => 'customerCode_p1', 'OrderNumber' => $o['OrderNumber']];
-                    unset($needle[$ref]);
-                }
-            }
-
-            return response()->json([
-                'customer_code'    => $customerCode,
-                'customer_pages'   => $total,
-                'found'            => $hits,
-                'still_missing'    => array_keys($needle),
-            ]);
-        } catch (\Throwable $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
-        }
-    }
-
-    public function profitReport(Request $request): JsonResponse
+public function profitReport(Request $request): JsonResponse
     {
         $query = AmazonProfitSnapshot::query();
 

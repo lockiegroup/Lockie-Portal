@@ -155,13 +155,11 @@ class AmazonSyncService
 
         if (empty($amazonIds)) return 0;
 
-        // Look back 120 days before settlement start, and scan up to today —
-        // Unleashed orders are sometimes entered days/weeks after the Amazon
-        // settlement closes, so capping at settlement end_date misses them.
-        $start = ($settlement->start_date ?? now())->copy()->subDays(120)->toDateString();
-        $end   = now()->toDateString();
+        $codes = array_filter(array_map('trim',
+            explode(',', config('services.unleashed.amazon_customer_codes', 'JWFBA'))
+        ));
 
-        $map   = $this->unleashed->fetchOrderNumbersByAmazonIds($amazonIds, $start, $end);
+        $map = $this->unleashed->fetchOrderNumbersByAmazonIds($amazonIds, $codes);
         $count = 0;
 
         foreach ($map as $amazonId => $unleashedNo) {
