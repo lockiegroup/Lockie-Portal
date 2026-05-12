@@ -186,40 +186,35 @@ class AmazonController extends Controller
             ->all();
 
         try {
-            // First, probe SalesInvoices with no date filter to see its structure
-            $probe      = $unleashed->get('SalesInvoices', ['pageSize' => 1]);
-            $probeItem  = $probe['Items'][0] ?? null;
-            $probeKeys  = $probeItem ? array_keys(array_filter($probeItem, fn($v) => !is_array($v))) : [];
+            // Fetch SO-00026163 to get the Amazon customer code
+            $known = $unleashed->get('SalesOrders', ['orderNumber' => 'SO-00026163', 'pageSize' => 1]);
+            $order = $known['Items'][0] ?? null;
+            $customerCode = $order['Customer']['CustomerCode'] ?? null;
 
-            // Scan SalesInvoices day-by-day — try both startDate and invoiceDate params
+            if (!$customerCode) {
+                return response()->json(['error' => 'Could not find customer code on SO-00026163', 'order' => $order]);
+            }
+
+            // Scan all orders for this customer, day by day, looking for unmatched Amazon IDs
             $hits   = [];
             $needle = array_flip($unmatched);
-            $cur    = new \DateTime('2026-04-01');
-            $end    = new \DateTime('2026-05-11');
 
-            while ($cur <= $end && !empty($needle)) {
-                $d = $cur->format('Y-m-d');
-                $cur->modify('+1 day');
-
-                try {
-                    $data  = $unleashed->get('SalesInvoices', ['startDate' => $d, 'endDate' => $d, 'pageSize' => 200]);
-                } catch (\Throwable) {
-                    continue;
-                }
-
-                foreach ($data['Items'] ?? [] as $inv) {
-                    $ref = trim($inv['CustomerRef'] ?? '');
-                    if ($ref && isset($needle[$ref])) {
-                        $hits[$ref] = ['date' => $d, 'InvoiceNumber' => $inv['InvoiceNumber'] ?? null, 'OrderNumber' => $inv['OrderNumber'] ?? null];
-                        unset($needle[$ref]);
-                    }
+            // Also try: filter SalesOrders by customer code directly
+            $byCustomer = $unleashed->get('SalesOrders', ['customerCode' => $customerCode, 'pageSize' => 200, 'pageNumber' => 1]);
+            $total = $byCustomer['Pagination']['NumberOfPages'] ?? 1;
+            foreach ($byCustomer['Items'] ?? [] as $o) {
+                $ref = trim($o['CustomerRef'] ?? '');
+                if ($ref && isset($needle[$ref])) {
+                    $hits[$ref] = ['method' => 'customerCode_p1', 'OrderNumber' => $o['OrderNumber']];
+                    unset($needle[$ref]);
                 }
             }
 
             return response()->json([
-                'probe_keys' => $probeKeys,
-                'found'      => $hits,
-                'missing'    => array_keys($needle),
+                'customer_code'    => $customerCode,
+                'customer_pages'   => $total,
+                'found'            => $hits,
+                'still_missing'    => array_keys($needle),
             ]);
         } catch (\Throwable $e) {
             return response()->json(['error' => $e->getMessage()], 500);
