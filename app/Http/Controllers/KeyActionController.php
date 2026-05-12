@@ -10,9 +10,9 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class KeyActionController extends Controller
 {
@@ -157,7 +157,7 @@ class KeyActionController extends Controller
         return response()->json(['ok' => true, 'name' => $origName]);
     }
 
-    public function downloadAgenda(KeyActionGroup $group): Response
+    public function downloadAgenda(KeyActionGroup $group): BinaryFileResponse
     {
         $user = auth()->user();
         abort_unless($user->isMaster() || $group->hasMember($user), 403);
