@@ -186,33 +186,40 @@ class AmazonController extends Controller
             ->all();
 
         try {
-            // Scan SalesInvoices day-by-day for the settlement period
-            $hits = [];
-            $needle = array_flip($unmatched);
-            $dates = [];
-            $cur = new \DateTime('2026-04-01');
-            $end = new \DateTime('2026-05-11');
-            while ($cur <= $end) {
-                $dates[] = $cur->format('Y-m-d');
-                $cur->modify('+1 day');
-            }
+            // First, probe SalesInvoices with no date filter to see its structure
+            $probe      = $unleashed->get('SalesInvoices', ['pageSize' => 1]);
+            $probeItem  = $probe['Items'][0] ?? null;
+            $probeKeys  = $probeItem ? array_keys(array_filter($probeItem, fn($v) => !is_array($v))) : [];
 
-            foreach ($dates as $d) {
-                $data  = $unleashed->get('SalesInvoices', ['startDate' => $d, 'endDate' => $d, 'pageSize' => 200]);
-                $items = $data['Items'] ?? [];
-                foreach ($items as $inv) {
-                    $ref = trim($inv['CustomerRef'] ?? $inv['OrderNumber'] ?? '');
+            // Scan SalesInvoices day-by-day — try both startDate and invoiceDate params
+            $hits   = [];
+            $needle = array_flip($unmatched);
+            $cur    = new \DateTime('2026-04-01');
+            $end    = new \DateTime('2026-05-11');
+
+            while ($cur <= $end && !empty($needle)) {
+                $d = $cur->format('Y-m-d');
+                $cur->modify('+1 day');
+
+                try {
+                    $data  = $unleashed->get('SalesInvoices', ['startDate' => $d, 'endDate' => $d, 'pageSize' => 200]);
+                } catch (\Throwable) {
+                    continue;
+                }
+
+                foreach ($data['Items'] ?? [] as $inv) {
+                    $ref = trim($inv['CustomerRef'] ?? '');
                     if ($ref && isset($needle[$ref])) {
                         $hits[$ref] = ['date' => $d, 'InvoiceNumber' => $inv['InvoiceNumber'] ?? null, 'OrderNumber' => $inv['OrderNumber'] ?? null];
                         unset($needle[$ref]);
                     }
                 }
-                if (empty($needle)) break;
             }
 
             return response()->json([
-                'found'   => $hits,
-                'missing' => array_keys($needle),
+                'probe_keys' => $probeKeys,
+                'found'      => $hits,
+                'missing'    => array_keys($needle),
             ]);
         } catch (\Throwable $e) {
             return response()->json(['error' => $e->getMessage()], 500);
