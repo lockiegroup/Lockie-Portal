@@ -88,6 +88,17 @@
                 <img src="{{ asset('images/logo.png') }}" alt="Lockie Group" style="height:28px;width:auto;">
             </a>
         </div>
+        @if(session('impersonating_id'))
+        <div style="background:#7c3aed;color:#fff;text-align:center;padding:8px 1rem;font-size:0.8125rem;font-weight:600;position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:center;gap:1rem;">
+            <span>👁 Viewing as {{ auth()->user()->name }}</span>
+            <form method="POST" action="{{ route('impersonate.stop') }}" style="margin:0;">
+                @csrf
+                <button type="submit" style="background:rgba(255,255,255,0.2);color:#fff;border:1px solid rgba(255,255,255,0.4);border-radius:0.375rem;padding:2px 12px;font-size:0.75rem;font-weight:700;cursor:pointer;">
+                    Stop &amp; Return
+                </button>
+            </form>
+        </div>
+        @endif
         <div id="page-content">
             {{ $slot }}
         </div>

@@ -66,6 +66,12 @@
                     </td>
                     <td class="px-5 py-4 text-right">
                         <div class="flex items-center justify-end gap-3">
+                            @if(!$user->isMaster() && $user->id !== auth()->id())
+                            <form action="{{ route('impersonate.start', $user) }}" method="POST">
+                                @csrf
+                                <button class="text-violet-600 hover:text-violet-800 font-medium">Login as</button>
+                            </form>
+                            @endif
                             <a href="{{ route('admin.users.edit', $user) }}" class="text-sky-600 hover:text-sky-800 font-medium">Edit</a>
                             @if($user->id !== auth()->id())
                                 <form action="{{ route('admin.users.destroy', $user) }}" method="POST"

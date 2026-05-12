@@ -24,6 +24,7 @@ use App\Http\Controllers\ImportsController;
 use App\Http\Controllers\KeyAccountController;
 use App\Http\Controllers\Admin\KeyAccountAdminController;
 use App\Http\Controllers\KeyActionController;
+use App\Http\Controllers\ImpersonateController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn() => redirect()->route('login'));
@@ -199,6 +200,10 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::post('/{group}/tasks/{task}/comments',                        [KeyActionController::class, 'storeComment'])->name('tasks.comments.store');
         Route::delete('/{group}/tasks/{task}/comments/{comment}',            [KeyActionController::class, 'destroyComment'])->name('tasks.comments.destroy');
     });
+
+    // Impersonation
+    Route::post('/impersonate/{user}', [ImpersonateController::class, 'start'])->name('impersonate.start');
+    Route::post('/impersonate/stop',   [ImpersonateController::class, 'stop'])->name('impersonate.stop');
 
     // Admin — manage users + activity log
     Route::middleware('can:manage_users')->group(function () {
