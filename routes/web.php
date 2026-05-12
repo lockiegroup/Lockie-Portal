@@ -201,9 +201,9 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::delete('/{group}/tasks/{task}/comments/{comment}',            [KeyActionController::class, 'destroyComment'])->name('tasks.comments.destroy');
     });
 
-    // Impersonation
-    Route::post('/impersonate/{user}', [ImpersonateController::class, 'start'])->name('impersonate.start');
+    // Impersonation (stop must be before {user} to avoid route conflict)
     Route::post('/impersonate/stop',   [ImpersonateController::class, 'stop'])->name('impersonate.stop');
+    Route::post('/impersonate/{user}', [ImpersonateController::class, 'start'])->name('impersonate.start');
 
     // Admin — manage users + activity log
     Route::middleware('can:manage_users')->group(function () {
