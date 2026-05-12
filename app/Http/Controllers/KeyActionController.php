@@ -80,6 +80,17 @@ class KeyActionController extends Controller
         ));
     }
 
+    public function update(Request $request, KeyActionGroup $group): JsonResponse
+    {
+        $user = auth()->user();
+        abort_unless($user->isMaster() || $group->isAdmin($user), 403);
+
+        $data = $request->validate(['name' => 'required|string|max:100']);
+        $group->update($data);
+
+        return response()->json(['ok' => true, 'name' => $group->name]);
+    }
+
     public function destroy(KeyActionGroup $group): RedirectResponse
     {
         $user = auth()->user();

@@ -130,12 +130,7 @@
                        style="width:100%;border:1px solid #d1d5db;border-radius:0.375rem;padding:0.375rem 0.5rem;font-size:0.8125rem;box-sizing:border-box;">
             </div>
         </div>
-        <div>
-            <label style="font-size:0.75rem;font-weight:600;color:#64748b;display:block;margin-bottom:3px;">Notes</label>
-            <textarea id="panel-desc" rows="3" onblur="saveField('description', this.value)"
-                      placeholder="Add notes…"
-                      style="width:100%;border:1px solid #d1d5db;border-radius:0.375rem;padding:0.375rem 0.5rem;font-size:0.8125rem;resize:vertical;box-sizing:border-box;"></textarea>
-        </div>
+
     </div>
 
     <div style="display:flex;gap:0.5rem;margin-bottom:1.25rem;">
@@ -194,11 +189,7 @@
                     </select>
                 </div>
             </div>
-            <div>
-                <label style="font-size:0.8rem;font-weight:600;color:#374151;display:block;margin-bottom:3px;">Due Date</label>
-                <input id="new-task-due" type="date"
-                       style="width:100%;border:1px solid #d1d5db;border-radius:0.5rem;padding:0.5rem 0.75rem;font-size:0.8125rem;box-sizing:border-box;">
-            </div>
+
         </div>
         <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1rem;">
             <button onclick="closeAddTask()"
@@ -218,9 +209,21 @@
 <div id="members-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;align-items:center;justify-content:center;">
     <div style="background:#fff;border-radius:0.75rem;padding:1.5rem;width:100%;max-width:440px;margin:1rem;box-sizing:border-box;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
-            <h2 style="font-size:1rem;font-weight:700;color:#1e293b;margin:0;">Manage Members</h2>
+            <h2 style="font-size:1rem;font-weight:700;color:#1e293b;margin:0;">Manage Group</h2>
             <button onclick="document.getElementById('members-modal').style.display='none'"
                     style="background:none;border:none;font-size:1.25rem;cursor:pointer;color:#94a3b8;">✕</button>
+        </div>
+
+        <div style="margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid #f1f5f9;">
+            <p style="font-size:0.8rem;font-weight:600;color:#374151;margin:0 0 0.5rem;">Group Name</p>
+            <div style="display:flex;gap:0.5rem;">
+                <input id="group-name-input" type="text" value="{{ $group->name }}"
+                       style="flex:1;border:1px solid #d1d5db;border-radius:0.5rem;padding:0.375rem 0.5rem;font-size:0.8125rem;">
+                <button onclick="renameGroup()"
+                        style="background:#1e293b;color:#fff;border:none;border-radius:0.5rem;padding:0.375rem 0.75rem;font-size:0.8125rem;font-weight:600;cursor:pointer;">
+                    Save
+                </button>
+            </div>
         </div>
 
         <div id="members-list" style="margin-bottom:1rem;">
@@ -299,8 +302,6 @@ function populatePanel(task, comments) {
     document.getElementById('panel-title-input').value         = task.title;
     document.getElementById('panel-assignee').value            = task.assigned_to ?? '';
     document.getElementById('panel-label').value               = task.label;
-    document.getElementById('panel-due').value                 = task.due_date ?? '';
-    document.getElementById('panel-desc').value                = task.description ?? '';
 
     const btn = document.getElementById('panel-complete-btn');
     if (task.completed) {
@@ -427,7 +428,6 @@ function openAddTask(userId) {
     document.getElementById('new-task-title').value    = '';
     document.getElementById('new-task-assignee').value = userId ?? '';
     document.getElementById('new-task-label').value    = 'none';
-    document.getElementById('new-task-due').value      = '';
     document.getElementById('add-task-modal').style.display = 'flex';
     setTimeout(() => document.getElementById('new-task-title').focus(), 50);
 }
@@ -444,7 +444,6 @@ async function submitNewTask() {
         title,
         assigned_to: document.getElementById('new-task-assignee').value || null,
         label:       document.getElementById('new-task-label').value,
-        due_date:    document.getElementById('new-task-due').value || null,
     };
 
     const res  = await fetch(`${baseUrl}/tasks`, {
@@ -518,14 +517,35 @@ function updateCardDOM(task) {
 
 function buildMetaHTML(task) {
     let html = '';
-    if (task.due_date) {
-        const cls = task.overdue ? 'due-bad' : 'due-ok';
-        html += `<span class="badge ${cls}">📅 ${task.due_date}</span>`;
-    }
     if (task.comment_count > 0) {
         html += `<span class="badge due-ok comment-badge" data-count="${task.comment_count}">💬 ${task.comment_count}</span>`;
     }
     return html;
+}
+
+async function renameGroup() {
+    const name = document.getElementById('group-name-input').value.trim();
+    if (!name) return;
+    const res  = await fetch(`${baseUrl}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
+        body: JSON.stringify({ name }),
+    });
+    const json = await res.json();
+    if (json.ok) {
+        document.querySelector('h1').textContent = json.name;
+        document.getElementById('members-modal').style.display = 'none';
+    }
+}
+
+async function quickComplete(taskId, event) {
+    event.stopPropagation();
+    const res  = await fetch(`${baseUrl}/tasks/${taskId}/complete`, {
+        method: 'PATCH',
+        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
+    });
+    const json = await res.json();
+    if (json.ok) location.reload();
 }
 </script>
 

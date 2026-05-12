@@ -188,6 +188,7 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::get('/',                                                      [KeyActionController::class, 'index'])->name('index');
         Route::post('/',                                                     [KeyActionController::class, 'store'])->name('store');
         Route::get('/{group}',                                               [KeyActionController::class, 'show'])->name('show');
+        Route::patch('/{group}',                                             [KeyActionController::class, 'update'])->name('update');
         Route::delete('/{group}',                                            [KeyActionController::class, 'destroy'])->name('destroy');
         Route::post('/{group}/members',                                      [KeyActionController::class, 'addMember'])->name('members.add');
         Route::delete('/{group}/members/{member}',                           [KeyActionController::class, 'removeMember'])->name('members.remove');
