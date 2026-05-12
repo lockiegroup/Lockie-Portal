@@ -10,6 +10,8 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class KeyActionController extends Controller
@@ -127,6 +129,58 @@ class KeyActionController extends Controller
 
         $group->delete();
         return redirect()->route('key-actions.index');
+    }
+
+    // ── Agenda ───────────────────────────────────────────────────────────────
+
+    public function uploadAgenda(Request $request, KeyActionGroup $group): JsonResponse
+    {
+        $user = auth()->user();
+        abort_unless($user->isMaster() || $group->isAdmin($user), 403);
+
+        $request->validate([
+            'agenda' => 'required|file|mimes:pdf,doc,docx|max:20480',
+        ]);
+
+        // Delete old file if present
+        if ($group->agenda_path && Storage::exists($group->agenda_path)) {
+            Storage::delete($group->agenda_path);
+        }
+
+        $file     = $request->file('agenda');
+        $ext      = $file->getClientOriginalExtension();
+        $path     = $file->storeAs('key-action-agendas', "group_{$group->id}.{$ext}");
+        $origName = $file->getClientOriginalName();
+
+        $group->update(['agenda_path' => $path, 'agenda_original_name' => $origName]);
+
+        return response()->json(['ok' => true, 'name' => $origName]);
+    }
+
+    public function downloadAgenda(KeyActionGroup $group): Response
+    {
+        $user = auth()->user();
+        abort_unless($user->isMaster() || $group->hasMember($user), 403);
+        abort_unless($group->agenda_path && Storage::exists($group->agenda_path), 404);
+
+        return response()->file(
+            Storage::path($group->agenda_path),
+            ['Content-Disposition' => 'inline; filename="' . $group->agenda_original_name . '"']
+        );
+    }
+
+    public function deleteAgenda(KeyActionGroup $group): JsonResponse
+    {
+        $user = auth()->user();
+        abort_unless($user->isMaster() || $group->isAdmin($user), 403);
+
+        if ($group->agenda_path && Storage::exists($group->agenda_path)) {
+            Storage::delete($group->agenda_path);
+        }
+
+        $group->update(['agenda_path' => null, 'agenda_original_name' => null]);
+
+        return response()->json(['ok' => true]);
     }
 
     // ── Buckets ───────────────────────────────────────────────────────────────

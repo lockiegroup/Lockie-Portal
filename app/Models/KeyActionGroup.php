@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class KeyActionGroup extends Model
 {
-    protected $fillable = ['name', 'created_by', 'column_order'];
+    protected $fillable = ['name', 'created_by', 'column_order', 'agenda_path', 'agenda_original_name'];
 
     protected function casts(): array
     {

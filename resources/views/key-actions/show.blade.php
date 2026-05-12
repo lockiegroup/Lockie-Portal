@@ -35,7 +35,14 @@
         <span style="color:#cbd5e1;">|</span>
         <h1 style="font-size:1.1rem;font-weight:700;color:#1e293b;margin:0;">{{ $group->name }}</h1>
     </div>
-    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
+        @if($group->agenda_path)
+        <a href="{{ route('key-actions.agenda.download', $group) }}" target="_blank"
+           style="background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;border-radius:0.5rem;padding:0.4rem 0.875rem;font-size:0.8125rem;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:0.35rem;">
+            <svg style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+            View Agenda
+        </a>
+        @endif
         @if($isGroupAdmin)
         <button onclick="openManageMembers()"
                 style="background:#f1f5f9;color:#475569;border:none;border-radius:0.5rem;padding:0.4rem 0.875rem;font-size:0.8125rem;font-weight:600;cursor:pointer;">
@@ -287,6 +294,28 @@
             </div>
         </div>
         @endif
+
+        <div style="border-top:1px solid #f1f5f9;padding-top:0.75rem;margin-top:0.75rem;">
+            <p style="font-size:0.8rem;font-weight:600;color:#374151;margin:0 0 0.5rem;">Agenda</p>
+            @if($group->agenda_path)
+            <div style="display:flex;align-items:center;justify-content:space-between;background:#f8fafc;border-radius:0.5rem;padding:0.5rem 0.75rem;margin-bottom:0.5rem;">
+                <span style="font-size:0.8125rem;color:#1e293b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:240px;" title="{{ $group->agenda_original_name }}">
+                    📄 {{ $group->agenda_original_name }}
+                </span>
+                @if($isGroupAdmin)
+                <button onclick="removeAgenda()" style="background:none;border:none;cursor:pointer;color:#ef4444;font-size:0.75rem;font-weight:600;flex-shrink:0;padding-left:0.5rem;">Remove</button>
+                @endif
+            </div>
+            @endif
+            @if($isGroupAdmin)
+            <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;border:1px dashed #cbd5e1;border-radius:0.5rem;padding:0.5rem 0.75rem;font-size:0.8125rem;color:#64748b;">
+                <svg style="width:16px;height:16px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <span id="agenda-upload-label">{{ $group->agenda_path ? 'Replace agenda' : 'Upload agenda (PDF or Word)' }}</span>
+                <input type="file" id="agenda-file-input" accept=".pdf,.doc,.docx" style="display:none;" onchange="uploadAgendaFile(this)">
+            </label>
+            <p style="font-size:0.7rem;color:#94a3b8;margin:0.25rem 0 0;">PDF, DOC, or DOCX — max 20 MB</p>
+            @endif
+        </div>
 
         @if($isGroupAdmin)
         <div style="border-top:1px solid #f1f5f9;padding-top:0.75rem;margin-top:0.75rem;">
@@ -633,6 +662,34 @@ async function renameBucket(bucketId, currentName) {
 async function deleteBucket(bucketId) {
     if (!confirm('Delete this column? Tasks inside will become unassigned.')) return;
     const res  = await fetch(`${baseUrl}/buckets/${bucketId}`, {
+        method: 'DELETE',
+        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
+    });
+    const json = await res.json();
+    if (json.ok) location.reload();
+}
+
+// ── Agenda ────────────────────────────────────────────────────────────────────
+
+async function uploadAgendaFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const label = document.getElementById('agenda-upload-label');
+    label.textContent = 'Uploading…';
+
+    const form = new FormData();
+    form.append('agenda', file);
+    form.append('_token', csrf);
+
+    const res  = await fetch(`${baseUrl}/agenda`, { method: 'POST', body: form });
+    const json = await res.json();
+    if (json.ok) location.reload();
+    else { label.textContent = 'Upload failed — try again'; }
+}
+
+async function removeAgenda() {
+    if (!confirm('Remove the agenda from this group?')) return;
+    const res  = await fetch(`${baseUrl}/agenda`, {
         method: 'DELETE',
         headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
     });

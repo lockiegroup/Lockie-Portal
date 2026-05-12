@@ -190,6 +190,9 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::get('/{group}',                                               [KeyActionController::class, 'show'])->name('show');
         Route::patch('/{group}',                                             [KeyActionController::class, 'update'])->name('update');
         Route::delete('/{group}',                                            [KeyActionController::class, 'destroy'])->name('destroy');
+        Route::get('/{group}/agenda',                                        [KeyActionController::class, 'downloadAgenda'])->name('agenda.download');
+        Route::post('/{group}/agenda',                                       [KeyActionController::class, 'uploadAgenda'])->name('agenda.upload');
+        Route::delete('/{group}/agenda',                                     [KeyActionController::class, 'deleteAgenda'])->name('agenda.delete');
         Route::post('/{group}/columns/reorder',                              [KeyActionController::class, 'reorderColumns'])->name('columns.reorder');
         Route::post('/{group}/buckets',                                      [KeyActionController::class, 'storeBucket'])->name('buckets.store');
         Route::patch('/{group}/buckets/{bucket}',                            [KeyActionController::class, 'updateBucket'])->name('buckets.update');
