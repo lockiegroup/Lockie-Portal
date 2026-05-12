@@ -23,6 +23,7 @@ use App\Http\Controllers\AmazonController;
 use App\Http\Controllers\ImportsController;
 use App\Http\Controllers\KeyAccountController;
 use App\Http\Controllers\Admin\KeyAccountAdminController;
+use App\Http\Controllers\KeyActionController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn() => redirect()->route('login'));
@@ -179,6 +180,24 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::post('/{keyAccount}/contacts', [KeyAccountController::class, 'storeContact'])->name('contacts.store');
         Route::delete('/{keyAccount}/contacts/{contact}', [KeyAccountController::class, 'destroyContact'])->name('contacts.destroy');
         Route::patch('/{keyAccount}/notes', [KeyAccountController::class, 'updateNotes'])->name('notes.update');
+    });
+
+    // Key Actions
+    Route::prefix('key-actions')->name('key-actions.')->group(function () {
+        Route::get('/',                                                      [KeyActionController::class, 'index'])->name('index');
+        Route::post('/',                                                     [KeyActionController::class, 'store'])->name('store');
+        Route::get('/{group}',                                               [KeyActionController::class, 'show'])->name('show');
+        Route::delete('/{group}',                                            [KeyActionController::class, 'destroy'])->name('destroy');
+        Route::post('/{group}/members',                                      [KeyActionController::class, 'addMember'])->name('members.add');
+        Route::delete('/{group}/members/{member}',                           [KeyActionController::class, 'removeMember'])->name('members.remove');
+        Route::post('/{group}/tasks',                                        [KeyActionController::class, 'storeTask'])->name('tasks.store');
+        Route::get('/{group}/tasks/{task}',                                  [KeyActionController::class, 'showTask'])->name('tasks.show');
+        Route::patch('/{group}/tasks/{task}',                                [KeyActionController::class, 'updateTask'])->name('tasks.update');
+        Route::patch('/{group}/tasks/{task}/complete',                       [KeyActionController::class, 'completeTask'])->name('tasks.complete');
+        Route::delete('/{group}/tasks/{task}',                               [KeyActionController::class, 'destroyTask'])->name('tasks.destroy');
+        Route::post('/{group}/tasks/reorder',                                [KeyActionController::class, 'reorderTasks'])->name('tasks.reorder');
+        Route::post('/{group}/tasks/{task}/comments',                        [KeyActionController::class, 'storeComment'])->name('tasks.comments.store');
+        Route::delete('/{group}/tasks/{task}/comments/{comment}',            [KeyActionController::class, 'destroyComment'])->name('tasks.comments.destroy');
     });
 
     // Admin — manage users + activity log

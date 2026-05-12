@@ -97,6 +97,15 @@
         <div style="height:1px;background:#1e293b;margin:10px 4px 8px;"></div>
         <p class="sb-section" style="font-size:0.625rem;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:0.1em;padding:0 10px;margin-bottom:6px;">Operations</p>
 
+        <a href="{{ route('key-actions.index') }}"
+           class="sb-item{{ request()->routeIs('key-actions.*') ? ' sb-active' : '' }}"
+           data-tip="Key Actions">
+            <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            </svg>
+            <span class="sb-label">Key Actions</span>
+        </a>
+
         @if($user->hasModule('health_safety'))
         <a href="{{ route('hs.actions.index') }}"
            class="sb-item{{ request()->routeIs('hs.*') ? ' sb-active' : '' }}"
