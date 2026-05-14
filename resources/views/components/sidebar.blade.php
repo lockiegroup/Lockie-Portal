@@ -97,6 +97,7 @@
         <div style="height:1px;background:#1e293b;margin:10px 4px 8px;"></div>
         <p class="sb-section" style="font-size:0.625rem;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:0.1em;padding:0 10px;margin-bottom:6px;">Operations</p>
 
+        @if($user->isMaster() || $user->can('admin') || \App\Models\KeyActionGroup::whereHas('members', fn($q) => $q->where('user_id', $user->id))->exists())
         <a href="{{ route('key-actions.index') }}"
            class="sb-item{{ request()->routeIs('key-actions.*') ? ' sb-active' : '' }}"
            data-tip="Key Actions">
@@ -105,6 +106,7 @@
             </svg>
             <span class="sb-label">Key Actions</span>
         </a>
+        @endif
 
         @if($user->hasModule('envelopes'))
         <a href="{{ route('church-envelopes.index') }}"

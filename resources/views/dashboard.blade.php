@@ -27,25 +27,23 @@
                                 </a>
                                 <span style="font-size:0.75rem;color:#94a3b8;font-weight:500;">{{ $tasks->count() }} task{{ $tasks->count() !== 1 ? 's' : '' }}</span>
                             </div>
-                            <div style="display:flex;flex-direction:column;gap:6px;">
-                                @foreach($tasks as $task)
-                                    @php
-                                        $labelColours = [
-                                            'yellow' => ['bg' => '#fefce8', 'border' => '#fde68a', 'dot' => '#ca8a04'],
-                                            'red'    => ['bg' => '#fef2f2', 'border' => '#fecaca', 'dot' => '#dc2626'],
-                                            'green'  => ['bg' => '#f0fdf4', 'border' => '#bbf7d0', 'dot' => '#16a34a'],
-                                        ];
-                                        $lc = $labelColours[$task->label] ?? null;
-                                    @endphp
-                                    <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:#f8fafc;border:1px solid #f1f5f9;">
-                                        @if($lc)
-                                            <span style="width:8px;height:8px;border-radius:50%;background:{{ $lc['dot'] }};flex-shrink:0;"></span>
-                                        @else
-                                            <span style="width:8px;height:8px;border-radius:50%;background:#e2e8f0;flex-shrink:0;"></span>
-                                        @endif
-                                        <span style="font-size:0.875rem;color:#334155;flex:1;">{{ $task->title }}</span>
+                            @php
+                                $labelDots = ['yellow' => '#ca8a04', 'red' => '#dc2626', 'green' => '#16a34a'];
+                                $visible   = $tasks->take(3);
+                                $remaining = $tasks->count() - $visible->count();
+                            @endphp
+                            <div style="display:flex;flex-direction:column;gap:5px;">
+                                @foreach($visible as $task)
+                                    <div style="display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:7px;background:#f8fafc;border:1px solid #f1f5f9;">
+                                        <span style="width:7px;height:7px;border-radius:50%;background:{{ $labelDots[$task->label] ?? '#e2e8f0' }};flex-shrink:0;"></span>
+                                        <span style="font-size:0.8125rem;color:#334155;flex:1;">{{ $task->title }}</span>
                                     </div>
                                 @endforeach
+                                @if($remaining > 0)
+                                    <a href="{{ route('key-actions.show', $group) }}" style="font-size:0.75rem;color:#64748b;padding:4px 10px;text-decoration:none;">
+                                        + {{ $remaining }} more task{{ $remaining !== 1 ? 's' : '' }}
+                                    </a>
+                                @endif
                             </div>
                         </div>
                     @endforeach
