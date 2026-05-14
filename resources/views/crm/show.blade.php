@@ -78,6 +78,30 @@
             @endif
         </div>
 
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:0.875rem;padding:1.125rem 1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+            @php
+                $nextDaysUntil = $expectedNext ? now()->diffInDays($expectedNext, false) : null;
+                $nextColour = ($nextDaysUntil !== null && $nextDaysUntil < 0) ? '#dc2626'
+                    : (($nextDaysUntil !== null && $nextDaysUntil <= 14) ? '#d97706' : '#1e293b');
+            @endphp
+            <p style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Expected Next Order</p>
+            @if($expectedNext)
+                <p style="font-size:1rem;font-weight:600;color:{{ $nextColour }};line-height:1.3;">
+                    {{ $expectedNext->format('d M Y') }}
+                </p>
+                <p style="font-size:0.75rem;color:#94a3b8;margin-top:2px;">
+                    @if($nextDaysUntil < 0)
+                        {{ abs((int) $nextDaysUntil) }}d overdue
+                    @else
+                        in {{ (int) $nextDaysUntil }}d
+                    @endif
+                    &bull; orders every ~{{ $avgDays }}d
+                </p>
+            @else
+                <p style="font-size:0.875rem;color:#94a3b8;">Not enough data</p>
+            @endif
+        </div>
+
     </div>
 
     {{-- Yearly breakdown --}}
