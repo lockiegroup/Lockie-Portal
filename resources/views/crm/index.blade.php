@@ -106,15 +106,13 @@
                                     <div style="font-size:0.75rem;color:#94a3b8;margin-top:1px;">
                                         {{ $c->customer_code }}
                                         @if($c->customer_type) &bull; {{ $c->customer_type }} @endif
-                                        @if($c->key_account)
+                                        @if($c->key_account && $c->key_account->user_id)
                                             @php $ka = $c->key_account; @endphp
                                             &bull; <a href="{{ route('key-accounts.show', $ka->id) }}"
                                                 style="color:{{ $ka->type === 'key' ? '#0369a1' : '#059669' }};text-decoration:none;font-weight:500;">
                                                 {{ $ka->type === 'key' ? 'Key Account' : 'Growth Account' }}
                                             </a>
-                                            @if($ka->user)
-                                                <span style="color:#94a3b8;">({{ $ka->user->name }})</span>
-                                            @endif
+                                            <span style="color:#94a3b8;">({{ $ka->user->name }})</span>
                                         @endif
                                     </div>
                                 </div>

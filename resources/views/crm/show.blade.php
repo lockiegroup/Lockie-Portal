@@ -202,21 +202,17 @@
         </div>
     @endif
 
-    @if($keyAccount)
-        @php $kaLabel = $keyAccount->type === 'key' ? 'Key Account' : 'Growth Account'; @endphp
-
+    @if($keyAccount && $keyAccount->user_id)
         {{-- Account badge + manager --}}
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.5rem;">
             <span style="display:inline-block;padding:3px 10px;border-radius:999px;font-size:0.8125rem;font-weight:600;
                          background:{{ $keyAccount->type === 'key' ? '#e0f2fe' : '#d1fae5' }};
                          color:{{ $keyAccount->type === 'key' ? '#0369a1' : '#059669' }};">
-                {{ $kaLabel }}
+                {{ $keyAccount->type === 'key' ? 'Key Account' : 'Growth Account' }}
             </span>
-            @if($keyAccount->user)
-                <span style="font-size:0.875rem;color:#64748b;">
-                    Account manager: <strong style="color:#334155;">{{ $keyAccount->user->name }}</strong>
-                </span>
-            @endif
+            <span style="font-size:0.875rem;color:#64748b;">
+                Account manager: <strong style="color:#334155;">{{ $keyAccount->user->name }}</strong>
+            </span>
             <a href="{{ route('key-accounts.show', $keyAccount) }}"
                style="margin-left:auto;font-size:0.8125rem;color:#64748b;text-decoration:none;">
                 View in Key Accounts &rarr;
