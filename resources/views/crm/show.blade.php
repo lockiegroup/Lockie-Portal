@@ -190,6 +190,18 @@
     </div>
 
     {{-- Key / Growth Account sections --}}
+    @php
+        // Use CRM-owned routes when no Key Account record exists yet
+        $notesAction   = $keyAccount ? route('key-accounts.notes.update', $keyAccount) : route('crm.notes.update', $customerCode);
+        $contactAction = $keyAccount ? route('key-accounts.contacts.store', $keyAccount) : route('crm.contacts.store', $customerCode);
+    @endphp
+
+    @if(session('crm_success'))
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d;font-size:0.875rem;border-radius:8px;padding:10px 14px;margin-bottom:1.25rem;">
+            {{ session('crm_success') }}
+        </div>
+    @endif
+
     @if($keyAccount)
         @php $kaLabel = $keyAccount->type === 'key' ? 'Key Account' : 'Growth Account'; @endphp
 
@@ -210,14 +222,15 @@
                 View in Key Accounts &rarr;
             </a>
         </div>
+    @endif
 
         {{-- Notes --}}
         <div style="background:#fff;border:1px solid #e2e8f0;border-radius:0.875rem;padding:1.5rem;margin-bottom:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
             <h2 style="font-size:0.875rem;font-weight:600;color:#1e293b;margin-bottom:0.875rem;">Notes</h2>
-            <form action="{{ route('key-accounts.notes.update', $keyAccount) }}" method="POST">
+            <form action="{{ $notesAction }}" method="POST">
                 @csrf @method('PATCH')
                 <textarea name="notes" rows="3" placeholder="Any notes about this account…"
-                    style="width:100%;padding:10px 14px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;color:#1e293b;resize:none;box-sizing:border-box;">{{ old('notes', $keyAccount->notes) }}</textarea>
+                    style="width:100%;padding:10px 14px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;color:#1e293b;resize:none;box-sizing:border-box;">{{ old('notes', $keyAccount?->notes) }}</textarea>
                 <div style="margin-top:8px;display:flex;justify-content:flex-end;">
                     <button type="submit"
                         style="padding:7px 18px;background:#1e293b;color:#fff;border:none;border-radius:8px;font-size:0.875rem;font-weight:500;cursor:pointer;">
@@ -230,7 +243,7 @@
         {{-- Log contact --}}
         <div style="background:#fff;border:1px solid #e2e8f0;border-radius:0.875rem;padding:1.5rem;margin-bottom:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
             <h2 style="font-size:0.875rem;font-weight:600;color:#1e293b;margin-bottom:0.875rem;">Log Contact</h2>
-            <form action="{{ route('key-accounts.contacts.store', $keyAccount) }}" method="POST">
+            <form action="{{ $contactAction }}" method="POST">
                 @csrf
                 @if($errors->has('contacted_at') || $errors->has('note'))
                     <div style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;font-size:0.8125rem;border-radius:8px;padding:8px 12px;margin-bottom:10px;">
@@ -261,7 +274,7 @@
         {{-- Contact history --}}
         <div style="background:#fff;border:1px solid #e2e8f0;border-radius:0.875rem;padding:1.5rem;margin-bottom:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
             <h2 style="font-size:0.875rem;font-weight:600;color:#1e293b;margin-bottom:0.875rem;">Contact History</h2>
-            @if($keyAccount->contacts->isEmpty())
+            @if(!$keyAccount || $keyAccount->contacts->isEmpty())
                 <p style="font-size:0.875rem;color:#94a3b8;">No contacts logged yet.</p>
             @else
                 <div style="display:flex;flex-direction:column;gap:0;">
@@ -272,7 +285,7 @@
                             </span>
                             <span style="font-size:0.875rem;color:#334155;flex:1;">{{ $contact->note }}</span>
                             <span style="font-size:0.75rem;color:#94a3b8;white-space:nowrap;flex-shrink:0;">{{ $contact->user?->name ?? '—' }}</span>
-                            <form action="{{ route('key-accounts.contacts.destroy', [$keyAccount, $contact]) }}" method="POST"
+                            <form action="{{ $keyAccount ? route('key-accounts.contacts.destroy', [$keyAccount, $contact]) : route('crm.contacts.destroy', [$customerCode, $contact]) }}" method="POST"
                                 onsubmit="return confirm('Remove this contact entry?')" style="margin:0;">
                                 @csrf @method('DELETE')
                                 <button type="submit" style="background:none;border:none;color:#cbd5e1;font-size:1.125rem;cursor:pointer;line-height:1;padding:0;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#cbd5e1'">&times;</button>
@@ -283,8 +296,8 @@
             @endif
         </div>
 
-        {{-- Gift history --}}
-        @if($keyAccount->gifts->isNotEmpty())
+        {{-- Gift history (only exists if there's a Key Account record with gifts) --}}
+        @if($keyAccount && $keyAccount->gifts->isNotEmpty())
         <div style="background:#fff;border:1px solid #e2e8f0;border-radius:0.875rem;padding:1.5rem;margin-bottom:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
             <h2 style="font-size:0.875rem;font-weight:600;color:#1e293b;margin-bottom:0.875rem;">Gift History</h2>
             <table style="width:100%;border-collapse:collapse;font-size:0.875rem;">
@@ -307,8 +320,6 @@
             </table>
         </div>
         @endif
-
-    @endif
 
 </main>
 </x-layout>

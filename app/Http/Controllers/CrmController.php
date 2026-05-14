@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\KeyAccount;
+use App\Models\KeyAccountContact;
 use App\Models\SalesLine;
 use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -180,5 +182,51 @@ class CrmController extends Controller
             'total12m', 'totalPrev12', 'lastOrder',
             'warehouses', 'warehouse', 'expectedNext', 'avgDays'
         ));
+    }
+
+    // ── CRM-owned Key Account stubs ───────────────────────────────────────────
+    // These upsert a Key Account record (no type/manager assigned) so notes and
+    // contacts can be stored for any customer, not just existing Key Accounts.
+
+    private function upsertKeyAccount(string $customerCode): KeyAccount
+    {
+        $name = SalesLine::where('customer_code', $customerCode)->value('customer') ?? $customerCode;
+
+        return KeyAccount::firstOrCreate(
+            ['account_code' => $customerCode],
+            ['name' => $name, 'type' => 'key']
+        );
+    }
+
+    public function updateNotes(Request $request, string $customerCode): RedirectResponse
+    {
+        $keyAccount = $this->upsertKeyAccount($customerCode);
+        $keyAccount->update(['notes' => $request->input('notes')]);
+
+        return back()->with('crm_success', 'Notes saved.');
+    }
+
+    public function storeContact(Request $request, string $customerCode): RedirectResponse
+    {
+        $data = $request->validate([
+            'contacted_at' => ['required', 'date'],
+            'note'         => ['required', 'string', 'max:2000'],
+        ]);
+
+        $keyAccount = $this->upsertKeyAccount($customerCode);
+        $keyAccount->contacts()->create([
+            'user_id'      => auth()->id(),
+            'contacted_at' => $data['contacted_at'],
+            'note'         => $data['note'],
+        ]);
+
+        return back()->with('crm_success', 'Contact logged.');
+    }
+
+    public function destroyContact(string $customerCode, KeyAccountContact $contact): RedirectResponse
+    {
+        $contact->delete();
+
+        return back()->with('crm_success', 'Contact entry removed.');
     }
 }

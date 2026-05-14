@@ -156,8 +156,11 @@ Route::middleware(['auth', 'otp'])->group(function () {
 
     // CRM
     Route::prefix('crm')->name('crm.')->middleware('module:crm')->group(function () {
-        Route::get('/', [CrmController::class, 'index'])->name('index');
-        Route::get('/{customerCode}', [CrmController::class, 'show'])->name('show');
+        Route::get('/',                                          [CrmController::class, 'index'])->name('index');
+        Route::get('/{customerCode}',                            [CrmController::class, 'show'])->name('show');
+        Route::patch('/{customerCode}/notes',                    [CrmController::class, 'updateNotes'])->name('notes.update');
+        Route::post('/{customerCode}/contacts',                  [CrmController::class, 'storeContact'])->name('contacts.store');
+        Route::delete('/{customerCode}/contacts/{contact}',      [CrmController::class, 'destroyContact'])->name('contacts.destroy');
     });
 
     // Key Accounts (salesperson views)
