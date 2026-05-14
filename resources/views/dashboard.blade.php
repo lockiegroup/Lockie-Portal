@@ -8,6 +8,7 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
 
+            @if(auth()->user()->hasModule('sales'))
             <a href="{{ route('sales') }}" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4 hover:shadow-md hover:border-slate-300 transition-all">
                 <div class="w-12 h-12 rounded-xl flex items-center justify-center bg-emerald-50 text-emerald-600">
                     <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
@@ -18,19 +19,9 @@
                 </div>
                 <span class="text-xs font-medium text-emerald-600 uppercase tracking-wide mt-auto">Open &rarr;</span>
             </a>
+            @endif
 
-
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4 opacity-60 cursor-not-allowed">
-                <div class="w-12 h-12 rounded-xl flex items-center justify-center bg-sky-50 text-sky-600">
-                    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-                </div>
-                <div>
-                    <h2 class="font-semibold text-slate-800">Tasks</h2>
-                    <p class="text-slate-500 text-sm mt-1">View assigned tasks, deadlines, and track completion progress.</p>
-                </div>
-                <span class="text-xs font-medium text-slate-400 uppercase tracking-wide mt-auto">Coming soon</span>
-            </div>
-
+            @if(auth()->user()->hasModule('envelopes'))
             <a href="{{ route('church-envelopes.index') }}" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4 hover:shadow-md hover:border-slate-300 transition-all">
                 <div class="w-12 h-12 rounded-xl flex items-center justify-center bg-violet-50 text-violet-600">
                     <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
@@ -41,7 +32,9 @@
                 </div>
                 <span class="text-xs font-medium text-violet-600 uppercase tracking-wide mt-auto">Open &rarr;</span>
             </a>
+            @endif
 
+            @if(auth()->user()->hasModule('stock'))
             <a href="{{ route('stock.index') }}" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4 hover:shadow-md hover:border-slate-300 transition-all">
                 <div class="w-12 h-12 rounded-xl flex items-center justify-center bg-sky-50 text-sky-600">
                     <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -55,7 +48,9 @@
                 </div>
                 <span class="text-xs font-medium text-sky-600 uppercase tracking-wide mt-auto">Open &rarr;</span>
             </a>
+            @endif
 
+            @if(auth()->user()->hasModule('print_schedule'))
             <a href="{{ route('print.index') }}" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col gap-4 hover:shadow-md hover:border-slate-300 transition-all">
                 <div class="w-12 h-12 rounded-xl flex items-center justify-center bg-rose-50 text-rose-600">
                     <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -68,6 +63,7 @@
                 </div>
                 <span class="text-xs font-medium text-rose-600 uppercase tracking-wide mt-auto">Open &rarr;</span>
             </a>
+            @endif
 
         </div>
 

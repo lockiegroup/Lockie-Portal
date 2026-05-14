@@ -154,7 +154,7 @@ Route::middleware(['auth', 'otp'])->group(function () {
     });
 
     // Key Accounts (salesperson views)
-    Route::prefix('key-accounts')->name('key-accounts.')->group(function () {
+    Route::prefix('key-accounts')->name('key-accounts.')->middleware('module:key_accounts')->group(function () {
         Route::get('/', [KeyAccountController::class, 'index'])->name('index');
         Route::post('/sales/filter', [KeyAccountController::class, 'setDateFilter'])->name('sales.filter');
         Route::post('/gifts/import', [KeyAccountController::class, 'importGifts'])->name('gifts.import');
