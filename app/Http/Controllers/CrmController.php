@@ -6,6 +6,7 @@ use App\Models\KeyAccount;
 use App\Models\SalesLine;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class CrmController extends Controller
@@ -20,7 +21,14 @@ class CrmController extends Controller
             ->whereNotNull('warehouse')->where('warehouse', '!=', '')
             ->distinct()->orderBy('warehouse')->pluck('warehouse');
 
-        $now   = now()->startOfDay();
+        // Use the latest order date in the dataset as the reference "today"
+        // so overdue calculations aren't skewed when data hasn't been freshly imported
+        $range      = DB::table('sales_lines')->selectRaw('MIN(order_date) as min_d, MAX(order_date) as max_d')->first();
+        $dataFrom   = $range && $range->min_d ? Carbon::parse($range->min_d) : null;
+        $dataTo     = $range && $range->max_d ? Carbon::parse($range->max_d) : null;
+        $asOf       = $dataTo ?? now()->startOfDay();
+
+        $now   = $asOf->copy()->startOfDay();
         $curr1 = $now->copy()->subMonths(12);
         $prev1 = $now->copy()->subMonths(24);
 
@@ -75,7 +83,7 @@ class CrmController extends Controller
                 $c->expected_next = $c->last_order->copy()->addDays($avgDays);
             }
 
-            $c->is_overdue = $c->expected_next && $c->expected_next->isPast() && !$c->last_order->isToday();
+            $c->is_overdue = $c->expected_next && $c->expected_next->lt($asOf) && !$c->last_order->eq($asOf);
         }
 
         // Apply filter
@@ -85,7 +93,10 @@ class CrmController extends Controller
             $customers = $customers->where('is_overdue', true)->values();
         }
 
-        return view('crm.index', compact('customers', 'warehouses', 'warehouse', 'search', 'filter'));
+        $salesFrom = $dataFrom ? $dataFrom->format('jS M Y') : null;
+        $salesTo   = $dataTo   ? $dataTo->format('jS M Y')   : null;
+
+        return view('crm.index', compact('customers', 'warehouses', 'warehouse', 'search', 'filter', 'salesFrom', 'salesTo', 'asOf'));
     }
 
     public function show(Request $request, string $customerCode): View

@@ -5,6 +5,9 @@
     <div style="margin-bottom:1.75rem;">
         <h1 class="text-2xl font-bold text-slate-800">Customer Insights</h1>
         <p class="text-slate-500 mt-1 text-sm">Ranked by spend in the last 12 months vs the prior 12 months.</p>
+        @if($salesFrom && $salesTo)
+            <p class="text-xs text-slate-400 mt-1">Data covers: <span class="text-slate-500 font-medium">{{ $salesFrom }} – {{ $salesTo }}</span></p>
+        @endif
     </div>
 
     {{-- Filters --}}
@@ -75,13 +78,13 @@
                         $hasDrop   = $pct !== null && $pct <= -5;
                         $pctColour = $hasGrown ? '#16a34a' : ($hasDrop ? '#dc2626' : '#94a3b8');
                         $pctBg     = $hasGrown ? '#f0fdf4' : ($hasDrop ? '#fef2f2' : '#f8fafc');
-                        $daysSince = $c->last_order ? $c->last_order->diffInDays(now()) : null;
+                        $daysSince = $c->last_order ? $c->last_order->diffInDays($asOf) : null;
 
-                        // Expected next order colour
+                        // Expected next order colour (relative to data as-of date)
                         $nextColour = '#64748b';
                         $nextBg     = 'transparent';
                         if ($c->expected_next) {
-                            $daysUntil = now()->diffInDays($c->expected_next, false); // negative = overdue
+                            $daysUntil = $asOf->diffInDays($c->expected_next, false); // negative = overdue
                             if ($daysUntil < 0)        { $nextColour = '#dc2626'; $nextBg = '#fef2f2'; }
                             elseif ($daysUntil <= 14)  { $nextColour = '#d97706'; $nextBg = '#fffbeb'; }
                         }
@@ -129,7 +132,7 @@
                                 <span style="color:{{ $daysSince > 180 ? '#dc2626' : ($daysSince > 90 ? '#d97706' : '#64748b') }};font-size:0.875rem;">
                                     {{ $c->last_order->format('d M Y') }}
                                 </span>
-                                <div style="font-size:0.75rem;color:#94a3b8;">{{ $c->last_order->diffForHumans() }}</div>
+                                <div style="font-size:0.75rem;color:#94a3b8;">{{ $c->last_order->diffForHumans($asOf) }}</div>
                             @else
                                 <span style="color:#cbd5e1;">—</span>
                             @endif
@@ -142,9 +145,9 @@
                                     </span>
                                     <div style="font-size:0.75rem;color:{{ $nextColour }};opacity:0.8;">
                                         @if($c->is_overdue)
-                                            {{ abs((int) now()->diffInDays($c->expected_next, false)) }}d overdue
+                                            {{ abs((int) $asOf->diffInDays($c->expected_next, false)) }}d overdue
                                         @else
-                                            in {{ now()->diffInDays($c->expected_next) }}d
+                                            in {{ $asOf->diffInDays($c->expected_next) }}d
                                         @endif
                                         &bull; every ~{{ $c->avg_days }}d
                                     </div>
