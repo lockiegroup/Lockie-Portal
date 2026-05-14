@@ -66,6 +66,7 @@
                     <th style="padding:10px 16px;text-align:right;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Prev 12m</th>
                     <th style="padding:10px 16px;text-align:right;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Change</th>
                     <th style="padding:10px 16px;text-align:left;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Last Order</th>
+                    <th style="padding:10px 16px;text-align:left;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Frequency</th>
                     <th style="padding:10px 16px;text-align:left;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Expected Next</th>
                     <th style="padding:10px 16px;text-align:left;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;"></th>
                 </tr>
@@ -137,6 +138,13 @@
                                 <span style="color:#cbd5e1;">—</span>
                             @endif
                         </td>
+                        <td style="padding:11px 16px;color:#64748b;font-size:0.875rem;">
+                            @if($c->avg_days)
+                                every ~{{ $c->avg_days }}d
+                            @else
+                                <span style="color:#cbd5e1;">—</span>
+                            @endif
+                        </td>
                         <td style="padding:11px 16px;">
                             @if($c->expected_next)
                                 <div style="display:inline-block;padding:3px 9px;border-radius:6px;background:{{ $nextBg !== 'transparent' ? $nextBg : 'transparent' }};">
@@ -149,7 +157,6 @@
                                         @else
                                             in {{ $asOf->diffInDays($c->expected_next) }}d
                                         @endif
-                                        &bull; every ~{{ $c->avg_days }}d
                                     </div>
                                 </div>
                             @else
@@ -163,7 +170,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" style="padding:3rem;text-align:center;color:#94a3b8;">No customers found.</td>
+                        <td colspan="8" style="padding:3rem;text-align:center;color:#94a3b8;">No customers found.</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -171,10 +178,20 @@
         </div>
     </div>
 
-    <div style="margin-top:0.875rem;font-size:0.75rem;color:#94a3b8;text-align:right;">
-        {{ $customers->count() }} customer{{ $customers->count() !== 1 ? 's' : '' }}
+    {{-- Show more --}}
+    @if($hasMore)
+        <div style="margin-top:1.25rem;text-align:center;">
+            <a href="{{ route('crm.index', array_filter(['warehouse' => $warehouse, 'search' => $search, 'filter' => $filter, 'limit' => $limit + 100])) }}"
+               style="display:inline-block;padding:9px 24px;background:#f1f5f9;color:#475569;border-radius:8px;font-size:0.875rem;font-weight:500;text-decoration:none;border:1px solid #e2e8f0;">
+                Show more <span style="color:#94a3b8;">(showing {{ $customers->count() }} of {{ $totalCount }})</span>
+            </a>
+        </div>
+    @endif
+
+    <div style="margin-top:0.75rem;font-size:0.75rem;color:#94a3b8;text-align:right;">
+        Showing {{ $customers->count() }} of {{ $totalCount }} customer{{ $totalCount !== 1 ? 's' : '' }}
         @if($warehouse) in {{ $warehouse }} @endif
-        @if($filter) &bull; filtered: {{ $filter }} @endif
+        @if($filter) &bull; {{ $filter }} @endif
     </div>
 
 </main>

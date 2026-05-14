@@ -16,6 +16,7 @@ class CrmController extends Controller
         $warehouse  = $request->input('warehouse');
         $search     = trim($request->input('search', ''));
         $filter     = $request->input('filter'); // dropoff | overdue | null
+        $limit      = max(100, (int) $request->input('limit', 100));
 
         $warehouses = SalesLine::where('sub_total', '>', 0)
             ->whereNotNull('warehouse')->where('warehouse', '!=', '')
@@ -93,10 +94,14 @@ class CrmController extends Controller
             $customers = $customers->where('is_overdue', true)->values();
         }
 
+        $totalCount = $customers->count();
+        $customers  = $customers->take($limit)->values();
+        $hasMore    = $totalCount > $limit;
+
         $salesFrom = $dataFrom ? $dataFrom->format('jS M Y') : null;
         $salesTo   = $dataTo   ? $dataTo->format('jS M Y')   : null;
 
-        return view('crm.index', compact('customers', 'warehouses', 'warehouse', 'search', 'filter', 'salesFrom', 'salesTo', 'asOf'));
+        return view('crm.index', compact('customers', 'warehouses', 'warehouse', 'search', 'filter', 'salesFrom', 'salesTo', 'asOf', 'limit', 'totalCount', 'hasMore'));
     }
 
     public function show(Request $request, string $customerCode): View
