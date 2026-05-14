@@ -22,6 +22,7 @@ use App\Http\Controllers\ImportsController;
 use App\Http\Controllers\KeyAccountController;
 use App\Http\Controllers\Admin\KeyAccountAdminController;
 use App\Http\Controllers\KeyActionController;
+use App\Http\Controllers\CrmController;
 use App\Http\Controllers\ImpersonateController;
 use Illuminate\Support\Facades\Route;
 
@@ -151,6 +152,12 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::post('/reorder', [KeyAccountAdminController::class, 'reorder'])->name('reorder');
         Route::put('/{keyAccount}', [KeyAccountAdminController::class, 'update'])->name('update');
         Route::delete('/{keyAccount}', [KeyAccountAdminController::class, 'destroy'])->name('destroy');
+    });
+
+    // CRM
+    Route::prefix('crm')->name('crm.')->middleware('module:crm')->group(function () {
+        Route::get('/', [CrmController::class, 'index'])->name('index');
+        Route::get('/{customerCode}', [CrmController::class, 'show'])->name('show');
     });
 
     // Key Accounts (salesperson views)

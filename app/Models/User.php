@@ -28,6 +28,7 @@ class User extends Authenticatable
         'print_schedule' => 'Print Schedule',
         'amazon'         => 'Amazon & Xero',
         'key_accounts'   => 'Key Accounts',
+        'crm'            => 'Customer Insights (CRM)',
     ];
 
     protected $fillable = ['name', 'email', 'password', 'role', 'is_active', 'permissions', 'modules', 'last_login_at'];

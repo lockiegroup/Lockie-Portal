@@ -148,6 +148,17 @@
         </a>
         @endif
 
+        @if($user->hasModule('crm'))
+        <a href="{{ route('crm.index') }}"
+           class="sb-item{{ request()->routeIs('crm.*') ? ' sb-active' : '' }}"
+           data-tip="Customer Insights">
+            <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+            <span class="sb-label">Customer Insights</span>
+        </a>
+        @endif
+
         @if($user->hasModule('key_accounts') || $user->can('stock_ordering'))
         <a href="{{ route('imports.index') }}"
            class="sb-item{{ request()->routeIs('imports.*') ? ' sb-active' : '' }}"
