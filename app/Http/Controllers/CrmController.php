@@ -56,13 +56,16 @@ class CrmController extends Controller
             ->orderByDesc('current_total')
             ->get();
 
-        $keyAccounts = KeyAccount::whereIn('account_code', $customers->pluck('customer_code'))
-            ->pluck('id', 'account_code');
+        $keyAccounts = KeyAccount::with('user')
+            ->whereIn('account_code', $customers->pluck('customer_code'))
+            ->get()
+            ->keyBy('account_code');
 
         $cutoff = $now->copy()->subDays(90);
 
         foreach ($customers as $c) {
-            $c->key_account_id = $keyAccounts->get($c->customer_code);
+            $c->key_account    = $keyAccounts->get($c->customer_code);
+            $c->key_account_id = $c->key_account?->id;
             $c->last_order     = $c->last_order_date  ? Carbon::parse($c->last_order_date)  : null;
             $c->first_order    = $c->first_order_date ? Carbon::parse($c->first_order_date) : null;
 
@@ -118,7 +121,7 @@ class CrmController extends Controller
 
         $customer     = $lines->first()->customer;
         $customerType = $lines->first()->customer_type;
-        $keyAccount   = KeyAccount::where('account_code', $customerCode)->first();
+        $keyAccount   = KeyAccount::with(['user', 'contacts.user', 'gifts'])->where('account_code', $customerCode)->first();
 
         $warehouses = SalesLine::where('customer_code', $customerCode)
             ->where('sub_total', '>', 0)
