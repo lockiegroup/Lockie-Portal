@@ -106,17 +106,6 @@
             <span class="sb-label">Key Actions</span>
         </a>
 
-        @if($user->hasModule('health_safety'))
-        <a href="{{ route('hs.actions.index') }}"
-           class="sb-item{{ request()->routeIs('hs.*') ? ' sb-active' : '' }}"
-           data-tip="Health &amp; Safety">
-            <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-            </svg>
-            <span class="sb-label">Health &amp; Safety</span>
-        </a>
-        @endif
-
         @if($user->hasModule('envelopes'))
         <a href="{{ route('church-envelopes.index') }}"
            class="sb-item{{ request()->routeIs('church-envelopes.*') ? ' sb-active' : '' }}"

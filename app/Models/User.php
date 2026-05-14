@@ -23,7 +23,6 @@ class User extends Authenticatable
         'sales'          => 'Sales',
         'stock'          => 'Stock Overview',
         'stock_ordering'  => 'Stock Watchlist',
-        'health_safety'  => 'Health & Safety',
         'envelopes'      => 'Church Envelopes',
         'policies'       => 'Policies',
         'print_schedule' => 'Print Schedule',

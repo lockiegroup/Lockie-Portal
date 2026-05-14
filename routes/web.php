@@ -10,8 +10,6 @@ use App\Http\Controllers\ChurchEnvelopeController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\EnvelopeSettingsController;
 use App\Http\Controllers\Admin\PrintScheduleSettingController;
-use App\Http\Controllers\HealthSafety\ActionController as HsActionController;
-use App\Http\Controllers\HealthSafety\SettingsController as HsSettingsController;
 use App\Http\Controllers\PrintScheduleController;
 use App\Http\Controllers\PrintJobArchiveController;
 use App\Http\Controllers\CashFlowController;
@@ -50,22 +48,6 @@ Route::middleware(['auth', 'otp'])->group(function () {
     Route::get('/church-envelopes', [ChurchEnvelopeController::class, 'index'])->name('church-envelopes.index');
     Route::post('/church-envelopes/parse', [ChurchEnvelopeController::class, 'parse'])->name('church-envelopes.parse');
     Route::post('/church-envelopes/generate', [ChurchEnvelopeController::class, 'generate'])->name('church-envelopes.generate');
-
-    // Health & Safety
-    Route::prefix('health-safety')->name('hs.')->group(function () {
-        Route::get('actions', [HsActionController::class, 'index'])->name('actions.index');
-        Route::get('actions/create', [HsActionController::class, 'create'])->name('actions.create');
-        Route::post('actions', [HsActionController::class, 'store'])->name('actions.store');
-        Route::get('actions/{action}/edit', [HsActionController::class, 'edit'])->name('actions.edit');
-        Route::put('actions/{action}', [HsActionController::class, 'update'])->name('actions.update');
-        Route::delete('actions/{action}', [HsActionController::class, 'destroy'])->name('actions.destroy');
-        Route::patch('actions/{action}/complete', [HsActionController::class, 'complete'])->name('actions.complete');
-
-        Route::middleware('can:admin')->group(function () {
-            Route::get('settings', [HsSettingsController::class, 'index'])->name('settings.index');
-            Route::post('settings', [HsSettingsController::class, 'update'])->name('settings.update');
-        });
-    });
 
     // Print Schedule
     Route::prefix('print-schedule')->name('print.')->group(function () {
