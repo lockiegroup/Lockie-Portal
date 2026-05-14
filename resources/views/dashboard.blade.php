@@ -86,6 +86,14 @@
                     </div>
                 @endforeach
             </div>
+
+            @if($printNotes && trim($printNotes) !== '')
+                <div style="background:#fff;border:1px solid #e2e8f0;border-radius:0.875rem;padding:1.125rem 1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.04);margin-top:14px;">
+                    <p style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Notes &amp; Updates</p>
+                    <p style="font-size:0.875rem;color:#334155;line-height:1.6;white-space:pre-wrap;">{{ $printNotes }}</p>
+                </div>
+            @endif
+
         @endif
 
         {{-- Fallback if nothing to show --}}

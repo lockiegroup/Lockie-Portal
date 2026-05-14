@@ -7,6 +7,7 @@ use App\Models\KeyActionTask;
 use App\Models\PrintJob;
 use App\Models\PrintScheduleSetting;
 use Illuminate\View\View;
+use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
@@ -66,6 +67,11 @@ class DashboardController extends Controller
             }
         }
 
-        return view('dashboard', compact('myTasks', 'printStats'));
+        $printNotes = null;
+        if ($printStats !== null) {
+            $printNotes = PrintScheduleSetting::getValue('dashboard_notes', '');
+        }
+
+        return view('dashboard', compact('myTasks', 'printStats', 'printNotes'));
     }
 }
