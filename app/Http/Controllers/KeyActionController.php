@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\KeyActionBucket;
 use App\Models\KeyActionComment;
 use App\Models\KeyActionGroup;
@@ -45,8 +46,9 @@ class KeyActionController extends Controller
             'created_by' => auth()->id(),
         ]);
 
-        // Creator is automatically a group admin
         $group->members()->attach(auth()->id(), ['role' => 'admin']);
+
+        ActivityLog::record('key_actions.group_create', "Created key action group '{$group->name}'");
 
         return redirect()->route('key-actions.show', $group);
     }
@@ -119,6 +121,8 @@ class KeyActionController extends Controller
         $data = $request->validate(['name' => 'required|string|max:100']);
         $group->update($data);
 
+        ActivityLog::record('key_actions.group_rename', "Renamed key action group to '{$group->name}'");
+
         return response()->json(['ok' => true, 'name' => $group->name]);
     }
 
@@ -127,7 +131,11 @@ class KeyActionController extends Controller
         $user = auth()->user();
         abort_unless($user->isMaster() || $group->isAdmin($user), 403);
 
+        $name = $group->name;
         $group->delete();
+
+        ActivityLog::record('key_actions.group_delete', "Deleted key action group '{$name}'");
+
         return redirect()->route('key-actions.index');
     }
 
@@ -255,6 +263,9 @@ class KeyActionController extends Controller
         ]);
 
         $member = User::find($data['user_id']);
+
+        ActivityLog::record('key_actions.member_add', "Added {$member->name} to group '{$group->name}'");
+
         return response()->json(['ok' => true, 'user' => ['id' => $member->id, 'name' => $member->name]]);
     }
 
@@ -264,6 +275,9 @@ class KeyActionController extends Controller
         abort_unless($user->isMaster() || $group->isAdmin($user), 403);
 
         $group->members()->detach($member->id);
+
+        ActivityLog::record('key_actions.member_remove', "Removed {$member->name} from group '{$group->name}'");
+
         return response()->json(['ok' => true]);
     }
 
@@ -274,6 +288,8 @@ class KeyActionController extends Controller
 
         $data = $request->validate(['role' => 'required|in:admin,member']);
         $group->members()->updateExistingPivot($member->id, ['role' => $data['role']]);
+
+        ActivityLog::record('key_actions.member_role', "Changed {$member->name}'s role to {$data['role']} in group '{$group->name}'");
 
         return response()->json(['ok' => true, 'role' => $data['role']]);
     }
@@ -324,6 +340,8 @@ class KeyActionController extends Controller
 
         $task->load(['assignee', 'comments']);
 
+        ActivityLog::record('key_actions.task_create', "Created task '{$task->title}' in group '{$group->name}'");
+
         return response()->json(['ok' => true, 'task' => $this->taskJson($task)]);
     }
 
@@ -353,10 +371,16 @@ class KeyActionController extends Controller
         abort_unless($user->isMaster() || $group->hasMember($user), 403);
         abort_unless($task->group_id === $group->id, 404);
 
+        $wasCompleted = $task->completed;
         $task->update([
-            'completed'    => !$task->completed,
-            'completed_at' => $task->completed ? null : now(),
+            'completed'    => !$wasCompleted,
+            'completed_at' => $wasCompleted ? null : now(),
         ]);
+
+        $action = $wasCompleted ? 'key_actions.task_reopen' : 'key_actions.task_complete';
+        $verb   = $wasCompleted ? 'Reopened' : 'Marked';
+        $suffix = $wasCompleted ? '' : ' as complete';
+        ActivityLog::record($action, "{$verb} task '{$task->title}'{$suffix} in group '{$group->name}'");
 
         return response()->json(['ok' => true, 'completed' => $task->completed]);
     }
@@ -367,7 +391,11 @@ class KeyActionController extends Controller
         abort_unless($user->isMaster() || $group->hasMember($user), 403);
         abort_unless($task->group_id === $group->id, 404);
 
+        $title = $task->title;
         $task->delete();
+
+        ActivityLog::record('key_actions.task_delete', "Deleted task '{$title}' in group '{$group->name}'");
+
         return response()->json(['ok' => true]);
     }
 
@@ -384,6 +412,11 @@ class KeyActionController extends Controller
             'tasks.*.col_id'      => 'nullable|integer',
         ]);
 
+        $taskIds  = array_column($data['tasks'], 'id');
+        $existing = KeyActionTask::whereIn('id', $taskIds)->where('group_id', $group->id)
+            ->get(['id', 'title', 'assigned_to', 'bucket_id'])
+            ->keyBy('id');
+
         foreach ($data['tasks'] as $item) {
             $update = ['sort_order' => $item['sort_order']];
             if ($item['col_type'] === 'user') {
@@ -397,6 +430,17 @@ class KeyActionController extends Controller
                 $update['bucket_id']   = null;
             }
             KeyActionTask::where('id', $item['id'])->where('group_id', $group->id)->update($update);
+
+            $orig = $existing->get($item['id']);
+            if ($orig) {
+                $colChanged = ($item['col_type'] === 'user' && $orig->assigned_to != $item['col_id'])
+                    || ($item['col_type'] === 'bucket' && $orig->bucket_id != $item['col_id'])
+                    || ($item['col_type'] === 'unassigned' && ($orig->assigned_to || $orig->bucket_id));
+
+                if ($colChanged) {
+                    ActivityLog::record('key_actions.task_move', "Moved task '{$orig->title}' to a new column in group '{$group->name}'");
+                }
+            }
         }
 
         return response()->json(['ok' => true]);

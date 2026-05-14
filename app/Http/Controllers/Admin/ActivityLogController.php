@@ -32,6 +32,7 @@ class ActivityLogController extends Controller
             'users'        => 'User Management',
             'key_accounts' => 'Key Accounts',
             'imports'      => 'Imports',
+            'key_actions'  => 'Key Actions',
         ];
 
         return view('admin.activity-log.index', compact('logs', 'users', 'categories', 'userId', 'category'));
