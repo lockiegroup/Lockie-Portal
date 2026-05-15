@@ -28,15 +28,15 @@
                 <p class="text-xs text-slate-400 mt-0.5">Required columns: Order No., Order Date, Required Date, Completed Date, Warehouse, Customer Code, Customer, Customer Type, Product Code, Product Group, Status, Quantity, Sub Total</p>
             </div>
 
-            <div class="flex flex-wrap gap-2 mb-4" style="margin-top:0.75rem;">
+            <div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:0.75rem;margin-bottom:1rem;">
                 @if($doKA)
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-sky-100 text-sky-700">
+                <span style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.25rem 0.625rem;border-radius:9999px;font-size:0.75rem;line-height:1rem;font-weight:500;background:#e0f2fe;color:#0369a1;">
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                     Updates Key Accounts sales
                 </span>
                 @endif
                 @if($doStock)
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+                <span style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.25rem 0.625rem;border-radius:9999px;font-size:0.75rem;line-height:1rem;font-weight:500;background:#d1fae5;color:#047857;">
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                     Updates Stock Watchlist sales
                 </span>
