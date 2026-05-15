@@ -42,7 +42,7 @@ class RemindersController extends Controller
 
         $totalCount   = $entries->count();
         $orderedCount = $entries->where('status', 'order_placed')->count();
-        $pendingCount = $totalCount - $orderedCount;
+        $pendingCount = $entries->where('status', 'pending')->count();
 
         $years = collect(range(now()->year - 1, now()->year + 1));
 

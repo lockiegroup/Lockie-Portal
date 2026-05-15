@@ -50,7 +50,7 @@
             {{ $orderedCount }} ordered
         </span>
         <span class="stat-count" style="display:inline-flex;align-items:center;padding:0.25rem 0.75rem;border-radius:9999px;font-size:0.8125rem;font-weight:600;background:#fef3c7;color:#92400e;">
-            {{ $pendingCount }} outstanding
+            {{ $pendingCount }} pending
         </span>
 
         <div style="flex:1;"></div>
@@ -265,9 +265,10 @@
                         <td data-col="phone"       style="{{ $cellBase }}color:#64748b;white-space:nowrap;font-family:monospace;font-size:0.75rem;">{{ $entry->phone }}</td>
 
                         {{-- Status --}}
+                        @php $sc = \App\Models\ReminderEntry::STATUS_COLOURS[$entry->status] ?? ['bg'=>'#fff','text'=>'#334155']; @endphp
                         <td style="{{ $cellBase }}white-space:nowrap;border-left:2px solid rgba(0,0,0,0.08);">
-                            <select data-field="status" onchange="updateEntry({{ $entry->id }}, 'status', this.value)"
-                                style="border:1px solid #e2e8f0;border-radius:6px;padding:0.25rem 0.375rem;font-size:0.75rem;color:#334155;background:#fff;cursor:pointer;width:100%;max-width:200px;">
+                            <select data-field="status" onchange="updateEntry({{ $entry->id }}, 'status', this.value); updateStatusSelect(this)"
+                                style="border:1px solid rgba(0,0,0,0.12);border-radius:6px;padding:0.3rem 0.5rem;font-size:0.75rem;font-weight:600;cursor:pointer;min-width:185px;background:{{ $sc['bg'] }};color:{{ $sc['text'] }};">
                                 @foreach(\App\Models\ReminderEntry::STATUSES as $key => $label)
                                 <option value="{{ $key }}" {{ $entry->status === $key ? 'selected' : '' }}>{{ $label }}</option>
                                 @endforeach
@@ -364,6 +365,13 @@
     var picker = document.getElementById('col-picker');
     if (picker) picker.addEventListener('click', function (e) { e.stopPropagation(); });
 
+    // ── Update select background colour when status changes ───────────────────
+    window.updateStatusSelect = function (sel) {
+        var colours = statusColours[sel.value] || { bg: '#ffffff', text: '#334155' };
+        sel.style.background = colours.bg;
+        sel.style.color      = colours.text;
+    };
+
     // ── Inline save ───────────────────────────────────────────────────────────
     window.updateEntry = function (id, field, value) {
         var body = {};
@@ -407,12 +415,16 @@
     function refreshStats() {
         var rows    = document.querySelectorAll('#reminders-table tbody tr');
         var total   = rows.length;
-        var ordered = 0;
-        rows.forEach(function (row) { if (row.getAttribute('data-status') === 'order_placed') ordered++; });
+        var ordered = 0, pending = 0;
+        rows.forEach(function (row) {
+            var s = row.getAttribute('data-status');
+            if (s === 'order_placed') ordered++;
+            if (s === 'pending')      pending++;
+        });
         var statEls = document.querySelectorAll('.stat-count');
-        if (statEls[0]) statEls[0].textContent = total + ' total';
+        if (statEls[0]) statEls[0].textContent = total   + ' total';
         if (statEls[1]) statEls[1].textContent = ordered + ' ordered';
-        if (statEls[2]) statEls[2].textContent = (total - ordered) + ' outstanding';
+        if (statEls[2]) statEls[2].textContent = pending + ' pending';
     }
 
     // ── Imports accordion ─────────────────────────────────────────────────────
@@ -499,7 +511,8 @@
             row.querySelectorAll('.sticky-col').forEach(function (td) { td.style.backgroundColor = colours.bg; });
             if (activeFilter && entry.status !== activeFilter) row.style.display = 'none';
 
-            var s = row.querySelector('select[data-field="status"]');         if (s) s.value = entry.status;
+            var s = row.querySelector('select[data-field="status"]');
+            if (s) { s.value = entry.status; updateStatusSelect(s); }
             var c = row.querySelector('select[data-field="called_by_user_id"]'); if (c) c.value = entry.called_by_user_id || '';
             var d = row.querySelector('input[data-field="called_date"]');     if (d) d.value = entry.called_date || '';
             var n = row.querySelector('input[data-field="call_notes"]');      if (n && document.activeElement !== n) n.value = entry.call_notes || '';
