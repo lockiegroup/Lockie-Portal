@@ -192,6 +192,14 @@ class ImportsController extends Controller
 
             ActivityLog::record('imports.sales', "Imported {$count} sales line(s)");
 
+            // Bust CRM aggregate cache so next visit reflects fresh data
+            \Illuminate\Support\Facades\Cache::forget('crm.warehouses');
+            \Illuminate\Support\Facades\Cache::forget('crm.date_range');
+            foreach (\App\Models\SalesLine::distinct()->pluck('warehouse') as $wh) {
+                \Illuminate\Support\Facades\Cache::forget('crm.customers.' . ($wh ?: 'all'));
+            }
+            \Illuminate\Support\Facades\Cache::forget('crm.customers.all');
+
             return back()->with('success', "Imported {$count} sales line(s) into master sales table.");
         } catch (\Throwable $e) {
             \Log::error('storeSales:error', ['message' => substr($e->getMessage(), 0, 500), 'file' => $e->getFile(), 'line' => $e->getLine()]);

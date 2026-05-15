@@ -8,6 +8,7 @@ use App\Models\SalesLine;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
@@ -20,43 +21,54 @@ class CrmController extends Controller
         $filter     = $request->input('filter'); // dropoff | overdue | null
         $limit      = max(100, (int) $request->input('limit', 100));
 
-        $warehouses = SalesLine::where('sub_total', '>', 0)
-            ->whereNotNull('warehouse')->where('warehouse', '!=', '')
-            ->distinct()->orderBy('warehouse')->pluck('warehouse');
+        $warehouses = Cache::remember('crm.warehouses', 3600, fn() =>
+            SalesLine::where('sub_total', '>', 0)
+                ->whereNotNull('warehouse')->where('warehouse', '!=', '')
+                ->distinct()->orderBy('warehouse')->pluck('warehouse')
+        );
 
         // Use the latest order date in the dataset as the reference "today"
-        // so overdue calculations aren't skewed when data hasn't been freshly imported
-        $range      = DB::table('sales_lines')->selectRaw('MIN(order_date) as min_d, MAX(order_date) as max_d')->first();
-        $dataFrom   = $range && $range->min_d ? Carbon::parse($range->min_d) : null;
-        $dataTo     = $range && $range->max_d ? Carbon::parse($range->max_d) : null;
-        $asOf       = $dataTo ?? now()->startOfDay();
+        $range    = Cache::remember('crm.date_range', 3600, fn() =>
+            DB::table('sales_lines')->selectRaw('MIN(order_date) as min_d, MAX(order_date) as max_d')->first()
+        );
+        $dataFrom = $range && $range->min_d ? Carbon::parse($range->min_d) : null;
+        $dataTo   = $range && $range->max_d ? Carbon::parse($range->max_d) : null;
+        $asOf     = $dataTo ?? now()->startOfDay();
 
         $now   = $asOf->copy()->startOfDay();
         $curr1 = $now->copy()->subMonths(12);
         $prev1 = $now->copy()->subMonths(24);
 
-        $customers = SalesLine::query()
-            ->where('sub_total', '>', 0)
-            ->when($warehouse, fn($q) => $q->where('warehouse', $warehouse))
-            ->when($search, fn($q) => $q->where(function ($q) use ($search) {
-                $q->where('customer', 'like', "%{$search}%")
-                  ->orWhere('customer_code', 'like', "%{$search}%");
-            }))
-            ->selectRaw("
-                customer_code,
-                MAX(customer) as customer,
-                MAX(customer_type) as customer_type,
-                SUM(CASE WHEN order_date >= ? THEN sub_total ELSE 0 END) as current_total,
-                SUM(CASE WHEN order_date >= ? AND order_date < ? THEN sub_total ELSE 0 END) as prev_total,
-                SUM(sub_total) as all_time_total,
-                MIN(order_date) as first_order_date,
-                MAX(order_date) as last_order_date,
-                COUNT(DISTINCT DATE(order_date)) as distinct_order_days,
-                COUNT(DISTINCT order_no) as order_count
-            ", [$curr1, $prev1, $curr1])
-            ->groupBy('customer_code')
-            ->orderByDesc('current_total')
-            ->get();
+        // Cache the full aggregate per warehouse (busted on import via crm.aggregates tag)
+        $cacheKey = 'crm.customers.' . ($warehouse ?: 'all');
+        $customers = Cache::remember($cacheKey, 3600, function () use ($warehouse, $curr1, $prev1) {
+            return SalesLine::query()
+                ->where('sub_total', '>', 0)
+                ->when($warehouse, fn($q) => $q->where('warehouse', $warehouse))
+                ->selectRaw("
+                    customer_code,
+                    MAX(customer) as customer,
+                    MAX(customer_type) as customer_type,
+                    SUM(CASE WHEN order_date >= ? THEN sub_total ELSE 0 END) as current_total,
+                    SUM(CASE WHEN order_date >= ? AND order_date < ? THEN sub_total ELSE 0 END) as prev_total,
+                    SUM(sub_total) as all_time_total,
+                    MIN(order_date) as first_order_date,
+                    MAX(order_date) as last_order_date,
+                    COUNT(DISTINCT DATE(order_date)) as distinct_order_days,
+                    COUNT(DISTINCT order_no) as order_count
+                ", [$curr1, $prev1, $curr1])
+                ->groupBy('customer_code')
+                ->orderByDesc('current_total')
+                ->get();
+        });
+
+        // Apply search in PHP (fast on cached collection, avoids extra DB hit)
+        if ($search) {
+            $customers = $customers->filter(fn($c) =>
+                str_contains(strtolower($c->customer ?? ''), strtolower($search)) ||
+                str_contains(strtolower($c->customer_code ?? ''), strtolower($search))
+            )->values();
+        }
 
         $keyAccounts = KeyAccount::with('user')
             ->whereIn('account_code', $customers->pluck('customer_code'))
@@ -113,68 +125,102 @@ class CrmController extends Controller
     {
         $warehouse = $request->input('warehouse');
 
-        $lines = SalesLine::where('customer_code', $customerCode)
+        $base = fn() => DB::table('sales_lines')
+            ->where('customer_code', $customerCode)
             ->where('sub_total', '>', 0)
-            ->when($warehouse, fn($q) => $q->where('warehouse', $warehouse))
-            ->orderByDesc('order_date')
-            ->get();
+            ->when($warehouse, fn($q) => $q->where('warehouse', $warehouse));
 
-        abort_if($lines->isEmpty(), 404);
+        // Existence check + customer name/type in one query
+        $meta = $base()->selectRaw('MAX(customer) as customer, MAX(customer_type) as customer_type, COUNT(*) as total_lines')->first();
+        abort_if(!$meta || $meta->total_lines == 0, 404);
 
-        $customer     = $lines->first()->customer;
-        $customerType = $lines->first()->customer_type;
-        $keyAccount   = KeyAccount::with(['user', 'contacts.user', 'gifts'])->where('account_code', $customerCode)->first();
+        $customer     = $meta->customer;
+        $customerType = $meta->customer_type;
+
+        $keyAccount = KeyAccount::with(['user', 'contacts.user', 'gifts'])->where('account_code', $customerCode)->first();
 
         $warehouses = SalesLine::where('customer_code', $customerCode)
             ->where('sub_total', '>', 0)
             ->distinct()->orderBy('warehouse')->pluck('warehouse');
 
-        // Yearly + quarterly breakdown
-        $byYear = [];
-        foreach ($lines as $line) {
-            $year = $line->order_date->year;
-            $q    = 'q' . ceil($line->order_date->month / 3);
-            $byYear[$year][$q]     = ($byYear[$year][$q] ?? 0) + (float) $line->sub_total;
-            $byYear[$year]['total'] = ($byYear[$year]['total'] ?? 0) + (float) $line->sub_total;
-        }
-        krsort($byYear);
+        // KPI totals via SQL
+        $range = Cache::remember('crm.date_range', 3600, fn() =>
+            DB::table('sales_lines')->selectRaw('MIN(order_date) as min_d, MAX(order_date) as max_d')->first()
+        );
+        $asOf  = $range && $range->max_d ? Carbon::parse($range->max_d) : now()->startOfDay();
+        $cut12 = $asOf->copy()->subMonths(12)->toDateString();
+        $cut24 = $asOf->copy()->subMonths(24)->toDateString();
 
-        // Top products by spend
-        $topProducts = $lines->groupBy('product_code')->map(fn($rows) => [
-            'product_code' => $rows->first()->product_code,
-            'description'  => $rows->first()->product_group ?: $rows->first()->product_code,
-            'total'        => $rows->sum('sub_total'),
-            'qty'          => $rows->sum('quantity'),
-            'orders'       => $rows->pluck('order_no')->filter()->unique()->count(),
-        ])->sortByDesc('total')->take(10)->values();
+        $kpi = $base()->selectRaw("
+            SUM(CASE WHEN order_date >= ? THEN sub_total ELSE 0 END) as total12m,
+            SUM(CASE WHEN order_date >= ? AND order_date < ? THEN sub_total ELSE 0 END) as prev12m,
+            MAX(order_date) as last_order_date,
+            MIN(order_date) as first_order_date,
+            COUNT(DISTINCT DATE(order_date)) as distinct_order_days
+        ", [$cut12, $cut24, $cut12])->first();
 
-        // Recent orders
-        $recentOrders = $lines->groupBy('order_no')->map(fn($rows) => [
-            'order_no'  => $rows->first()->order_no,
-            'date'      => $rows->first()->order_date,
-            'warehouse' => $rows->first()->warehouse,
-            'total'     => $rows->sum('sub_total'),
-            'lines'     => $rows->count(),
-        ])->sortByDesc(fn($o) => $o['date'])->take(10)->values();
+        $total12m    = (float) ($kpi->total12m ?? 0);
+        $totalPrev12 = (float) ($kpi->prev12m  ?? 0);
+        $lastOrder   = $kpi->last_order_date  ? Carbon::parse($kpi->last_order_date)  : null;
+        $firstOrder  = $kpi->first_order_date ? Carbon::parse($kpi->first_order_date) : null;
 
-        // KPI totals
-        $now         = now()->startOfDay();
-        $total12m    = $lines->where('order_date', '>=', $now->copy()->subMonths(12))->sum('sub_total');
-        $totalPrev12 = $lines->filter(fn($l) =>
-            $l->order_date >= $now->copy()->subMonths(24) && $l->order_date < $now->copy()->subMonths(12)
-        )->sum('sub_total');
-        $lastOrder   = $lines->max('order_date');
-
-        // Order frequency
-        $orderDates  = $lines->pluck('order_date')->map(fn($d) => $d->toDateString())->unique()->sort()->values();
         $expectedNext = null;
         $avgDays      = null;
-        if ($orderDates->count() >= 2) {
-            $first   = Carbon::parse($orderDates->first());
-            $last    = Carbon::parse($orderDates->last());
-            $avgDays = round($first->diffInDays($last) / ($orderDates->count() - 1));
-            $expectedNext = $last->copy()->addDays($avgDays);
+        if ($lastOrder && $firstOrder && (int) $kpi->distinct_order_days >= 2) {
+            $avgDays      = round($firstOrder->diffInDays($lastOrder) / ((int) $kpi->distinct_order_days - 1));
+            $expectedNext = $lastOrder->copy()->addDays($avgDays);
         }
+
+        // Yearly + quarterly breakdown via SQL
+        $quarterRows = $base()->selectRaw("
+            YEAR(order_date) as year,
+            SUM(CASE WHEN MONTH(order_date) BETWEEN 1  AND 3  THEN sub_total ELSE 0 END) as q1,
+            SUM(CASE WHEN MONTH(order_date) BETWEEN 4  AND 6  THEN sub_total ELSE 0 END) as q2,
+            SUM(CASE WHEN MONTH(order_date) BETWEEN 7  AND 9  THEN sub_total ELSE 0 END) as q3,
+            SUM(CASE WHEN MONTH(order_date) BETWEEN 10 AND 12 THEN sub_total ELSE 0 END) as q4,
+            SUM(sub_total) as total
+        ")->groupByRaw('YEAR(order_date)')->orderByDesc('year')->get();
+
+        $byYear = [];
+        foreach ($quarterRows as $row) {
+            $byYear[(int) $row->year] = [
+                'q1'    => (float) $row->q1,
+                'q2'    => (float) $row->q2,
+                'q3'    => (float) $row->q3,
+                'q4'    => (float) $row->q4,
+                'total' => (float) $row->total,
+            ];
+        }
+
+        // Top 10 products by spend via SQL
+        $topProducts = $base()->selectRaw("
+            product_code,
+            MAX(product_group) as description,
+            SUM(sub_total) as total,
+            SUM(quantity) as qty,
+            COUNT(DISTINCT order_no) as orders
+        ")->groupBy('product_code')->orderByDesc('total')->limit(10)->get()->map(fn($r) => [
+            'product_code' => $r->product_code,
+            'description'  => $r->description ?: $r->product_code,
+            'total'        => (float) $r->total,
+            'qty'          => (float) $r->qty,
+            'orders'       => (int) $r->orders,
+        ])->values();
+
+        // 10 most recent orders via SQL
+        $recentOrders = $base()->selectRaw("
+            order_no,
+            MAX(order_date) as date,
+            MAX(warehouse) as warehouse,
+            SUM(sub_total) as total,
+            COUNT(*) as lines
+        ")->groupBy('order_no')->orderByDesc('date')->limit(10)->get()->map(fn($r) => [
+            'order_no'  => $r->order_no,
+            'date'      => Carbon::parse($r->date),
+            'warehouse' => $r->warehouse,
+            'total'     => (float) $r->total,
+            'lines'     => (int) $r->lines,
+        ])->values();
 
         return view('crm.show', compact(
             'customerCode', 'customer', 'customerType', 'keyAccount',
