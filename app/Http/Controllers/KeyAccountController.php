@@ -24,8 +24,8 @@ class KeyAccountController extends Controller
         $isAdmin = $user->can('key_accounts_admin');
 
         $accounts = $isAdmin
-            ? KeyAccount::with(['user', 'contacts', 'gifts'])->whereNotNull('user_id')->orderBy('sort_order')->orderBy('name')->get()
-            : KeyAccount::with(['contacts', 'gifts'])->where('user_id', $user->id)->orderBy('sort_order')->orderBy('name')->get();
+            ? KeyAccount::with(['user', 'contacts', 'gifts'])->whereNotNull('user_id')->orderByRaw("FIELD(type,'key','growth')")->orderBy('sort_order')->orderBy('name')->get()
+            : KeyAccount::with(['contacts', 'gifts'])->where('user_id', $user->id)->orderByRaw("FIELD(type,'key','growth')")->orderBy('sort_order')->orderBy('name')->get();
 
         $currentYear   = (int) now()->year;
         $customerCodes = $accounts->pluck('account_code')->all();
