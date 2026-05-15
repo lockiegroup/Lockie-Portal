@@ -157,6 +157,7 @@ if (tbody) {
     Sortable.create(tbody, {
         handle: '.ka-drag-handle',
         filter: '.ka-no-drag',
+        preventOnFilter: false,
         animation: 150,
         onEnd() {
             const ids = [...tbody.querySelectorAll('tr[data-id]')].map(r => r.dataset.id);
