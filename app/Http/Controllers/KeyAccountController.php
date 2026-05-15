@@ -265,8 +265,22 @@ class KeyAccountController extends Controller
         $isAdmin = $user->can('key_accounts_admin');
 
         $accounts = $isAdmin
-            ? KeyAccount::with(['gifts' => fn($q) => $q->orderBy('gifted_at')])->orderBy('account_code')->get()
-            : KeyAccount::with(['gifts' => fn($q) => $q->orderBy('gifted_at')])->where('user_id', $user->id)->orderBy('account_code')->get();
+            ? KeyAccount::with('gifts')->get()
+            : KeyAccount::with('gifts')->where('user_id', $user->id)->get();
+
+        // Flatten all gifts across accounts and sort globally oldest → newest
+        $rows = collect();
+        foreach ($accounts as $account) {
+            foreach ($account->gifts as $gift) {
+                $rows->push([
+                    'account_code' => $account->account_code,
+                    'recipient'    => $gift->recipient,
+                    'gifted_at'    => $gift->gifted_at,
+                    'description'  => $gift->description,
+                ]);
+            }
+        }
+        $rows = $rows->sortBy('gifted_at')->values();
 
         $spreadsheet = new Spreadsheet();
         $sheet       = $spreadsheet->getActiveSheet();
@@ -274,16 +288,14 @@ class KeyAccountController extends Controller
         $sheet->fromArray(['Account Code', 'Recipient', 'Date', 'Gift Description'], null, 'A1');
 
         $rowNum = 2;
-        foreach ($accounts as $account) {
-            foreach ($account->gifts as $gift) {
-                $sheet->fromArray([
-                    $account->account_code,
-                    $gift->recipient,
-                    $gift->gifted_at->format('d/m/Y'),
-                    $gift->description,
-                ], null, "A{$rowNum}");
-                $rowNum++;
-            }
+        foreach ($rows as $row) {
+            $sheet->fromArray([
+                $row['account_code'],
+                $row['recipient'],
+                $row['gifted_at']->format('d/m/Y'),
+                $row['description'],
+            ], null, "A{$rowNum}");
+            $rowNum++;
         }
 
         $tmpFile = tempnam(sys_get_temp_dir(), 'gifts_') . '.xlsx';
