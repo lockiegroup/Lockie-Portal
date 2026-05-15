@@ -128,7 +128,8 @@
     </div>
     @else
     <div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;">
-        <table id="reminders-table" style="width:100%;border-collapse:collapse;font-size:0.8125rem;">
+        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+        <table id="reminders-table" style="width:100%;min-width:700px;border-collapse:collapse;font-size:0.8125rem;">
             <thead>
                 <tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;">
                     <th style="padding:0.625rem 0.75rem;text-align:left;font-size:0.695rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;width:80px;">Account</th>
@@ -295,6 +296,7 @@
                 @endforeach
             </tbody>
         </table>
+        </div>
     </div>
     @endif
 
