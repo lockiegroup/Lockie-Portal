@@ -155,7 +155,7 @@ class CrmController extends Controller
             'warehouse' => $rows->first()->warehouse,
             'total'     => $rows->sum('sub_total'),
             'lines'     => $rows->count(),
-        ])->sortByDesc(fn($o) => $o['date'])->take(20)->values();
+        ])->sortByDesc(fn($o) => $o['date'])->take(10)->values();
 
         // KPI totals
         $now         = now()->startOfDay();
