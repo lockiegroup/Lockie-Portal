@@ -47,7 +47,18 @@ class ReminderEntry extends Model
         'moved_stock'        => ['bg' => '#e0f2fe', 'text' => '#0369a1'],
     ];
 
-    const CLOSED_STATUSES = ['lost_price', 'lost_quality', 'amalgamated', 'parish_giving', 'no_longer_required'];
+    const STATUS_SORT = [
+        'order_placed'       => 1,
+        'unable_to_contact'  => 2,
+        'using_spares'       => 3,
+        'moved_stock'        => 4,
+        'lost_price'         => 5,
+        'lost_quality'       => 6,
+        'amalgamated'        => 7,
+        'parish_giving'      => 8,
+        'no_longer_required' => 9,
+        'pending'            => 10,
+    ];
 
     public function calledBy(): BelongsTo
     {

@@ -179,6 +179,8 @@ Route::middleware(['auth', 'otp'])->group(function () {
     // Reminders
     Route::middleware('can:reminders')->prefix('reminders')->name('reminders.')->group(function () {
         Route::get('/',                          [RemindersController::class, 'index'])->name('index');
+        Route::get('/overview',                  [RemindersController::class, 'overview'])->name('overview');
+        Route::post('/clear-month',              [RemindersController::class, 'clearMonth'])->name('clear-month');
         Route::post('/import-entries',           [RemindersController::class, 'importEntries'])->name('import-entries');
         Route::post('/import-phones',            [RemindersController::class, 'importPhones'])->name('import-phones');
         Route::post('/import-orders',            [RemindersController::class, 'importOrders'])->name('import-orders');

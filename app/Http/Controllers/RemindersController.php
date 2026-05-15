@@ -23,6 +23,18 @@ class RemindersController extends Controller
         $entries = ReminderEntry::with('calledBy')
             ->where('year', $year)
             ->where('month', $month)
+            ->orderByRaw("CASE status
+                WHEN 'order_placed'       THEN 1
+                WHEN 'unable_to_contact'  THEN 2
+                WHEN 'using_spares'       THEN 3
+                WHEN 'moved_stock'        THEN 4
+                WHEN 'lost_price'         THEN 5
+                WHEN 'lost_quality'       THEN 6
+                WHEN 'amalgamated'        THEN 7
+                WHEN 'parish_giving'      THEN 8
+                WHEN 'no_longer_required' THEN 9
+                WHEN 'pending'            THEN 10
+                ELSE 11 END")
             ->orderBy('name')
             ->get();
 
@@ -38,6 +50,52 @@ class RemindersController extends Controller
             'entries', 'users', 'year', 'month',
             'totalCount', 'orderedCount', 'pendingCount', 'years'
         ));
+    }
+
+    public function overview(Request $request): View
+    {
+        $year = (int) $request->input('year', now()->year);
+
+        $rows = DB::table('reminder_entries')
+            ->where('year', $year)
+            ->selectRaw('month, status, COUNT(*) as cnt')
+            ->groupBy('month', 'status')
+            ->orderBy('month')
+            ->get();
+
+        // Pivot: month → [status → count]
+        $byMonth = [];
+        foreach ($rows as $row) {
+            $byMonth[(int)$row->month][$row->status] = (int)$row->cnt;
+        }
+
+        $availableYears = DB::table('reminder_entries')
+            ->distinct()->orderBy('year')->pluck('year');
+
+        $statuses = ReminderEntry::STATUSES;
+
+        return view('reminders.overview', compact('year', 'byMonth', 'availableYears', 'statuses'));
+    }
+
+    public function clearMonth(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'year'  => 'required|integer|min:2000|max:2099',
+            'month' => 'required|integer|min:1|max:12',
+        ]);
+
+        $year  = (int) $request->input('year');
+        $month = (int) $request->input('month');
+
+        $deleted = DB::table('reminder_entries')
+            ->where('year', $year)
+            ->where('month', $month)
+            ->delete();
+
+        ActivityLog::record('reminders.clear', "Cleared {$deleted} entries for " . date('F Y', mktime(0, 0, 0, $month, 1, $year)));
+
+        return redirect()->route('reminders.index', ['year' => $year, 'month' => $month])
+            ->with('success', "Cleared {$deleted} entries for " . date('F Y', mktime(0, 0, 0, $month, 1, $year)) . '. You can now re-import.');
     }
 
     public function importEntries(Request $request): RedirectResponse

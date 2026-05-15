@@ -8,21 +8,32 @@
             <p class="text-slate-500 mt-1 text-sm">Track and chase church envelope orders month by month.</p>
         </div>
 
-        {{-- Month / Year selector --}}
-        <form method="GET" action="{{ route('reminders.index') }}" class="flex items-center gap-2">
-            <select name="month" onchange="this.form.submit()"
-                style="border:1px solid #e2e8f0;border-radius:8px;padding:6px 10px;font-size:0.875rem;color:#334155;background:#fff;cursor:pointer;">
-                @foreach(range(1, 12) as $m)
-                <option value="{{ $m }}" {{ $m == $month ? 'selected' : '' }}>{{ date('F', mktime(0,0,0,$m,1)) }}</option>
-                @endforeach
-            </select>
-            <select name="year" onchange="this.form.submit()"
-                style="border:1px solid #e2e8f0;border-radius:8px;padding:6px 10px;font-size:0.875rem;color:#334155;background:#fff;cursor:pointer;">
-                @foreach($years as $y)
-                <option value="{{ $y }}" {{ $y == $year ? 'selected' : '' }}>{{ $y }}</option>
-                @endforeach
-            </select>
-        </form>
+        <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+            {{-- Month / Year selector --}}
+            <form method="GET" action="{{ route('reminders.index') }}" style="display:flex;align-items:center;gap:0.5rem;">
+                <select name="month" onchange="this.form.submit()"
+                    style="border:1px solid #e2e8f0;border-radius:8px;padding:6px 10px;font-size:0.875rem;color:#334155;background:#fff;cursor:pointer;">
+                    @foreach(range(1, 12) as $m)
+                    <option value="{{ $m }}" {{ $m == $month ? 'selected' : '' }}>{{ date('F', mktime(0,0,0,$m,1)) }}</option>
+                    @endforeach
+                </select>
+                <select name="year" onchange="this.form.submit()"
+                    style="border:1px solid #e2e8f0;border-radius:8px;padding:6px 10px;font-size:0.875rem;color:#334155;background:#fff;cursor:pointer;">
+                    @foreach($years as $y)
+                    <option value="{{ $y }}" {{ $y == $year ? 'selected' : '' }}>{{ $y }}</option>
+                    @endforeach
+                </select>
+            </form>
+
+            {{-- Overview link --}}
+            <a href="{{ route('reminders.overview') }}"
+                style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.4rem 0.875rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.8125rem;font-weight:600;text-decoration:none;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+                </svg>
+                Overview
+            </a>
+        </div>
     </div>
 
     @if(session('success'))
@@ -32,22 +43,40 @@
     <div class="mb-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">{{ $errors->first() }}</div>
     @endif
 
-    {{-- Stats + Export bar --}}
+    {{-- Stats + actions bar --}}
     <div style="display:flex;flex-wrap:wrap;align-items:center;gap:0.75rem;margin-bottom:1.25rem;">
-        <span class="stat-count" style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.25rem 0.75rem;border-radius:9999px;font-size:0.8125rem;font-weight:600;background:#f1f5f9;color:#475569;">
+        <span class="stat-count" style="display:inline-flex;align-items:center;padding:0.25rem 0.75rem;border-radius:9999px;font-size:0.8125rem;font-weight:600;background:#f1f5f9;color:#475569;">
             {{ $totalCount }} total
         </span>
-        <span class="stat-count" style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.25rem 0.75rem;border-radius:9999px;font-size:0.8125rem;font-weight:600;background:#dcfce7;color:#166534;">
+        <span class="stat-count" style="display:inline-flex;align-items:center;padding:0.25rem 0.75rem;border-radius:9999px;font-size:0.8125rem;font-weight:600;background:#dcfce7;color:#166534;">
             {{ $orderedCount }} ordered
         </span>
-        <span class="stat-count" style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.25rem 0.75rem;border-radius:9999px;font-size:0.8125rem;font-weight:600;background:#fef3c7;color:#92400e;">
+        <span class="stat-count" style="display:inline-flex;align-items:center;padding:0.25rem 0.75rem;border-radius:9999px;font-size:0.8125rem;font-weight:600;background:#fef3c7;color:#92400e;">
             {{ $pendingCount }} outstanding
         </span>
+
         <div style="flex:1;"></div>
+
         @if($totalCount > 0)
+        {{-- Clear month --}}
+        <form action="{{ route('reminders.clear-month') }}" method="POST"
+            onsubmit="return confirm('Delete all {{ $totalCount }} entries for {{ date('F Y', mktime(0,0,0,$month,1,$year)) }}? This cannot be undone.')">
+            @csrf
+            <input type="hidden" name="year"  value="{{ $year }}">
+            <input type="hidden" name="month" value="{{ $month }}">
+            <button type="submit"
+                style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.4rem 0.875rem;border-radius:8px;border:1px solid #fca5a5;background:#fff;color:#dc2626;font-size:0.8125rem;font-weight:600;cursor:pointer;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                    <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+                </svg>
+                Clear Month
+            </button>
+        </form>
+
+        {{-- Mailchimp export --}}
         <a href="{{ route('reminders.export', ['year' => $year, 'month' => $month]) }}"
-            style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.4rem 0.875rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.8125rem;font-weight:600;text-decoration:none;transition:background 0.15s;"
-            onmouseover="this.style.background='#1e293b'" onmouseout="this.style.background='#0f172a'">
+            style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.4rem 0.875rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.8125rem;font-weight:600;text-decoration:none;">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="7 10 12 15 17 10"/>
@@ -70,12 +99,11 @@
         </button>
 
         <div id="imports-panel" style="display:none;border-top:1px solid #f1f5f9;">
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:0;border-top:0;">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));">
 
-                {{-- Datafile entries import --}}
                 <div style="padding:1.25rem;border-right:1px solid #f1f5f9;">
                     <p style="font-size:0.8125rem;font-weight:600;color:#334155;margin-bottom:0.25rem;">Datafile Export</p>
-                    <p style="font-size:0.75rem;color:#94a3b8;margin-bottom:0.875rem;">Paste in the customer list for this month from Datafile.</p>
+                    <p style="font-size:0.75rem;color:#94a3b8;margin-bottom:0.875rem;">Paste in the customer list for this month from Datafile. Re-importing upserts — use Clear Month first to fully reset.</p>
                     <form action="{{ route('reminders.import-entries') }}" method="POST" enctype="multipart/form-data" class="flex flex-col gap-2">
                         @csrf
                         <input type="hidden" name="year"  value="{{ $year }}">
@@ -89,7 +117,6 @@
                     </form>
                 </div>
 
-                {{-- Phone numbers import --}}
                 <div style="padding:1.25rem;border-right:1px solid #f1f5f9;">
                     <p style="font-size:0.8125rem;font-weight:600;color:#334155;margin-bottom:0.25rem;">Phone Numbers</p>
                     <p style="font-size:0.75rem;color:#94a3b8;margin-bottom:0.875rem;">Datafile export: Stock-Code, Telephone, Mobile. Merges both numbers and applies to all months.</p>
@@ -106,10 +133,9 @@
                     </form>
                 </div>
 
-                {{-- Orders import --}}
                 <div style="padding:1.25rem;">
                     <p style="font-size:0.8125rem;font-weight:600;color:#334155;margin-bottom:0.25rem;">Orders (OK) Import</p>
-                    <p style="font-size:0.75rem;color:#94a3b8;margin-bottom:0.875rem;">Datafile order export. Ticks Ordered for matching accounts across all months.</p>
+                    <p style="font-size:0.75rem;color:#94a3b8;margin-bottom:0.875rem;">Datafile order export. Marks accounts as Ordered across all months.</p>
                     <form action="{{ route('reminders.import-orders') }}" method="POST" enctype="multipart/form-data" class="flex flex-col gap-2">
                         @csrf
                         <input type="hidden" name="year"  value="{{ $year }}">
@@ -127,13 +153,19 @@
         </div>
     </div>
 
-    {{-- Status legend --}}
-    <div style="display:flex;flex-wrap:wrap;gap:0.375rem;margin-bottom:1rem;">
+    {{-- Status legend / filter pills --}}
+    <div style="display:flex;flex-wrap:wrap;gap:0.375rem;margin-bottom:1rem;align-items:center;">
+        <span style="font-size:0.7rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-right:0.25rem;">Filter:</span>
+        <button onclick="filterByStatus(null)" id="filter-all"
+            style="display:inline-flex;align-items:center;padding:0.2rem 0.625rem;border-radius:9999px;font-size:0.7rem;font-weight:600;border:2px solid #0f172a;background:#0f172a;color:#fff;cursor:pointer;">
+            All
+        </button>
         @foreach(\App\Models\ReminderEntry::STATUSES as $key => $label)
         @php $colours = \App\Models\ReminderEntry::STATUS_COLOURS[$key] ?? ['bg'=>'#fff','text'=>'#334155']; @endphp
-        <span style="display:inline-flex;align-items:center;gap:0.25rem;padding:0.2rem 0.625rem;border-radius:9999px;font-size:0.7rem;font-weight:500;background:{{ $colours['bg'] }};color:{{ $colours['text'] }};border:1px solid rgba(0,0,0,0.06);">
+        <button onclick="filterByStatus('{{ $key }}')" data-status="{{ $key }}" class="filter-pill"
+            style="display:inline-flex;align-items:center;padding:0.2rem 0.625rem;border-radius:9999px;font-size:0.7rem;font-weight:500;border:2px solid transparent;background:{{ $colours['bg'] }};color:{{ $colours['text'] }};cursor:pointer;outline:1px solid rgba(0,0,0,0.08);">
             {{ $label }}
-        </span>
+        </button>
         @endforeach
     </div>
 
@@ -145,7 +177,7 @@
     @else
     <div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;">
         <div style="overflow-x:auto;">
-            <table style="width:100%;border-collapse:collapse;font-size:0.8125rem;">
+            <table id="reminders-table" style="width:100%;border-collapse:collapse;font-size:0.8125rem;">
                 <thead>
                     <tr style="background:#f8fafc;">
                         <th style="padding:0.625rem 0.75rem;text-align:left;font-size:0.7rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;white-space:nowrap;border-bottom:1px solid #e2e8f0;position:sticky;left:0;background:#f8fafc;z-index:2;">Account</th>
@@ -173,7 +205,7 @@
                         $colours = \App\Models\ReminderEntry::STATUS_COLOURS[$entry->status] ?? ['bg'=>'#ffffff','text'=>'#334155'];
                         $rowBg   = $colours['bg'];
                     @endphp
-                    <tr id="row-{{ $entry->id }}" style="background-color:{{ $rowBg }};border-bottom:1px solid rgba(0,0,0,0.05);">
+                    <tr id="row-{{ $entry->id }}" data-status="{{ $entry->status }}" style="background-color:{{ $rowBg }};border-bottom:1px solid rgba(0,0,0,0.05);">
                         <td style="padding:0.5rem 0.75rem;white-space:nowrap;font-weight:600;color:#334155;position:sticky;left:0;background-color:{{ $rowBg }};z-index:1;" class="sticky-col">
                             {{ $entry->account_code }}
                         </td>
@@ -233,11 +265,20 @@
                                 style="border:1px solid #e2e8f0;border-radius:6px;padding:0.25rem 0.5rem;font-size:0.75rem;color:#334155;background:#fff;width:100%;min-width:160px;">
                         </td>
 
-                        {{-- Ordered --}}
+                        {{-- Ordered badge --}}
                         <td style="padding:0.375rem 0.75rem;text-align:center;white-space:nowrap;">
-                            <input type="checkbox" data-field="has_ordered" {{ $entry->has_ordered ? 'checked' : '' }}
-                                onchange="updateEntry({{ $entry->id }}, 'has_ordered', this.checked)"
-                                style="width:16px;height:16px;cursor:pointer;accent-color:#16a34a;">
+                            <button data-field="has_ordered" onclick="toggleOrdered(this, {{ $entry->id }})"
+                                data-ordered="{{ $entry->has_ordered ? '1' : '0' }}"
+                                style="border:none;background:none;cursor:pointer;padding:0;line-height:1;">
+                                @if($entry->has_ordered)
+                                <span style="display:inline-flex;align-items:center;gap:0.25rem;padding:0.2rem 0.625rem;border-radius:9999px;font-size:0.7rem;font-weight:600;background:#dcfce7;color:#166534;line-height:1rem;">
+                                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                                    Ordered
+                                </span>
+                                @else
+                                <span style="display:inline-flex;align-items:center;padding:0.2rem 0.625rem;border-radius:9999px;font-size:0.7rem;font-weight:500;background:#f8fafc;color:#cbd5e1;border:1px dashed #e2e8f0;line-height:1rem;">—</span>
+                                @endif
+                            </button>
                         </td>
                     </tr>
                     @endforeach
@@ -251,41 +292,98 @@
 
 <script>
 (function () {
-    var csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-
+    var csrfToken    = document.querySelector('meta[name="csrf-token"]').content;
     var statusColours = @json(\App\Models\ReminderEntry::STATUS_COLOURS);
+    var statusLabels  = @json(\App\Models\ReminderEntry::STATUSES);
+    var activeFilter  = null;
 
+    // ── Inline save ──────────────────────────────────────────────────────────
     window.updateEntry = function (id, field, value) {
         var body = {};
         body[field] = value;
 
         fetch('/reminders/entries/' + id, {
             method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
             body: JSON.stringify(body),
         }).then(function (r) {
             if (!r.ok) { console.error('Update failed'); return; }
             if (field === 'status') {
-                var colours = statusColours[value] || { bg: '#ffffff', text: '#334155' };
+                var colours = statusColours[value] || { bg: '#ffffff' };
                 var row = document.getElementById('row-' + id);
                 if (row) {
+                    row.setAttribute('data-status', value);
                     row.style.backgroundColor = colours.bg;
-                    row.querySelectorAll('.sticky-col').forEach(function (td) {
-                        td.style.backgroundColor = colours.bg;
-                    });
+                    row.querySelectorAll('.sticky-col').forEach(function (td) { td.style.backgroundColor = colours.bg; });
+                    // Re-apply active filter
+                    if (activeFilter && value !== activeFilter) row.style.display = 'none';
+                    else row.style.display = '';
                 }
-            }
-            if (field === 'has_ordered') {
-                // Visual tick/untick handled by checkbox itself
             }
         }).catch(function (e) { console.error(e); });
     };
 
-    // Imports accordion
+    // ── Ordered toggle ────────────────────────────────────────────────────────
+    window.toggleOrdered = function (btn, id) {
+        var isOrdered = btn.getAttribute('data-ordered') === '1';
+        var newVal    = !isOrdered;
+        btn.setAttribute('data-ordered', newVal ? '1' : '0');
+
+        if (newVal) {
+            btn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:0.25rem;padding:0.2rem 0.625rem;border-radius:9999px;font-size:0.7rem;font-weight:600;background:#dcfce7;color:#166534;line-height:1rem;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Ordered</span>';
+        } else {
+            btn.innerHTML = '<span style="display:inline-flex;align-items:center;padding:0.2rem 0.625rem;border-radius:9999px;font-size:0.7rem;font-weight:500;background:#f8fafc;color:#cbd5e1;border:1px dashed #e2e8f0;line-height:1rem;">—</span>';
+        }
+
+        fetch('/reminders/entries/' + id, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+            body: JSON.stringify({ has_ordered: newVal }),
+        }).then(function (r) {
+            if (!r.ok) { btn.setAttribute('data-ordered', isOrdered ? '1' : '0'); }
+            else { refreshStats(); }
+        }).catch(function () { btn.setAttribute('data-ordered', isOrdered ? '1' : '0'); });
+    };
+
+    // ── Status filter ─────────────────────────────────────────────────────────
+    window.filterByStatus = function (status) {
+        activeFilter = status;
+        var rows = document.querySelectorAll('#reminders-table tbody tr');
+        rows.forEach(function (row) {
+            if (!status || row.getAttribute('data-status') === status) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        // Highlight active pill
+        document.getElementById('filter-all').style.background = status ? '#f1f5f9' : '#0f172a';
+        document.getElementById('filter-all').style.color      = status ? '#475569' : '#fff';
+        document.getElementById('filter-all').style.borderColor = status ? 'transparent' : '#0f172a';
+        document.querySelectorAll('.filter-pill').forEach(function (pill) {
+            var active = pill.getAttribute('data-status') === status;
+            pill.style.outline    = active ? '2px solid #0f172a' : '1px solid rgba(0,0,0,0.08)';
+            pill.style.outlineOffset = active ? '1px' : '0';
+        });
+    };
+
+    // ── Stats refresh (after toggling ordered) ────────────────────────────────
+    function refreshStats() {
+        var rows    = document.querySelectorAll('#reminders-table tbody tr');
+        var total   = rows.length;
+        var ordered = 0;
+        rows.forEach(function (row) {
+            var btn = row.querySelector('[data-field="has_ordered"]');
+            if (btn && btn.getAttribute('data-ordered') === '1') ordered++;
+        });
+        var statEls = document.querySelectorAll('.stat-count');
+        if (statEls[0]) statEls[0].textContent = total + ' total';
+        if (statEls[1]) statEls[1].textContent = ordered + ' ordered';
+        if (statEls[2]) statEls[2].textContent = (total - ordered) + ' outstanding';
+    }
+
+    // ── Imports accordion ─────────────────────────────────────────────────────
     window.toggleImports = function () {
         var panel = document.getElementById('imports-panel');
         var ch    = document.getElementById('imports-chevron');
@@ -295,16 +393,12 @@
         if (ch) ch.style.transform = open ? '' : 'rotate(180deg)';
         localStorage.setItem('reminders_imports_open', open ? '0' : '1');
     };
-
-    // Restore accordion state
     if (localStorage.getItem('reminders_imports_open') === '1') {
         var panel = document.getElementById('imports-panel');
         var ch    = document.getElementById('imports-chevron');
         if (panel) panel.style.display = 'block';
         if (ch) ch.style.transform = 'rotate(180deg)';
     }
-
-    // Auto-open imports accordion if there was an import error
     @if($errors->hasAny(['file', 'phones_file', 'orders_file']))
     (function () {
         var panel = document.getElementById('imports-panel');
@@ -314,61 +408,56 @@
     })();
     @endif
 
-    // ── Real-time polling ────────────────────────────────────────────────────
+    // ── Real-time polling ─────────────────────────────────────────────────────
     @if($entries->isNotEmpty())
-    var pollUrl    = '{{ route('reminders.poll', ['year' => $year, 'month' => $month]) }}';
-    var lastSeen   = {};   // id → updated_at string
-    var myPending  = {};   // id → field being saved (skip overwriting in-flight edits)
+    var pollUrl  = '{{ route('reminders.poll', ['year' => $year, 'month' => $month]) }}';
+    var lastSeen = {};
+    var myPending = {};
 
-    // Seed lastSeen from current server-rendered state so we don't flash on first poll
     @foreach($entries as $entry)
     lastSeen[{{ $entry->id }}] = '{{ $entry->updated_at }}';
     @endforeach
 
     function applyPollData(data) {
         Object.keys(data).forEach(function (id) {
-            var row    = document.getElementById('row-' + id);
+            var row   = document.getElementById('row-' + id);
             if (!row) return;
-            var entry  = data[id];
-            var prev   = lastSeen[id];
-            if (prev === entry.updated_at) return;   // unchanged
+            var entry = data[id];
+            if (lastSeen[id] === entry.updated_at) return;
             lastSeen[id] = entry.updated_at;
-            if (myPending[id]) return;               // we just saved this row — skip
+            if (myPending[id]) return;
 
-            // Status + row colour
-            var colours = statusColours[entry.status] || { bg: '#ffffff', text: '#334155' };
+            var colours = statusColours[entry.status] || { bg: '#ffffff' };
+            row.setAttribute('data-status', entry.status);
             row.style.backgroundColor = colours.bg;
-            row.querySelectorAll('.sticky-col').forEach(function (td) {
-                td.style.backgroundColor = colours.bg;
-            });
+            row.querySelectorAll('.sticky-col').forEach(function (td) { td.style.backgroundColor = colours.bg; });
+            if (activeFilter && entry.status !== activeFilter) row.style.display = 'none';
+
             var statusSel = row.querySelector('select[data-field="status"]');
             if (statusSel) statusSel.value = entry.status;
 
-            // Called by
             var calledSel = row.querySelector('select[data-field="called_by_user_id"]');
             if (calledSel) calledSel.value = entry.called_by_user_id || '';
 
-            // Called date
             var dateFld = row.querySelector('input[data-field="called_date"]');
             if (dateFld) dateFld.value = entry.called_date || '';
 
-            // Notes
             var notesFld = row.querySelector('input[data-field="call_notes"]');
             if (notesFld && document.activeElement !== notesFld) notesFld.value = entry.call_notes || '';
 
-            // Ordered
-            var ordCb = row.querySelector('input[data-field="has_ordered"]');
-            if (ordCb) ordCb.checked = !!entry.has_ordered;
+            // Ordered badge
+            var ordBtn = row.querySelector('[data-field="has_ordered"]');
+            if (ordBtn) {
+                var nowOrdered = !!entry.has_ordered;
+                ordBtn.setAttribute('data-ordered', nowOrdered ? '1' : '0');
+                if (nowOrdered) {
+                    ordBtn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:0.25rem;padding:0.2rem 0.625rem;border-radius:9999px;font-size:0.7rem;font-weight:600;background:#dcfce7;color:#166534;line-height:1rem;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Ordered</span>';
+                } else {
+                    ordBtn.innerHTML = '<span style="display:inline-flex;align-items:center;padding:0.2rem 0.625rem;border-radius:9999px;font-size:0.7rem;font-weight:500;background:#f8fafc;color:#cbd5e1;border:1px dashed #e2e8f0;line-height:1rem;">—</span>';
+                }
+            }
         });
-
-        // Refresh stats counters
-        var total   = Object.keys(data).length;
-        var ordered = Object.values(data).filter(function (e) { return e.has_ordered; }).length;
-        var pending = total - ordered;
-        var statEls = document.querySelectorAll('.stat-count');
-        if (statEls[0]) statEls[0].textContent = total   + ' total';
-        if (statEls[1]) statEls[1].textContent = ordered + ' ordered';
-        if (statEls[2]) statEls[2].textContent = pending + ' outstanding';
+        refreshStats();
     }
 
     function doPoll() {
@@ -380,7 +469,6 @@
 
     setInterval(doPoll, 10000);
 
-    // Track in-flight saves so poll doesn't overwrite them
     var origUpdate = window.updateEntry;
     window.updateEntry = function (id, field, value) {
         myPending[id] = true;
