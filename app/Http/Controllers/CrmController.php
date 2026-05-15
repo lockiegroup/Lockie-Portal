@@ -173,17 +173,17 @@ class CrmController extends Controller
 
         // Yearly + quarterly breakdown via SQL
         $quarterRows = $base()->selectRaw("
-            YEAR(order_date) as year,
+            YEAR(order_date) as yr,
             SUM(CASE WHEN MONTH(order_date) BETWEEN 1  AND 3  THEN sub_total ELSE 0 END) as q1,
             SUM(CASE WHEN MONTH(order_date) BETWEEN 4  AND 6  THEN sub_total ELSE 0 END) as q2,
             SUM(CASE WHEN MONTH(order_date) BETWEEN 7  AND 9  THEN sub_total ELSE 0 END) as q3,
             SUM(CASE WHEN MONTH(order_date) BETWEEN 10 AND 12 THEN sub_total ELSE 0 END) as q4,
             SUM(sub_total) as total
-        ")->groupByRaw('YEAR(order_date)')->orderByDesc('year')->get();
+        ")->groupByRaw('YEAR(order_date)')->orderByRaw('YEAR(order_date) DESC')->get();
 
         $byYear = [];
         foreach ($quarterRows as $row) {
-            $byYear[(int) $row->year] = [
+            $byYear[(int) $row->yr] = [
                 'q1'    => (float) $row->q1,
                 'q2'    => (float) $row->q2,
                 'q3'    => (float) $row->q3,
@@ -199,7 +199,7 @@ class CrmController extends Controller
             SUM(sub_total) as total,
             SUM(quantity) as qty,
             COUNT(DISTINCT order_no) as orders
-        ")->groupBy('product_code')->orderByDesc('total')->limit(10)->get()->map(fn($r) => [
+        ")->groupBy('product_code')->orderByRaw('SUM(sub_total) DESC')->limit(10)->get()->map(fn($r) => [
             'product_code' => $r->product_code,
             'description'  => $r->description ?: $r->product_code,
             'total'        => (float) $r->total,
@@ -210,13 +210,13 @@ class CrmController extends Controller
         // 10 most recent orders via SQL
         $recentOrders = $base()->selectRaw("
             order_no,
-            MAX(order_date) as date,
+            MAX(order_date) as order_dt,
             MAX(warehouse) as warehouse,
             SUM(sub_total) as total,
             COUNT(*) as lines
-        ")->groupBy('order_no')->orderByDesc('date')->limit(10)->get()->map(fn($r) => [
+        ")->groupBy('order_no')->orderByRaw('MAX(order_date) DESC')->limit(10)->get()->map(fn($r) => [
             'order_no'  => $r->order_no,
-            'date'      => Carbon::parse($r->date),
+            'date'      => Carbon::parse($r->order_dt),
             'warehouse' => $r->warehouse,
             'total'     => (float) $r->total,
             'lines'     => (int) $r->lines,
