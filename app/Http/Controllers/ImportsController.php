@@ -19,6 +19,7 @@ class ImportsController extends Controller
         $user    = auth()->user();
         $doKA    = $user->hasModule('key_accounts') || $user->can('key_accounts_admin');
         $doStock = $user->can('stock_ordering');
+        $doCrm   = $user->hasModule('crm');
 
         if (!$doKA && !$doStock) {
             abort(403);
@@ -39,7 +40,7 @@ class ImportsController extends Controller
             ->latest('created_at')
             ->first();
 
-        return view('imports.index', compact('doKA', 'doStock', 'substitutions', 'salesFrom', 'salesTo', 'lastImport'));
+        return view('imports.index', compact('doKA', 'doStock', 'doCrm', 'substitutions', 'salesFrom', 'salesTo', 'lastImport'));
     }
 
     public function storeSubstitution(Request $request): RedirectResponse
