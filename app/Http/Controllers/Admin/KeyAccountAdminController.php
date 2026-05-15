@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\KeyAccount;
+use App\Models\SalesLine;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -35,10 +36,14 @@ class KeyAccountAdminController extends Controller
     {
         $data = $request->validate([
             'account_code' => ['required', 'string', 'max:50'],
-            'name'         => ['required', 'string', 'max:200'],
             'type'         => ['required', 'in:key,growth'],
             'user_id'      => ['nullable', 'exists:users,id'],
         ]);
+
+        // Look up the customer name from the sales import; fall back to the code itself
+        $data['name'] = SalesLine::where('customer_code', $data['account_code'])
+            ->whereNotNull('customer')
+            ->value('customer') ?? $data['account_code'];
 
         $existing = KeyAccount::withTrashed()->where('account_code', $data['account_code'])->first();
 

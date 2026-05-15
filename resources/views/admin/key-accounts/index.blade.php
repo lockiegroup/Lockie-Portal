@@ -22,16 +22,12 @@
         <h2 class="font-semibold text-slate-800 mb-4">Add Account</h2>
         <form action="{{ route('admin.key-accounts.store') }}" method="POST">
             @csrf
-            <div class="grid grid-cols-2 gap-4 mb-4 sm:grid-cols-4">
+            <div class="grid grid-cols-2 gap-4 mb-4 sm:grid-cols-3">
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Account Code <span class="text-red-500">*</span></label>
                     <input type="text" name="account_code" value="{{ old('account_code') }}" required placeholder="e.g. BESGROUP"
                         class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
-                </div>
-                <div class="sm:col-span-1">
-                    <label class="block text-xs font-medium text-slate-600 mb-1">Name <span class="text-red-500">*</span></label>
-                    <input type="text" name="name" value="{{ old('name') }}" required placeholder="e.g. BES Group Ltd"
-                        class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
+                    <p class="text-xs text-slate-400 mt-1">Name will be pulled from the sales import automatically.</p>
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-slate-600 mb-1">Type <span class="text-red-500">*</span></label>
