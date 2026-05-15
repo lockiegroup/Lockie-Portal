@@ -500,7 +500,7 @@
 
     // ── Real-time polling ─────────────────────────────────────────────────────
     @if($entries->isNotEmpty())
-    var pollUrl = '{!! route('reminders.poll', ['year' => $year, 'month' => $month]) !!'}';
+    var pollUrl = '{!! route("reminders.poll", ["year" => $year, "month" => $month]) !!}';
     var lastSeen = {}, myPending = {};
     @foreach($entries as $entry)
     lastSeen[{{ $entry->id }}] = '{{ $entry->updated_at }}';
