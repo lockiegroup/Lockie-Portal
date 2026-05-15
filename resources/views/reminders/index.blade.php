@@ -133,7 +133,7 @@
                 <tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;">
                     <th style="padding:0.625rem 0.75rem;text-align:left;font-size:0.695rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;width:80px;">Account</th>
                     <th style="padding:0.625rem 0.75rem;text-align:left;font-size:0.695rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Name</th>
-                    <th style="padding:0.625rem 0.75rem;text-align:left;font-size:0.695rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;width:130px;">Description</th>
+                    <th style="padding:0.625rem 0.75rem;text-align:left;font-size:0.695rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Email</th>
                     <th style="padding:0.625rem 0.75rem;text-align:right;font-size:0.695rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;width:80px;">Value</th>
                     <th style="padding:0.625rem 0.75rem;text-align:left;font-size:0.695rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;width:150px;">Phone</th>
                     <th style="padding:0.625rem 0.75rem;text-align:left;font-size:0.695rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;width:100px;">Last Called</th>
@@ -161,8 +161,8 @@
                     <td style="padding:0.625rem 0.75rem;color:#1e293b;font-weight:500;">
                         {{ $entry->name }}
                     </td>
-                    <td style="padding:0.625rem 0.75rem;color:#64748b;font-size:0.775rem;">
-                        {{ $entry->description }}
+                    <td style="padding:0.625rem 0.75rem;color:#0369a1;font-size:0.775rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                        @if($entry->email)<a href="mailto:{{ $entry->email }}" onclick="event.stopPropagation()" style="color:#0369a1;text-decoration:none;" title="{{ $entry->email }}">{{ $entry->email }}</a>@endif
                     </td>
                     <td style="padding:0.625rem 0.75rem;text-align:right;color:#334155;font-weight:600;white-space:nowrap;">
                         @if($entry->order_value) £{{ number_format((float)$entry->order_value, 2) }} @endif
@@ -206,6 +206,12 @@
                             <div>
                                 <p style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.75rem;">Account Details</p>
                                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem 1.5rem;">
+                                    @if($entry->description)
+                                    <div style="grid-column:span 2;">
+                                        <p style="font-size:0.7rem;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.125rem;">Description</p>
+                                        <p style="font-size:0.8125rem;color:#334155;">{{ $entry->description }}</p>
+                                    </div>
+                                    @endif
                                     @if($entry->add1)
                                     <div>
                                         <p style="font-size:0.7rem;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.125rem;">Address</p>
@@ -216,12 +222,6 @@
                                     <div>
                                         <p style="font-size:0.7rem;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.125rem;">Postcode</p>
                                         <p style="font-size:0.8125rem;color:#334155;font-family:monospace;">{{ $entry->postcode }}</p>
-                                    </div>
-                                    @endif
-                                    @if($entry->email)
-                                    <div style="grid-column:span 2;">
-                                        <p style="font-size:0.7rem;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.125rem;">Email</p>
-                                        <a href="mailto:{{ $entry->email }}" style="font-size:0.8125rem;color:#0369a1;text-decoration:none;">{{ $entry->email }}</a>
                                     </div>
                                     @endif
                                     @if($entry->doc_no)
