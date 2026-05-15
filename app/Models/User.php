@@ -17,6 +17,7 @@ class User extends Authenticatable
         'cash_flow'          => 'Cash Flow',
         'policy_settings'    => 'Policy Settings',
         'key_accounts_admin' => 'Key Accounts Admin',
+        'reminders'          => 'Order Reminders',
     ];
 
     const MODULES = [

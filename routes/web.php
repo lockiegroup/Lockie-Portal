@@ -23,6 +23,7 @@ use App\Http\Controllers\KeyAccountController;
 use App\Http\Controllers\Admin\KeyAccountAdminController;
 use App\Http\Controllers\KeyActionController;
 use App\Http\Controllers\CrmController;
+use App\Http\Controllers\RemindersController;
 use App\Http\Controllers\ImpersonateController;
 use Illuminate\Support\Facades\Route;
 
@@ -173,6 +174,16 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::post('/{keyAccount}/contacts', [KeyAccountController::class, 'storeContact'])->name('contacts.store');
         Route::delete('/{keyAccount}/contacts/{contact}', [KeyAccountController::class, 'destroyContact'])->name('contacts.destroy');
         Route::patch('/{keyAccount}/notes', [KeyAccountController::class, 'updateNotes'])->name('notes.update');
+    });
+
+    // Reminders
+    Route::middleware('can:reminders')->prefix('reminders')->name('reminders.')->group(function () {
+        Route::get('/',                          [RemindersController::class, 'index'])->name('index');
+        Route::post('/import-entries',           [RemindersController::class, 'importEntries'])->name('import-entries');
+        Route::post('/import-phones',            [RemindersController::class, 'importPhones'])->name('import-phones');
+        Route::post('/import-orders',            [RemindersController::class, 'importOrders'])->name('import-orders');
+        Route::patch('/entries/{entry}',         [RemindersController::class, 'update'])->name('update');
+        Route::get('/export',                    [RemindersController::class, 'export'])->name('export');
     });
 
     // Key Actions
