@@ -440,6 +440,40 @@
     })();
     @endif
 
+    // ── Click-to-drag horizontal scroll ──────────────────────────────────────
+    (function () {
+        var scroller = document.querySelector('#reminders-table')?.closest('div[style*="overflow-x"]');
+        if (!scroller) return;
+        var isDragging = false, startX = 0, scrollLeft = 0, moved = false;
+
+        scroller.addEventListener('mousedown', function (e) {
+            // Only drag on the scroll container itself or table rows, not on inputs/selects
+            if (['INPUT','SELECT','BUTTON','A','LABEL'].includes(e.target.tagName)) return;
+            isDragging = true; moved = false;
+            startX = e.pageX - scroller.offsetLeft;
+            scrollLeft = scroller.scrollLeft;
+            scroller.style.cursor = 'grabbing';
+            e.preventDefault();
+        });
+        document.addEventListener('mouseup', function () {
+            isDragging = false;
+            scroller.style.cursor = '';
+        });
+        document.addEventListener('mousemove', function (e) {
+            if (!isDragging) return;
+            var x    = e.pageX - scroller.offsetLeft;
+            var walk = x - startX;
+            if (Math.abs(walk) > 4) moved = true;
+            scroller.scrollLeft = scrollLeft - walk;
+        });
+        // Prevent click firing on inputs after a drag
+        scroller.addEventListener('click', function (e) {
+            if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; }
+        }, true);
+
+        scroller.style.cursor = 'grab';
+    })();
+
     // ── Real-time polling ─────────────────────────────────────────────────────
     @if($entries->isNotEmpty())
     var pollUrl   = '{{ route('reminders.poll', ['year' => $year, 'month' => $month]) }}';
