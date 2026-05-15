@@ -195,7 +195,7 @@ class ImportsController extends Controller
             // Bust CRM aggregate cache so next visit reflects fresh data
             \Illuminate\Support\Facades\Cache::forget('crm.warehouses');
             \Illuminate\Support\Facades\Cache::forget('crm.date_range');
-            foreach (\App\Models\SalesLine::distinct()->pluck('warehouse') as $wh) {
+            foreach (\Illuminate\Support\Facades\DB::table('sales_lines')->distinct()->pluck('warehouse') as $wh) {
                 \Illuminate\Support\Facades\Cache::forget('crm.customers.' . ($wh ?: 'all'));
             }
             \Illuminate\Support\Facades\Cache::forget('crm.customers.all');

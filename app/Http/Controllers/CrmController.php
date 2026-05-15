@@ -22,12 +22,13 @@ class CrmController extends Controller
         $limit      = max(100, (int) $request->input('limit', 100));
 
         $warehouses = Cache::remember('crm.warehouses', 3600, fn() =>
-            SalesLine::where('sub_total', '>', 0)
+            DB::table('sales_lines')
+                ->where('sub_total', '>', 0)
                 ->whereNotNull('warehouse')->where('warehouse', '!=', '')
                 ->distinct()->orderBy('warehouse')->pluck('warehouse')
         );
 
-        // Use the latest order date in the dataset as the reference "today"
+        // Use the latest order date in the dataset as "today" to avoid false overdue flags
         $range    = Cache::remember('crm.date_range', 3600, fn() =>
             DB::table('sales_lines')->selectRaw('MIN(order_date) as min_d, MAX(order_date) as max_d')->first()
         );
@@ -35,34 +36,37 @@ class CrmController extends Controller
         $dataTo   = $range && $range->max_d ? Carbon::parse($range->max_d) : null;
         $asOf     = $dataTo ?? now()->startOfDay();
 
-        $now   = $asOf->copy()->startOfDay();
-        $curr1 = $now->copy()->subMonths(12);
-        $prev1 = $now->copy()->subMonths(24);
+        $now    = $asOf->copy()->startOfDay();
+        $cutoff = $now->copy()->subDays(90)->toDateString();
+        $curr1  = $now->copy()->subMonths(12)->toDateString();
+        $prev1  = $now->copy()->subMonths(24)->toDateString();
 
-        // Cache the full aggregate per warehouse (busted on import via crm.aggregates tag)
-        $cacheKey = 'crm.customers.' . ($warehouse ?: 'all');
+        // Cache as plain array rows (not Eloquent models) to keep serialized size small
+        $cacheKey  = 'crm.customers.' . ($warehouse ?: 'all');
         $customers = Cache::remember($cacheKey, 3600, function () use ($warehouse, $curr1, $prev1) {
-            return SalesLine::query()
+            $query = DB::table('sales_lines')
                 ->where('sub_total', '>', 0)
-                ->when($warehouse, fn($q) => $q->where('warehouse', $warehouse))
                 ->selectRaw("
                     customer_code,
                     MAX(customer) as customer,
                     MAX(customer_type) as customer_type,
                     SUM(CASE WHEN order_date >= ? THEN sub_total ELSE 0 END) as current_total,
                     SUM(CASE WHEN order_date >= ? AND order_date < ? THEN sub_total ELSE 0 END) as prev_total,
-                    SUM(sub_total) as all_time_total,
                     MIN(order_date) as first_order_date,
                     MAX(order_date) as last_order_date,
-                    COUNT(DISTINCT DATE(order_date)) as distinct_order_days,
-                    COUNT(DISTINCT order_no) as order_count
+                    COUNT(DISTINCT DATE(order_date)) as distinct_order_days
                 ", [$curr1, $prev1, $curr1])
                 ->groupBy('customer_code')
-                ->orderByDesc('current_total')
-                ->get();
+                ->orderByRaw('SUM(CASE WHEN order_date >= ? THEN sub_total ELSE 0 END) DESC', [$curr1]);
+
+            if ($warehouse) {
+                $query->where('warehouse', $warehouse);
+            }
+
+            return $query->get();
         });
 
-        // Apply search in PHP (fast on cached collection, avoids extra DB hit)
+        // Apply search in PHP on cached collection
         if ($search) {
             $customers = $customers->filter(fn($c) =>
                 str_contains(strtolower($c->customer ?? ''), strtolower($search)) ||
@@ -74,8 +78,6 @@ class CrmController extends Controller
             ->whereIn('account_code', $customers->pluck('customer_code'))
             ->get()
             ->keyBy('account_code');
-
-        $cutoff = $now->copy()->subDays(90);
 
         foreach ($customers as $c) {
             $c->key_account    = $keyAccounts->get($c->customer_code);
@@ -89,26 +91,26 @@ class CrmController extends Controller
             $c->pct_change = $change;
 
             $c->is_dropoff = $prevTotal > 500
-                && ($currTotal < $prevTotal * 0.6 || ($c->last_order && $c->last_order->lt($cutoff)));
+                && ($currTotal < $prevTotal * 0.6 || ($c->last_order && $c->last_order_date < $cutoff));
 
-            // Average order frequency and expected next order
             $c->expected_next = null;
             $c->avg_days      = null;
             if ($c->last_order && $c->first_order && (int) $c->distinct_order_days >= 2) {
-                $spanDays        = $c->first_order->diffInDays($c->last_order);
-                $avgDays         = round($spanDays / ((int) $c->distinct_order_days - 1));
-                $c->avg_days     = $avgDays;
+                $spanDays         = $c->first_order->diffInDays($c->last_order);
+                $avgDays          = round($spanDays / ((int) $c->distinct_order_days - 1));
+                $c->avg_days      = $avgDays;
                 $c->expected_next = $c->last_order->copy()->addDays($avgDays);
             }
 
-            $c->is_overdue = $c->expected_next && $c->expected_next->lt($asOf) && !$c->last_order->eq($asOf);
+            $c->is_overdue = $c->expected_next
+                && $c->expected_next->lt($asOf)
+                && ($c->last_order_date < $asOf->toDateString());
         }
 
-        // Apply filter
         if ($filter === 'dropoff') {
-            $customers = $customers->where('is_dropoff', true)->values();
+            $customers = $customers->filter(fn($c) => $c->is_dropoff)->values();
         } elseif ($filter === 'overdue') {
-            $customers = $customers->where('is_overdue', true)->values();
+            $customers = $customers->filter(fn($c) => $c->is_overdue)->values();
         }
 
         $totalCount = $customers->count();
@@ -125,13 +127,15 @@ class CrmController extends Controller
     {
         $warehouse = $request->input('warehouse');
 
-        $base = fn() => DB::table('sales_lines')
+        $base = DB::table('sales_lines')
             ->where('customer_code', $customerCode)
-            ->where('sub_total', '>', 0)
-            ->when($warehouse, fn($q) => $q->where('warehouse', $warehouse));
+            ->where('sub_total', '>', 0);
+        if ($warehouse) {
+            $base->where('warehouse', $warehouse);
+        }
 
-        // Existence check + customer name/type in one query
-        $meta = $base()->selectRaw('MAX(customer) as customer, MAX(customer_type) as customer_type, COUNT(*) as total_lines')->first();
+        // Existence check + customer name in one pass
+        $meta = (clone $base)->selectRaw('MAX(customer) as customer, MAX(customer_type) as customer_type, COUNT(*) as total_lines')->first();
         abort_if(!$meta || $meta->total_lines == 0, 404);
 
         $customer     = $meta->customer;
@@ -139,11 +143,11 @@ class CrmController extends Controller
 
         $keyAccount = KeyAccount::with(['user', 'contacts.user', 'gifts'])->where('account_code', $customerCode)->first();
 
-        $warehouses = SalesLine::where('customer_code', $customerCode)
+        $warehouses = DB::table('sales_lines')
+            ->where('customer_code', $customerCode)
             ->where('sub_total', '>', 0)
             ->distinct()->orderBy('warehouse')->pluck('warehouse');
 
-        // KPI totals via SQL
         $range = Cache::remember('crm.date_range', 3600, fn() =>
             DB::table('sales_lines')->selectRaw('MIN(order_date) as min_d, MAX(order_date) as max_d')->first()
         );
@@ -151,7 +155,7 @@ class CrmController extends Controller
         $cut12 = $asOf->copy()->subMonths(12)->toDateString();
         $cut24 = $asOf->copy()->subMonths(24)->toDateString();
 
-        $kpi = $base()->selectRaw("
+        $kpi = (clone $base)->selectRaw("
             SUM(CASE WHEN order_date >= ? THEN sub_total ELSE 0 END) as total12m,
             SUM(CASE WHEN order_date >= ? AND order_date < ? THEN sub_total ELSE 0 END) as prev12m,
             MAX(order_date) as last_order_date,
@@ -171,8 +175,7 @@ class CrmController extends Controller
             $expectedNext = $lastOrder->copy()->addDays($avgDays);
         }
 
-        // Yearly + quarterly breakdown via SQL
-        $quarterRows = $base()->selectRaw("
+        $quarterRows = (clone $base)->selectRaw("
             YEAR(order_date) as yr,
             SUM(CASE WHEN MONTH(order_date) BETWEEN 1  AND 3  THEN sub_total ELSE 0 END) as q1,
             SUM(CASE WHEN MONTH(order_date) BETWEEN 4  AND 6  THEN sub_total ELSE 0 END) as q2,
@@ -192,8 +195,7 @@ class CrmController extends Controller
             ];
         }
 
-        // Top 10 products by spend via SQL
-        $topProducts = $base()->selectRaw("
+        $topProducts = (clone $base)->selectRaw("
             product_code,
             MAX(product_group) as description,
             SUM(sub_total) as total,
@@ -207,8 +209,7 @@ class CrmController extends Controller
             'orders'       => (int) $r->orders,
         ])->values();
 
-        // 10 most recent orders via SQL
-        $recentOrders = $base()->selectRaw("
+        $recentOrders = (clone $base)->selectRaw("
             order_no,
             MAX(order_date) as order_dt,
             MAX(warehouse) as warehouse,
