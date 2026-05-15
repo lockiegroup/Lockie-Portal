@@ -34,13 +34,13 @@
 
     {{-- Stats + Export bar --}}
     <div style="display:flex;flex-wrap:wrap;align-items:center;gap:0.75rem;margin-bottom:1.25rem;">
-        <span style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.25rem 0.75rem;border-radius:9999px;font-size:0.8125rem;font-weight:600;background:#f1f5f9;color:#475569;">
+        <span class="stat-count" style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.25rem 0.75rem;border-radius:9999px;font-size:0.8125rem;font-weight:600;background:#f1f5f9;color:#475569;">
             {{ $totalCount }} total
         </span>
-        <span style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.25rem 0.75rem;border-radius:9999px;font-size:0.8125rem;font-weight:600;background:#dcfce7;color:#166534;">
+        <span class="stat-count" style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.25rem 0.75rem;border-radius:9999px;font-size:0.8125rem;font-weight:600;background:#dcfce7;color:#166534;">
             {{ $orderedCount }} ordered
         </span>
-        <span style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.25rem 0.75rem;border-radius:9999px;font-size:0.8125rem;font-weight:600;background:#fef3c7;color:#92400e;">
+        <span class="stat-count" style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.25rem 0.75rem;border-radius:9999px;font-size:0.8125rem;font-weight:600;background:#fef3c7;color:#92400e;">
             {{ $pendingCount }} outstanding
         </span>
         <div style="flex:1;"></div>
@@ -109,7 +109,7 @@
                 {{-- Orders import --}}
                 <div style="padding:1.25rem;">
                     <p style="font-size:0.8125rem;font-weight:600;color:#334155;margin-bottom:0.25rem;">Orders (OK) Import</p>
-                    <p style="font-size:0.75rem;color:#94a3b8;margin-bottom:0.875rem;">File with account codes of customers who have ordered. Ticks the Ordered column for matches.</p>
+                    <p style="font-size:0.75rem;color:#94a3b8;margin-bottom:0.875rem;">Datafile order export. Ticks Ordered for matching accounts across all months.</p>
                     <form action="{{ route('reminders.import-orders') }}" method="POST" enctype="multipart/form-data" class="flex flex-col gap-2">
                         @csrf
                         <input type="hidden" name="year"  value="{{ $year }}">
@@ -199,7 +199,7 @@
 
                         {{-- Status --}}
                         <td style="padding:0.375rem 0.5rem;white-space:nowrap;">
-                            <select onchange="updateEntry({{ $entry->id }}, 'status', this.value)"
+                            <select data-field="status" onchange="updateEntry({{ $entry->id }}, 'status', this.value)"
                                 style="border:1px solid #e2e8f0;border-radius:6px;padding:0.25rem 0.375rem;font-size:0.75rem;color:#334155;background:#fff;cursor:pointer;width:100%;max-width:200px;">
                                 @foreach(\App\Models\ReminderEntry::STATUSES as $key => $label)
                                 <option value="{{ $key }}" {{ $entry->status === $key ? 'selected' : '' }}>{{ $label }}</option>
@@ -209,7 +209,7 @@
 
                         {{-- Called By --}}
                         <td style="padding:0.375rem 0.5rem;white-space:nowrap;">
-                            <select onchange="updateEntry({{ $entry->id }}, 'called_by_user_id', this.value || null)"
+                            <select data-field="called_by_user_id" onchange="updateEntry({{ $entry->id }}, 'called_by_user_id', this.value || null)"
                                 style="border:1px solid #e2e8f0;border-radius:6px;padding:0.25rem 0.375rem;font-size:0.75rem;color:#334155;background:#fff;cursor:pointer;width:100%;max-width:140px;">
                                 <option value="">—</option>
                                 @foreach($users as $user)
@@ -220,14 +220,14 @@
 
                         {{-- Called Date --}}
                         <td style="padding:0.375rem 0.5rem;white-space:nowrap;">
-                            <input type="date" value="{{ $entry->called_date?->format('Y-m-d') }}"
+                            <input type="date" data-field="called_date" value="{{ $entry->called_date?->format('Y-m-d') }}"
                                 onchange="updateEntry({{ $entry->id }}, 'called_date', this.value || null)"
                                 style="border:1px solid #e2e8f0;border-radius:6px;padding:0.25rem 0.375rem;font-size:0.75rem;color:#334155;background:#fff;width:130px;">
                         </td>
 
                         {{-- Call Notes --}}
                         <td style="padding:0.375rem 0.5rem;min-width:180px;">
-                            <input type="text" value="{{ $entry->call_notes }}"
+                            <input type="text" data-field="call_notes" value="{{ $entry->call_notes }}"
                                 onblur="updateEntry({{ $entry->id }}, 'call_notes', this.value || null)"
                                 placeholder="Notes…"
                                 style="border:1px solid #e2e8f0;border-radius:6px;padding:0.25rem 0.5rem;font-size:0.75rem;color:#334155;background:#fff;width:100%;min-width:160px;">
@@ -235,7 +235,7 @@
 
                         {{-- Ordered --}}
                         <td style="padding:0.375rem 0.75rem;text-align:center;white-space:nowrap;">
-                            <input type="checkbox" {{ $entry->has_ordered ? 'checked' : '' }}
+                            <input type="checkbox" data-field="has_ordered" {{ $entry->has_ordered ? 'checked' : '' }}
                                 onchange="updateEntry({{ $entry->id }}, 'has_ordered', this.checked)"
                                 style="width:16px;height:16px;cursor:pointer;accent-color:#16a34a;">
                         </td>
@@ -312,6 +312,81 @@
         if (panel) panel.style.display = 'block';
         if (ch) ch.style.transform = 'rotate(180deg)';
     })();
+    @endif
+
+    // ── Real-time polling ────────────────────────────────────────────────────
+    @if($entries->isNotEmpty())
+    var pollUrl    = '{{ route('reminders.poll', ['year' => $year, 'month' => $month]) }}';
+    var lastSeen   = {};   // id → updated_at string
+    var myPending  = {};   // id → field being saved (skip overwriting in-flight edits)
+
+    // Seed lastSeen from current server-rendered state so we don't flash on first poll
+    @foreach($entries as $entry)
+    lastSeen[{{ $entry->id }}] = '{{ $entry->updated_at }}';
+    @endforeach
+
+    function applyPollData(data) {
+        Object.keys(data).forEach(function (id) {
+            var row    = document.getElementById('row-' + id);
+            if (!row) return;
+            var entry  = data[id];
+            var prev   = lastSeen[id];
+            if (prev === entry.updated_at) return;   // unchanged
+            lastSeen[id] = entry.updated_at;
+            if (myPending[id]) return;               // we just saved this row — skip
+
+            // Status + row colour
+            var colours = statusColours[entry.status] || { bg: '#ffffff', text: '#334155' };
+            row.style.backgroundColor = colours.bg;
+            row.querySelectorAll('.sticky-col').forEach(function (td) {
+                td.style.backgroundColor = colours.bg;
+            });
+            var statusSel = row.querySelector('select[data-field="status"]');
+            if (statusSel) statusSel.value = entry.status;
+
+            // Called by
+            var calledSel = row.querySelector('select[data-field="called_by_user_id"]');
+            if (calledSel) calledSel.value = entry.called_by_user_id || '';
+
+            // Called date
+            var dateFld = row.querySelector('input[data-field="called_date"]');
+            if (dateFld) dateFld.value = entry.called_date || '';
+
+            // Notes
+            var notesFld = row.querySelector('input[data-field="call_notes"]');
+            if (notesFld && document.activeElement !== notesFld) notesFld.value = entry.call_notes || '';
+
+            // Ordered
+            var ordCb = row.querySelector('input[data-field="has_ordered"]');
+            if (ordCb) ordCb.checked = !!entry.has_ordered;
+        });
+
+        // Refresh stats counters
+        var total   = Object.keys(data).length;
+        var ordered = Object.values(data).filter(function (e) { return e.has_ordered; }).length;
+        var pending = total - ordered;
+        var statEls = document.querySelectorAll('.stat-count');
+        if (statEls[0]) statEls[0].textContent = total   + ' total';
+        if (statEls[1]) statEls[1].textContent = ordered + ' ordered';
+        if (statEls[2]) statEls[2].textContent = pending + ' outstanding';
+    }
+
+    function doPoll() {
+        fetch(pollUrl, { headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken } })
+            .then(function (r) { return r.json(); })
+            .then(applyPollData)
+            .catch(function () {});
+    }
+
+    setInterval(doPoll, 10000);
+
+    // Track in-flight saves so poll doesn't overwrite them
+    var origUpdate = window.updateEntry;
+    window.updateEntry = function (id, field, value) {
+        myPending[id] = true;
+        origUpdate(id, field, value);
+        setTimeout(function () { delete myPending[id]; }, 3000);
+    };
     @endif
 })();
 </script>

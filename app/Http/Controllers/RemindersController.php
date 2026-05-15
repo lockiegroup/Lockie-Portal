@@ -223,34 +223,72 @@ class RemindersController extends Controller
                 return back()->withErrors(['orders_file' => 'File appears empty.'])->withInput();
             }
 
-            // Find which column contains account codes
-            $header    = array_map(fn($v) => strtolower(trim((string)($v ?? ''))), $rows[0]);
-            $acctCol   = array_search('account', $header);
-            if ($acctCol === false) $acctCol = 0; else array_shift($rows);
+            // Find ACCOUNT column from header (handles Datafile order export format)
+            $header  = array_map(fn($v) => strtolower(trim((string)($v ?? ''))), $rows[0]);
+            $acctCol = null;
+            foreach ($header as $i => $h) {
+                if ($h === 'account' || $h === 'account-code' || $h === 'accountcode' || $h === 'stock-code') {
+                    $acctCol = $i;
+                    break;
+                }
+            }
+            if ($acctCol !== null) {
+                array_shift($rows);
+            } else {
+                $acctCol = 0;
+            }
 
-            $now     = now()->toDateTimeString();
-            $matched = 0;
+            $now          = now()->toDateTimeString();
+            $accountCodes = [];
 
             foreach ($rows as $row) {
                 $accountCode = strtoupper(trim((string)($row[$acctCol] ?? '')));
-                if (!$accountCode) continue;
-
-                $affected = DB::table('reminder_entries')
-                    ->where('year', $year)->where('month', $month)
-                    ->where('account_code', $accountCode)
-                    ->where('has_ordered', false)
-                    ->update(['has_ordered' => true, 'updated_at' => $now]);
-
-                $matched += $affected;
+                if ($accountCode) $accountCodes[] = $accountCode;
             }
 
-            ActivityLog::record('reminders.import_orders', "Marked {$matched} entries as ordered for " . date('F Y', mktime(0, 0, 0, $month, 1, $year)));
+            $accountCodes = array_unique($accountCodes);
+
+            // Apply globally — mark has_ordered across all months for these accounts
+            $matched = 0;
+            foreach (array_chunk($accountCodes, 500) as $chunk) {
+                $matched += DB::table('reminder_entries')
+                    ->whereIn('account_code', $chunk)
+                    ->where('has_ordered', false)
+                    ->update(['has_ordered' => true, 'updated_at' => $now]);
+            }
+
+            ActivityLog::record('reminders.import_orders', "Marked {$matched} reminder entries as ordered from " . count($accountCodes) . " account codes (all months)");
 
             return redirect()->route('reminders.index', ['year' => $year, 'month' => $month])
-                ->with('success', "Marked {$matched} entries as ordered.");
+                ->with('success', "Marked {$matched} entries as ordered across all months.");
         } catch (\Throwable $e) {
             return back()->withErrors(['orders_file' => 'Orders import failed: ' . substr($e->getMessage(), 0, 200)])->withInput();
         }
+    }
+
+    public function poll(Request $request): JsonResponse
+    {
+        $year  = (int) $request->input('year',  now()->year);
+        $month = (int) $request->input('month', now()->month);
+
+        $entries = DB::table('reminder_entries')
+            ->leftJoin('users', 'users.id', '=', 'reminder_entries.called_by_user_id')
+            ->where('reminder_entries.year', $year)
+            ->where('reminder_entries.month', $month)
+            ->select(
+                'reminder_entries.id',
+                'reminder_entries.status',
+                'reminder_entries.called_by_user_id',
+                'users.name as called_by_name',
+                'reminder_entries.called_date',
+                'reminder_entries.call_notes',
+                'reminder_entries.has_ordered',
+                'reminder_entries.updated_at'
+            )
+            ->get()
+            ->keyBy('id');
+
+        return response()->json($entries);
     }
 
     public function update(Request $request, ReminderEntry $entry): JsonResponse
