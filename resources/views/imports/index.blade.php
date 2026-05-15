@@ -42,7 +42,7 @@
                 </span>
                 @endif
                 @if($doCrm)
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700">
+                <span style="display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:9999px;font-size:0.75rem;font-weight:500;background:#ede9fe;color:#6d28d9;">
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                     Updates Customer Insights
                 </span>
