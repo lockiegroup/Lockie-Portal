@@ -313,10 +313,10 @@
                     row.setAttribute('data-status', value);
                     row.style.backgroundColor = colours.bg;
                     row.querySelectorAll('.sticky-col').forEach(function (td) { td.style.backgroundColor = colours.bg; });
-                    // Re-apply active filter
                     if (activeFilter && value !== activeFilter) row.style.display = 'none';
                     else row.style.display = '';
                 }
+                refreshStats();
             }
         }).catch(function (e) { console.error(e); });
     };
@@ -344,14 +344,13 @@
         });
     };
 
-    // ── Stats refresh (after toggling ordered) ────────────────────────────────
+    // ── Stats refresh (recounts from DOM after status changes) ───────────────
     function refreshStats() {
         var rows    = document.querySelectorAll('#reminders-table tbody tr');
         var total   = rows.length;
         var ordered = 0;
         rows.forEach(function (row) {
-            var btn = row.querySelector('[data-field="has_ordered"]');
-            if (btn && btn.getAttribute('data-ordered') === '1') ordered++;
+            if (row.getAttribute('data-status') === 'order_placed') ordered++;
         });
         var statEls = document.querySelectorAll('.stat-count');
         if (statEls[0]) statEls[0].textContent = total + ' total';
