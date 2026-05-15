@@ -356,7 +356,6 @@ class RemindersController extends Controller
             'called_by_user_id' => ['sometimes', 'nullable', 'exists:users,id'],
             'called_date'       => ['sometimes', 'nullable', 'date'],
             'call_notes'        => ['sometimes', 'nullable', 'string', 'max:2000'],
-            'has_ordered'       => ['sometimes', 'boolean'],
         ]);
 
         $entry->update($data);

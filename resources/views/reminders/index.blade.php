@@ -265,11 +265,9 @@
                                 style="border:1px solid #e2e8f0;border-radius:6px;padding:0.25rem 0.5rem;font-size:0.75rem;color:#334155;background:#fff;width:100%;min-width:160px;">
                         </td>
 
-                        {{-- Ordered badge --}}
+                        {{-- Ordered badge (read-only, set by import) --}}
                         <td style="padding:0.375rem 0.75rem;text-align:center;white-space:nowrap;">
-                            <button data-field="has_ordered" onclick="toggleOrdered(this, {{ $entry->id }})"
-                                data-ordered="{{ $entry->has_ordered ? '1' : '0' }}"
-                                style="border:none;background:none;cursor:pointer;padding:0;line-height:1;">
+                            <span data-field="has_ordered" data-ordered="{{ $entry->has_ordered ? '1' : '0' }}">
                                 @if($entry->has_ordered)
                                 <span style="display:inline-flex;align-items:center;gap:0.25rem;padding:0.2rem 0.625rem;border-radius:9999px;font-size:0.7rem;font-weight:600;background:#dcfce7;color:#166534;line-height:1rem;">
                                     <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
@@ -278,7 +276,7 @@
                                 @else
                                 <span style="display:inline-flex;align-items:center;padding:0.2rem 0.625rem;border-radius:9999px;font-size:0.7rem;font-weight:500;background:#f8fafc;color:#cbd5e1;border:1px dashed #e2e8f0;line-height:1rem;">—</span>
                                 @endif
-                            </button>
+                            </span>
                         </td>
                     </tr>
                     @endforeach
@@ -321,28 +319,6 @@
                 }
             }
         }).catch(function (e) { console.error(e); });
-    };
-
-    // ── Ordered toggle ────────────────────────────────────────────────────────
-    window.toggleOrdered = function (btn, id) {
-        var isOrdered = btn.getAttribute('data-ordered') === '1';
-        var newVal    = !isOrdered;
-        btn.setAttribute('data-ordered', newVal ? '1' : '0');
-
-        if (newVal) {
-            btn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:0.25rem;padding:0.2rem 0.625rem;border-radius:9999px;font-size:0.7rem;font-weight:600;background:#dcfce7;color:#166534;line-height:1rem;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Ordered</span>';
-        } else {
-            btn.innerHTML = '<span style="display:inline-flex;align-items:center;padding:0.2rem 0.625rem;border-radius:9999px;font-size:0.7rem;font-weight:500;background:#f8fafc;color:#cbd5e1;border:1px dashed #e2e8f0;line-height:1rem;">—</span>';
-        }
-
-        fetch('/reminders/entries/' + id, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
-            body: JSON.stringify({ has_ordered: newVal }),
-        }).then(function (r) {
-            if (!r.ok) { btn.setAttribute('data-ordered', isOrdered ? '1' : '0'); }
-            else { refreshStats(); }
-        }).catch(function () { btn.setAttribute('data-ordered', isOrdered ? '1' : '0'); });
     };
 
     // ── Status filter ─────────────────────────────────────────────────────────
