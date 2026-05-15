@@ -119,17 +119,95 @@
         </form>
 
         {{-- Mailchimp export --}}
-        <a href="{{ route('reminders.export', ['year' => $year, 'month' => $month]) }}"
-            style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.4rem 0.875rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.8125rem;font-weight:600;text-decoration:none;">
+        <button onclick="openExportModal()"
+            style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.4rem 0.875rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.8125rem;font-weight:600;border:none;cursor:pointer;">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="7 10 12 15 17 10"/>
                 <line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
             Export for Mailchimp
-        </a>
+        </button>
         @endif
     </div>
+
+{{-- Export modal --}}
+<div id="export-modal" style="display:none;position:fixed;inset:0;z-index:100;background:rgba(0,0,0,0.4);align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,0.2);width:100%;max-width:560px;margin:1rem;overflow:hidden;">
+
+        <div style="padding:1.25rem 1.5rem;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;">
+            <h2 style="font-size:1rem;font-weight:700;color:#0f172a;margin:0;">Export for Mailchimp</h2>
+            <button onclick="closeExportModal()" style="background:none;border:none;cursor:pointer;color:#94a3b8;padding:4px;line-height:0;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+
+        <form id="export-form" action="{{ route('reminders.export') }}" method="POST" style="padding:1.5rem;">
+            @csrf
+            <input type="hidden" name="year" value="{{ $year }}">
+
+            {{-- Month selection --}}
+            <div style="margin-bottom:1.25rem;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.625rem;">
+                    <p style="font-size:0.8125rem;font-weight:700;color:#334155;margin:0;">Months to export</p>
+                    <div style="display:flex;gap:0.5rem;">
+                        <button type="button" onclick="checkAllMonths(true)"  style="font-size:0.7rem;color:#0369a1;background:none;border:none;cursor:pointer;padding:0;">All</button>
+                        <button type="button" onclick="checkAllMonths(false)" style="font-size:0.7rem;color:#94a3b8;background:none;border:none;cursor:pointer;padding:0;">None</button>
+                    </div>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.375rem;">
+                    @foreach(range(1,12) as $m)
+                    <label style="display:flex;align-items:center;gap:0.375rem;font-size:0.8125rem;color:#334155;padding:0.375rem 0.5rem;border:1px solid #e2e8f0;border-radius:7px;cursor:pointer;background:#fafafa;">
+                        <input type="checkbox" name="months[]" value="{{ $m }}" {{ $m == $month ? 'checked' : '' }}
+                            style="width:14px;height:14px;cursor:pointer;accent-color:#0f172a;">
+                        {{ date('M', mktime(0,0,0,$m,1)) }}
+                    </label>
+                    @endforeach
+                </div>
+            </div>
+
+            {{-- Status selection --}}
+            @php
+                $defaultExportStatuses = ['pending', 'unable_to_contact', 'using_spares', 'moved_stock'];
+            @endphp
+            <div style="margin-bottom:1.5rem;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.625rem;">
+                    <p style="font-size:0.8125rem;font-weight:700;color:#334155;margin:0;">Statuses to include</p>
+                    <div style="display:flex;gap:0.5rem;">
+                        <button type="button" onclick="checkAllStatuses(true)"  style="font-size:0.7rem;color:#0369a1;background:none;border:none;cursor:pointer;padding:0;">All</button>
+                        <button type="button" onclick="checkAllStatuses(false)" style="font-size:0.7rem;color:#94a3b8;background:none;border:none;cursor:pointer;padding:0;">None</button>
+                    </div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:0.25rem;">
+                    @foreach(\App\Models\ReminderEntry::STATUSES as $key => $label)
+                    @php $sc = \App\Models\ReminderEntry::STATUS_COLOURS[$key] ?? ['bg'=>'#f8fafc','text'=>'#334155']; @endphp
+                    <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.8125rem;color:#334155;padding:0.375rem 0.625rem;border-radius:7px;cursor:pointer;background:{{ $sc['bg'] }};">
+                        <input type="checkbox" name="statuses[]" value="{{ $key }}" {{ in_array($key, $defaultExportStatuses) ? 'checked' : '' }}
+                            style="width:14px;height:14px;cursor:pointer;accent-color:#0f172a;">
+                        <span style="color:{{ $sc['text'] }};font-weight:500;">{{ $label }}</span>
+                    </label>
+                    @endforeach
+                </div>
+            </div>
+
+            <div style="display:flex;gap:0.75rem;justify-content:flex-end;">
+                <button type="button" onclick="closeExportModal()"
+                    style="padding:0.5rem 1rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-size:0.875rem;font-weight:600;cursor:pointer;">
+                    Cancel
+                </button>
+                <button type="submit"
+                    style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.5rem 1.25rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.875rem;font-weight:600;border:none;cursor:pointer;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Download Excel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 
     {{-- Import accordion --}}
     <div class="bg-white rounded-xl border border-slate-200 mb-6">
@@ -364,6 +442,30 @@
     });
     var picker = document.getElementById('col-picker');
     if (picker) picker.addEventListener('click', function (e) { e.stopPropagation(); });
+
+    // ── Export modal ──────────────────────────────────────────────────────────
+    window.openExportModal = function () {
+        var m = document.getElementById('export-modal');
+        m.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    };
+    window.closeExportModal = function () {
+        var m = document.getElementById('export-modal');
+        m.style.display = 'none';
+        document.body.style.overflow = '';
+    };
+    document.getElementById('export-modal').addEventListener('click', function (e) {
+        if (e.target === this) closeExportModal();
+    });
+    document.getElementById('export-form').addEventListener('submit', function () {
+        setTimeout(closeExportModal, 800);
+    });
+    window.checkAllMonths = function (checked) {
+        document.querySelectorAll('#export-form input[name="months[]"]').forEach(function (cb) { cb.checked = checked; });
+    };
+    window.checkAllStatuses = function (checked) {
+        document.querySelectorAll('#export-form input[name="statuses[]"]').forEach(function (cb) { cb.checked = checked; });
+    };
 
     // ── Update select background colour when status changes ───────────────────
     window.updateStatusSelect = function (sel) {

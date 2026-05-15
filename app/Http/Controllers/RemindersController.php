@@ -365,42 +365,65 @@ class RemindersController extends Controller
 
     public function export(Request $request)
     {
-        $year  = (int) $request->input('year',  now()->year);
-        $month = (int) $request->input('month', now()->month);
+        $request->validate([
+            'year'      => 'required|integer',
+            'months'    => 'required|array|min:1',
+            'months.*'  => 'integer|min:1|max:12',
+            'statuses'  => 'nullable|array',
+            'statuses.*'=> ['string', \Illuminate\Validation\Rule::in(array_keys(ReminderEntry::STATUSES))],
+        ]);
 
-        $entries = ReminderEntry::with('calledBy')
-            ->where('year', $year)
-            ->where('month', $month)
-            ->where('has_ordered', false)
-            ->whereNotIn('status', ReminderEntry::CLOSED_STATUSES)
-            ->orderBy('name')
-            ->get();
+        $year     = (int) $request->input('year');
+        $months   = array_map('intval', $request->input('months'));
+        $statuses = $request->input('statuses', []);
+        sort($months);
 
-        $monthName = date('F', mktime(0, 0, 0, $month, 1, $year));
-        $filename  = "reminders-{$year}-{$monthName}.csv";
-
-        $headers = [
-            'Content-Type'        => 'text/csv',
-            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        $colHeaders = [
+            'Account', 'Name', 'Address', 'Postcode', 'Doc No', 'Order Value',
+            'Email', 'Env Sets', 'Box Colour', 'Env Colour', 'Description',
+            'Phone', 'Status', 'Called By', 'Called Date', 'Call Notes', 'Ordered',
         ];
 
-        $callback = function () use ($entries) {
-            $fh = fopen('php://output', 'w');
-            fputcsv($fh, [
-                'Account', 'Name', 'Address', 'Postcode', 'Doc No', 'Order Value',
-                'Email', 'Env Sets', 'Box Colour', 'Env Colour', 'Description',
-                'Phone', 'Status', 'Called By', 'Called Date', 'Call Notes',
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $spreadsheet->removeSheetByIndex(0);
+
+        foreach ($months as $month) {
+            $monthName = date('F', mktime(0, 0, 0, $month, 1, $year));
+
+            $ws = new \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet($spreadsheet, $monthName);
+            $spreadsheet->addSheet($ws);
+
+            $query = ReminderEntry::with('calledBy')
+                ->where('year', $year)
+                ->where('month', $month)
+                ->orderBy('name');
+
+            if (!empty($statuses)) {
+                $query->whereIn('status', $statuses);
+            }
+
+            $entries = $query->get();
+
+            // Header row
+            $ws->fromArray([$colHeaders], null, 'A1');
+            $ws->getStyle('A1:Q1')->applyFromArray([
+                'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+                'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => '0F172A']],
             ]);
+            $ws->getRowDimension(1)->setRowHeight(18);
+
+            // Data rows
+            $rowIdx = 2;
             foreach ($entries as $e) {
-                fputcsv($fh, [
+                $ws->fromArray([[
                     $e->account_code,
                     $e->name,
                     $e->add1,
                     $e->postcode,
                     $e->doc_no,
-                    $e->order_value,
+                    (float) $e->order_value,
                     $e->email,
-                    $e->env_sets,
+                    (float) $e->env_sets,
                     $e->box_colour,
                     $e->env_colour,
                     $e->description,
@@ -409,12 +432,32 @@ class RemindersController extends Controller
                     $e->calledBy?->name,
                     $e->called_date?->format('d/m/Y'),
                     $e->call_notes,
-                ]);
+                    $e->has_ordered ? 'Yes' : '',
+                ]], null, "A{$rowIdx}");
+                $rowIdx++;
             }
-            fclose($fh);
-        };
 
-        return response()->stream($callback, 200, $headers);
+            // Auto-size columns
+            foreach (range('A', 'Q') as $col) {
+                $ws->getColumnDimension($col)->setAutoSize(true);
+            }
+        }
+
+        $filename = count($months) === 1
+            ? 'reminders-' . $year . '-' . date('F', mktime(0, 0, 0, $months[0], 1, $year)) . '.xlsx'
+            : 'reminders-' . $year . '.xlsx';
+
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+
+        return response()->stream(
+            fn() => $writer->save('php://output'),
+            200,
+            [
+                'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+                'Cache-Control'       => 'max-age=0',
+            ]
+        );
     }
 
     private function parseSpreadsheet(string $path): array
