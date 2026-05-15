@@ -92,7 +92,7 @@
                 {{-- Phone numbers import --}}
                 <div style="padding:1.25rem;border-right:1px solid #f1f5f9;">
                     <p style="font-size:0.8125rem;font-weight:600;color:#334155;margin-bottom:0.25rem;">Phone Numbers</p>
-                    <p style="font-size:0.75rem;color:#94a3b8;margin-bottom:0.875rem;">Two-column file: Account Code, Phone. Updates the persistent phone lookup and fills this month.</p>
+                    <p style="font-size:0.75rem;color:#94a3b8;margin-bottom:0.875rem;">Datafile export: Stock-Code, Telephone, Mobile. Merges both numbers and applies to all months.</p>
                     <form action="{{ route('reminders.import-phones') }}" method="POST" enctype="multipart/form-data" class="flex flex-col gap-2">
                         @csrf
                         <input type="hidden" name="year"  value="{{ $year }}">

@@ -148,37 +148,54 @@ class RemindersController extends Controller
                 return back()->withErrors(['phones_file' => 'File appears empty.'])->withInput();
             }
 
-            // Detect header row or treat row 0 as data if no obvious header
-            $firstRow = array_map(fn($v) => strtolower(trim((string)($v ?? ''))), $rows[0]);
-            $hasHeader = str_contains($firstRow[0] ?? '', 'account') || str_contains($firstRow[0] ?? '', 'code');
-            if ($hasHeader) array_shift($rows);
+            // Detect and skip header row, also locate columns
+            $firstRow  = array_map(fn($v) => strtolower(trim((string)($v ?? ''))), $rows[0]);
+            $hasHeader = str_contains($firstRow[0] ?? '', 'account') || str_contains($firstRow[0] ?? '', 'code') || str_contains($firstRow[0] ?? '', 'stock');
 
-            $now     = now()->toDateTimeString();
-            $count   = 0;
+            $acctCol  = 0;
+            $telCol   = 1;
+            $mobCol   = null;
 
-            foreach ($rows as $row) {
-                $accountCode = strtoupper(trim((string)($row[0] ?? '')));
-                $phone       = trim((string)($row[1] ?? ''));
-                if (!$accountCode || !$phone) continue;
-
-                ReminderPhone::updateOrCreate(
-                    ['account_code' => $accountCode],
-                    ['phone' => $phone]
-                );
-
-                // Update matching entries in the current month
-                DB::table('reminder_entries')
-                    ->where('year', $year)->where('month', $month)
-                    ->where('account_code', $accountCode)
-                    ->update(['phone' => $phone, 'updated_at' => $now]);
-
-                $count++;
+            if ($hasHeader) {
+                foreach ($firstRow as $i => $h) {
+                    if (str_contains($h, 'telephone') || $h === 'tel') $telCol = $i;
+                    if (str_contains($h, 'mobile') || $h === 'mob')    $mobCol = $i;
+                }
+                array_shift($rows);
             }
 
-            ActivityLog::record('reminders.import_phones', "Imported {$count} phone number(s)");
+            $now   = now()->toDateTimeString();
+            $count = 0;
+
+            foreach ($rows as $row) {
+                $accountCode = strtoupper(trim((string)($row[$acctCol] ?? '')));
+                if (!$accountCode) continue;
+
+                $telephone = trim((string)($row[$telCol] ?? ''));
+                $mobile    = $mobCol !== null ? trim((string)($row[$mobCol] ?? '')) : '';
+
+                // Merge: combine both numbers if both present, separated by " / "
+                $parts = array_filter([$telephone, $mobile], fn($v) => $v !== '');
+                $phone = implode(' / ', $parts);
+
+                // Store even if phone is empty so we clear old numbers
+                ReminderPhone::updateOrCreate(
+                    ['account_code' => $accountCode],
+                    ['phone' => $phone ?: null]
+                );
+
+                // Update ALL reminder_entries for this account across all months
+                DB::table('reminder_entries')
+                    ->where('account_code', $accountCode)
+                    ->update(['phone' => $phone ?: null, 'updated_at' => $now]);
+
+                if ($phone) $count++;
+            }
+
+            ActivityLog::record('reminders.import_phones', "Imported {$count} phone number(s) (applied to all months)");
 
             return redirect()->route('reminders.index', ['year' => $year, 'month' => $month])
-                ->with('success', "Updated {$count} phone number(s).");
+                ->with('success', "Updated {$count} phone number(s) across all months.");
         } catch (\Throwable $e) {
             return back()->withErrors(['phones_file' => 'Phone import failed: ' . substr($e->getMessage(), 0, 200)])->withInput();
         }
