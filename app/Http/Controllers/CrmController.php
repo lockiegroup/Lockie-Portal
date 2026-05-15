@@ -227,7 +227,7 @@ class CrmController extends Controller
                 MAX(order_date) as order_dt,
                 MAX(warehouse) as warehouse,
                 SUM(sub_total) as total,
-                COUNT(*) as lines
+                COUNT(*) as line_count
             ")
             ->groupBy('order_no')
             ->orderByRaw('MAX(order_date) DESC')
@@ -241,7 +241,7 @@ class CrmController extends Controller
             'date'      => Carbon::parse($r->order_dt),
             'warehouse' => $r->warehouse,
             'total'     => (float) $r->total,
-            'lines'     => (int) $r->lines,
+            'lines'     => (int) $r->line_count,
         ])->values();
 
         return view('crm.show', compact(
