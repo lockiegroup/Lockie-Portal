@@ -331,7 +331,7 @@
                     @endforeach
                 </div>
             </div>
-            @php $defaultExportStatuses = ['pending', 'unable_to_contact', 'using_spares', 'moved_stock']; @endphp
+            @php $defaultExportStatuses = ['pending']; @endphp
             <div style="margin-bottom:1.5rem;">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.625rem;">
                     <p style="font-size:0.8125rem;font-weight:700;color:#334155;margin:0;">Statuses to include</p>
