@@ -359,11 +359,54 @@ class RemindersController extends Controller
             'called_by_user_id' => ['sometimes', 'nullable', 'exists:users,id'],
             'called_date'       => ['sometimes', 'nullable', 'date'],
             'call_notes'        => ['sometimes', 'nullable', 'string', 'max:2000'],
+            'name'              => ['sometimes', 'nullable', 'string', 'max:255'],
+            'add1'              => ['sometimes', 'nullable', 'string', 'max:255'],
+            'postcode'          => ['sometimes', 'nullable', 'string', 'max:20'],
+            'email'             => ['sometimes', 'nullable', 'email', 'max:255'],
+            'phone'             => ['sometimes', 'nullable', 'string', 'max:50'],
+            'doc_no'            => ['sometimes', 'nullable', 'string', 'max:50'],
+            'env_sets'          => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'box_colour'        => ['sometimes', 'nullable', 'string', 'max:50'],
+            'env_colour'        => ['sometimes', 'nullable', 'string', 'max:50'],
+            'description'       => ['sometimes', 'nullable', 'string', 'max:255'],
         ]);
 
         $entry->update($data);
 
         return response()->json(['ok' => true, 'row_bg' => $entry->rowBg()]);
+    }
+
+    public function moveEntry(Request $request, ReminderEntry $entry): JsonResponse
+    {
+        $request->validate([
+            'year'  => 'required|integer|min:2000|max:2099',
+            'month' => 'required|integer|min:1|max:12',
+        ]);
+
+        $newYear  = (int) $request->input('year');
+        $newMonth = (int) $request->input('month');
+
+        if ($newYear === $entry->year && $newMonth === $entry->month) {
+            return response()->json(['error' => 'Entry is already in that month.'], 422);
+        }
+
+        $conflict = ReminderEntry::where('year', $newYear)
+            ->where('month', $newMonth)
+            ->where('account_code', $entry->account_code)
+            ->exists();
+
+        if ($conflict) {
+            return response()->json([
+                'error' => 'An entry for this account already exists in ' . date('F Y', mktime(0, 0, 0, $newMonth, 1, $newYear)) . '.',
+            ], 422);
+        }
+
+        $fromLabel = date('F Y', mktime(0, 0, 0, $entry->month, 1, $entry->year));
+        $entry->update(['year' => $newYear, 'month' => $newMonth]);
+
+        ActivityLog::record('reminders.move', "Moved {$entry->account_code} from {$fromLabel} to " . date('F Y', mktime(0, 0, 0, $newMonth, 1, $newYear)));
+
+        return response()->json(['ok' => true]);
     }
 
     public function export(Request $request)

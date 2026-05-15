@@ -185,6 +185,7 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::post('/import-phones',            [RemindersController::class, 'importPhones'])->name('import-phones');
         Route::post('/import-orders',            [RemindersController::class, 'importOrders'])->name('import-orders');
         Route::patch('/entries/{entry}',         [RemindersController::class, 'update'])->name('update');
+        Route::post('/entries/{entry}/move',     [RemindersController::class, 'moveEntry'])->name('move');
         Route::get('/poll',                      [RemindersController::class, 'poll'])->name('poll');
         Route::post('/export',                   [RemindersController::class, 'export'])->name('export');
     });

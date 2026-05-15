@@ -201,92 +201,134 @@
                 {{-- Expandable detail row --}}
                 <tr id="detail-{{ $entry->id }}" style="display:none;background:#f8fafc;border-bottom:2px solid #e2e8f0;">
                     <td colspan="9" style="padding:0;">
-                        <div style="padding:1.25rem 1.5rem;display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+                        <div style="padding:1.25rem 1.5rem;">
 
-                            {{-- Left: Import data --}}
-                            <div>
-                                <p style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.75rem;">Account Details</p>
-                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem 1.5rem;">
-                                    @if($entry->description)
-                                    <div style="grid-column:span 2;">
-                                        <p style="font-size:0.7rem;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.125rem;">Description</p>
-                                        <p style="font-size:0.8125rem;color:#334155;">{{ $entry->description }}</p>
-                                    </div>
-                                    @endif
-                                    @if($entry->add1)
-                                    <div>
-                                        <p style="font-size:0.7rem;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.125rem;">Address</p>
-                                        <p style="font-size:0.8125rem;color:#334155;">{{ $entry->add1 }}</p>
-                                    </div>
-                                    @endif
-                                    @if($entry->postcode)
-                                    <div>
-                                        <p style="font-size:0.7rem;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.125rem;">Postcode</p>
-                                        <p style="font-size:0.8125rem;color:#334155;font-family:monospace;">{{ $entry->postcode }}</p>
-                                    </div>
-                                    @endif
-                                    @if($entry->doc_no)
-                                    <div>
-                                        <p style="font-size:0.7rem;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.125rem;">Doc No</p>
-                                        <p style="font-size:0.8125rem;color:#334155;font-family:monospace;">{{ $entry->doc_no }}</p>
-                                    </div>
-                                    @endif
-                                    @if($entry->env_sets)
-                                    <div>
-                                        <p style="font-size:0.7rem;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.125rem;">Env Sets</p>
-                                        <p style="font-size:0.8125rem;color:#334155;">{{ number_format((float)$entry->env_sets, 0) }}</p>
-                                    </div>
-                                    @endif
-                                    @if($entry->box_colour || $entry->env_colour)
-                                    <div style="grid-column:span 2;display:flex;gap:1.5rem;">
-                                        @if($entry->box_colour)
-                                        <div>
-                                            <p style="font-size:0.7rem;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.125rem;">Box</p>
-                                            <p style="font-size:0.8125rem;color:#334155;text-transform:capitalize;">{{ strtolower($entry->box_colour) }}</p>
+                            {{-- Two-column grid: Account Details | Call Log --}}
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+
+                                {{-- Left: Editable account details --}}
+                                <div>
+                                    <p style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.125rem;">Account Details</p>
+                                    <p style="font-size:0.7rem;color:#cbd5e1;margin-bottom:0.75rem;">Changes save automatically.</p>
+                                    @php $inp = 'border:1px solid #e2e8f0;border-radius:7px;padding:0.35rem 0.5rem;font-size:0.8rem;color:#334155;background:#fff;width:100%;box-sizing:border-box;'; $lbl = 'font-size:0.7rem;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;display:block;margin-bottom:0.25rem;'; @endphp
+                                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem 0.75rem;">
+                                        <div style="grid-column:span 2;">
+                                            <label style="{{ $lbl }}">Name</label>
+                                            <input type="text" data-field="name" value="{{ $entry->name }}"
+                                                onblur="updateEntry({{ $entry->id }}, 'name', this.value || null)"
+                                                style="{{ $inp }}">
                                         </div>
-                                        @endif
-                                        @if($entry->env_colour)
                                         <div>
-                                            <p style="font-size:0.7rem;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.125rem;">Envelope</p>
-                                            <p style="font-size:0.8125rem;color:#334155;text-transform:capitalize;">{{ strtolower($entry->env_colour) }}</p>
+                                            <label style="{{ $lbl }}">Address</label>
+                                            <input type="text" data-field="add1" value="{{ $entry->add1 }}"
+                                                onblur="updateEntry({{ $entry->id }}, 'add1', this.value || null)"
+                                                style="{{ $inp }}">
                                         </div>
-                                        @endif
+                                        <div>
+                                            <label style="{{ $lbl }}">Postcode</label>
+                                            <input type="text" data-field="postcode" value="{{ $entry->postcode }}"
+                                                onblur="updateEntry({{ $entry->id }}, 'postcode', this.value || null)"
+                                                style="{{ $inp }}font-family:monospace;">
+                                        </div>
+                                        <div style="grid-column:span 2;">
+                                            <label style="{{ $lbl }}">Email</label>
+                                            <input type="email" data-field="email" value="{{ $entry->email }}"
+                                                onblur="updateEntry({{ $entry->id }}, 'email', this.value || null)"
+                                                style="{{ $inp }}">
+                                        </div>
+                                        <div>
+                                            <label style="{{ $lbl }}">Phone</label>
+                                            <input type="text" data-field="phone" value="{{ $entry->phone }}"
+                                                onblur="updateEntry({{ $entry->id }}, 'phone', this.value || null)"
+                                                style="{{ $inp }}font-family:monospace;">
+                                        </div>
+                                        <div>
+                                            <label style="{{ $lbl }}">Description</label>
+                                            <input type="text" data-field="description" value="{{ $entry->description }}"
+                                                onblur="updateEntry({{ $entry->id }}, 'description', this.value || null)"
+                                                style="{{ $inp }}">
+                                        </div>
+                                        <div>
+                                            <label style="{{ $lbl }}">Doc No</label>
+                                            <input type="text" data-field="doc_no" value="{{ $entry->doc_no }}"
+                                                onblur="updateEntry({{ $entry->id }}, 'doc_no', this.value || null)"
+                                                style="{{ $inp }}font-family:monospace;">
+                                        </div>
+                                        <div>
+                                            <label style="{{ $lbl }}">Env Sets</label>
+                                            <input type="number" data-field="env_sets" value="{{ $entry->env_sets ? (int)(float)$entry->env_sets : '' }}"
+                                                onblur="updateEntry({{ $entry->id }}, 'env_sets', this.value || null)"
+                                                style="{{ $inp }}">
+                                        </div>
+                                        <div>
+                                            <label style="{{ $lbl }}">Box Colour</label>
+                                            <input type="text" data-field="box_colour" value="{{ $entry->box_colour ? strtolower($entry->box_colour) : '' }}"
+                                                onblur="updateEntry({{ $entry->id }}, 'box_colour', this.value || null)"
+                                                style="{{ $inp }}">
+                                        </div>
+                                        <div>
+                                            <label style="{{ $lbl }}">Env Colour</label>
+                                            <input type="text" data-field="env_colour" value="{{ $entry->env_colour ? strtolower($entry->env_colour) : '' }}"
+                                                onblur="updateEntry({{ $entry->id }}, 'env_colour', this.value || null)"
+                                                style="{{ $inp }}">
+                                        </div>
                                     </div>
-                                    @endif
                                 </div>
+
+                                {{-- Right: Call log --}}
+                                <div style="border-left:1px solid #e2e8f0;padding-left:1.5rem;">
+                                    <p style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.75rem;">Call Log</p>
+                                    <div style="display:flex;flex-direction:column;gap:0.75rem;">
+                                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+                                            <div>
+                                                <label style="font-size:0.7rem;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;display:block;margin-bottom:0.25rem;">Called By</label>
+                                                <select data-field="called_by_user_id"
+                                                    onchange="updateEntry({{ $entry->id }}, 'called_by_user_id', this.value || null)"
+                                                    style="border:1px solid #e2e8f0;border-radius:7px;padding:0.375rem 0.5rem;font-size:0.8125rem;color:#334155;background:#fff;cursor:pointer;width:100%;">
+                                                    <option value="">— Not called —</option>
+                                                    @foreach($users as $user)
+                                                    <option value="{{ $user->id }}" {{ $entry->called_by_user_id == $user->id ? 'selected' : '' }}>{{ $user->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label style="font-size:0.7rem;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;display:block;margin-bottom:0.25rem;">Called Date</label>
+                                                <input type="date" data-field="called_date" value="{{ $entry->called_date?->format('Y-m-d') }}"
+                                                    onchange="updateEntry({{ $entry->id }}, 'called_date', this.value || null)"
+                                                    style="border:1px solid #e2e8f0;border-radius:7px;padding:0.375rem 0.5rem;font-size:0.8125rem;color:#334155;background:#fff;width:100%;">
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label style="font-size:0.7rem;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;display:block;margin-bottom:0.25rem;">Call Notes</label>
+                                            <input type="text" data-field="call_notes" value="{{ $entry->call_notes }}"
+                                                onblur="updateEntry({{ $entry->id }}, 'call_notes', this.value || null)"
+                                                placeholder="e.g. Left voicemail, call back Friday…"
+                                                style="border:1px solid #e2e8f0;border-radius:7px;padding:0.375rem 0.625rem;font-size:0.8125rem;color:#334155;background:#fff;width:100%;box-sizing:border-box;">
+                                        </div>
+                                    </div>
+                                </div>
+
                             </div>
 
-                            {{-- Right: Call tracking --}}
-                            <div style="border-left:1px solid #e2e8f0;padding-left:1.5rem;">
-                                <p style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.75rem;">Call Log</p>
-                                <div style="display:flex;flex-direction:column;gap:0.75rem;">
-                                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
-                                        <div>
-                                            <label style="font-size:0.7rem;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;display:block;margin-bottom:0.25rem;">Called By</label>
-                                            <select data-field="called_by_user_id"
-                                                onchange="updateEntry({{ $entry->id }}, 'called_by_user_id', this.value || null)"
-                                                style="border:1px solid #e2e8f0;border-radius:7px;padding:0.375rem 0.5rem;font-size:0.8125rem;color:#334155;background:#fff;cursor:pointer;width:100%;">
-                                                <option value="">— Not called —</option>
-                                                @foreach($users as $user)
-                                                <option value="{{ $user->id }}" {{ $entry->called_by_user_id == $user->id ? 'selected' : '' }}>{{ $user->name }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label style="font-size:0.7rem;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;display:block;margin-bottom:0.25rem;">Called Date</label>
-                                            <input type="date" data-field="called_date" value="{{ $entry->called_date?->format('Y-m-d') }}"
-                                                onchange="updateEntry({{ $entry->id }}, 'called_date', this.value || null)"
-                                                style="border:1px solid #e2e8f0;border-radius:7px;padding:0.375rem 0.5rem;font-size:0.8125rem;color:#334155;background:#fff;width:100%;">
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label style="font-size:0.7rem;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;display:block;margin-bottom:0.25rem;">Call Notes</label>
-                                        <input type="text" data-field="call_notes" value="{{ $entry->call_notes }}"
-                                            onblur="updateEntry({{ $entry->id }}, 'call_notes', this.value || null)"
-                                            placeholder="e.g. Left voicemail, call back Friday…"
-                                            style="border:1px solid #e2e8f0;border-radius:7px;padding:0.375rem 0.625rem;font-size:0.8125rem;color:#334155;background:#fff;width:100%;box-sizing:border-box;">
-                                    </div>
-                                </div>
+                            {{-- Move to month --}}
+                            <div style="border-top:1px solid #e2e8f0;margin-top:1rem;padding-top:0.875rem;display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+                                <span style="font-size:0.75rem;font-weight:600;color:#64748b;white-space:nowrap;">Move to month:</span>
+                                <select id="move-month-{{ $entry->id }}"
+                                    style="border:1px solid #e2e8f0;border-radius:7px;padding:0.35rem 0.5rem;font-size:0.8125rem;color:#334155;background:#fff;cursor:pointer;">
+                                    @foreach(range(1, 12) as $m)
+                                    <option value="{{ $m }}" {{ $m == $month ? 'selected' : '' }}>{{ date('F', mktime(0,0,0,$m,1)) }}</option>
+                                    @endforeach
+                                </select>
+                                <select id="move-year-{{ $entry->id }}"
+                                    style="border:1px solid #e2e8f0;border-radius:7px;padding:0.35rem 0.5rem;font-size:0.8125rem;color:#334155;background:#fff;cursor:pointer;">
+                                    @foreach($years as $y)
+                                    <option value="{{ $y }}" {{ $y == $year ? 'selected' : '' }}>{{ $y }}</option>
+                                    @endforeach
+                                </select>
+                                <button onclick="moveEntryToMonth({{ $entry->id }}, this)"
+                                    style="padding:0.35rem 0.875rem;border-radius:7px;background:#dc2626;color:#fff;border:none;font-size:0.8125rem;font-weight:600;cursor:pointer;white-space:nowrap;">
+                                    Move →
+                                </button>
                             </div>
 
                         </div>
@@ -391,37 +433,70 @@
             body: JSON.stringify(body),
         }).then(function (r) {
             if (!r.ok) { console.error('Update failed'); return; }
+            var row = document.getElementById('row-' + id);
             if (field === 'status') {
                 var colours = statusColours[value] || { bg: '#ffffff' };
-                var row = document.getElementById('row-' + id);
                 if (row) {
                     row.setAttribute('data-status', value);
                     row.style.backgroundColor = colours.bg;
                     if (activeFilter && value !== activeFilter) row.style.display = 'none';
                     else if (activeFilter) row.style.display = '';
                 }
-                // Also update detail row background
                 var detail = document.getElementById('detail-' + id);
                 if (detail && detail.style.display !== 'none') detail.style.backgroundColor = colours.bg + '55';
                 refreshStats();
             }
-            if (field === 'called_date') {
-                // Update the "Last Called" display in the summary row
-                var row = document.getElementById('row-' + id);
-                if (row) {
-                    var cells = row.querySelectorAll('td');
-                    if (cells[5]) {
-                        if (value) {
-                            var d = new Date(value);
-                            var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-                            cells[5].textContent = d.getDate().toString().padStart(2,'0') + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
-                        } else {
-                            cells[5].textContent = '';
-                        }
-                    }
+            if (field === 'called_date' && row) {
+                var cells = row.querySelectorAll('td');
+                if (cells[5]) {
+                    if (value) {
+                        var d = new Date(value);
+                        var mn = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                        cells[5].textContent = d.getDate().toString().padStart(2,'0') + ' ' + mn[d.getMonth()] + ' ' + d.getFullYear();
+                    } else { cells[5].textContent = ''; }
                 }
             }
+            if (field === 'name' && row) {
+                var cells = row.querySelectorAll('td');
+                if (cells[1]) cells[1].textContent = value || '';
+            }
+            if (field === 'email' && row) {
+                var cells = row.querySelectorAll('td');
+                if (cells[2]) {
+                    if (value) {
+                        var safe = value.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+                        cells[2].innerHTML = '<a href="mailto:' + safe + '" onclick="event.stopPropagation()" style="color:#0369a1;text-decoration:none;" title="' + safe + '">' + safe + '</a>';
+                    } else { cells[2].innerHTML = ''; }
+                }
+            }
+            if (field === 'phone' && row) {
+                var cells = row.querySelectorAll('td');
+                if (cells[4]) cells[4].textContent = value || '';
+            }
         }).catch(function (e) { console.error(e); });
+    };
+
+    window.moveEntryToMonth = function (id, btn) {
+        var newMonth = parseInt(document.getElementById('move-month-' + id).value);
+        var newYear  = parseInt(document.getElementById('move-year-' + id).value);
+        var mNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        if (!confirm('Move this entry to ' + mNames[newMonth - 1] + ' ' + newYear + '?\n\nIt will no longer appear in the current month.')) return;
+        btn.disabled = true;
+        btn.textContent = 'Moving…';
+        fetch('/reminders/entries/' + id + '/move', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+            body: JSON.stringify({ year: newYear, month: newMonth })
+        }).then(function (r) {
+            return r.json().then(function (data) {
+                if (!r.ok) { alert(data.error || 'Move failed.'); btn.disabled = false; btn.textContent = 'Move →'; return; }
+                var row = document.getElementById('row-' + id);
+                var det = document.getElementById('detail-' + id);
+                if (row) row.remove();
+                if (det) det.remove();
+                refreshStats();
+            });
+        }).catch(function () { alert('Move failed. Please try again.'); btn.disabled = false; btn.textContent = 'Move →'; });
     };
 
     window.updateStatusSelect = function (sel) {
