@@ -107,7 +107,8 @@
     {{-- Yearly breakdown --}}
     <h2 style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.875rem;">Annual Spend</h2>
     <div style="background:#fff;border:1px solid #e2e8f0;border-radius:0.875rem;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04);margin-bottom:2.5rem;">
-        <table style="width:100%;border-collapse:collapse;font-size:0.875rem;">
+        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+        <table style="width:100%;min-width:420px;border-collapse:collapse;font-size:0.875rem;">
             <thead>
                 <tr style="background:#f8fafc;border-bottom:1px solid #e2e8f0;">
                     <th style="padding:9px 16px;text-align:left;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Year</th>
@@ -134,6 +135,7 @@
                 @endforeach
             </tbody>
         </table>
+        </div>
     </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:2.5rem;">
