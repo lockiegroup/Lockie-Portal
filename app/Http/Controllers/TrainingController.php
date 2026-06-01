@@ -6,6 +6,7 @@ use App\Models\TrainingMachine;
 use App\Models\TrainingOperator;
 use App\Models\TrainingRecord;
 use App\Models\TrainingPlanned;
+use App\Models\TrainingDepartment;
 use App\Models\ActivityLog;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
@@ -18,13 +19,15 @@ class TrainingController extends Controller
 {
     public function index(Request $request): View
     {
-        $machines  = TrainingMachine::where('active', true)->orderBy('category')->orderBy('name')->get();
-        $operators = TrainingOperator::where('active', true)->orderBy('name')->get();
-        $categories = $machines->pluck('category')->filter()->unique()->sort()->values();
+        $machines    = TrainingMachine::where('active', true)->orderBy('category')->orderBy('name')->get();
+        $operators   = TrainingOperator::where('active', true)->orderBy('name')->get();
+        $departments = TrainingDepartment::orderBy('name')->get();
+        $categories  = $machines->pluck('category')->filter()->unique()->sort()->values();
 
-        // Get most recent record per operator+machine (by trained_date)
-        $records = TrainingRecord::whereIn('operator_id', $operators->pluck('id'))
-            ->whereIn('machine_id', $machines->pluck('id'))
+        // Eager-load machine so status() can access retrain_months without extra queries
+        $records = TrainingRecord::with('machine')
+            ->whereIn('operator_id', $operators->pluck('id'))
+            ->whereIn('machine_id',  $machines->pluck('id'))
             ->orderBy('trained_date', 'desc')
             ->get();
 
@@ -46,7 +49,7 @@ class TrainingController extends Controller
         }
 
         return view('training.index', compact(
-            'machines', 'operators', 'matrix', 'plannedMatrix', 'categories'
+            'machines', 'operators', 'matrix', 'plannedMatrix', 'categories', 'departments'
         ));
     }
 
@@ -74,7 +77,6 @@ class TrainingController extends Controller
         $data = $request->validate([
             'name'           => 'required|string|max:100',
             'category'       => 'nullable|string|max:100',
-            'description'    => 'nullable|string',
             'retrain_months' => 'nullable|integer|min:1|max:120',
             'active'         => 'boolean',
         ]);
@@ -90,7 +92,6 @@ class TrainingController extends Controller
         $data = $request->validate([
             'name'           => 'required|string|max:100',
             'category'       => 'nullable|string|max:100',
-            'description'    => 'nullable|string',
             'retrain_months' => 'nullable|integer|min:1|max:120',
             'active'         => 'boolean',
         ]);
@@ -115,11 +116,9 @@ class TrainingController extends Controller
     public function storeOperator(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'name'          => 'required|string|max:150',
-            'employee_code' => 'nullable|string|max:50',
-            'department'    => 'nullable|string|max:100',
-            'email'         => 'nullable|email|max:255',
-            'active'        => 'boolean',
+            'name'   => 'required|string|max:150',
+            'email'  => 'nullable|email|max:255',
+            'active' => 'boolean',
         ]);
         $data['active'] = $request->boolean('active', true);
 
@@ -131,11 +130,9 @@ class TrainingController extends Controller
     public function updateOperator(Request $request, TrainingOperator $operator): RedirectResponse
     {
         $data = $request->validate([
-            'name'          => 'required|string|max:150',
-            'employee_code' => 'nullable|string|max:50',
-            'department'    => 'nullable|string|max:100',
-            'email'         => 'nullable|email|max:255',
-            'active'        => 'boolean',
+            'name'   => 'required|string|max:150',
+            'email'  => 'nullable|email|max:255',
+            'active' => 'boolean',
         ]);
         $data['active'] = $request->boolean('active', true);
 
@@ -161,7 +158,6 @@ class TrainingController extends Controller
             'machine_id'   => 'required|exists:training_machines,id',
             'operator_id'  => 'required|exists:training_operators,id',
             'trained_date' => 'required|date',
-            'expiry_date'  => 'nullable|date',
             'notes'        => 'nullable|string',
             'file'         => 'nullable|file|mimes:pdf|max:10240',
         ]);
@@ -181,7 +177,6 @@ class TrainingController extends Controller
             'machine_id'        => $data['machine_id'],
             'operator_id'       => $data['operator_id'],
             'trained_date'      => $data['trained_date'],
-            'expiry_date'       => $data['expiry_date'] ?? null,
             'notes'             => $data['notes'] ?? null,
             'pdf_path'          => $pdfPath,
             'pdf_original_name' => $pdfOriginalName,
@@ -243,5 +238,29 @@ class TrainingController extends Controller
         $planned->update(['completed' => true]);
 
         return response()->json(['ok' => true]);
+    }
+
+    public function storeDepartment(Request $request): RedirectResponse
+    {
+        $request->validate(['name' => 'required|string|max:100|unique:training_departments,name']);
+        TrainingDepartment::create(['name' => $request->input('name')]);
+        return redirect()->back()->with('success', 'Department added.');
+    }
+
+    public function updateDepartment(Request $request, TrainingDepartment $department): RedirectResponse
+    {
+        $request->validate(['name' => 'required|string|max:100|unique:training_departments,name,' . $department->id]);
+        $department->update(['name' => $request->input('name')]);
+        return redirect()->back()->with('success', 'Department updated.');
+    }
+
+    public function destroyDepartment(Request $request, TrainingDepartment $department): RedirectResponse
+    {
+        $inUse = TrainingMachine::where('category', $department->name)->exists();
+        if ($inUse) {
+            return redirect()->back()->withErrors(['error' => 'Cannot delete: machines are assigned to this department.']);
+        }
+        $department->delete();
+        return redirect()->back()->with('success', 'Department deleted.');
     }
 }

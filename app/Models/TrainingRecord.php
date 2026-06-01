@@ -14,12 +14,20 @@ class TrainingRecord extends Model
     public function operator(): BelongsTo { return $this->belongsTo(TrainingOperator::class, 'operator_id'); }
     public function addedBy(): BelongsTo  { return $this->belongsTo(User::class, 'added_by_user_id'); }
 
+    // Computed expiry from machine retrain_months + trained_date
+    public function expiryDate(): ?\Carbon\Carbon
+    {
+        $months = $this->machine?->retrain_months;
+        return $months ? $this->trained_date->copy()->addMonths($months) : null;
+    }
+
     // Returns: 'valid' | 'expiring' | 'expired' | 'no_expiry'
     public function status(): string
     {
-        if (!$this->expiry_date) return 'no_expiry';
-        if ($this->expiry_date->isPast()) return 'expired';
-        if ($this->expiry_date->diffInDays(now()) <= 60) return 'expiring';
+        $expiry = $this->expiryDate();
+        if (!$expiry) return 'no_expiry';
+        if ($expiry->isPast()) return 'expired';
+        if (now()->diffInDays($expiry) <= 60) return 'expiring';
         return 'valid';
     }
 }

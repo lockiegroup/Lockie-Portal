@@ -207,6 +207,9 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::post('/planned',                                  [TrainingController::class, 'storePlanned'])->name('planned.store');
         Route::delete('/planned/{planned}',                      [TrainingController::class, 'destroyPlanned'])->name('planned.destroy');
         Route::patch('/planned/{planned}/complete',              [TrainingController::class, 'completePlanned'])->name('planned.complete');
+        Route::post('/departments',                              [TrainingController::class, 'storeDepartment'])->name('departments.store');
+        Route::put('/departments/{department}',                  [TrainingController::class, 'updateDepartment'])->name('departments.update');
+        Route::delete('/departments/{department}',               [TrainingController::class, 'destroyDepartment'])->name('departments.destroy');
     });
 
     // Key Actions

@@ -13,15 +13,20 @@
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                 Planned Training
             </a>
+            <button onclick="openModal('departments-modal')"
+                style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.4rem 0.875rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.8125rem;font-weight:600;cursor:pointer;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                Departments
+            </button>
             <button onclick="openModal('operators-modal')"
-                style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.4rem 0.875rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.8125rem;font-weight:600;cursor:pointer;border:none;" onclick="">
+                style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.4rem 0.875rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.8125rem;font-weight:600;cursor:pointer;">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                Manage Operators
+                Operators
             </button>
             <button onclick="openModal('machines-modal')"
                 style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.4rem 0.875rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.8125rem;font-weight:600;border:none;cursor:pointer;">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
-                Manage Machines
+                Machines
             </button>
         </div>
     </div>
@@ -35,7 +40,6 @@
     @endif
 
     @php
-        // Compute stats
         $totalOperators = $operators->count();
         $totalMachines  = $machines->count();
         $neverTrained   = 0;
@@ -55,24 +59,24 @@
     {{-- Stats bar --}}
     <div style="display:flex;flex-wrap:wrap;gap:0.75rem;margin-bottom:1.5rem;">
         <div style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.375rem 0.875rem;border-radius:9999px;background:#f1f5f9;color:#475569;font-size:0.8125rem;font-weight:600;">
-            <span>{{ $totalOperators }} operator{{ $totalOperators !== 1 ? 's' : '' }}</span>
+            {{ $totalOperators }} operator{{ $totalOperators !== 1 ? 's' : '' }}
         </div>
         <div style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.375rem 0.875rem;border-radius:9999px;background:#f1f5f9;color:#475569;font-size:0.8125rem;font-weight:600;">
-            <span>{{ $totalMachines }} machine{{ $totalMachines !== 1 ? 's' : '' }}</span>
+            {{ $totalMachines }} machine{{ $totalMachines !== 1 ? 's' : '' }}
         </div>
         @if($neverTrained > 0)
         <div style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.375rem 0.875rem;border-radius:9999px;background:#f1f5f9;color:#64748b;font-size:0.8125rem;font-weight:600;">
-            {{ $neverTrained }} never trained
+            {{ $neverTrained }} gap{{ $neverTrained !== 1 ? 's' : '' }}
         </div>
         @endif
         @if($expired > 0)
         <div style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.375rem 0.875rem;border-radius:9999px;background:#fee2e2;color:#991b1b;font-size:0.8125rem;font-weight:600;">
-            {{ $expired }} expired
+            {{ $expired }} overdue
         </div>
         @endif
         @if($expiring > 0)
         <div style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.375rem 0.875rem;border-radius:9999px;background:#fef3c7;color:#92400e;font-size:0.8125rem;font-weight:600;">
-            {{ $expiring }} expiring soon
+            {{ $expiring }} due soon
         </div>
         @endif
     </div>
@@ -84,15 +88,14 @@
         @if($operators->isEmpty() && $machines->isEmpty())
             No operators or machines configured yet. Use the buttons above to add them.
         @elseif($operators->isEmpty())
-            No active operators configured yet. Use "Manage Operators" to add them.
+            No active operators. Use "Operators" to add them.
         @else
-            No active machines configured yet. Use "Manage Machines" to add them.
+            No active machines. Use "Machines" to add them.
         @endif
     </div>
     @else
 
     @php
-    // Pre-build matrixJson for JS
     $matrixJson = [];
     foreach ($operators as $op) {
         foreach ($machines as $mac) {
@@ -102,7 +105,6 @@
                 'record' => $rec ? [
                     'id'           => $rec->id,
                     'trained_date' => $rec->trained_date->format('d M Y'),
-                    'expiry_date'  => $rec->expiry_date?->format('d M Y'),
                     'notes'        => $rec->notes,
                     'has_pdf'      => (bool)$rec->pdf_path,
                     'pdf_url'      => $rec->pdf_path ? route('training.records.pdf', $rec->id) : null,
@@ -125,7 +127,6 @@
         }
     }
 
-    // Group machines by category
     $machineGroups = [];
     foreach ($machines as $mac) {
         $cat = $mac->category ?: 'Uncategorised';
@@ -137,7 +138,6 @@
         <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
             <table style="border-collapse:collapse;font-size:0.8rem;white-space:nowrap;width:100%;">
                 <thead>
-                    {{-- Category row --}}
                     <tr>
                         <th style="position:sticky;left:0;z-index:3;background:#f8fafc;padding:8px 14px;text-align:left;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid #e2e8f0;border-right:2px solid #e2e8f0;min-width:160px;">Operator</th>
                         @foreach($machineGroups as $cat => $catMachines)
@@ -147,7 +147,6 @@
                         </th>
                         @endforeach
                     </tr>
-                    {{-- Machine name row --}}
                     <tr>
                         <th style="position:sticky;left:0;z-index:3;background:#f8fafc;padding:0;border-bottom:2px solid #e2e8f0;border-right:2px solid #e2e8f0;"></th>
                         @foreach($machineGroups as $cat => $catMachines)
@@ -168,17 +167,14 @@
                     <tr style="border-bottom:1px solid #f1f5f9;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
                         <td style="position:sticky;left:0;z-index:1;background:#fff;padding:8px 14px;font-size:0.8125rem;font-weight:600;color:#334155;border-right:2px solid #e2e8f0;min-width:160px;">
                             {{ $op->name }}
-                            @if($op->department)
-                            <div style="font-size:0.7rem;font-weight:400;color:#94a3b8;">{{ $op->department }}</div>
-                            @endif
                         </td>
                         @foreach($machineGroups as $cat => $catMachines)
                             @foreach($catMachines as $mac)
                             @php
-                                $rec      = $matrix[$op->id][$mac->id] ?? null;
+                                $rec        = $matrix[$op->id][$mac->id] ?? null;
                                 $hasPlanned = !empty($plannedMatrix[$op->id][$mac->id]);
-                                $status   = $rec ? $rec->status() : 'none';
-                                $bgColor  = match($status) {
+                                $status     = $rec ? $rec->status() : 'none';
+                                $bgColor    = match($status) {
                                     'valid'     => '#dcfce7',
                                     'expiring'  => '#fef3c7',
                                     'expired'   => '#fee2e2',
@@ -192,24 +188,25 @@
                                     'no_expiry' => '#1e40af',
                                     default     => '#94a3b8',
                                 };
+                                $expiryLabel = null;
+                                if ($rec && $mac->retrain_months && in_array($status, ['expiring', 'expired'])) {
+                                    $expiryLabel = $rec->trained_date->copy()->addMonths($mac->retrain_months)->format('d M y');
+                                }
                             @endphp
                             <td style="padding:4px 6px;text-align:center;border-left:1px solid #f1f5f9;vertical-align:middle;">
                                 <button onclick="openCell({{ $op->id }}, {{ $mac->id }})"
                                     style="display:inline-flex;align-items:center;justify-content:center;gap:3px;padding:4px 7px;border-radius:6px;background:{{ $bgColor }};color:{{ $txtColor }};border:none;cursor:pointer;font-size:0.72rem;font-weight:600;min-width:90px;position:relative;">
                                     @if($status === 'none')
                                         <span style="color:#cbd5e1;">—</span>
-                                    @elseif($status === 'valid')
-                                        <span>✓</span>
-                                        <span>{{ $rec->trained_date->format('d M y') }}</span>
-                                    @elseif($status === 'no_expiry')
+                                    @elseif($status === 'valid' || $status === 'no_expiry')
                                         <span>✓</span>
                                         <span>{{ $rec->trained_date->format('d M y') }}</span>
                                     @elseif($status === 'expiring')
                                         <span>⚠</span>
-                                        <span>exp {{ $rec->expiry_date->format('d M y') }}</span>
+                                        <span>due {{ $expiryLabel }}</span>
                                     @elseif($status === 'expired')
                                         <span>✗</span>
-                                        <span>exp {{ $rec->expiry_date->format('d M y') }}</span>
+                                        <span>due {{ $expiryLabel }}</span>
                                     @endif
                                     @if($hasPlanned)
                                     <span title="Planned session" style="position:absolute;top:2px;right:3px;font-size:0.6rem;color:#6366f1;">📅</span>
@@ -229,7 +226,6 @@
     {{-- ====================== RECORD MODAL ====================== --}}
     <div id="record-modal" style="display:none;position:fixed;inset:0;z-index:100;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);padding:1rem;">
         <div style="background:#fff;border-radius:14px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
-            {{-- Modal header --}}
             <div style="display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid #f1f5f9;">
                 <div>
                     <p id="modal-operator-name" style="font-size:0.75rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 2px;"></p>
@@ -242,17 +238,13 @@
 
             <div style="padding:1.25rem 1.5rem;">
 
-                {{-- Existing record section --}}
+                {{-- Existing record --}}
                 <div id="modal-record-section" style="display:none;margin-bottom:1.25rem;padding:1rem;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;">
                     <p style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 0.75rem;">Current Record</p>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;">
                         <div>
                             <p style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 2px;">Trained Date</p>
                             <p id="modal-trained-date" style="font-size:0.875rem;font-weight:600;color:#1e293b;margin:0;"></p>
-                        </div>
-                        <div>
-                            <p style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 2px;">Expiry Date</p>
-                            <p id="modal-expiry-date" style="font-size:0.875rem;font-weight:600;color:#1e293b;margin:0;"></p>
                         </div>
                         <div>
                             <p style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 2px;">Added By</p>
@@ -282,7 +274,7 @@
                     <div id="modal-planned-list"></div>
                 </div>
 
-                {{-- Add Training Record form --}}
+                {{-- Add Training Record --}}
                 <details style="margin-bottom:1rem;">
                     <summary style="font-size:0.8125rem;font-weight:700;color:#1e293b;cursor:pointer;padding:0.5rem 0;list-style:none;display:flex;align-items:center;gap:0.5rem;">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -293,17 +285,10 @@
                             @csrf
                             <input type="hidden" name="operator_id" id="record-operator-id">
                             <input type="hidden" name="machine_id"  id="record-machine-id">
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;">
-                                <div>
-                                    <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Trained Date *</label>
-                                    <input type="date" name="trained_date" required
-                                        style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;background:#fff;box-sizing:border-box;">
-                                </div>
-                                <div>
-                                    <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Expiry Date</label>
-                                    <input type="date" name="expiry_date"
-                                        style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;background:#fff;box-sizing:border-box;">
-                                </div>
+                            <div style="margin-bottom:0.75rem;">
+                                <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Trained Date *</label>
+                                <input type="date" name="trained_date" required
+                                    style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;background:#fff;box-sizing:border-box;">
                             </div>
                             <div style="margin-bottom:0.75rem;">
                                 <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Upload PDF Certificate</label>
@@ -323,7 +308,7 @@
                     </div>
                 </details>
 
-                {{-- Add Planned Training form --}}
+                {{-- Add Planned Session --}}
                 <details>
                     <summary style="font-size:0.8125rem;font-weight:700;color:#1e293b;cursor:pointer;padding:0.5rem 0;list-style:none;display:flex;align-items:center;gap:0.5rem;">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -379,12 +364,17 @@
                                     style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
                             </div>
                             <div>
-                                <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Category</label>
-                                <input type="text" name="category" maxlength="100"
-                                    style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
+                                <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Department</label>
+                                <select name="category"
+                                    style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;background:#fff;box-sizing:border-box;">
+                                    <option value="">— None —</option>
+                                    @foreach($departments as $dept)
+                                    <option value="{{ $dept->name }}">{{ $dept->name }}</option>
+                                    @endforeach
+                                </select>
                             </div>
                         </div>
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;">
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.875rem;">
                             <div>
                                 <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Re-train Interval (months)</label>
                                 <input type="number" name="retrain_months" min="1" max="120"
@@ -398,11 +388,6 @@
                                     Active
                                 </label>
                             </div>
-                        </div>
-                        <div style="margin-bottom:0.875rem;">
-                            <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Description</label>
-                            <textarea name="description" rows="2"
-                                style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;resize:vertical;box-sizing:border-box;"></textarea>
                         </div>
                         <button type="submit"
                             style="padding:0.4rem 0.875rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.8125rem;font-weight:600;border:none;cursor:pointer;">
@@ -418,7 +403,7 @@
                 @else
                 <div style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;">
                     @foreach($allMachines as $mac)
-                    <div style="padding:0.75rem 1rem;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:0.75rem;" x-data="{editing:false}">
+                    <div style="padding:0.75rem 1rem;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:0.75rem;">
                         <div style="flex:1;min-width:0;">
                             <div style="font-size:0.8125rem;font-weight:600;color:{{ $mac->active ? '#1e293b' : '#94a3b8' }};">
                                 {{ $mac->name }}
@@ -453,12 +438,17 @@
                                         style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
                                 </div>
                                 <div>
-                                    <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Category</label>
-                                    <input type="text" name="category" value="{{ $mac->category }}" maxlength="100"
-                                        style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
+                                    <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Department</label>
+                                    <select name="category"
+                                        style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;background:#fff;box-sizing:border-box;">
+                                        <option value="">— None —</option>
+                                        @foreach($departments as $dept)
+                                        <option value="{{ $dept->name }}" {{ $mac->category === $dept->name ? 'selected' : '' }}>{{ $dept->name }}</option>
+                                        @endforeach
+                                    </select>
                                 </div>
                             </div>
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;">
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.875rem;">
                                 <div>
                                     <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Re-train Interval (months)</label>
                                     <input type="number" name="retrain_months" value="{{ $mac->retrain_months }}" min="1" max="120"
@@ -472,11 +462,6 @@
                                         Active
                                     </label>
                                 </div>
-                            </div>
-                            <div style="margin-bottom:0.875rem;">
-                                <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Description</label>
-                                <textarea name="description" rows="2"
-                                    style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;resize:vertical;box-sizing:border-box;">{{ $mac->description }}</textarea>
                             </div>
                             <div style="display:flex;gap:0.5rem;">
                                 <button type="submit"
@@ -499,7 +484,7 @@
 
     {{-- ====================== OPERATORS MODAL ====================== --}}
     <div id="operators-modal" style="display:none;position:fixed;inset:0;z-index:100;align-items:flex-start;justify-content:center;background:rgba(0,0,0,0.45);padding:2rem 1rem;overflow-y:auto;">
-        <div style="background:#fff;border-radius:14px;width:100%;max-width:700px;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+        <div style="background:#fff;border-radius:14px;width:100%;max-width:600px;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
             <div style="display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid #f1f5f9;">
                 <h2 style="font-size:1.05rem;font-weight:700;color:#1e293b;margin:0;">Manage Operators</h2>
                 <button onclick="closeModal('operators-modal')" style="background:none;border:none;cursor:pointer;color:#94a3b8;padding:4px;line-height:0;">
@@ -520,24 +505,12 @@
                                     style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
                             </div>
                             <div>
-                                <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Employee Code</label>
-                                <input type="text" name="employee_code" maxlength="50"
-                                    style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
-                            </div>
-                        </div>
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;">
-                            <div>
-                                <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Department</label>
-                                <input type="text" name="department" maxlength="100"
-                                    style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
-                            </div>
-                            <div>
                                 <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Email</label>
                                 <input type="email" name="email" maxlength="255"
                                     style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
                             </div>
                         </div>
-                        <div style="display:flex;align-items:center;gap:1rem;margin-bottom:0.875rem;">
+                        <div style="margin-bottom:0.875rem;">
                             <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.8125rem;color:#334155;cursor:pointer;">
                                 <input type="hidden" name="active" value="0">
                                 <input type="checkbox" name="active" value="1" checked style="width:15px;height:15px;cursor:pointer;">
@@ -564,10 +537,9 @@
                                 {{ $op->name }}
                                 @if(!$op->active)<span style="font-size:0.7rem;color:#94a3b8;font-weight:400;"> (inactive)</span>@endif
                             </div>
-                            <div style="font-size:0.75rem;color:#94a3b8;">
-                                @if($op->employee_code){{ $op->employee_code }}@endif
-                                @if($op->department) &middot; {{ $op->department }}@endif
-                            </div>
+                            @if($op->email)
+                            <div style="font-size:0.75rem;color:#94a3b8;">{{ $op->email }}</div>
+                            @endif
                         </div>
                         <button onclick="toggleEdit('op-edit-{{ $op->id }}')"
                             style="padding:0.25rem 0.625rem;border-radius:7px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.75rem;cursor:pointer;">
@@ -593,24 +565,12 @@
                                         style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
                                 </div>
                                 <div>
-                                    <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Employee Code</label>
-                                    <input type="text" name="employee_code" value="{{ $op->employee_code }}" maxlength="50"
-                                        style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
-                                </div>
-                            </div>
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;">
-                                <div>
-                                    <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Department</label>
-                                    <input type="text" name="department" value="{{ $op->department }}" maxlength="100"
-                                        style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
-                                </div>
-                                <div>
                                     <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Email</label>
                                     <input type="email" name="email" value="{{ $op->email }}" maxlength="255"
                                         style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
                                 </div>
                             </div>
-                            <div style="display:flex;align-items:center;gap:1rem;margin-bottom:0.875rem;">
+                            <div style="margin-bottom:0.875rem;">
                                 <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.8125rem;color:#334155;cursor:pointer;">
                                     <input type="hidden" name="active" value="0">
                                     <input type="checkbox" name="active" value="1" {{ $op->active ? 'checked' : '' }} style="width:15px;height:15px;cursor:pointer;">
@@ -623,6 +583,79 @@
                                     Save
                                 </button>
                                 <button type="button" onclick="toggleEdit('op-edit-{{ $op->id }}')"
+                                    style="padding:0.35rem 0.75rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.75rem;cursor:pointer;">
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    @endforeach
+                </div>
+                @endif
+            </div>
+        </div>
+    </div>
+
+    {{-- ====================== DEPARTMENTS MODAL ====================== --}}
+    <div id="departments-modal" style="display:none;position:fixed;inset:0;z-index:100;align-items:flex-start;justify-content:center;background:rgba(0,0,0,0.45);padding:2rem 1rem;overflow-y:auto;">
+        <div style="background:#fff;border-radius:14px;width:100%;max-width:500px;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid #f1f5f9;">
+                <h2 style="font-size:1.05rem;font-weight:700;color:#1e293b;margin:0;">Manage Departments</h2>
+                <button onclick="closeModal('departments-modal')" style="background:none;border:none;cursor:pointer;color:#94a3b8;padding:4px;line-height:0;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div style="padding:1.25rem 1.5rem;">
+
+                {{-- Add department --}}
+                <div style="background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;padding:1rem;margin-bottom:1.25rem;">
+                    <p style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 0.75rem;">Add Department</p>
+                    <form action="{{ route('training.departments.store') }}" method="POST">
+                        @csrf
+                        <div style="display:flex;gap:0.5rem;">
+                            <input type="text" name="name" required maxlength="100" placeholder="Department name"
+                                style="flex:1;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
+                            <button type="submit"
+                                style="padding:0.4rem 0.875rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.8125rem;font-weight:600;border:none;cursor:pointer;white-space:nowrap;">
+                                Add
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                {{-- Departments list --}}
+                @php $allDepts = \App\Models\TrainingDepartment::orderBy('name')->get(); @endphp
+                @if($allDepts->isEmpty())
+                <p style="color:#94a3b8;font-size:0.875rem;text-align:center;padding:1rem 0;">No departments added yet.</p>
+                @else
+                <div style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;">
+                    @foreach($allDepts as $dept)
+                    <div style="padding:0.75rem 1rem;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:0.75rem;">
+                        <span style="flex:1;font-size:0.8125rem;font-weight:600;color:#334155;">{{ $dept->name }}</span>
+                        <button onclick="toggleEdit('dept-edit-{{ $dept->id }}')"
+                            style="padding:0.25rem 0.625rem;border-radius:7px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.75rem;cursor:pointer;">
+                            Edit
+                        </button>
+                        <form action="{{ route('training.departments.destroy', $dept->id) }}" method="POST" style="margin:0;"
+                            onsubmit="return confirm('Delete department {{ addslashes($dept->name) }}?')">
+                            @csrf @method('DELETE')
+                            <button type="submit"
+                                style="padding:0.25rem 0.625rem;border-radius:7px;border:1px solid #fca5a5;background:#fff;color:#dc2626;font-size:0.75rem;cursor:pointer;">
+                                Delete
+                            </button>
+                        </form>
+                    </div>
+                    <div id="dept-edit-{{ $dept->id }}" style="display:none;padding:0.75rem 1rem;background:#f8fafc;border-bottom:1px solid #e2e8f0;">
+                        <form action="{{ route('training.departments.update', $dept->id) }}" method="POST">
+                            @csrf @method('PUT')
+                            <div style="display:flex;gap:0.5rem;">
+                                <input type="text" name="name" value="{{ $dept->name }}" required maxlength="100"
+                                    style="flex:1;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
+                                <button type="submit"
+                                    style="padding:0.35rem 0.75rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.75rem;font-weight:600;border:none;cursor:pointer;">
+                                    Save
+                                </button>
+                                <button type="button" onclick="toggleEdit('dept-edit-{{ $dept->id }}')"
                                     style="padding:0.35rem 0.75rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.75rem;cursor:pointer;">
                                     Cancel
                                 </button>
@@ -655,9 +688,8 @@ function closeModal(id) {
     document.body.style.overflow = '';
 }
 
-// Close modals when clicking backdrop
 document.addEventListener('click', function(e) {
-    ['record-modal','machines-modal','operators-modal'].forEach(function(id) {
+    ['record-modal','machines-modal','operators-modal','departments-modal'].forEach(function(id) {
         var el = document.getElementById(id);
         if (el && e.target === el) closeModal(id);
     });
@@ -675,50 +707,41 @@ window.openCell = function(operatorId, machineId) {
     var cell = opData[machineId];
     if (!cell) return;
 
-    // Set headers
     document.getElementById('modal-operator-name').textContent = cell.operator_name;
     document.getElementById('modal-machine-name').textContent  = cell.machine_name;
 
-    // Set hidden IDs in forms
-    document.getElementById('record-operator-id').value = operatorId;
-    document.getElementById('record-machine-id').value  = machineId;
+    document.getElementById('record-operator-id').value  = operatorId;
+    document.getElementById('record-machine-id').value   = machineId;
     document.getElementById('planned-operator-id').value = operatorId;
     document.getElementById('planned-machine-id').value  = machineId;
 
-    // Record section
     var recSection = document.getElementById('modal-record-section');
     if (cell.record) {
         recSection.style.display = 'block';
         document.getElementById('modal-trained-date').textContent = cell.record.trained_date || '—';
-        document.getElementById('modal-expiry-date').textContent  = cell.record.expiry_date  || 'No expiry set';
         document.getElementById('modal-added-by').textContent     = cell.record.added_by     || '—';
 
         var notesWrap = document.getElementById('modal-notes-wrap');
-        var notesEl   = document.getElementById('modal-notes');
         if (cell.record.notes) {
             notesWrap.style.display = 'block';
-            notesEl.textContent = cell.record.notes;
+            document.getElementById('modal-notes').textContent = cell.record.notes;
         } else {
             notesWrap.style.display = 'none';
         }
 
         var pdfWrap = document.getElementById('modal-pdf-wrap');
-        var pdfLink = document.getElementById('modal-pdf-link');
         if (cell.record.has_pdf && cell.record.pdf_url) {
             pdfWrap.style.display = 'block';
-            pdfLink.href = cell.record.pdf_url;
+            document.getElementById('modal-pdf-link').href = cell.record.pdf_url;
         } else {
             pdfWrap.style.display = 'none';
         }
 
-        // Delete form action
-        var deleteForm = document.getElementById('modal-delete-record-form');
-        deleteForm.action = cell.record.delete_url;
+        document.getElementById('modal-delete-record-form').action = cell.record.delete_url;
     } else {
         recSection.style.display = 'none';
     }
 
-    // Planned sessions section
     var plannedSection = document.getElementById('modal-planned-section');
     var plannedList    = document.getElementById('modal-planned-list');
     if (cell.planned && cell.planned.length > 0) {
