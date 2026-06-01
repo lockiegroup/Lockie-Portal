@@ -173,7 +173,7 @@ class TrainingController extends Controller
             $file            = $request->file('file');
             $pdfOriginalName = $file->getClientOriginalName();
             $filename        = Str::uuid() . '.pdf';
-            $file->storeAs('training-pdfs', $filename, 'private');
+            $file->storeAs('training-pdfs', $filename, 'local');
             $pdfPath = 'training-pdfs/' . $filename;
         }
 
@@ -193,8 +193,8 @@ class TrainingController extends Controller
 
     public function destroyRecord(Request $request, TrainingRecord $record): RedirectResponse
     {
-        if ($record->pdf_path && Storage::disk('private')->exists($record->pdf_path)) {
-            Storage::disk('private')->delete($record->pdf_path);
+        if ($record->pdf_path && Storage::disk('local')->exists($record->pdf_path)) {
+            Storage::disk('local')->delete($record->pdf_path);
         }
 
         $record->delete();
@@ -208,7 +208,7 @@ class TrainingController extends Controller
 
         $filename = $record->pdf_original_name ?: basename($record->pdf_path);
 
-        return Storage::disk('private')->download($record->pdf_path, $filename);
+        return Storage::disk('local')->download($record->pdf_path, $filename);
     }
 
     public function storePlanned(Request $request): RedirectResponse
