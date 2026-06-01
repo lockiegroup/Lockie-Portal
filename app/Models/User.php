@@ -18,20 +18,20 @@ class User extends Authenticatable
         'policy_settings'    => 'Policy Settings',
         'key_accounts_admin' => 'Key Accounts Admin',
         'reminders'          => 'Order Reminders',
-        'factory_training'      => 'Factory Training',
-        'factory_training_view' => 'Factory Training (View Only)',
+        'factory_training' => 'Factory Training',
     ];
 
     const MODULES = [
-        'sales'          => 'Sales',
-        'stock'          => 'Stock Overview',
-        'stock_ordering'  => 'Stock Watchlist',
-        'envelopes'      => 'Church Envelopes',
-        'policies'       => 'Policies',
-        'print_schedule' => 'Print Schedule',
-        'amazon'         => 'Amazon & Xero',
-        'key_accounts'   => 'Key Accounts',
-        'crm'            => 'Customer Insights (CRM)',
+        'sales'            => 'Sales',
+        'stock'            => 'Stock Overview',
+        'stock_ordering'   => 'Stock Watchlist',
+        'envelopes'        => 'Church Envelopes',
+        'policies'         => 'Policies',
+        'print_schedule'   => 'Print Schedule',
+        'amazon'           => 'Amazon & Xero',
+        'key_accounts'     => 'Key Accounts',
+        'crm'              => 'Customer Insights (CRM)',
+        'factory_training' => 'Factory Training',
     ];
 
     protected $fillable = ['name', 'email', 'password', 'role', 'is_active', 'permissions', 'modules', 'last_login_at'];
