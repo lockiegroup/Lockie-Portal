@@ -22,6 +22,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('amazon-admin',        fn($user) => $user->isMaster());
         Gate::define('key_accounts_admin', fn($user) => $user->hasPermission('key_accounts_admin'));
         Gate::define('reminders',          fn($user) => $user->hasPermission('reminders'));
-        Gate::define('factory_training',   fn($user) => $user->hasPermission('factory_training'));
+        Gate::define('factory_training',      fn($user) => $user->hasPermission('factory_training'));
+        Gate::define('factory_training_view', fn($user) => $user->hasPermission('factory_training') || $user->hasPermission('factory_training_view'));
     }
 }

@@ -192,9 +192,14 @@ Route::middleware(['auth', 'otp'])->group(function () {
     });
 
     // Factory Training
-    Route::middleware('can:factory_training')->prefix('training')->name('training.')->group(function () {
+    // Read-only: full-access OR view-only permission
+    Route::middleware('can:factory_training_view')->prefix('training')->name('training.')->group(function () {
         Route::get('/',                                          [TrainingController::class, 'index'])->name('index');
         Route::get('/planned',                                   [TrainingController::class, 'planned'])->name('planned');
+        Route::get('/records/{record}/pdf',                      [TrainingController::class, 'downloadPdf'])->name('records.pdf');
+    });
+    // Edit: full-access permission only
+    Route::middleware('can:factory_training')->prefix('training')->name('training.')->group(function () {
         Route::post('/machines',                                 [TrainingController::class, 'storeMachine'])->name('machines.store');
         Route::put('/machines/{machine}',                        [TrainingController::class, 'updateMachine'])->name('machines.update');
         Route::delete('/machines/{machine}',                     [TrainingController::class, 'destroyMachine'])->name('machines.destroy');
@@ -203,7 +208,6 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::delete('/operators/{operator}',                   [TrainingController::class, 'destroyOperator'])->name('operators.destroy');
         Route::post('/records',                                  [TrainingController::class, 'storeRecord'])->name('records.store');
         Route::delete('/records/{record}',                       [TrainingController::class, 'destroyRecord'])->name('records.destroy');
-        Route::get('/records/{record}/pdf',                      [TrainingController::class, 'downloadPdf'])->name('records.pdf');
         Route::post('/planned',                                  [TrainingController::class, 'storePlanned'])->name('planned.store');
         Route::delete('/planned/{planned}',                      [TrainingController::class, 'destroyPlanned'])->name('planned.destroy');
         Route::patch('/planned/{planned}/complete',              [TrainingController::class, 'completePlanned'])->name('planned.complete');

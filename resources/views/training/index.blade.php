@@ -13,6 +13,7 @@
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                 Planned Training
             </a>
+            @if($canEdit)
             <button onclick="openModal('departments-modal')"
                 style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.4rem 0.875rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.8125rem;font-weight:600;cursor:pointer;">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
@@ -28,6 +29,7 @@
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
                 Machines
             </button>
+            @endif
         </div>
     </div>
 
@@ -205,8 +207,8 @@
                                 }
                             @endphp
                             <td style="padding:4px 6px;text-align:center;border-left:1px solid #f1f5f9;vertical-align:middle;">
-                                <button onclick="openCell({{ $op->id }}, {{ $mac->id }})"
-                                    style="display:inline-flex;align-items:center;justify-content:center;gap:3px;padding:4px 7px;border-radius:6px;background:{{ $bgColor }};color:{{ $txtColor }};border:none;cursor:pointer;font-size:0.72rem;font-weight:600;min-width:90px;position:relative;">
+                                <span @if($canEdit) onclick="openCell({{ $op->id }}, {{ $mac->id }})" @endif
+                                    style="display:inline-flex;align-items:center;justify-content:center;gap:3px;padding:4px 7px;border-radius:6px;background:{{ $bgColor }};color:{{ $txtColor }};font-size:0.72rem;font-weight:600;min-width:90px;position:relative;{{ $canEdit ? 'cursor:pointer;' : '' }}">
                                     @if($firstPlan)
                                         <span style="font-size:0.68rem;">Planned</span>
                                         <span>{{ $firstPlan->planned_date->format('d M y') }}</span>
@@ -225,7 +227,7 @@
                                     @if($hasPlanned && $status !== 'none')
                                     <span title="Planned session" style="position:absolute;top:2px;right:3px;font-size:0.6rem;color:#6366f1;">📅</span>
                                     @endif
-                                </button>
+                                </span>
                             </td>
                             @endforeach
                         @endforeach
@@ -237,6 +239,7 @@
     </div>
     @endif
 
+    @if($canEdit)
     {{-- ====================== RECORD MODAL ====================== --}}
     <div id="record-modal" style="display:none;position:fixed;inset:0;z-index:100;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);padding:1rem;">
         <div style="background:#fff;border-radius:14px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
@@ -688,10 +691,12 @@
             </div>
         </div>
     </div>
+    @endif {{-- canEdit --}}
 
 </main>
 
 <script>
+@if($canEdit)
 var matrixData = @json($matrixJson);
 
 function openModal(id) {
@@ -832,5 +837,6 @@ function completePlanned(id, url, btn) {
         }
     });
 }
+@endif {{-- canEdit --}}
 </script>
 </x-layout>

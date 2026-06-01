@@ -50,8 +50,10 @@ class TrainingController extends Controller
             $plannedMatrix[$p->operator_id][$p->machine_id][] = $p;
         }
 
+        $canEdit = auth()->user()->hasPermission('factory_training');
+
         return view('training.index', compact(
-            'machines', 'operators', 'matrix', 'recordHistory', 'plannedMatrix', 'categories', 'departments'
+            'machines', 'operators', 'matrix', 'recordHistory', 'plannedMatrix', 'categories', 'departments', 'canEdit'
         ));
     }
 
