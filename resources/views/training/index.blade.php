@@ -425,7 +425,7 @@
                             </div>
                             <div style="font-size:0.75rem;color:#94a3b8;">
                                 @if($mac->category){{ $mac->category }}@endif
-                                @if($mac->retrain_months) &middot; Re-train: {{ $mac->retrain_months }}mo@endif
+                                @if($mac->retrain_months) &middot; Re-train: {{ $mac->retrain_months }}mo @endif
                             </div>
                         </div>
                         <button onclick="toggleEdit('machine-edit-{{ $mac->id }}')"
