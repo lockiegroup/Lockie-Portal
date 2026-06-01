@@ -24,6 +24,7 @@ use App\Http\Controllers\Admin\KeyAccountAdminController;
 use App\Http\Controllers\KeyActionController;
 use App\Http\Controllers\CrmController;
 use App\Http\Controllers\RemindersController;
+use App\Http\Controllers\TrainingController;
 use App\Http\Controllers\ImpersonateController;
 use Illuminate\Support\Facades\Route;
 
@@ -188,6 +189,24 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::post('/entries/{entry}/move',     [RemindersController::class, 'moveEntry'])->name('move');
         Route::get('/poll',                      [RemindersController::class, 'poll'])->name('poll');
         Route::post('/export',                   [RemindersController::class, 'export'])->name('export');
+    });
+
+    // Factory Training
+    Route::middleware('can:factory_training')->prefix('training')->name('training.')->group(function () {
+        Route::get('/',                                          [TrainingController::class, 'index'])->name('index');
+        Route::get('/planned',                                   [TrainingController::class, 'planned'])->name('planned');
+        Route::post('/machines',                                 [TrainingController::class, 'storeMachine'])->name('machines.store');
+        Route::put('/machines/{machine}',                        [TrainingController::class, 'updateMachine'])->name('machines.update');
+        Route::delete('/machines/{machine}',                     [TrainingController::class, 'destroyMachine'])->name('machines.destroy');
+        Route::post('/operators',                                [TrainingController::class, 'storeOperator'])->name('operators.store');
+        Route::put('/operators/{operator}',                      [TrainingController::class, 'updateOperator'])->name('operators.update');
+        Route::delete('/operators/{operator}',                   [TrainingController::class, 'destroyOperator'])->name('operators.destroy');
+        Route::post('/records',                                  [TrainingController::class, 'storeRecord'])->name('records.store');
+        Route::delete('/records/{record}',                       [TrainingController::class, 'destroyRecord'])->name('records.destroy');
+        Route::get('/records/{record}/pdf',                      [TrainingController::class, 'downloadPdf'])->name('records.pdf');
+        Route::post('/planned',                                  [TrainingController::class, 'storePlanned'])->name('planned.store');
+        Route::delete('/planned/{planned}',                      [TrainingController::class, 'destroyPlanned'])->name('planned.destroy');
+        Route::patch('/planned/{planned}/complete',              [TrainingController::class, 'completePlanned'])->name('planned.complete');
     });
 
     // Key Actions

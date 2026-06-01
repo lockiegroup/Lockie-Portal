@@ -18,6 +18,7 @@ class User extends Authenticatable
         'policy_settings'    => 'Policy Settings',
         'key_accounts_admin' => 'Key Accounts Admin',
         'reminders'          => 'Order Reminders',
+        'factory_training'   => 'Factory Training',
     ];
 
     const MODULES = [
