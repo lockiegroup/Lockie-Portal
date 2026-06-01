@@ -31,8 +31,10 @@ class TrainingController extends Controller
             ->orderBy('trained_date', 'desc')
             ->get();
 
-        $matrix = [];
+        $matrix        = [];
+        $recordHistory = [];
         foreach ($records as $record) {
+            $recordHistory[$record->operator_id][$record->machine_id][] = $record;
             if (!isset($matrix[$record->operator_id][$record->machine_id])) {
                 $matrix[$record->operator_id][$record->machine_id] = $record;
             }
@@ -49,7 +51,7 @@ class TrainingController extends Controller
         }
 
         return view('training.index', compact(
-            'machines', 'operators', 'matrix', 'plannedMatrix', 'categories', 'departments'
+            'machines', 'operators', 'matrix', 'recordHistory', 'plannedMatrix', 'categories', 'departments'
         ));
     }
 

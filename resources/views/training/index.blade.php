@@ -99,8 +99,9 @@
     $matrixJson = [];
     foreach ($operators as $op) {
         foreach ($machines as $mac) {
-            $rec   = $matrix[$op->id][$mac->id] ?? null;
-            $plans = $plannedMatrix[$op->id][$mac->id] ?? [];
+            $rec     = $matrix[$op->id][$mac->id] ?? null;
+            $allRecs = $recordHistory[$op->id][$mac->id] ?? [];
+            $plans   = $plannedMatrix[$op->id][$mac->id] ?? [];
             $matrixJson[$op->id][$mac->id] = [
                 'record' => $rec ? [
                     'id'           => $rec->id,
@@ -112,6 +113,15 @@
                     'status'       => $rec->status(),
                     'delete_url'   => route('training.records.destroy', $rec->id),
                 ] : null,
+                'history' => array_map(fn($r) => [
+                    'id'           => $r->id,
+                    'trained_date' => $r->trained_date->format('d M Y'),
+                    'notes'        => $r->notes,
+                    'has_pdf'      => (bool)$r->pdf_path,
+                    'pdf_url'      => $r->pdf_path ? route('training.records.pdf', $r->id) : null,
+                    'added_by'     => $r->addedBy?->name,
+                    'delete_url'   => route('training.records.destroy', $r->id),
+                ], count($allRecs) > 1 ? array_slice($allRecs, 1) : []),
                 'planned' => array_map(fn($p) => [
                     'id'           => $p->id,
                     'date'         => $p->planned_date->format('d M Y'),
@@ -174,19 +184,20 @@
                                 $rec        = $matrix[$op->id][$mac->id] ?? null;
                                 $hasPlanned = !empty($plannedMatrix[$op->id][$mac->id]);
                                 $status     = $rec ? $rec->status() : 'none';
-                                $bgColor    = match($status) {
-                                    'valid'     => '#dcfce7',
-                                    'expiring'  => '#fef3c7',
-                                    'expired'   => '#fee2e2',
-                                    'no_expiry' => '#dbeafe',
-                                    default     => '#f8fafc',
+                                $firstPlan = ($status === 'none' && $hasPlanned) ? ($plannedMatrix[$op->id][$mac->id][0] ?? null) : null;
+                                $bgColor   = match(true) {
+                                    $status === 'valid' || $status === 'no_expiry' => '#dcfce7',
+                                    $status === 'expiring'                         => '#fef3c7',
+                                    $status === 'expired'                          => '#fee2e2',
+                                    $firstPlan !== null                            => '#fff7ed',
+                                    default                                        => '#f8fafc',
                                 };
-                                $txtColor = match($status) {
-                                    'valid'     => '#166534',
-                                    'expiring'  => '#92400e',
-                                    'expired'   => '#991b1b',
-                                    'no_expiry' => '#1e40af',
-                                    default     => '#94a3b8',
+                                $txtColor = match(true) {
+                                    $status === 'valid' || $status === 'no_expiry' => '#166534',
+                                    $status === 'expiring'                         => '#92400e',
+                                    $status === 'expired'                          => '#991b1b',
+                                    $firstPlan !== null                            => '#c2410c',
+                                    default                                        => '#94a3b8',
                                 };
                                 $expiryLabel = null;
                                 if ($rec && $mac->retrain_months && in_array($status, ['expiring', 'expired'])) {
@@ -196,7 +207,10 @@
                             <td style="padding:4px 6px;text-align:center;border-left:1px solid #f1f5f9;vertical-align:middle;">
                                 <button onclick="openCell({{ $op->id }}, {{ $mac->id }})"
                                     style="display:inline-flex;align-items:center;justify-content:center;gap:3px;padding:4px 7px;border-radius:6px;background:{{ $bgColor }};color:{{ $txtColor }};border:none;cursor:pointer;font-size:0.72rem;font-weight:600;min-width:90px;position:relative;">
-                                    @if($status === 'none')
+                                    @if($firstPlan)
+                                        <span style="font-size:0.68rem;">Planned</span>
+                                        <span>{{ $firstPlan->planned_date->format('d M y') }}</span>
+                                    @elseif($status === 'none')
                                         <span style="color:#cbd5e1;">—</span>
                                     @elseif($status === 'valid' || $status === 'no_expiry')
                                         <span>✓</span>
@@ -208,7 +222,7 @@
                                         <span>✗</span>
                                         <span>due {{ $expiryLabel }}</span>
                                     @endif
-                                    @if($hasPlanned)
+                                    @if($hasPlanned && $status !== 'none')
                                     <span title="Planned session" style="position:absolute;top:2px;right:3px;font-size:0.6rem;color:#6366f1;">📅</span>
                                     @endif
                                 </button>
@@ -266,6 +280,12 @@
                             Delete Record
                         </button>
                     </form>
+                </div>
+
+                {{-- Training history --}}
+                <div id="modal-history-section" style="display:none;margin-bottom:1.25rem;">
+                    <p style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 0.5rem;">Previous Records</p>
+                    <div id="modal-history-list"></div>
                 </div>
 
                 {{-- Planned sessions --}}
@@ -740,6 +760,31 @@ window.openCell = function(operatorId, machineId) {
         document.getElementById('modal-delete-record-form').action = cell.record.delete_url;
     } else {
         recSection.style.display = 'none';
+    }
+
+    // History section
+    var histSection = document.getElementById('modal-history-section');
+    var histList    = document.getElementById('modal-history-list');
+    if (cell.history && cell.history.length > 0) {
+        histSection.style.display = 'block';
+        histList.innerHTML = '';
+        cell.history.forEach(function(r) {
+            var row = document.createElement('div');
+            row.style.cssText = 'display:flex;align-items:center;gap:0.5rem;padding:0.5rem 0.75rem;background:#f8fafc;border-radius:8px;margin-bottom:0.375rem;border:1px solid #e2e8f0;';
+            var pdfBtn = r.has_pdf ? '<a href="' + r.pdf_url + '" target="_blank" style="font-size:0.75rem;color:#2563eb;font-weight:600;text-decoration:none;">PDF</a>' : '';
+            var byTxt  = r.added_by ? '<span style="font-size:0.72rem;color:#94a3b8;">' + escHtml(r.added_by) + '</span>' : '';
+            row.innerHTML =
+                '<span style="font-size:0.8125rem;font-weight:600;color:#475569;flex:1;">' + r.trained_date + '</span>' +
+                byTxt + pdfBtn +
+                '<form method="POST" action="' + r.delete_url + '" style="margin:0;" onsubmit="return confirm(\'Delete this record?\')">' +
+                '<input type="hidden" name="_token" value="{{ csrf_token() }}">' +
+                '<input type="hidden" name="_method" value="DELETE">' +
+                '<button type="submit" style="padding:2px 7px;border-radius:6px;border:1px solid #fca5a5;background:#fff;color:#dc2626;font-size:0.7rem;cursor:pointer;">✕</button>' +
+                '</form>';
+            histList.appendChild(row);
+        });
+    } else {
+        histSection.style.display = 'none';
     }
 
     var plannedSection = document.getElementById('modal-planned-section');
