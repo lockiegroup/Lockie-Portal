@@ -78,6 +78,7 @@
     </div>
 
     {{-- Training Matrix --}}
+    @php $matrixJson = []; @endphp
     @if($operators->isEmpty() || $machines->isEmpty())
     <div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:3rem;text-align:center;color:#94a3b8;font-size:0.875rem;">
         @if($operators->isEmpty() && $machines->isEmpty())
