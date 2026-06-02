@@ -195,7 +195,6 @@ Route::middleware(['auth', 'otp'])->group(function () {
     // Read-only: full-access OR view-only permission
     Route::middleware('can:factory_training_view')->prefix('training')->name('training.')->group(function () {
         Route::get('/',                                          [TrainingController::class, 'index'])->name('index');
-        Route::get('/planned',                                   [TrainingController::class, 'planned'])->name('planned');
         Route::get('/records/{record}/pdf',                      [TrainingController::class, 'downloadPdf'])->name('records.pdf');
     });
     // Edit: full-access permission only

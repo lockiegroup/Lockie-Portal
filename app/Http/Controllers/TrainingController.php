@@ -57,26 +57,6 @@ class TrainingController extends Controller
         ));
     }
 
-    public function planned(Request $request): View
-    {
-        $upcoming = TrainingPlanned::with(['machine', 'operator'])
-            ->where('completed', false)
-            ->orderBy('planned_date')
-            ->get();
-
-        $recentlyCompleted = TrainingPlanned::with(['machine', 'operator'])
-            ->where('completed', true)
-            ->where('updated_at', '>=', now()->subDays(30))
-            ->orderBy('planned_date', 'desc')
-            ->get();
-
-        $machines  = TrainingMachine::where('active', true)->orderBy('category')->orderBy('name')->get();
-        $operators = TrainingOperator::where('active', true)->orderBy('name')->get();
-        $canEdit   = auth()->user()->hasPermission('factory_training');
-
-        return view('training.planned', compact('upcoming', 'recentlyCompleted', 'machines', 'operators', 'canEdit'));
-    }
-
     public function reorderMachines(Request $request): JsonResponse
     {
         $data = $request->validate(['order' => 'required|array', 'order.*' => 'integer|exists:training_machines,id']);
