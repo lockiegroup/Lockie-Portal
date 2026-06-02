@@ -87,6 +87,24 @@
 
     {{-- Training Matrix --}}
     @php $matrixJson = []; @endphp
+
+    {{-- Department filter --}}
+    @if($categories->isNotEmpty())
+    <div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:1rem;align-items:center;">
+        <span style="font-size:0.72rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-right:0.25rem;">Filter:</span>
+        <button onclick="filterDept('__all__')" id="dept-btn-__all__"
+            style="padding:0.3rem 0.75rem;border-radius:9999px;border:1px solid #334155;background:#334155;color:#fff;font-size:0.78rem;font-weight:600;cursor:pointer;">
+            All
+        </button>
+        @foreach($categories as $cat)
+        <button onclick="filterDept('{{ addslashes($cat) }}')" id="dept-btn-{{ Str::slug($cat) }}"
+            style="padding:0.3rem 0.75rem;border-radius:9999px;border:1px solid #e2e8f0;background:#fff;color:#475569;font-size:0.78rem;font-weight:600;cursor:pointer;">
+            {{ $cat }}
+        </button>
+        @endforeach
+    </div>
+    @endif
+
     @if($operators->isEmpty() || $machines->isEmpty())
     <div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:3rem;text-align:center;color:#94a3b8;font-size:0.875rem;">
         @if($operators->isEmpty() && $machines->isEmpty())
@@ -155,7 +173,7 @@
                     <tr>
                         <th style="position:sticky;left:0;z-index:3;background:#f8fafc;padding:8px 14px;text-align:left;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid #e2e8f0;border-right:2px solid #e2e8f0;min-width:160px;">Operator</th>
                         @foreach($machineGroups as $cat => $catMachines)
-                        <th colspan="{{ count($catMachines) }}"
+                        <th colspan="{{ count($catMachines) }}" data-dept="{{ $cat }}"
                             style="padding:6px 10px;text-align:center;font-size:0.68rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;background:#f8fafc;border-bottom:1px solid #e2e8f0;border-left:1px solid #e2e8f0;">
                             {{ $cat }}
                         </th>
@@ -165,7 +183,7 @@
                         <th style="position:sticky;left:0;z-index:3;background:#f8fafc;padding:0;border-bottom:2px solid #e2e8f0;border-right:2px solid #e2e8f0;"></th>
                         @foreach($machineGroups as $cat => $catMachines)
                             @foreach($catMachines as $mac)
-                            <th style="padding:6px 10px;text-align:center;font-size:0.75rem;font-weight:600;color:#334155;border-bottom:2px solid #e2e8f0;border-left:1px solid #f1f5f9;min-width:110px;max-width:140px;overflow:hidden;text-overflow:ellipsis;"
+                            <th data-dept="{{ $cat }}" style="padding:6px 10px;text-align:center;font-size:0.75rem;font-weight:600;color:#334155;border-bottom:2px solid #e2e8f0;border-left:1px solid #f1f5f9;min-width:110px;max-width:140px;overflow:hidden;text-overflow:ellipsis;"
                                 title="{{ $mac->name }}">
                                 {{ Str::limit($mac->name, 18) }}
                                 @if($mac->retrain_months)
@@ -208,7 +226,7 @@
                                     $expiryLabel = $rec->trained_date->copy()->addMonths($mac->retrain_months)->format('d M y');
                                 }
                             @endphp
-                            <td style="padding:4px 6px;text-align:center;border-left:1px solid #f1f5f9;vertical-align:middle;">
+                            <td data-dept="{{ $cat }}" style="padding:4px 6px;text-align:center;border-left:1px solid #f1f5f9;vertical-align:middle;">
                                 <span @if($canEdit) onclick="openCell({{ $op->id }}, {{ $mac->id }})" @endif
                                     style="display:inline-flex;align-items:center;justify-content:center;gap:3px;padding:4px 7px;border-radius:6px;background:{{ $bgColor }};color:{{ $txtColor }};font-size:0.72rem;font-weight:600;min-width:90px;position:relative;{{ $canEdit ? 'cursor:pointer;' : '' }}">
                                     @if($firstPlan)
@@ -698,6 +716,27 @@
 </main>
 
 <script>
+function filterDept(dept) {
+    // Update pill styles
+    var allBtn = document.getElementById('dept-btn-__all__');
+    if (allBtn) {
+        allBtn.style.background = dept === '__all__' ? '#334155' : '#fff';
+        allBtn.style.color      = dept === '__all__' ? '#fff' : '#475569';
+        allBtn.style.borderColor = dept === '__all__' ? '#334155' : '#e2e8f0';
+    }
+    document.querySelectorAll('[id^="dept-btn-"]').forEach(function(btn) {
+        if (btn.id === 'dept-btn-__all__') return;
+        var active = (dept !== '__all__' && btn.getAttribute('onclick') === "filterDept('" + dept + "')");
+        btn.style.background  = active ? '#334155' : '#fff';
+        btn.style.color       = active ? '#fff' : '#475569';
+        btn.style.borderColor = active ? '#334155' : '#e2e8f0';
+    });
+    // Show/hide columns
+    document.querySelectorAll('[data-dept]').forEach(function(el) {
+        el.style.display = (dept === '__all__' || el.getAttribute('data-dept') === dept) ? '' : 'none';
+    });
+}
+
 @if($canEdit)
 var matrixData = @json($matrixJson);
 
