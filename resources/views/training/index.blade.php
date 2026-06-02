@@ -205,6 +205,7 @@
                                 $rec        = $matrix[$op->id][$mac->id] ?? null;
                                 $hasPlanned = !empty($plannedMatrix[$op->id][$mac->id]);
                                 $status     = $rec ? $rec->status() : 'none';
+                                $hasPdf     = $rec && $rec->pdf_path;
                                 $firstPlan = ($status === 'none' && $hasPlanned) ? ($plannedMatrix[$op->id][$mac->id][0] ?? null) : null;
                                 $bgColor   = match(true) {
                                     $status === 'valid' || $status === 'no_expiry' => '#dcfce7',
@@ -227,7 +228,8 @@
                             @endphp
                             <td data-dept="{{ $cat }}" style="padding:4px 6px;text-align:center;border-left:1px solid #f1f5f9;vertical-align:middle;">
                                 <span @if($canEdit) onclick="openCell({{ $op->id }}, {{ $mac->id }})" @endif
-                                    style="display:inline-flex;align-items:center;justify-content:center;gap:3px;padding:4px 7px;border-radius:6px;background:{{ $bgColor }};color:{{ $txtColor }};font-size:0.72rem;font-weight:600;min-width:90px;position:relative;{{ $canEdit ? 'cursor:pointer;' : '' }}">
+                                    style="display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:4px 7px;border-radius:6px;background:{{ $bgColor }};color:{{ $txtColor }};font-size:0.72rem;font-weight:600;min-width:90px;position:relative;{{ $canEdit ? 'cursor:pointer;' : '' }}">
+                                    <span style="display:inline-flex;align-items:center;justify-content:center;gap:3px;">
                                     @if($firstPlan)
                                         <span style="font-size:0.68rem;">Planned</span>
                                         <span>{{ $firstPlan->planned_date->format('d M y') }}</span>
@@ -242,6 +244,10 @@
                                     @elseif($status === 'expired')
                                         <span>✗</span>
                                         <span>due {{ $expiryLabel }}</span>
+                                    @endif
+                                    </span>
+                                    @if($rec && !$hasPdf)
+                                    <span style="font-size:0.6rem;font-weight:700;color:#92400e;background:#fef3c7;border-radius:3px;padding:0px 4px;letter-spacing:0.02em;">No PDF</span>
                                     @endif
                                     @if($hasPlanned && $status !== 'none')
                                     <span title="Planned session" style="position:absolute;top:2px;right:3px;font-size:0.6rem;color:#6366f1;">📅</span>
