@@ -72,8 +72,9 @@ class TrainingController extends Controller
 
         $machines  = TrainingMachine::where('active', true)->orderBy('category')->orderBy('name')->get();
         $operators = TrainingOperator::where('active', true)->orderBy('name')->get();
+        $canEdit   = auth()->user()->hasPermission('factory_training');
 
-        return view('training.planned', compact('upcoming', 'recentlyCompleted', 'machines', 'operators'));
+        return view('training.planned', compact('upcoming', 'recentlyCompleted', 'machines', 'operators', 'canEdit'));
     }
 
     public function storeMachine(Request $request): RedirectResponse

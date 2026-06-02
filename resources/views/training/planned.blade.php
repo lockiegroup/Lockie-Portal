@@ -23,6 +23,7 @@
     @endif
 
     {{-- Add Planned Session form --}}
+    @if($canEdit)
     <div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:1.25rem 1.5rem;margin-bottom:1.5rem;">
         <p style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 1rem;">Add Planned Session</p>
         <form action="{{ route('training.planned.store') }}" method="POST">
@@ -69,6 +70,7 @@
             </div>
         </form>
     </div>
+    @endif
 
     {{-- Upcoming sessions --}}
     <div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;margin-bottom:1.5rem;">
@@ -91,7 +93,7 @@
                     <th style="padding:0.625rem 1rem;text-align:left;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid #e2e8f0;">Operator</th>
                     <th style="padding:0.625rem 1rem;text-align:left;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid #e2e8f0;">Machine</th>
                     <th style="padding:0.625rem 1rem;text-align:left;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid #e2e8f0;">Notes</th>
-                    <th style="padding:0.625rem 1rem;text-align:right;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid #e2e8f0;">Actions</th>
+                    @if($canEdit)<th style="padding:0.625rem 1rem;text-align:right;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid #e2e8f0;">Actions</th>@endif
                 </tr>
             </thead>
             <tbody>
@@ -118,6 +120,7 @@
                     <td style="padding:0.75rem 1rem;color:#64748b;font-size:0.8rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ $session->notes }}">
                         {{ $session->notes ?: '—' }}
                     </td>
+                    @if($canEdit)
                     <td style="padding:0.75rem 1rem;text-align:right;white-space:nowrap;">
                         <button onclick="markComplete({{ $session->id }}, '{{ route('training.planned.complete', $session->id) }}', this)"
                             style="padding:0.275rem 0.625rem;border-radius:7px;background:#0f172a;color:#fff;border:none;cursor:pointer;font-size:0.75rem;font-weight:600;margin-right:0.375rem;">
@@ -132,6 +135,7 @@
                             </button>
                         </form>
                     </td>
+                    @endif
                 </tr>
                 @endforeach
             </tbody>
