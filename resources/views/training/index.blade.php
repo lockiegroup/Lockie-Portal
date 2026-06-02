@@ -183,9 +183,8 @@
                         <th style="position:sticky;left:0;z-index:3;background:#f8fafc;padding:0;border-bottom:2px solid #e2e8f0;border-right:2px solid #e2e8f0;"></th>
                         @foreach($machineGroups as $cat => $catMachines)
                             @foreach($catMachines as $mac)
-                            <th data-dept="{{ $cat }}" style="padding:6px 10px;text-align:center;font-size:0.75rem;font-weight:600;color:#334155;border-bottom:2px solid #e2e8f0;border-left:1px solid #f1f5f9;min-width:110px;max-width:140px;overflow:hidden;text-overflow:ellipsis;"
-                                title="{{ $mac->name }}">
-                                {{ Str::limit($mac->name, 18) }}
+                            <th data-dept="{{ $cat }}" style="padding:6px 10px;text-align:center;font-size:0.75rem;font-weight:600;color:#334155;border-bottom:2px solid #e2e8f0;border-left:1px solid #f1f5f9;min-width:110px;">
+                                {{ $mac->name }}
                                 @if($mac->retrain_months)
                                 <div style="font-size:0.65rem;font-weight:400;color:#94a3b8;">{{ $mac->retrain_months }}mo</div>
                                 @endif
