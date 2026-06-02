@@ -453,7 +453,7 @@
                     </div>
                     <div class="machine-sort-group" data-reorder-url="{{ route('training.machines.reorder') }}" style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;">
                         @foreach($deptMachines as $mac)
-                        <div class="machine-row" data-id="{{ $mac->id }}" draggable="true"
+                        <div class="machine-row" data-id="{{ $mac->id }}"
                             style="padding:0.75rem 1rem;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:0.75rem;background:#fff;">
                             <span class="drag-handle" title="Drag to reorder"
                                 style="color:#cbd5e1;cursor:grab;flex-shrink:0;line-height:0;padding:2px;">
@@ -482,7 +482,7 @@
                             </form>
                         </div>
                         {{-- Edit form --}}
-                        <div id="machine-edit-{{ $mac->id }}" style="display:none;padding:0.875rem 1rem;background:#f8fafc;border-bottom:1px solid #e2e8f0;">
+                        <div id="machine-edit-{{ $mac->id }}" class="mac-no-drag" style="display:none;padding:0.875rem 1rem;background:#f8fafc;border-bottom:1px solid #e2e8f0;">
                             <form action="{{ route('training.machines.update', $mac->id) }}" method="POST">
                                 @csrf @method('PUT')
                                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;">
@@ -750,61 +750,31 @@ function filterDept(dept) {
     });
 }
 
-// Machine drag-and-drop reordering
-(function() {
-    var dragging = null, placeholder = null;
-
-    function initSortGroups() {
-        document.querySelectorAll('.machine-sort-group').forEach(function(group) {
-            group.querySelectorAll('.machine-row').forEach(function(row) {
-                row.addEventListener('dragstart', onDragStart);
-                row.addEventListener('dragend',   onDragEnd);
-                row.addEventListener('dragover',  onDragOver);
-                row.addEventListener('drop',      onDrop);
-            });
+// Machine drag-and-drop reordering via SortableJS
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.machine-sort-group').forEach(function(group) {
+        Sortable.create(group, {
+            handle: '.drag-handle',
+            filter: '.mac-no-drag',
+            preventOnFilter: false,
+            animation: 150,
+            onEnd: function() {
+                var ids = Array.from(group.querySelectorAll('.machine-row[data-id]')).map(function(r) { return r.dataset.id; });
+                // Keep each edit panel immediately after its machine row
+                ids.forEach(function(id) {
+                    var row  = group.querySelector('.machine-row[data-id="' + id + '"]');
+                    var edit = document.getElementById('machine-edit-' + id);
+                    if (row && edit) row.after(edit);
+                });
+                fetch(group.getAttribute('data-reorder-url'), {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content},
+                    body: JSON.stringify({order: ids})
+                });
+            }
         });
-    }
-
-    function onDragStart(e) {
-        dragging = this;
-        this.style.opacity = '0.4';
-        e.dataTransfer.effectAllowed = 'move';
-        placeholder = document.createElement('div');
-        placeholder.style.cssText = 'height:' + this.offsetHeight + 'px;background:#e0f2fe;border-bottom:1px solid #bae6fd;';
-    }
-
-    function onDragEnd(e) {
-        if (dragging) dragging.style.opacity = '';
-        if (placeholder && placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
-        dragging = null; placeholder = null;
-    }
-
-    function onDragOver(e) {
-        e.preventDefault();
-        if (!dragging || this === dragging || !this.classList.contains('machine-row')) return;
-        var group = this.closest('.machine-sort-group');
-        if (!dragging.closest('.machine-sort-group').isSameNode(group)) return;
-        var rect = this.getBoundingClientRect();
-        var after = e.clientY > rect.top + rect.height / 2;
-        group.insertBefore(placeholder, after ? this.nextSibling : this);
-    }
-
-    function onDrop(e) {
-        e.preventDefault();
-        if (!dragging || !placeholder || !placeholder.parentNode) return;
-        placeholder.parentNode.insertBefore(dragging, placeholder);
-        var group = dragging.closest('.machine-sort-group');
-        var url   = group.getAttribute('data-reorder-url');
-        var order = Array.from(group.querySelectorAll('.machine-row')).map(function(r) { return parseInt(r.getAttribute('data-id')); });
-        fetch(url, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')},
-            body: JSON.stringify({order: order})
-        });
-    }
-
-    document.addEventListener('DOMContentLoaded', initSortGroups);
-})();
+    });
+});
 
 @if($canEdit)
 var matrixData = @json($matrixJson);
@@ -949,4 +919,5 @@ function completePlanned(id, url, btn) {
 }
 @endif {{-- canEdit --}}
 </script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 </x-layout>
