@@ -201,6 +201,7 @@ Route::middleware(['auth', 'otp'])->group(function () {
     // Edit: full-access permission only
     Route::middleware('can:factory_training')->prefix('training')->name('training.')->group(function () {
         Route::post('/machines',                                 [TrainingController::class, 'storeMachine'])->name('machines.store');
+        Route::post('/machines/reorder',                         [TrainingController::class, 'reorderMachines'])->name('machines.reorder');
         Route::put('/machines/{machine}',                        [TrainingController::class, 'updateMachine'])->name('machines.update');
         Route::delete('/machines/{machine}',                     [TrainingController::class, 'destroyMachine'])->name('machines.destroy');
         Route::post('/operators',                                [TrainingController::class, 'storeOperator'])->name('operators.store');

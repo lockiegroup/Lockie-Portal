@@ -438,87 +438,101 @@
                     </form>
                 </div>
 
-                {{-- Machines list --}}
-                @php $allMachines = \App\Models\TrainingMachine::orderBy('category')->orderBy('name')->get(); @endphp
+                {{-- Machines list grouped by department --}}
+                @php
+                $allMachines = \App\Models\TrainingMachine::orderBy('category')->orderBy('sort_order')->orderBy('name')->get();
+                $machinesByDept = $allMachines->groupBy(fn($m) => $m->category ?: 'Uncategorised');
+                @endphp
                 @if($allMachines->isEmpty())
                 <p style="color:#94a3b8;font-size:0.875rem;text-align:center;padding:1rem 0;">No machines added yet.</p>
                 @else
-                <div style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;">
-                    @foreach($allMachines as $mac)
-                    <div style="padding:0.75rem 1rem;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:0.75rem;">
-                        <div style="flex:1;min-width:0;">
-                            <div style="font-size:0.8125rem;font-weight:600;color:{{ $mac->active ? '#1e293b' : '#94a3b8' }};">
-                                {{ $mac->name }}
-                                @if(!$mac->active)<span style="font-size:0.7rem;color:#94a3b8;font-weight:400;"> (inactive)</span>@endif
+                @foreach($machinesByDept as $deptName => $deptMachines)
+                <div style="margin-bottom:1rem;">
+                    <div style="font-size:0.68rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;padding:0.25rem 0;margin-bottom:0.25rem;border-bottom:1px solid #e2e8f0;">
+                        {{ $deptName }}
+                    </div>
+                    <div class="machine-sort-group" data-reorder-url="{{ route('training.machines.reorder') }}" style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;">
+                        @foreach($deptMachines as $mac)
+                        <div class="machine-row" data-id="{{ $mac->id }}" draggable="true"
+                            style="padding:0.75rem 1rem;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:0.75rem;background:#fff;">
+                            <span class="drag-handle" title="Drag to reorder"
+                                style="color:#cbd5e1;cursor:grab;flex-shrink:0;line-height:0;padding:2px;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="18" x2="16" y2="18"/></svg>
+                            </span>
+                            <div style="flex:1;min-width:0;">
+                                <div style="font-size:0.8125rem;font-weight:600;color:{{ $mac->active ? '#1e293b' : '#94a3b8' }};">
+                                    {{ $mac->name }}
+                                    @if(!$mac->active)<span style="font-size:0.7rem;color:#94a3b8;font-weight:400;"> (inactive)</span>@endif
+                                </div>
+                                @if($mac->retrain_months)
+                                <div style="font-size:0.75rem;color:#94a3b8;">Re-train: {{ $mac->retrain_months }}mo</div>
+                                @endif
                             </div>
-                            <div style="font-size:0.75rem;color:#94a3b8;">
-                                @if($mac->category){{ $mac->category }}@endif
-                                @if($mac->retrain_months) &middot; Re-train: {{ $mac->retrain_months }}mo @endif
-                            </div>
-                        </div>
-                        <button onclick="toggleEdit('machine-edit-{{ $mac->id }}')"
-                            style="padding:0.25rem 0.625rem;border-radius:7px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.75rem;cursor:pointer;">
-                            Edit
-                        </button>
-                        <form action="{{ route('training.machines.destroy', $mac->id) }}" method="POST" style="margin:0;"
-                            onsubmit="return confirm('Delete machine {{ addslashes($mac->name) }}? This cannot be undone.')">
-                            @csrf @method('DELETE')
-                            <button type="submit"
-                                style="padding:0.25rem 0.625rem;border-radius:7px;border:1px solid #fca5a5;background:#fff;color:#dc2626;font-size:0.75rem;cursor:pointer;">
-                                Delete
+                            <button onclick="toggleEdit('machine-edit-{{ $mac->id }}')"
+                                style="padding:0.25rem 0.625rem;border-radius:7px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.75rem;cursor:pointer;flex-shrink:0;">
+                                Edit
                             </button>
-                        </form>
-                    </div>
-                    {{-- Edit form --}}
-                    <div id="machine-edit-{{ $mac->id }}" style="display:none;padding:0.875rem 1rem;background:#f8fafc;border-bottom:1px solid #e2e8f0;">
-                        <form action="{{ route('training.machines.update', $mac->id) }}" method="POST">
-                            @csrf @method('PUT')
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;">
-                                <div>
-                                    <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Name *</label>
-                                    <input type="text" name="name" value="{{ $mac->name }}" required maxlength="100"
-                                        style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
-                                </div>
-                                <div>
-                                    <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Department</label>
-                                    <select name="category"
-                                        style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;background:#fff;box-sizing:border-box;">
-                                        <option value="">— None —</option>
-                                        @foreach($departments as $dept)
-                                        <option value="{{ $dept->name }}" {{ $mac->category === $dept->name ? 'selected' : '' }}>{{ $dept->name }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                            </div>
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.875rem;">
-                                <div>
-                                    <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Re-train Interval (months)</label>
-                                    <input type="number" name="retrain_months" value="{{ $mac->retrain_months }}" min="1" max="120"
-                                        style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
-                                </div>
-                                <div style="display:flex;align-items:center;padding-top:1.5rem;">
-                                    <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.8125rem;color:#334155;cursor:pointer;">
-                                        <input type="hidden" name="active" value="0">
-                                        <input type="checkbox" name="active" value="1" {{ $mac->active ? 'checked' : '' }}
-                                            style="width:15px;height:15px;cursor:pointer;">
-                                        Active
-                                    </label>
-                                </div>
-                            </div>
-                            <div style="display:flex;gap:0.5rem;">
+                            <form action="{{ route('training.machines.destroy', $mac->id) }}" method="POST" style="margin:0;flex-shrink:0;"
+                                onsubmit="return confirm('Delete machine {{ addslashes($mac->name) }}? This cannot be undone.')">
+                                @csrf @method('DELETE')
                                 <button type="submit"
-                                    style="padding:0.35rem 0.75rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.75rem;font-weight:600;border:none;cursor:pointer;">
-                                    Save
+                                    style="padding:0.25rem 0.625rem;border-radius:7px;border:1px solid #fca5a5;background:#fff;color:#dc2626;font-size:0.75rem;cursor:pointer;">
+                                    Delete
                                 </button>
-                                <button type="button" onclick="toggleEdit('machine-edit-{{ $mac->id }}')"
-                                    style="padding:0.35rem 0.75rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.75rem;cursor:pointer;">
-                                    Cancel
-                                </button>
-                            </div>
-                        </form>
+                            </form>
+                        </div>
+                        {{-- Edit form --}}
+                        <div id="machine-edit-{{ $mac->id }}" style="display:none;padding:0.875rem 1rem;background:#f8fafc;border-bottom:1px solid #e2e8f0;">
+                            <form action="{{ route('training.machines.update', $mac->id) }}" method="POST">
+                                @csrf @method('PUT')
+                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;">
+                                    <div>
+                                        <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Name *</label>
+                                        <input type="text" name="name" value="{{ $mac->name }}" required maxlength="100"
+                                            style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
+                                    </div>
+                                    <div>
+                                        <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Department</label>
+                                        <select name="category"
+                                            style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;background:#fff;box-sizing:border-box;">
+                                            <option value="">— None —</option>
+                                            @foreach($departments as $dept)
+                                            <option value="{{ $dept->name }}" {{ $mac->category === $dept->name ? 'selected' : '' }}>{{ $dept->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
+                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.875rem;">
+                                    <div>
+                                        <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Re-train Interval (months)</label>
+                                        <input type="number" name="retrain_months" value="{{ $mac->retrain_months }}" min="1" max="120"
+                                            style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
+                                    </div>
+                                    <div style="display:flex;align-items:center;padding-top:1.5rem;">
+                                        <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.8125rem;color:#334155;cursor:pointer;">
+                                            <input type="hidden" name="active" value="0">
+                                            <input type="checkbox" name="active" value="1" {{ $mac->active ? 'checked' : '' }}
+                                                style="width:15px;height:15px;cursor:pointer;">
+                                            Active
+                                        </label>
+                                    </div>
+                                </div>
+                                <div style="display:flex;gap:0.5rem;">
+                                    <button type="submit"
+                                        style="padding:0.35rem 0.75rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.75rem;font-weight:600;border:none;cursor:pointer;">
+                                        Save
+                                    </button>
+                                    <button type="button" onclick="toggleEdit('machine-edit-{{ $mac->id }}')"
+                                        style="padding:0.35rem 0.75rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.75rem;cursor:pointer;">
+                                        Cancel
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        @endforeach
                     </div>
-                    @endforeach
                 </div>
+                @endforeach
                 @endif
             </div>
         </div>
@@ -735,6 +749,62 @@ function filterDept(dept) {
         el.style.display = (dept === '__all__' || el.getAttribute('data-dept') === dept) ? '' : 'none';
     });
 }
+
+// Machine drag-and-drop reordering
+(function() {
+    var dragging = null, placeholder = null;
+
+    function initSortGroups() {
+        document.querySelectorAll('.machine-sort-group').forEach(function(group) {
+            group.querySelectorAll('.machine-row').forEach(function(row) {
+                row.addEventListener('dragstart', onDragStart);
+                row.addEventListener('dragend',   onDragEnd);
+                row.addEventListener('dragover',  onDragOver);
+                row.addEventListener('drop',      onDrop);
+            });
+        });
+    }
+
+    function onDragStart(e) {
+        dragging = this;
+        this.style.opacity = '0.4';
+        e.dataTransfer.effectAllowed = 'move';
+        placeholder = document.createElement('div');
+        placeholder.style.cssText = 'height:' + this.offsetHeight + 'px;background:#e0f2fe;border-bottom:1px solid #bae6fd;';
+    }
+
+    function onDragEnd(e) {
+        if (dragging) dragging.style.opacity = '';
+        if (placeholder && placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
+        dragging = null; placeholder = null;
+    }
+
+    function onDragOver(e) {
+        e.preventDefault();
+        if (!dragging || this === dragging || !this.classList.contains('machine-row')) return;
+        var group = this.closest('.machine-sort-group');
+        if (!dragging.closest('.machine-sort-group').isSameNode(group)) return;
+        var rect = this.getBoundingClientRect();
+        var after = e.clientY > rect.top + rect.height / 2;
+        group.insertBefore(placeholder, after ? this.nextSibling : this);
+    }
+
+    function onDrop(e) {
+        e.preventDefault();
+        if (!dragging || !placeholder || !placeholder.parentNode) return;
+        placeholder.parentNode.insertBefore(dragging, placeholder);
+        var group = dragging.closest('.machine-sort-group');
+        var url   = group.getAttribute('data-reorder-url');
+        var order = Array.from(group.querySelectorAll('.machine-row')).map(function(r) { return parseInt(r.getAttribute('data-id')); });
+        fetch(url, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')},
+            body: JSON.stringify({order: order})
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', initSortGroups);
+})();
 
 @if($canEdit)
 var matrixData = @json($matrixJson);

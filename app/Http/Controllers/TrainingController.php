@@ -19,7 +19,7 @@ class TrainingController extends Controller
 {
     public function index(Request $request): View
     {
-        $machines    = TrainingMachine::where('active', true)->orderBy('category')->orderBy('name')->get();
+        $machines    = TrainingMachine::where('active', true)->orderBy('category')->orderBy('sort_order')->orderBy('name')->get();
         $operators   = TrainingOperator::where('active', true)->orderBy('name')->get();
         $departments = TrainingDepartment::orderBy('name')->get();
         $categories  = $machines->pluck('category')->filter()->unique()->sort()->values();
@@ -75,6 +75,15 @@ class TrainingController extends Controller
         $canEdit   = auth()->user()->hasPermission('factory_training');
 
         return view('training.planned', compact('upcoming', 'recentlyCompleted', 'machines', 'operators', 'canEdit'));
+    }
+
+    public function reorderMachines(Request $request): JsonResponse
+    {
+        $data = $request->validate(['order' => 'required|array', 'order.*' => 'integer|exists:training_machines,id']);
+        foreach ($data['order'] as $i => $id) {
+            TrainingMachine::where('id', $id)->update(['sort_order' => $i]);
+        }
+        return response()->json(['ok' => true]);
     }
 
     public function storeMachine(Request $request): RedirectResponse
