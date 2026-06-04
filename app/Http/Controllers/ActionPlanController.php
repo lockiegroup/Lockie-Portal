@@ -42,10 +42,10 @@ class ActionPlanController extends Controller
         $this->authorisePlan($plan);
 
         $plan->load(['members.user', 'items.assignedUser']);
-        $grouped   = $plan->items->groupBy(fn($i) => $i->week_commencing ? $i->week_commencing->format('Y-m') : 'no-date');
-        $allUsers  = User::where('is_active', true)->orderBy('name')->get();
+        $byYear   = $plan->items->groupBy(fn($i) => $i->week_commencing ? $i->week_commencing->format('Y') : 'no-date');
+        $allUsers = User::where('is_active', true)->orderBy('name')->get();
 
-        return view('action-plans.show', compact('plan', 'grouped', 'allUsers'));
+        return view('action-plans.show', compact('plan', 'byYear', 'allUsers'));
     }
 
     public function store(Request $request): RedirectResponse

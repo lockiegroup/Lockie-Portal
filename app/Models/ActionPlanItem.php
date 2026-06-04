@@ -17,6 +17,8 @@ class ActionPlanItem extends Model
         return ['week_commencing' => 'date'];
     }
 
+    const BRANDS = ['Lockie', 'JWP', 'H&H', 'All'];
+
     const STATUSES = [
         'not_started' => 'Not Started',
         'in_progress' => 'In Progress',
