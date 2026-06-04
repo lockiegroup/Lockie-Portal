@@ -14,8 +14,7 @@ class ActionPlanController extends Controller
 {
     private function isAdmin(): bool
     {
-        $user = auth()->user();
-        return $user->isMaster() || !empty($user->permissions);
+        return auth()->user()->isMaster();
     }
 
     private function authorisePlan(ActionPlan $plan): void
