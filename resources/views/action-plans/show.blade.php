@@ -34,6 +34,11 @@
         </div>
     </div>
 
+    @php
+    $dateMin = $plan->start_date?->format('Y-m-d') ?? '';
+    $dateMax = $plan->end_date?->format('Y-m-d')   ?? '';
+    @endphp
+
     @if(session('success'))
     <div style="margin-bottom:1rem;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;font-size:0.875rem;border-radius:8px;padding:0.75rem 1rem;">{{ session('success') }}</div>
     @endif
@@ -101,11 +106,6 @@
             </div>
         </form>
     </div>
-
-    @php
-    $dateMin = $plan->start_date?->format('Y-m-d') ?? '';
-    $dateMax = $plan->end_date?->format('Y-m-d')   ?? '';
-    @endphp
 
     {{-- Task tables grouped by month --}}
     @if($grouped->isEmpty())
