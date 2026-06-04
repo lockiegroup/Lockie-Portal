@@ -286,6 +286,9 @@ Route::middleware(['auth', 'otp'])->group(function () {
             Route::post('/',                                     [ActionPlanController::class, 'store'])->name('store');
             Route::put('/{plan}',                                [ActionPlanController::class, 'update'])->name('update');
             Route::delete('/{plan}',                             [ActionPlanController::class, 'destroy'])->name('destroy');
+            Route::post('/{plan}/archive',                       [ActionPlanController::class, 'archive'])->name('archive');
+            Route::post('/{plan}/unarchive',                     [ActionPlanController::class, 'unarchive'])->name('unarchive');
+            Route::post('/{plan}/duplicate',                     [ActionPlanController::class, 'duplicate'])->name('duplicate');
             Route::post('/{plan}/members',                       [ActionPlanController::class, 'addMember'])->name('members.add');
             Route::delete('/{plan}/members/{user}',              [ActionPlanController::class, 'removeMember'])->name('members.remove');
         });

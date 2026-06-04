@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ActionPlan;
 use App\Models\ActionPlanItem;
+use App\Models\ActionPlanMember;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,28 +25,33 @@ class ActionPlanController extends Controller
         }
     }
 
-    public function index(): View
+    public function index(Request $request): View
     {
-        $user  = auth()->user();
+        $user       = auth()->user();
+        $showArchived = $request->boolean('archived');
+
+        $query = ActionPlan::with(['members.user'])
+            ->where('is_archived', $showArchived)
+            ->orderBy('name');
+
         $plans = $this->isAdmin()
-            ? ActionPlan::with(['members.user'])->orderBy('name')->get()
-            : ActionPlan::whereHas('members', fn($q) => $q->where('user_id', $user->id))
-                ->with(['members.user'])->orderBy('name')->get();
+            ? $query->get()
+            : $query->whereHas('members', fn($q) => $q->where('user_id', $user->id))->get();
 
         $allUsers = $this->isAdmin() ? User::where('is_active', true)->orderBy('name')->get() : collect();
 
-        return view('action-plans.index', compact('plans', 'allUsers'));
+        return view('action-plans.index', compact('plans', 'allUsers', 'showArchived'));
     }
 
     public function show(ActionPlan $plan): View
     {
         $this->authorisePlan($plan);
 
-        $plan->load(['members.user', 'items.assignedUser']);
-        $byYear   = $plan->items->groupBy(fn($i) => $i->week_commencing ? $i->week_commencing->format('Y') : 'no-date');
+        $plan->load(['members.user', 'items']);
+        $grouped  = $plan->items->groupBy(fn($i) => $i->week_commencing ? $i->week_commencing->format('Y-m') : 'no-date');
         $allUsers = User::where('is_active', true)->orderBy('name')->get();
 
-        return view('action-plans.show', compact('plan', 'byYear', 'allUsers'));
+        return view('action-plans.show', compact('plan', 'grouped', 'allUsers'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -71,6 +77,51 @@ class ActionPlanController extends Controller
         return redirect()->route('action-plans.index')->with('success', 'Plan deleted.');
     }
 
+    public function archive(ActionPlan $plan): RedirectResponse
+    {
+        abort_unless($this->isAdmin(), 403);
+        $plan->update(['is_archived' => true]);
+        return redirect()->route('action-plans.index')->with('success', '"' . $plan->name . '" archived.');
+    }
+
+    public function unarchive(ActionPlan $plan): RedirectResponse
+    {
+        abort_unless($this->isAdmin(), 403);
+        $plan->update(['is_archived' => false]);
+        return redirect()->route('action-plans.index', ['archived' => 1])->with('success', '"' . $plan->name . '" restored.');
+    }
+
+    public function duplicate(ActionPlan $plan): RedirectResponse
+    {
+        abort_unless($this->isAdmin(), 403);
+
+        $newPlan = ActionPlan::create([
+            'name'        => $plan->name . ' (Copy)',
+            'description' => $plan->description,
+            'created_by'  => auth()->id(),
+        ]);
+
+        // Copy members
+        foreach ($plan->members as $member) {
+            $newPlan->members()->create(['user_id' => $member->user_id]);
+        }
+
+        // Copy items, reset status and notes
+        foreach ($plan->items as $item) {
+            $newPlan->items()->create([
+                'brand'             => $item->brand,
+                'title'             => $item->title,
+                'assigned_user_ids' => $item->assigned_user_ids,
+                'week_commencing'   => $item->week_commencing,
+                'status'            => 'not_started',
+                'notes'             => null,
+                'sort_order'        => $item->sort_order,
+            ]);
+        }
+
+        return redirect()->route('action-plans.show', $newPlan)->with('success', 'Plan duplicated. Rename and adjust as needed.');
+    }
+
     public function addMember(Request $request, ActionPlan $plan): RedirectResponse
     {
         abort_unless($this->isAdmin(), 403);
@@ -90,13 +141,13 @@ class ActionPlanController extends Controller
     {
         $this->authorisePlan($plan);
         $data = $request->validate([
-            'brand'            => 'nullable|string|max:100',
-            'type'             => 'nullable|string|max:100',
-            'title'            => 'required|string',
-            'assigned_user_id' => 'nullable|exists:users,id',
-            'week_commencing'  => 'nullable|date',
-            'status'           => 'required|in:not_started,in_progress,completed,cancelled,booked_in',
-            'notes'            => 'nullable|string',
+            'brand'             => 'nullable|string|max:100',
+            'title'             => 'required|string',
+            'assigned_user_ids' => 'nullable|array',
+            'assigned_user_ids.*' => 'integer|exists:users,id',
+            'week_commencing'   => 'nullable|date',
+            'status'            => 'required|in:not_started,in_progress,completed,cancelled,booked_in',
+            'notes'             => 'nullable|string',
         ]);
         $plan->items()->create($data);
         return redirect()->back()->with('success', 'Task added.');
@@ -107,13 +158,13 @@ class ActionPlanController extends Controller
         $this->authorisePlan($plan);
         abort_unless($item->action_plan_id === $plan->id, 404);
         $data = $request->validate([
-            'brand'            => 'nullable|string|max:100',
-            'type'             => 'nullable|string|max:100',
-            'title'            => 'required|string',
-            'assigned_user_id' => 'nullable|exists:users,id',
-            'week_commencing'  => 'nullable|date',
-            'status'           => 'required|in:not_started,in_progress,completed,cancelled,booked_in',
-            'notes'            => 'nullable|string',
+            'brand'             => 'nullable|string|max:100',
+            'title'             => 'required|string',
+            'assigned_user_ids' => 'nullable|array',
+            'assigned_user_ids.*' => 'integer|exists:users,id',
+            'week_commencing'   => 'nullable|date',
+            'status'            => 'required|in:not_started,in_progress,completed,cancelled,booked_in',
+            'notes'             => 'nullable|string',
         ]);
         $item->update($data);
         return redirect()->back()->with('success', 'Task updated.');
@@ -143,16 +194,15 @@ class ActionPlanController extends Controller
         foreach (range(1, $data['months']) as $offset) {
             foreach ($items as $item) {
                 $plan->items()->create([
-                    'brand'            => $item->brand,
-                    'type'             => $item->type,
-                    'title'            => $item->title,
-                    'assigned_user_id' => $item->assigned_user_id,
-                    'week_commencing'  => $item->week_commencing
+                    'brand'             => $item->brand,
+                    'title'             => $item->title,
+                    'assigned_user_ids' => $item->assigned_user_ids,
+                    'week_commencing'   => $item->week_commencing
                         ? $item->week_commencing->copy()->addMonths($offset)
                         : null,
-                    'status'           => 'not_started',
-                    'notes'            => null,
-                    'sort_order'       => $item->sort_order,
+                    'status'            => 'not_started',
+                    'notes'             => null,
+                    'sort_order'        => $item->sort_order,
                 ]);
             }
         }

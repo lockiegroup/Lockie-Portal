@@ -4,9 +4,7 @@
     {{-- Header --}}
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap;">
         <div>
-            <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
-                <a href="{{ route('action-plans.index') }}" style="font-size:0.8125rem;color:#94a3b8;text-decoration:none;">&larr; All Plans</a>
-            </div>
+            <a href="{{ route('action-plans.index') }}" style="font-size:0.8125rem;color:#94a3b8;text-decoration:none;">&larr; All Plans</a>
             <h1 style="font-size:1.5rem;font-weight:700;color:#1e293b;margin:0.25rem 0 0.25rem;">{{ $plan->name }}</h1>
             @if($plan->description)
             <p style="color:#64748b;font-size:0.875rem;margin:0;">{{ $plan->description }}</p>
@@ -61,13 +59,14 @@
                 </div>
                 <div>
                     <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Assigned To</label>
-                    <select name="assigned_user_id"
-                        style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;background:#fff;box-sizing:border-box;">
-                        <option value="">— Unassigned —</option>
+                    <div style="border:1px solid #e2e8f0;border-radius:8px;padding:6px 10px;background:#fff;max-height:110px;overflow-y:auto;box-sizing:border-box;">
                         @foreach($allUsers as $u)
-                        <option value="{{ $u->id }}">{{ $u->name }}</option>
+                        <label style="display:flex;align-items:center;gap:6px;padding:2px 0;cursor:pointer;">
+                            <input type="checkbox" name="assigned_user_ids[]" value="{{ $u->id }}" style="cursor:pointer;">
+                            <span style="font-size:0.8rem;color:#334155;">{{ $u->name }}</span>
+                        </label>
                         @endforeach
-                    </select>
+                    </div>
                 </div>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr 2fr auto;gap:0.75rem;align-items:end;">
@@ -97,8 +96,8 @@
         </form>
     </div>
 
-    {{-- Task table --}}
-    @if($byYear->isEmpty())
+    {{-- Task tables grouped by month --}}
+    @if($grouped->isEmpty())
     <div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:3rem;text-align:center;color:#94a3b8;font-size:0.875rem;">
         No tasks yet. Click "Add Task" to get started.
     </div>
@@ -106,136 +105,125 @@
     @php
     $statusStyles = \App\Models\ActionPlanItem::STATUS_STYLES;
     $statusLabels = \App\Models\ActionPlanItem::STATUSES;
+    $usersById    = $allUsers->keyBy('id');
     @endphp
 
-    @foreach($byYear as $year => $yearItems)
-    @php $yearLabel = $year === 'no-date' ? 'No Date' : $year; @endphp
-
-    {{-- Year section --}}
-    <div style="margin-bottom:2rem;">
-        <button type="button" onclick="toggleYear('year-{{ $year }}')"
-            style="display:flex;align-items:center;gap:0.5rem;width:100%;background:none;border:none;cursor:pointer;padding:0;margin-bottom:0.875rem;text-align:left;">
-            <span id="year-chevron-{{ $year }}" style="display:inline-block;transition:transform 0.2s;font-size:0.875rem;color:#64748b;">&#9660;</span>
-            <span style="font-size:1rem;font-weight:700;color:#1e293b;">{{ $yearLabel }}</span>
-            <span style="font-size:0.8rem;color:#94a3b8;font-weight:400;">({{ $yearItems->count() }} tasks)</span>
-        </button>
-
-        <div id="year-{{ $year }}">
-        @php $byMonth = $yearItems->groupBy(fn($i) => $i->week_commencing ? $i->week_commencing->format('Y-m') : 'no-date'); @endphp
-
-        @foreach($byMonth as $monthKey => $items)
-        @php
-            $monthLabel = $monthKey === 'no-date' ? 'No Date' : \Carbon\Carbon::createFromFormat('Y-m', $monthKey)->format('F Y');
-        @endphp
-        <div style="margin-bottom:1.5rem;">
-            <h2 style="font-size:0.75rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 0.5rem;padding:0 0 0.375rem;border-bottom:2px solid #e2e8f0;">
-                {{ $monthLabel }} <span style="font-weight:400;color:#cbd5e1;">({{ $items->count() }})</span>
-            </h2>
-            <div style="background:#fff;border-radius:10px;border:1px solid #e2e8f0;overflow:hidden;">
-                <table style="width:100%;border-collapse:collapse;font-size:0.8125rem;">
-                    <thead>
-                        <tr style="background:#f8fafc;border-bottom:1px solid #e2e8f0;">
-                            <th style="padding:7px 12px;text-align:left;font-size:0.68rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;width:90px;">Brand</th>
-                            <th style="padding:7px 12px;text-align:left;font-size:0.68rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Task</th>
-                            <th style="padding:7px 12px;text-align:left;font-size:0.68rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;width:130px;">Assigned To</th>
-                            <th style="padding:7px 12px;text-align:left;font-size:0.68rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;width:120px;">WC Date</th>
-                            <th style="padding:7px 12px;text-align:left;font-size:0.68rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;width:115px;">Status</th>
-                            <th style="padding:7px 12px;text-align:left;font-size:0.68rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Notes</th>
-                            <th style="padding:7px 12px;width:90px;"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    @foreach($items as $item)
-                    @php $style = $statusStyles[$item->status] ?? $statusStyles['not_started']; @endphp
-                    <tr id="row-{{ $item->id }}" style="border-bottom:1px solid #f1f5f9;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
-                        <td style="padding:9px 12px;color:#475569;font-size:0.8rem;">{{ $item->brand ?: '—' }}</td>
-                        <td style="padding:9px 12px;color:#1e293b;font-weight:500;">{{ $item->title }}</td>
-                        <td style="padding:9px 12px;color:#475569;font-size:0.8rem;">{{ $item->assignedUser?->name ?: '—' }}</td>
-                        <td style="padding:9px 12px;color:#64748b;font-size:0.8rem;">{{ $item->week_commencing ? $item->week_commencing->format('d M Y') : '—' }}</td>
-                        <td style="padding:9px 12px;">
-                            <span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:0.72rem;font-weight:600;background:{{ $style['bg'] }};color:{{ $style['color'] }};">
-                                {{ $statusLabels[$item->status] }}
-                            </span>
-                        </td>
-                        <td style="padding:9px 12px;color:#64748b;font-size:0.8rem;max-width:220px;">{{ $item->notes ?: '—' }}</td>
-                        <td style="padding:9px 12px;text-align:right;white-space:nowrap;">
-                            <button onclick="toggleEdit('edit-{{ $item->id }}')"
-                                style="padding:3px 8px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.72rem;cursor:pointer;margin-right:4px;">Edit</button>
-                            <form action="{{ route('action-plans.items.destroy', [$plan, $item]) }}" method="POST" style="display:inline-block;margin:0;"
-                                onsubmit="return confirm('Delete this task?')">
-                                @csrf @method('DELETE')
-                                <button type="submit" style="padding:3px 8px;border-radius:6px;border:1px solid #fca5a5;background:#fff;color:#dc2626;font-size:0.72rem;cursor:pointer;">Del</button>
-                            </form>
-                        </td>
+    @foreach($grouped as $monthKey => $items)
+    @php
+        $monthLabel = $monthKey === 'no-date' ? 'No Date' : \Carbon\Carbon::createFromFormat('Y-m', $monthKey)->format('F Y');
+    @endphp
+    <div style="margin-bottom:1.75rem;">
+        <h2 style="font-size:0.75rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 0.5rem;padding:0 0 0.375rem;border-bottom:2px solid #e2e8f0;">
+            {{ $monthLabel }} <span style="font-weight:400;color:#cbd5e1;">({{ $items->count() }})</span>
+        </h2>
+        <div style="background:#fff;border-radius:10px;border:1px solid #e2e8f0;overflow:hidden;">
+            <table style="width:100%;border-collapse:collapse;font-size:0.8125rem;">
+                <thead>
+                    <tr style="background:#f8fafc;border-bottom:1px solid #e2e8f0;">
+                        <th style="padding:7px 12px;text-align:left;font-size:0.68rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;width:90px;">Brand</th>
+                        <th style="padding:7px 12px;text-align:left;font-size:0.68rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Task</th>
+                        <th style="padding:7px 12px;text-align:left;font-size:0.68rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;width:150px;">Assigned To</th>
+                        <th style="padding:7px 12px;text-align:left;font-size:0.68rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;width:120px;">WC Date</th>
+                        <th style="padding:7px 12px;text-align:left;font-size:0.68rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;width:115px;">Status</th>
+                        <th style="padding:7px 12px;text-align:left;font-size:0.68rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Notes</th>
+                        <th style="padding:7px 12px;width:90px;"></th>
                     </tr>
-                    {{-- Inline edit row --}}
-                    <tr id="edit-{{ $item->id }}" style="display:none;background:#f8fafc;border-bottom:1px solid #e2e8f0;">
-                        <td colspan="7" style="padding:1rem 1.25rem;">
-                            <form action="{{ route('action-plans.items.update', [$plan, $item]) }}" method="POST">
-                                @csrf @method('PUT')
-                                <div style="display:grid;grid-template-columns:1fr 2fr 1fr;gap:0.75rem;margin-bottom:0.75rem;">
-                                    <div>
-                                        <label style="display:block;font-size:0.68rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">Brand</label>
-                                        <select name="brand"
-                                            style="width:100%;border:1px solid #e2e8f0;border-radius:7px;padding:6px 9px;font-size:0.8rem;color:#334155;background:#fff;box-sizing:border-box;">
-                                            <option value="">— None —</option>
-                                            @foreach(\App\Models\ActionPlanItem::BRANDS as $b)
-                                            <option value="{{ $b }}" {{ $item->brand === $b ? 'selected' : '' }}>{{ $b }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label style="display:block;font-size:0.68rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">Task *</label>
-                                        <input type="text" name="title" value="{{ $item->title }}" required
-                                            style="width:100%;border:1px solid #e2e8f0;border-radius:7px;padding:6px 9px;font-size:0.8rem;color:#334155;box-sizing:border-box;">
-                                    </div>
-                                    <div>
-                                        <label style="display:block;font-size:0.68rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">Assigned To</label>
-                                        <select name="assigned_user_id"
-                                            style="width:100%;border:1px solid #e2e8f0;border-radius:7px;padding:6px 9px;font-size:0.8rem;color:#334155;background:#fff;box-sizing:border-box;">
-                                            <option value="">— Unassigned —</option>
-                                            @foreach($allUsers as $u)
-                                            <option value="{{ $u->id }}" {{ $item->assigned_user_id === $u->id ? 'selected' : '' }}>{{ $u->name }}</option>
-                                            @endforeach
-                                        </select>
+                </thead>
+                <tbody>
+                @foreach($items as $item)
+                @php
+                    $style        = $statusStyles[$item->status] ?? $statusStyles['not_started'];
+                    $assignedIds  = $item->assigned_user_ids ?? [];
+                    $assignedNames = collect($assignedIds)->map(fn($id) => $usersById[$id]->name ?? null)->filter()->implode(', ');
+                @endphp
+                <tr id="row-{{ $item->id }}" style="border-bottom:1px solid #f1f5f9;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
+                    <td style="padding:9px 12px;color:#475569;font-size:0.8rem;">{{ $item->brand ?: '—' }}</td>
+                    <td style="padding:9px 12px;color:#1e293b;font-weight:500;">{{ $item->title }}</td>
+                    <td style="padding:9px 12px;color:#475569;font-size:0.8rem;">{{ $assignedNames ?: '—' }}</td>
+                    <td style="padding:9px 12px;color:#64748b;font-size:0.8rem;">{{ $item->week_commencing ? $item->week_commencing->format('d M Y') : '—' }}</td>
+                    <td style="padding:9px 12px;">
+                        <span style="display:inline-block;padding:2px 8px;border-radius:6px;font-size:0.72rem;font-weight:600;background:{{ $style['bg'] }};color:{{ $style['color'] }};">
+                            {{ $statusLabels[$item->status] }}
+                        </span>
+                    </td>
+                    <td style="padding:9px 12px;color:#64748b;font-size:0.8rem;max-width:220px;">{{ $item->notes ?: '—' }}</td>
+                    <td style="padding:9px 12px;text-align:right;white-space:nowrap;">
+                        <button onclick="toggleEdit('edit-{{ $item->id }}')"
+                            style="padding:3px 8px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.72rem;cursor:pointer;margin-right:4px;">Edit</button>
+                        <form action="{{ route('action-plans.items.destroy', [$plan, $item]) }}" method="POST" style="display:inline-block;margin:0;"
+                            onsubmit="return confirm('Delete this task?')">
+                            @csrf @method('DELETE')
+                            <button type="submit" style="padding:3px 8px;border-radius:6px;border:1px solid #fca5a5;background:#fff;color:#dc2626;font-size:0.72rem;cursor:pointer;">Del</button>
+                        </form>
+                    </td>
+                </tr>
+                {{-- Inline edit row --}}
+                <tr id="edit-{{ $item->id }}" style="display:none;background:#f8fafc;border-bottom:1px solid #e2e8f0;">
+                    <td colspan="7" style="padding:1rem 1.25rem;">
+                        <form action="{{ route('action-plans.items.update', [$plan, $item]) }}" method="POST">
+                            @csrf @method('PUT')
+                            <div style="display:grid;grid-template-columns:1fr 2fr 1fr;gap:0.75rem;margin-bottom:0.75rem;">
+                                <div>
+                                    <label style="display:block;font-size:0.68rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">Brand</label>
+                                    <select name="brand"
+                                        style="width:100%;border:1px solid #e2e8f0;border-radius:7px;padding:6px 9px;font-size:0.8rem;color:#334155;background:#fff;box-sizing:border-box;">
+                                        <option value="">— None —</option>
+                                        @foreach(\App\Models\ActionPlanItem::BRANDS as $b)
+                                        <option value="{{ $b }}" {{ $item->brand === $b ? 'selected' : '' }}>{{ $b }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="display:block;font-size:0.68rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">Task *</label>
+                                    <input type="text" name="title" value="{{ $item->title }}" required
+                                        style="width:100%;border:1px solid #e2e8f0;border-radius:7px;padding:6px 9px;font-size:0.8rem;color:#334155;box-sizing:border-box;">
+                                </div>
+                                <div>
+                                    <label style="display:block;font-size:0.68rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">Assigned To</label>
+                                    <div style="border:1px solid #e2e8f0;border-radius:7px;padding:5px 9px;background:#fff;max-height:110px;overflow-y:auto;box-sizing:border-box;">
+                                        @foreach($allUsers as $u)
+                                        <label style="display:flex;align-items:center;gap:6px;padding:2px 0;cursor:pointer;">
+                                            <input type="checkbox" name="assigned_user_ids[]" value="{{ $u->id }}"
+                                                {{ in_array($u->id, $assignedIds) ? 'checked' : '' }} style="cursor:pointer;">
+                                            <span style="font-size:0.78rem;color:#334155;">{{ $u->name }}</span>
+                                        </label>
+                                        @endforeach
                                     </div>
                                 </div>
-                                <div style="display:grid;grid-template-columns:1fr 1fr 2fr auto;gap:0.75rem;align-items:end;">
-                                    <div>
-                                        <label style="display:block;font-size:0.68rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">Week Commencing</label>
-                                        <input type="date" name="week_commencing" value="{{ $item->week_commencing?->format('Y-m-d') }}"
-                                            style="width:100%;border:1px solid #e2e8f0;border-radius:7px;padding:6px 9px;font-size:0.8rem;color:#334155;box-sizing:border-box;">
-                                    </div>
-                                    <div>
-                                        <label style="display:block;font-size:0.68rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">Status</label>
-                                        <select name="status"
-                                            style="width:100%;border:1px solid #e2e8f0;border-radius:7px;padding:6px 9px;font-size:0.8rem;color:#334155;background:#fff;box-sizing:border-box;">
-                                            @foreach(\App\Models\ActionPlanItem::STATUSES as $val => $label)
-                                            <option value="{{ $val }}" {{ $item->status === $val ? 'selected' : '' }}>{{ $label }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label style="display:block;font-size:0.68rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">Notes</label>
-                                        <input type="text" name="notes" value="{{ $item->notes }}"
-                                            style="width:100%;border:1px solid #e2e8f0;border-radius:7px;padding:6px 9px;font-size:0.8rem;color:#334155;box-sizing:border-box;">
-                                    </div>
-                                    <div style="display:flex;gap:0.5rem;">
-                                        <button type="submit" style="padding:0.35rem 0.75rem;border-radius:7px;background:#0f172a;color:#fff;font-size:0.75rem;font-weight:600;border:none;cursor:pointer;white-space:nowrap;">Save</button>
-                                        <button type="button" onclick="toggleEdit('edit-{{ $item->id }}')"
-                                            style="padding:0.35rem 0.75rem;border-radius:7px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.75rem;cursor:pointer;white-space:nowrap;">Cancel</button>
-                                    </div>
+                            </div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr 2fr auto;gap:0.75rem;align-items:end;">
+                                <div>
+                                    <label style="display:block;font-size:0.68rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">Week Commencing</label>
+                                    <input type="date" name="week_commencing" value="{{ $item->week_commencing?->format('Y-m-d') }}"
+                                        style="width:100%;border:1px solid #e2e8f0;border-radius:7px;padding:6px 9px;font-size:0.8rem;color:#334155;box-sizing:border-box;">
                                 </div>
-                            </form>
-                        </td>
-                    </tr>
-                    @endforeach
-                    </tbody>
-                </table>
-            </div>
+                                <div>
+                                    <label style="display:block;font-size:0.68rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">Status</label>
+                                    <select name="status"
+                                        style="width:100%;border:1px solid #e2e8f0;border-radius:7px;padding:6px 9px;font-size:0.8rem;color:#334155;background:#fff;box-sizing:border-box;">
+                                        @foreach(\App\Models\ActionPlanItem::STATUSES as $val => $label)
+                                        <option value="{{ $val }}" {{ $item->status === $val ? 'selected' : '' }}>{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="display:block;font-size:0.68rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">Notes</label>
+                                    <input type="text" name="notes" value="{{ $item->notes }}"
+                                        style="width:100%;border:1px solid #e2e8f0;border-radius:7px;padding:6px 9px;font-size:0.8rem;color:#334155;box-sizing:border-box;">
+                                </div>
+                                <div style="display:flex;gap:0.5rem;">
+                                    <button type="submit" style="padding:0.35rem 0.75rem;border-radius:7px;background:#0f172a;color:#fff;font-size:0.75rem;font-weight:600;border:none;cursor:pointer;white-space:nowrap;">Save</button>
+                                    <button type="button" onclick="toggleEdit('edit-{{ $item->id }}')"
+                                        style="padding:0.35rem 0.75rem;border-radius:7px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.75rem;cursor:pointer;white-space:nowrap;">Cancel</button>
+                                </div>
+                            </div>
+                        </form>
+                    </td>
+                </tr>
+                @endforeach
+                </tbody>
+            </table>
         </div>
-        @endforeach
-        </div>{{-- end year-{{ $year }} --}}
     </div>
     @endforeach
     @endif
@@ -296,14 +284,6 @@
 function toggleEdit(id) {
     var el = document.getElementById(id);
     if (el) el.style.display = el.style.display === 'none' ? 'table-row' : 'none';
-}
-function toggleYear(id) {
-    var el = document.getElementById(id);
-    var chevron = document.getElementById('year-chevron-' + id.replace('year-', ''));
-    if (!el) return;
-    var hidden = el.style.display === 'none';
-    el.style.display = hidden ? '' : 'none';
-    if (chevron) chevron.style.transform = hidden ? '' : 'rotate(-90deg)';
 }
 function toggleAllCopy(cb) {
     document.querySelectorAll('#copy-modal input[name="item_ids[]"]').forEach(function(c) { c.checked = cb.checked; });

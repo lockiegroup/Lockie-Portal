@@ -3,18 +3,21 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsTo; // kept for plan() relationship
 
 class ActionPlanItem extends Model
 {
     protected $fillable = [
         'action_plan_id', 'brand', 'type', 'title',
-        'assigned_user_id', 'week_commencing', 'status', 'notes', 'sort_order',
+        'assigned_user_ids', 'week_commencing', 'status', 'notes', 'sort_order',
     ];
 
     protected function casts(): array
     {
-        return ['week_commencing' => 'date'];
+        return [
+            'week_commencing'  => 'date',
+            'assigned_user_ids' => 'array',
+        ];
     }
 
     const BRANDS = ['Lockie', 'JWP', 'H&H', 'All'];
@@ -40,8 +43,11 @@ class ActionPlanItem extends Model
         return $this->belongsTo(ActionPlan::class, 'action_plan_id');
     }
 
-    public function assignedUser(): BelongsTo
+    public function assignedUsers(\Illuminate\Support\Collection $allUsers): \Illuminate\Support\Collection
     {
-        return $this->belongsTo(User::class, 'assigned_user_id');
+        if (empty($this->assigned_user_ids)) {
+            return collect();
+        }
+        return $allUsers->whereIn('id', $this->assigned_user_ids)->values();
     }
 }
