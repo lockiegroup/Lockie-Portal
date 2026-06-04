@@ -68,6 +68,7 @@
                     <th style="padding:10px 16px;text-align:left;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Last Order</th>
                     <th style="padding:10px 16px;text-align:left;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Frequency</th>
                     <th style="padding:10px 16px;text-align:left;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Expected Next</th>
+                    <th style="padding:10px 16px;text-align:left;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Last Contact</th>
                     <th style="padding:10px 16px;text-align:left;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;"></th>
                 </tr>
             </thead>
@@ -169,13 +170,22 @@
                             @endif
                         </td>
                         <td style="padding:11px 16px;">
+                            @php $lc = $c->key_account?->latestContact?->contacted_at ? \Carbon\Carbon::parse($c->key_account->latestContact->contacted_at) : null; @endphp
+                            @if($lc)
+                                <span style="font-size:0.875rem;color:#334155;">{{ $lc->format('d M Y') }}</span>
+                                <div style="font-size:0.75rem;color:#94a3b8;">{{ $lc->diffForHumans() }}</div>
+                            @else
+                                <span style="color:#cbd5e1;font-size:0.875rem;">—</span>
+                            @endif
+                        </td>
+                        <td style="padding:11px 16px;">
                             <a href="{{ route('crm.show', ['customerCode' => $c->customer_code, 'warehouse' => $warehouse]) }}"
                                style="font-size:0.75rem;color:#94a3b8;text-decoration:none;white-space:nowrap;">View &rarr;</a>
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="8" style="padding:3rem;text-align:center;color:#94a3b8;">No customers found.</td>
+                        <td colspan="9" style="padding:3rem;text-align:center;color:#94a3b8;">No customers found.</td>
                     </tr>
                 @endforelse
             </tbody>

@@ -62,7 +62,7 @@ class CrmController extends Controller
             )->values();
         }
 
-        $keyAccounts = KeyAccount::with('user')
+        $keyAccounts = KeyAccount::with(['user', 'latestContact'])
             ->whereIn('account_code', $customers->pluck('customer_code'))
             ->get()
             ->keyBy('account_code');

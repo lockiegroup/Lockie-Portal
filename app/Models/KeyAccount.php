@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class KeyAccount extends Model
@@ -21,6 +22,11 @@ class KeyAccount extends Model
     public function contacts(): HasMany
     {
         return $this->hasMany(KeyAccountContact::class)->orderByDesc('contacted_at')->orderByDesc('id');
+    }
+
+    public function latestContact(): HasOne
+    {
+        return $this->hasOne(KeyAccountContact::class)->latestOfMany('contacted_at');
     }
 
     public function gifts(): HasMany
