@@ -108,7 +108,6 @@
         </a>
         @endif
 
-        @if($user->hasModule('action_plans'))
         <a href="{{ route('action-plans.index') }}"
            class="sb-item{{ request()->routeIs('action-plans.*') ? ' sb-active' : '' }}"
            data-tip="Action Plans">
@@ -117,7 +116,6 @@
             </svg>
             <span class="sb-label">Action Plans</span>
         </a>
-        @endif
 
         @if($user->hasModule('envelopes'))
         <a href="{{ route('church-envelopes.index') }}"
