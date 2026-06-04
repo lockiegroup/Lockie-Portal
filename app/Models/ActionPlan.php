@@ -9,11 +9,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ActionPlan extends Model
 {
-    protected $fillable = ['name', 'description', 'created_by', 'is_archived'];
+    protected $fillable = ['name', 'description', 'created_by', 'is_archived', 'start_date', 'end_date'];
 
     protected function casts(): array
     {
-        return ['is_archived' => 'boolean'];
+        return [
+            'is_archived' => 'boolean',
+            'start_date'  => 'date',
+            'end_date'    => 'date',
+        ];
     }
 
     public function createdBy(): BelongsTo

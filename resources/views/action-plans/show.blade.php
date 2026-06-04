@@ -9,6 +9,11 @@
             @if($plan->description)
             <p style="color:#64748b;font-size:0.875rem;margin:0;">{{ $plan->description }}</p>
             @endif
+            @if($plan->start_date || $plan->end_date)
+            <p style="font-size:0.8rem;color:#94a3b8;margin:0.125rem 0 0;">
+                {{ $plan->start_date?->format('d M Y') ?? '—' }} &rarr; {{ $plan->end_date?->format('d M Y') ?? '—' }}
+            </p>
+            @endif
             <div style="display:flex;flex-wrap:wrap;gap:0.375rem;margin-top:0.5rem;">
                 @foreach($plan->members as $m)
                 <span style="padding:2px 8px;border-radius:9999px;background:#f1f5f9;color:#475569;font-size:0.72rem;font-weight:500;">{{ $m->user->name }}</span>
@@ -73,6 +78,7 @@
                 <div>
                     <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Week Commencing</label>
                     <input type="date" name="week_commencing"
+                        {{ $dateMin ? 'min="'.$dateMin.'"' : '' }} {{ $dateMax ? 'max="'.$dateMax.'"' : '' }}
                         style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
                 </div>
                 <div>
@@ -95,6 +101,11 @@
             </div>
         </form>
     </div>
+
+    @php
+    $dateMin = $plan->start_date?->format('Y-m-d') ?? '';
+    $dateMax = $plan->end_date?->format('Y-m-d')   ?? '';
+    @endphp
 
     {{-- Task tables grouped by month --}}
     @if($grouped->isEmpty())
@@ -195,6 +206,7 @@
                                 <div>
                                     <label style="display:block;font-size:0.68rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">Week Commencing</label>
                                     <input type="date" name="week_commencing" value="{{ $item->week_commencing?->format('Y-m-d') }}"
+                                        {{ $dateMin ? 'min="'.$dateMin.'"' : '' }} {{ $dateMax ? 'max="'.$dateMax.'"' : '' }}
                                         style="width:100%;border:1px solid #e2e8f0;border-radius:7px;padding:6px 9px;font-size:0.8rem;color:#334155;box-sizing:border-box;">
                                 </div>
                                 <div>

@@ -57,7 +57,12 @@ class ActionPlanController extends Controller
     public function store(Request $request): RedirectResponse
     {
         abort_unless($this->isAdmin(), 403);
-        $data = $request->validate(['name' => 'required|string|max:150', 'description' => 'nullable|string']);
+        $data = $request->validate([
+            'name'        => 'required|string|max:150',
+            'description' => 'nullable|string',
+            'start_date'  => 'nullable|date',
+            'end_date'    => 'nullable|date|after_or_equal:start_date',
+        ]);
         ActionPlan::create(array_merge($data, ['created_by' => auth()->id()]));
         return redirect()->route('action-plans.index')->with('success', 'Plan created.');
     }
@@ -65,7 +70,12 @@ class ActionPlanController extends Controller
     public function update(Request $request, ActionPlan $plan): RedirectResponse
     {
         abort_unless($this->isAdmin(), 403);
-        $data = $request->validate(['name' => 'required|string|max:150', 'description' => 'nullable|string']);
+        $data = $request->validate([
+            'name'        => 'required|string|max:150',
+            'description' => 'nullable|string',
+            'start_date'  => 'nullable|date',
+            'end_date'    => 'nullable|date|after_or_equal:start_date',
+        ]);
         $plan->update($data);
         return redirect()->back()->with('success', 'Plan updated.');
     }
@@ -137,18 +147,25 @@ class ActionPlanController extends Controller
         return redirect()->back()->with('success', 'Member removed.');
     }
 
+    private function itemDateRules(ActionPlan $plan): array
+    {
+        $after  = $plan->start_date ? 'after_or_equal:' . $plan->start_date->format('Y-m-d') : '';
+        $before = $plan->end_date   ? 'before_or_equal:' . $plan->end_date->format('Y-m-d')  : '';
+        $rules  = array_filter(['nullable', 'date', $after, $before]);
+        return ['week_commencing' => implode('|', $rules)];
+    }
+
     public function storeItem(Request $request, ActionPlan $plan): RedirectResponse
     {
         $this->authorisePlan($plan);
-        $data = $request->validate([
-            'brand'             => 'nullable|string|max:100',
-            'title'             => 'required|string',
-            'assigned_user_ids' => 'nullable|array',
+        $data = $request->validate(array_merge([
+            'brand'               => 'nullable|string|max:100',
+            'title'               => 'required|string',
+            'assigned_user_ids'   => 'nullable|array',
             'assigned_user_ids.*' => 'integer|exists:users,id',
-            'week_commencing'   => 'nullable|date',
-            'status'            => 'required|in:not_started,in_progress,completed,cancelled,booked_in',
-            'notes'             => 'nullable|string',
-        ]);
+            'status'              => 'required|in:not_started,in_progress,completed,cancelled,booked_in',
+            'notes'               => 'nullable|string',
+        ], $this->itemDateRules($plan)));
         $plan->items()->create($data);
         return redirect()->back()->with('success', 'Task added.');
     }
@@ -157,15 +174,14 @@ class ActionPlanController extends Controller
     {
         $this->authorisePlan($plan);
         abort_unless($item->action_plan_id === $plan->id, 404);
-        $data = $request->validate([
-            'brand'             => 'nullable|string|max:100',
-            'title'             => 'required|string',
-            'assigned_user_ids' => 'nullable|array',
+        $data = $request->validate(array_merge([
+            'brand'               => 'nullable|string|max:100',
+            'title'               => 'required|string',
+            'assigned_user_ids'   => 'nullable|array',
             'assigned_user_ids.*' => 'integer|exists:users,id',
-            'week_commencing'   => 'nullable|date',
-            'status'            => 'required|in:not_started,in_progress,completed,cancelled,booked_in',
-            'notes'             => 'nullable|string',
-        ]);
+            'status'              => 'required|in:not_started,in_progress,completed,cancelled,booked_in',
+            'notes'               => 'nullable|string',
+        ], $this->itemDateRules($plan)));
         $item->update($data);
         return redirect()->back()->with('success', 'Task updated.');
     }
@@ -191,22 +207,38 @@ class ActionPlanController extends Controller
             ->where('action_plan_id', $plan->id)
             ->get();
 
+        $created = 0;
+        $skipped = 0;
+
         foreach (range(1, $data['months']) as $offset) {
             foreach ($items as $item) {
+                $newDate = $item->week_commencing
+                    ? $item->week_commencing->copy()->addMonths($offset)
+                    : null;
+
+                if ($newDate && $plan->end_date && $newDate->gt($plan->end_date)) {
+                    $skipped++;
+                    continue;
+                }
+
                 $plan->items()->create([
                     'brand'             => $item->brand,
                     'title'             => $item->title,
                     'assigned_user_ids' => $item->assigned_user_ids,
-                    'week_commencing'   => $item->week_commencing
-                        ? $item->week_commencing->copy()->addMonths($offset)
-                        : null,
+                    'week_commencing'   => $newDate,
                     'status'            => 'not_started',
                     'notes'             => null,
                     'sort_order'        => $item->sort_order,
                 ]);
+                $created++;
             }
         }
 
-        return redirect()->back()->with('success', count($items) * $data['months'] . ' tasks copied.');
+        $msg = $created . ' ' . str('task')->plural($created) . ' copied.';
+        if ($skipped) {
+            $msg .= ' ' . $skipped . ' skipped (outside plan date range).';
+        }
+
+        return redirect()->back()->with('success', $msg);
     }
 }

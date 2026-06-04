@@ -44,7 +44,7 @@
                 @can('admin')
                 <div style="display:flex;gap:4px;flex-shrink:0;">
                     @if(!$plan->is_archived)
-                    <button onclick="openEditPlan({{ $plan->id }}, '{{ addslashes($plan->name) }}', '{{ addslashes($plan->description ?? '') }}')"
+                    <button onclick="openEditPlan({{ $plan->id }}, '{{ addslashes($plan->name) }}', '{{ addslashes($plan->description ?? '') }}', '{{ $plan->start_date?->format('Y-m-d') }}', '{{ $plan->end_date?->format('Y-m-d') }}')"
                         style="padding:3px 8px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-size:0.72rem;cursor:pointer;">Edit</button>
                     <form action="{{ route('action-plans.duplicate', $plan) }}" method="POST" style="margin:0;">
                         @csrf
@@ -61,6 +61,11 @@
             </div>
             @if($plan->description)
             <p style="color:#64748b;font-size:0.8125rem;margin:0;">{{ $plan->description }}</p>
+            @endif
+            @if($plan->start_date || $plan->end_date)
+            <p style="font-size:0.75rem;color:#94a3b8;margin:0;">
+                {{ $plan->start_date?->format('d M Y') ?? '—' }} &rarr; {{ $plan->end_date?->format('d M Y') ?? '—' }}
+            </p>
             @endif
             <div style="display:flex;flex-wrap:wrap;gap:0.375rem;">
                 @foreach($plan->members as $m)
@@ -107,10 +112,22 @@
                 <input type="text" name="name" required maxlength="150"
                     style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
             </div>
-            <div style="margin-bottom:1.25rem;">
+            <div style="margin-bottom:0.875rem;">
                 <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Description</label>
                 <textarea name="description" rows="2"
                     style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.8125rem;color:#334155;resize:vertical;box-sizing:border-box;"></textarea>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1.25rem;">
+                <div>
+                    <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Start Date</label>
+                    <input type="date" name="start_date"
+                        style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
+                </div>
+                <div>
+                    <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">End Date</label>
+                    <input type="date" name="end_date"
+                        style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
+                </div>
             </div>
             <div style="display:flex;gap:0.5rem;">
                 <button type="submit" style="padding:0.45rem 1rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.8125rem;font-weight:600;border:none;cursor:pointer;">Create Plan</button>
@@ -136,6 +153,18 @@
                 <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Description</label>
                 <textarea id="edit-plan-desc" name="description" rows="2"
                     style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.8125rem;color:#334155;resize:vertical;box-sizing:border-box;"></textarea>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.875rem;">
+                <div>
+                    <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Start Date</label>
+                    <input type="date" id="edit-plan-start" name="start_date"
+                        style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
+                </div>
+                <div>
+                    <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">End Date</label>
+                    <input type="date" id="edit-plan-end" name="end_date"
+                        style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
+                </div>
             </div>
             <div style="display:flex;gap:0.5rem;margin-bottom:0.5rem;">
                 <button type="submit" style="padding:0.45rem 1rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.8125rem;font-weight:600;border:none;cursor:pointer;">Save</button>
@@ -183,12 +212,14 @@
 
 <script>
 var planRouteBase = '{{ url("action-plans") }}';
-function openEditPlan(id, name, desc) {
+function openEditPlan(id, name, desc, start, end) {
     document.getElementById('edit-plan-form').action    = planRouteBase + '/' + id;
     document.getElementById('archive-plan-form').action = planRouteBase + '/' + id + '/archive';
     document.getElementById('delete-plan-form').action  = planRouteBase + '/' + id;
-    document.getElementById('edit-plan-name').value = name;
-    document.getElementById('edit-plan-desc').value = desc;
+    document.getElementById('edit-plan-name').value  = name;
+    document.getElementById('edit-plan-desc').value  = desc;
+    document.getElementById('edit-plan-start').value = start || '';
+    document.getElementById('edit-plan-end').value   = end   || '';
     document.getElementById('edit-plan-modal').style.display = 'flex';
 }
 function openAddMember(id) {
