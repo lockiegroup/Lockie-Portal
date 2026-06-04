@@ -26,6 +26,7 @@ use App\Http\Controllers\CrmController;
 use App\Http\Controllers\RemindersController;
 use App\Http\Controllers\TrainingController;
 use App\Http\Controllers\ImpersonateController;
+use App\Http\Controllers\ActionPlanController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn() => redirect()->route('login'));
@@ -271,5 +272,22 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::put('/designs/{design}', [EnvelopeSettingsController::class, 'updateDesign'])->name('designs.update');
         Route::delete('/designs/{design}', [EnvelopeSettingsController::class, 'destroyDesign'])->name('designs.destroy');
         Route::post('/designs/reorder', [EnvelopeSettingsController::class, 'reorderDesigns'])->name('designs.reorder');
+    });
+
+    // Action Plans
+    Route::prefix('action-plans')->name('action-plans.')->group(function () {
+        Route::get('/',                                          [ActionPlanController::class, 'index'])->name('index');
+        Route::get('/{plan}',                                    [ActionPlanController::class, 'show'])->name('show');
+        Route::post('/{plan}/items',                             [ActionPlanController::class, 'storeItem'])->name('items.store');
+        Route::put('/{plan}/items/{item}',                       [ActionPlanController::class, 'updateItem'])->name('items.update');
+        Route::delete('/{plan}/items/{item}',                    [ActionPlanController::class, 'destroyItem'])->name('items.destroy');
+        Route::post('/{plan}/copy',                              [ActionPlanController::class, 'copyItems'])->name('items.copy');
+        Route::middleware('can:admin')->group(function () {
+            Route::post('/',                                     [ActionPlanController::class, 'store'])->name('store');
+            Route::put('/{plan}',                                [ActionPlanController::class, 'update'])->name('update');
+            Route::delete('/{plan}',                             [ActionPlanController::class, 'destroy'])->name('destroy');
+            Route::post('/{plan}/members',                       [ActionPlanController::class, 'addMember'])->name('members.add');
+            Route::delete('/{plan}/members/{user}',              [ActionPlanController::class, 'removeMember'])->name('members.remove');
+        });
     });
 });

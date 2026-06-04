@@ -25,6 +25,7 @@ class User extends Authenticatable
         'sales'            => 'Sales',
         'stock'            => 'Stock Overview',
         'stock_ordering'   => 'Stock Watchlist',
+        'health_safety'    => 'Health & Safety',
         'envelopes'        => 'Church Envelopes',
         'policies'         => 'Policies',
         'print_schedule'   => 'Print Schedule',
@@ -32,6 +33,7 @@ class User extends Authenticatable
         'key_accounts'     => 'Key Accounts',
         'crm'              => 'Customer Insights (CRM)',
         'factory_training' => 'Factory Training',
+        'action_plans'     => 'Action Plans',
     ];
 
     protected $fillable = ['name', 'email', 'password', 'role', 'is_active', 'permissions', 'modules', 'last_login_at'];
