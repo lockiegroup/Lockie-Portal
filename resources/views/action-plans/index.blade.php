@@ -37,70 +37,72 @@
     @else
     <div id="plans-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;">
         @foreach($plans as $plan)
-        <div data-id="{{ $plan->id }}" style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:0.75rem;{{ $plan->is_archived ? 'opacity:0.7;' : '' }}">
-            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:0.5rem;">
-                <div style="display:flex;align-items:center;gap:0.5rem;min-width:0;">
+        <div data-id="{{ $plan->id }}"
+            style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;display:flex;flex-direction:column;{{ $plan->is_archived ? 'opacity:0.7;' : '' }}position:relative;">
+
+            {{-- Clickable body --}}
+            <a href="{{ route('action-plans.show', $plan) }}" style="display:flex;flex-direction:column;gap:0.6rem;padding:1.25rem 1.5rem;text-decoration:none;flex:1;">
+                <div style="display:flex;align-items:center;gap:0.5rem;padding-right:2rem;">
                     @can('admin')
                     @if(!$showArchived)
-                    <span class="drag-handle" style="cursor:grab;color:#cbd5e1;flex-shrink:0;line-height:0;" title="Drag to reorder">
-                        <svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor"><circle cx="3" cy="3" r="1.5"/><circle cx="9" cy="3" r="1.5"/><circle cx="3" cy="8" r="1.5"/><circle cx="9" cy="8" r="1.5"/><circle cx="3" cy="13" r="1.5"/><circle cx="9" cy="13" r="1.5"/></svg>
+                    <span class="drag-handle" onclick="event.preventDefault()" style="cursor:grab;color:#d1d5db;flex-shrink:0;line-height:0;" title="Drag to reorder">
+                        <svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor"><circle cx="2" cy="2" r="1.25"/><circle cx="8" cy="2" r="1.25"/><circle cx="2" cy="7" r="1.25"/><circle cx="8" cy="7" r="1.25"/><circle cx="2" cy="12" r="1.25"/><circle cx="8" cy="12" r="1.25"/></svg>
                     </span>
                     @endif
                     @endcan
-                    <a href="{{ route('action-plans.show', $plan) }}"
-                        style="font-size:1rem;font-weight:700;color:#1e293b;text-decoration:none;">{{ $plan->name }}</a>
+                    <span style="font-size:0.9375rem;font-weight:700;color:#1e293b;line-height:1.3;">{{ $plan->name }}</span>
                 </div>
-                @can('admin')
-                <div style="display:flex;gap:4px;flex-shrink:0;">
-                    @if(!$plan->is_archived)
-                    <button onclick="openEditPlan({{ $plan->id }}, '{{ addslashes($plan->name) }}', '{{ addslashes($plan->description ?? '') }}', '{{ $plan->start_date?->format('Y-m-d') }}', '{{ $plan->end_date?->format('Y-m-d') }}')"
-                        style="padding:3px 8px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-size:0.72rem;cursor:pointer;">Edit</button>
-                    <form action="{{ route('action-plans.duplicate', $plan) }}" method="POST" style="margin:0;">
-                        @csrf
-                        <button type="submit" style="padding:3px 8px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#6366f1;font-size:0.72rem;cursor:pointer;" title="Duplicate this plan">Copy</button>
-                    </form>
-                    @else
-                    <form action="{{ route('action-plans.unarchive', $plan) }}" method="POST" style="margin:0;">
-                        @csrf
-                        <button type="submit" style="padding:3px 8px;border-radius:6px;border:1px solid #bbf7d0;background:#f0fdf4;color:#166534;font-size:0.72rem;cursor:pointer;">Restore</button>
-                    </form>
-                    @endif
-                </div>
-                @endcan
-            </div>{{-- end header row --}}
-            @if($plan->description)
-            <p style="color:#64748b;font-size:0.8125rem;margin:0;">{{ $plan->description }}</p>
-            @endif
-            @if($plan->start_date || $plan->end_date)
-            <p style="font-size:0.75rem;color:#94a3b8;margin:0;">
-                {{ $plan->start_date?->format('d M Y') ?? '—' }} &rarr; {{ $plan->end_date?->format('d M Y') ?? '—' }}
-            </p>
-            @endif
-            <div style="display:flex;flex-wrap:wrap;gap:0.375rem;">
-                @foreach($plan->members as $m)
-                <span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:9999px;background:#f1f5f9;color:#475569;font-size:0.72rem;font-weight:500;">
-                    {{ $m->user->name }}
-                    @if(!$plan->is_archived)
-                    @can('admin')
-                    <form action="{{ route('action-plans.members.remove', [$plan, $m->user]) }}" method="POST" style="margin:0;line-height:0;">
-                        @csrf @method('DELETE')
-                        <button type="submit" style="background:none;border:none;cursor:pointer;color:#94a3b8;padding:0;line-height:0;" title="Remove">&times;</button>
-                    </form>
-                    @endcan
-                    @endif
-                </span>
-                @endforeach
-                @if(!$plan->is_archived)
-                @can('admin')
-                <button onclick="openAddMember({{ $plan->id }})"
-                    style="padding:2px 8px;border-radius:9999px;border:1px dashed #cbd5e1;background:transparent;color:#94a3b8;font-size:0.72rem;cursor:pointer;">+ Add</button>
-                @endcan
+
+                @if($plan->start_date || $plan->end_date)
+                <p style="font-size:0.75rem;color:#94a3b8;margin:0;">
+                    {{ $plan->start_date?->format('d M Y') ?? '—' }} &rarr; {{ $plan->end_date?->format('d M Y') ?? '—' }}
+                </p>
                 @endif
-            </div>
-            <a href="{{ route('action-plans.show', $plan) }}"
-                style="display:inline-flex;align-items:center;gap:4px;font-size:0.8rem;color:#6366f1;text-decoration:none;font-weight:600;margin-top:auto;">
-                Open plan &rarr;
+
+                @if($plan->description)
+                <p style="color:#64748b;font-size:0.8125rem;margin:0;line-height:1.4;">{{ $plan->description }}</p>
+                @endif
+
+                @if($plan->members->isNotEmpty())
+                <div style="display:flex;flex-wrap:wrap;gap:0.3rem;margin-top:0.1rem;">
+                    @foreach($plan->members as $m)
+                    <span style="padding:2px 9px;border-radius:9999px;background:#f1f5f9;color:#475569;font-size:0.72rem;font-weight:500;">{{ $m->user->name }}</span>
+                    @endforeach
+                </div>
+                @endif
             </a>
+
+            {{-- Footer --}}
+            <div style="padding:0.75rem 1.5rem;border-top:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;">
+                <span style="font-size:0.8rem;color:#94a3b8;">{{ $plan->items()->count() }} {{ str('task')->plural($plan->items()->count()) }}</span>
+                @can('admin')
+                @if($plan->is_archived)
+                <form action="{{ route('action-plans.unarchive', $plan) }}" method="POST" style="margin:0;">
+                    @csrf
+                    <button type="submit" style="padding:3px 10px;border-radius:6px;border:1px solid #bbf7d0;background:#f0fdf4;color:#166534;font-size:0.72rem;cursor:pointer;">Restore</button>
+                </form>
+                @else
+                <div style="position:relative;">
+                    <button onclick="toggleMenu({{ $plan->id }})"
+                        style="padding:4px 8px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-size:1rem;line-height:1;cursor:pointer;" title="Actions">&#8943;</button>
+                    <div id="menu-{{ $plan->id }}" style="display:none;position:absolute;bottom:calc(100% + 4px);right:0;background:#fff;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.1);min-width:140px;z-index:10;overflow:hidden;">
+                        <button onclick="openEditPlan({{ $plan->id }}, '{{ addslashes($plan->name) }}', '{{ addslashes($plan->description ?? '') }}', '{{ $plan->start_date?->format('Y-m-d') }}', '{{ $plan->end_date?->format('Y-m-d') }}')"
+                            style="display:block;width:100%;text-align:left;padding:8px 14px;border:none;background:none;font-size:0.8125rem;color:#334155;cursor:pointer;">Edit plan</button>
+                        <button onclick="openManageMembers({{ $plan->id }})"
+                            style="display:block;width:100%;text-align:left;padding:8px 14px;border:none;background:none;font-size:0.8125rem;color:#334155;cursor:pointer;border-top:1px solid #f1f5f9;">Manage members</button>
+                        <form action="{{ route('action-plans.duplicate', $plan) }}" method="POST" style="margin:0;border-top:1px solid #f1f5f9;">
+                            @csrf
+                            <button type="submit" style="display:block;width:100%;text-align:left;padding:8px 14px;border:none;background:none;font-size:0.8125rem;color:#334155;cursor:pointer;">Duplicate</button>
+                        </form>
+                        <form action="{{ route('action-plans.archive', $plan) }}" method="POST" style="margin:0;border-top:1px solid #f1f5f9;">
+                            @csrf
+                            <button type="submit" style="display:block;width:100%;text-align:left;padding:8px 14px;border:none;background:none;font-size:0.8125rem;color:#c2410c;cursor:pointer;">Archive</button>
+                        </form>
+                    </div>
+                </div>
+                @endif
+                @endcan
+            </div>
         </div>
         @endforeach
     </div>
@@ -129,13 +131,11 @@
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1.25rem;">
                 <div>
                     <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Start Date</label>
-                    <input type="date" name="start_date"
-                        style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
+                    <input type="date" name="start_date" style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
                 </div>
                 <div>
                     <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">End Date</label>
-                    <input type="date" name="end_date"
-                        style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
+                    <input type="date" name="end_date" style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
                 </div>
             </div>
             <div style="display:flex;gap:0.5rem;">
@@ -166,13 +166,11 @@
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.875rem;">
                 <div>
                     <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Start Date</label>
-                    <input type="date" id="edit-plan-start" name="start_date"
-                        style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
+                    <input type="date" id="edit-plan-start" name="start_date" style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
                 </div>
                 <div>
                     <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">End Date</label>
-                    <input type="date" id="edit-plan-end" name="end_date"
-                        style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
+                    <input type="date" id="edit-plan-end" name="end_date" style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
                 </div>
             </div>
             <div style="display:flex;gap:0.5rem;margin-bottom:0.5rem;">
@@ -194,33 +192,56 @@
     </div>
 </div>
 
-{{-- Add member modal --}}
-<div id="add-member-modal" style="display:none;position:fixed;inset:0;z-index:100;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);padding:1rem;">
-    <div style="background:#fff;border-radius:14px;width:100%;max-width:400px;padding:1.5rem;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
-        <h2 style="font-size:1rem;font-weight:700;color:#1e293b;margin:0 0 1.25rem;">Add Member</h2>
+{{-- Manage members modal --}}
+<div id="manage-members-modal" style="display:none;position:fixed;inset:0;z-index:100;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);padding:1rem;">
+    <div style="background:#fff;border-radius:14px;width:100%;max-width:420px;padding:1.5rem;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+        <h2 style="font-size:1rem;font-weight:700;color:#1e293b;margin:0 0 1.25rem;">Manage Members</h2>
+        <div id="members-list" style="margin-bottom:1rem;display:flex;flex-direction:column;gap:0.375rem;"></div>
         <form id="add-member-form" method="POST">
             @csrf
-            <div style="margin-bottom:1rem;">
-                <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">User</label>
+            <div style="display:flex;gap:0.5rem;align-items:center;">
                 <select name="user_id" required
-                    style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.8125rem;color:#334155;background:#fff;box-sizing:border-box;">
-                    <option value="">Select user…</option>
+                    style="flex:1;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.8125rem;color:#334155;background:#fff;box-sizing:border-box;">
+                    <option value="">Add a member…</option>
                     @foreach($allUsers as $u)
                     <option value="{{ $u->id }}">{{ $u->name }}</option>
                     @endforeach
                 </select>
-            </div>
-            <div style="display:flex;gap:0.5rem;">
-                <button type="submit" style="padding:0.45rem 1rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.8125rem;font-weight:600;border:none;cursor:pointer;">Add Member</button>
-                <button type="button" onclick="document.getElementById('add-member-modal').style.display='none'"
-                    style="padding:0.45rem 1rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.8125rem;cursor:pointer;">Cancel</button>
+                <button type="submit" style="padding:0.45rem 0.875rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.8125rem;font-weight:600;border:none;cursor:pointer;white-space:nowrap;">Add</button>
             </div>
         </form>
+        <div style="margin-top:1rem;text-align:right;">
+            <button type="button" onclick="document.getElementById('manage-members-modal').style.display='none'"
+                style="padding:0.45rem 1rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.8125rem;cursor:pointer;">Done</button>
+        </div>
     </div>
 </div>
 
 <script>
 var planRouteBase = '{{ url("action-plans") }}';
+
+// Stored plan members data for the manage members modal
+var plansData = {
+    @foreach($plans as $plan)
+    {{ $plan->id }}: {
+        members: [
+            @foreach($plan->members as $m)
+            { id: {{ $m->user->id }}, name: {{ json_encode($m->user->name) }} },
+            @endforeach
+        ]
+    },
+    @endforeach
+};
+
+function toggleMenu(id) {
+    var menu = document.getElementById('menu-' + id);
+    // Close all other menus first
+    document.querySelectorAll('[id^="menu-"]').forEach(function(m) {
+        if (m.id !== 'menu-' + id) m.style.display = 'none';
+    });
+    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+
 function openEditPlan(id, name, desc, start, end) {
     document.getElementById('edit-plan-form').action    = planRouteBase + '/' + id;
     document.getElementById('archive-plan-form').action = planRouteBase + '/' + id + '/archive';
@@ -229,14 +250,44 @@ function openEditPlan(id, name, desc, start, end) {
     document.getElementById('edit-plan-desc').value  = desc;
     document.getElementById('edit-plan-start').value = start || '';
     document.getElementById('edit-plan-end').value   = end   || '';
+    closeAllMenus();
     document.getElementById('edit-plan-modal').style.display = 'flex';
 }
-function openAddMember(id) {
-    document.getElementById('add-member-form').action = planRouteBase + '/' + id + '/members';
-    document.getElementById('add-member-modal').style.display = 'flex';
+
+function openManageMembers(planId) {
+    var data = plansData[planId] || { members: [] };
+    var list = document.getElementById('members-list');
+    list.innerHTML = '';
+    data.members.forEach(function(m) {
+        var row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#f8fafc;border-radius:7px;';
+        row.innerHTML = '<span style="font-size:0.8125rem;color:#334155;">' + m.name + '</span>'
+            + '<form action="' + planRouteBase + '/' + planId + '/members/' + m.id + '" method="POST" style="margin:0;">'
+            + '<input type="hidden" name="_token" value="{{ csrf_token() }}">'
+            + '<input type="hidden" name="_method" value="DELETE">'
+            + '<button type="submit" style="padding:2px 8px;border-radius:5px;border:1px solid #fca5a5;background:#fff;color:#dc2626;font-size:0.72rem;cursor:pointer;">Remove</button>'
+            + '</form>';
+        list.appendChild(row);
+    });
+    if (!data.members.length) {
+        list.innerHTML = '<p style="font-size:0.8125rem;color:#94a3b8;margin:0;">No members yet.</p>';
+    }
+    document.getElementById('add-member-form').action = planRouteBase + '/' + planId + '/members';
+    closeAllMenus();
+    document.getElementById('manage-members-modal').style.display = 'flex';
 }
+
+function closeAllMenus() {
+    document.querySelectorAll('[id^="menu-"]').forEach(function(m) { m.style.display = 'none'; });
+}
+
 document.addEventListener('click', function(e) {
-    ['create-plan-modal','edit-plan-modal','add-member-modal'].forEach(function(id) {
+    // Close ⋯ menus when clicking outside
+    if (!e.target.closest('[id^="menu-"]') && !e.target.closest('button[onclick^="toggleMenu"]')) {
+        closeAllMenus();
+    }
+    // Close modals when clicking backdrop
+    ['create-plan-modal','edit-plan-modal','manage-members-modal'].forEach(function(id) {
         var el = document.getElementById(id);
         if (el && e.target === el) el.style.display = 'none';
     });
@@ -255,15 +306,10 @@ if (grid) {
         handle: '.drag-handle',
         animation: 150,
         onEnd: function() {
-            var ids = Array.from(grid.children).map(function(el) {
-                return el.getAttribute('data-id');
-            });
+            var ids = Array.from(grid.children).map(function(el) { return el.getAttribute('data-id'); });
             fetch('{{ route('action-plans.reorder') }}', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
                 body: JSON.stringify({ ids: ids })
             });
         }
