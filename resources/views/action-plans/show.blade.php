@@ -28,11 +28,6 @@
                 Import CSV
             </button>
             @endcan
-            <button onclick="document.getElementById('copy-modal').style.display='flex'"
-                style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.45rem 0.875rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.8125rem;font-weight:600;cursor:pointer;">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                Copy Tasks
-            </button>
             <button onclick="document.getElementById('add-task-section').style.display = document.getElementById('add-task-section').style.display === 'none' ? 'block' : 'none'"
                 style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.45rem 0.875rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.8125rem;font-weight:600;border:none;cursor:pointer;">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -177,6 +172,8 @@
                     <td style="padding:9px 12px;text-align:right;white-space:nowrap;">
                         <button onclick="toggleEdit('edit-{{ $item->id }}')"
                             style="padding:3px 8px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.72rem;cursor:pointer;margin-right:4px;">Edit</button>
+                        <button onclick="openCopyItem({{ $item->id }})"
+                            style="padding:3px 8px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#6366f1;font-size:0.72rem;cursor:pointer;margin-right:4px;">Copy</button>
                         <form action="{{ route('action-plans.items.destroy', [$plan, $item]) }}" method="POST" style="display:inline-block;margin:0;"
                             onsubmit="return confirm('Delete this task?')">
                             @csrf @method('DELETE')
@@ -289,53 +286,30 @@
 </div>
 @endcan
 
-{{-- Copy Tasks Modal --}}
-<div id="copy-modal" style="display:none;position:fixed;inset:0;z-index:100;align-items:flex-start;justify-content:center;background:rgba(0,0,0,0.45);padding:2rem 1rem;overflow-y:auto;">
-    <div style="background:#fff;border-radius:14px;width:100%;max-width:700px;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid #f1f5f9;">
-            <h2 style="font-size:1rem;font-weight:700;color:#1e293b;margin:0;">Copy Tasks Forward</h2>
-            <button onclick="document.getElementById('copy-modal').style.display='none'" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:1.25rem;line-height:1;">&times;</button>
-        </div>
-        <div style="padding:1.25rem 1.5rem;">
-            <form action="{{ route('action-plans.items.copy', $plan) }}" method="POST">
-                @csrf
-                <div style="margin-bottom:1rem;">
-                    <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Copy for how many months ahead?</label>
-                    <select name="months"
-                        style="border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;background:#fff;">
-                        <option value="1">1 month</option>
-                        <option value="2">2 months</option>
-                        <option value="3" selected>3 months</option>
-                        <option value="6">6 months</option>
-                        <option value="12">12 months</option>
-                    </select>
-                </div>
-                <p style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 0.5rem;">Select tasks to copy</p>
-                <div style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;max-height:350px;overflow-y:auto;margin-bottom:1.25rem;">
-                    <div style="padding:6px 12px;background:#f8fafc;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;gap:8px;">
-                        <input type="checkbox" id="select-all-copy" onchange="toggleAllCopy(this)" style="cursor:pointer;">
-                        <label for="select-all-copy" style="font-size:0.75rem;font-weight:600;color:#475569;cursor:pointer;">Select all</label>
-                    </div>
-                    @foreach($plan->items as $item)
-                    <label style="display:flex;align-items:flex-start;gap:10px;padding:8px 12px;border-bottom:1px solid #f8fafc;cursor:pointer;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
-                        <input type="checkbox" name="item_ids[]" value="{{ $item->id }}" style="margin-top:2px;cursor:pointer;">
-                        <span style="flex:1;min-width:0;">
-                            <span style="font-size:0.8125rem;font-weight:500;color:#1e293b;">{{ $item->title }}</span>
-                            <span style="font-size:0.72rem;color:#94a3b8;display:block;">
-                                @if($item->brand){{ $item->brand }} · @endif
-                                {{ $item->week_commencing ? $item->week_commencing->format('d M Y') : 'No date' }}
-                            </span>
-                        </span>
-                    </label>
-                    @endforeach
-                </div>
-                <div style="display:flex;gap:0.5rem;">
-                    <button type="submit" style="padding:0.45rem 1rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.8125rem;font-weight:600;border:none;cursor:pointer;">Copy Selected Tasks</button>
-                    <button type="button" onclick="document.getElementById('copy-modal').style.display='none'"
-                        style="padding:0.45rem 1rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.8125rem;cursor:pointer;">Cancel</button>
-                </div>
-            </form>
-        </div>
+{{-- Copy Item Modal --}}
+<div id="copy-item-modal" style="display:none;position:fixed;inset:0;z-index:100;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);padding:1rem;">
+    <div style="background:#fff;border-radius:14px;width:100%;max-width:360px;padding:1.5rem;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+        <h2 style="font-size:1rem;font-weight:700;color:#1e293b;margin:0 0 1.25rem;">Copy Task Forward</h2>
+        <form id="copy-item-form" action="" method="POST">
+            @csrf
+            <input type="hidden" name="item_ids[]" id="copy-item-id" value="">
+            <div style="margin-bottom:1.25rem;">
+                <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">How many months ahead?</label>
+                <select name="months"
+                    style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.8125rem;color:#334155;background:#fff;box-sizing:border-box;">
+                    <option value="1">1 month</option>
+                    <option value="2">2 months</option>
+                    <option value="3" selected>3 months</option>
+                    <option value="6">6 months</option>
+                    <option value="12">12 months</option>
+                </select>
+            </div>
+            <div style="display:flex;gap:0.5rem;">
+                <button type="submit" style="padding:0.45rem 1rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.8125rem;font-weight:600;border:none;cursor:pointer;">Copy</button>
+                <button type="button" onclick="document.getElementById('copy-item-modal').style.display='none'"
+                    style="padding:0.45rem 1rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.8125rem;cursor:pointer;">Cancel</button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -368,11 +342,13 @@ function toggleEdit(id) {
     var el = document.getElementById(id);
     if (el) el.style.display = el.style.display === 'none' ? 'table-row' : 'none';
 }
-function toggleAllCopy(cb) {
-    document.querySelectorAll('#copy-modal input[name="item_ids[]"]').forEach(function(c) { c.checked = cb.checked; });
+function openCopyItem(itemId) {
+    document.getElementById('copy-item-id').value = itemId;
+    document.getElementById('copy-item-form').action = '{{ route('action-plans.items.copy', $plan) }}';
+    document.getElementById('copy-item-modal').style.display = 'flex';
 }
 document.addEventListener('click', function(e) {
-    ['copy-modal','import-modal'].forEach(function(id) {
+    ['copy-item-modal','import-modal'].forEach(function(id) {
         var el = document.getElementById(id);
         if (el && e.target === el) el.style.display = 'none';
     });
