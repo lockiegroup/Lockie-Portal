@@ -24,5 +24,6 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('reminders',          fn($user) => $user->hasModule('reminders'));
         Gate::define('factory_training',      fn($user) => $user->hasPermission('factory_training'));
         Gate::define('factory_training_view', fn($user) => $user->hasPermission('factory_training') || $user->hasModule('factory_training'));
+        Gate::define('imports',               fn($user) => $user->isMaster() || $user->hasPermission('imports'));
     }
 }

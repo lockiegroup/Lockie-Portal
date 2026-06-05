@@ -20,6 +20,7 @@ class User extends Authenticatable
         'key_actions_admin'  => 'Key Actions Admin',
         'action_plans_admin' => 'Action Plans Admin',
         'factory_training'   => 'Factory Training',
+        'imports'            => 'Imports',
     ];
 
     const MODULES = [

@@ -16,14 +16,12 @@ class ImportsController extends Controller
 {
     public function index(): View
     {
+        abort_unless(auth()->user()->can('imports'), 403);
+
         $user    = auth()->user();
         $doKA    = $user->hasModule('key_accounts') || $user->can('key_accounts_admin');
         $doStock = $user->can('stock_ordering');
         $doCrm   = $user->hasModule('crm');
-
-        if (!$doKA && !$doStock) {
-            abort(403);
-        }
 
         $substitutions = $doStock ? StockWatchlistSubstitution::orderBy('id')->get() : collect();
 
