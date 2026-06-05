@@ -55,16 +55,20 @@ class CrmController extends Controller
 
         $customers = $query->get();
 
-        // Subtract credits from customer totals (credits have no warehouse column, applied globally)
-        $creditMap = DB::table('credits_lines')
+        // Subtract credits from customer totals
+        $creditQuery = DB::table('credits_lines')
             ->selectRaw("
                 customer_code,
                 SUM(CASE WHEN credit_date >= ? THEN sub_total ELSE 0 END) as current_credit,
                 SUM(CASE WHEN credit_date >= ? AND credit_date < ? THEN sub_total ELSE 0 END) as prev_credit
             ", [$curr1, $prev1, $curr1])
-            ->groupBy('customer_code')
-            ->get()
-            ->keyBy('customer_code');
+            ->groupBy('customer_code');
+        if ($warehouse) {
+            $creditQuery->where(function ($q) use ($warehouse) {
+                $q->where('warehouse', $warehouse)->orWhereNull('warehouse');
+            });
+        }
+        $creditMap = $creditQuery->get()->keyBy('customer_code');
 
         foreach ($customers as $c) {
             $cr = $creditMap->get($c->customer_code);
@@ -174,13 +178,18 @@ class CrmController extends Controller
         $kpi = $kpiQ->first();
 
         // Subtract credits from KPI totals
-        $creditKpi = DB::table('credits_lines')
+        $creditKpiQ = DB::table('credits_lines')
             ->where('customer_code', $customerCode)
             ->selectRaw("
                 SUM(CASE WHEN credit_date >= ? THEN sub_total ELSE 0 END) as credit12m,
                 SUM(CASE WHEN credit_date >= ? AND credit_date < ? THEN sub_total ELSE 0 END) as prev_credit12m
-            ", [$cut12, $cut24, $cut12])
-            ->first();
+            ", [$cut12, $cut24, $cut12]);
+        if ($warehouse) {
+            $creditKpiQ->where(function ($q) use ($warehouse) {
+                $q->where('warehouse', $warehouse)->orWhereNull('warehouse');
+            });
+        }
+        $creditKpi = $creditKpiQ->first();
 
         $total12m    = (float) ($kpi->total12m ?? 0) - (float) ($creditKpi->credit12m    ?? 0);
         $totalPrev12 = (float) ($kpi->prev12m  ?? 0) - (float) ($creditKpi->prev_credit12m ?? 0);
@@ -212,7 +221,7 @@ class CrmController extends Controller
         }
 
         // Subtract credits per year/quarter
-        $creditsByYear = DB::table('credits_lines')
+        $creditsByYearQ = DB::table('credits_lines')
             ->where('customer_code', $customerCode)
             ->selectRaw("
                 YEAR(credit_date) as yr,
@@ -222,9 +231,13 @@ class CrmController extends Controller
                 SUM(CASE WHEN MONTH(credit_date) BETWEEN 10 AND 12 THEN sub_total ELSE 0 END) as q4,
                 SUM(sub_total) as total
             ")
-            ->groupByRaw('YEAR(credit_date)')
-            ->get()
-            ->keyBy('yr');
+            ->groupByRaw('YEAR(credit_date)');
+        if ($warehouse) {
+            $creditsByYearQ->where(function ($q) use ($warehouse) {
+                $q->where('warehouse', $warehouse)->orWhereNull('warehouse');
+            });
+        }
+        $creditsByYear = $creditsByYearQ->get()->keyBy('yr');
 
         $byYear = [];
         foreach ($qtrQ->get() as $row) {
@@ -256,12 +269,16 @@ class CrmController extends Controller
         }
 
         // Subtract credits per product
-        $creditProducts = DB::table('credits_lines')
+        $creditProductsQ = DB::table('credits_lines')
             ->where('customer_code', $customerCode)
             ->selectRaw("product_code, SUM(sub_total) as total, SUM(quantity) as qty")
-            ->groupBy('product_code')
-            ->get()
-            ->keyBy('product_code');
+            ->groupBy('product_code');
+        if ($warehouse) {
+            $creditProductsQ->where(function ($q) use ($warehouse) {
+                $q->where('warehouse', $warehouse)->orWhereNull('warehouse');
+            });
+        }
+        $creditProducts = $creditProductsQ->get()->keyBy('product_code');
 
         $topProducts = $prodQ->get()->map(fn($r) => [
             'product_code' => $r->product_code,

@@ -245,6 +245,7 @@ class ImportsController extends Controller
             $colCustomer   = array_search('customer code', $header);
             $colProduct    = array_search('product code',  $header);
             $colQty        = array_search('quantity',      $header);
+            $colWarehouse  = array_search('warehouse',     $header);
             $colSubTotal   = array_search('sub total',     $header);
             $colStatus     = array_search('status',        $header);
 
@@ -282,11 +283,12 @@ class ImportsController extends Controller
                 }
 
                 $insertRows[] = [
-                    'credit_no'     => $colCreditNo !== false ? (substr(trim((string)($row[$colCreditNo] ?? '')), 0, 50) ?: null) : null,
+                    'credit_no'     => $colCreditNo  !== false ? (substr(trim((string)($row[$colCreditNo]  ?? '')), 0, 50)  ?: null) : null,
                     'credit_date'   => $creditDate->format('Y-m-d'),
-                    'customer_code' => $colCustomer !== false ? (substr(trim((string)($row[$colCustomer] ?? '')), 0, 100) ?: null) : null,
+                    'customer_code' => $colCustomer  !== false ? (substr(trim((string)($row[$colCustomer]  ?? '')), 0, 100) ?: null) : null,
                     'product_code'  => $productCode ?: null,
-                    'quantity'      => max(0, (float)str_replace([',', '£', '$', '€'], '', $colQty !== false ? ($row[$colQty] ?? 0) : 0)),
+                    'warehouse'     => $colWarehouse !== false ? (substr(trim((string)($row[$colWarehouse] ?? '')), 0, 100) ?: null) : null,
+                    'quantity'      => max(0, (float)str_replace([',', '£', '$', '€'], '', $colQty      !== false ? ($row[$colQty]      ?? 0) : 0)),
                     'sub_total'     => max(0, (float)str_replace([',', '£', '$', '€'], '', $colSubTotal !== false ? ($row[$colSubTotal] ?? 0) : 0)),
                     'status'        => $status ? substr($status, 0, 50) : null,
                     'created_at'    => $now,
