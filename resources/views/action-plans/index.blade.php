@@ -84,10 +84,10 @@
                 @else
                 <div style="display:flex;gap:0.375rem;align-items:center;">
                     <button type="button"
-                        onclick="alert('JS works - plan ' + {{ $plan->id }}); event.stopPropagation(); openEditPlan({{ $plan->id }}, '{{ addslashes($plan->name) }}', '{{ addslashes($plan->description ?? '') }}', '{{ $plan->start_date?->format('Y-m-d') }}', '{{ $plan->end_date?->format('Y-m-d') }}')"
+                        onclick="event.stopPropagation(); openEditPlan({{ $plan->id }}, '{{ addslashes($plan->name) }}', '{{ addslashes($plan->description ?? '') }}', '{{ $plan->start_date?->format('Y-m-d') }}', '{{ $plan->end_date?->format('Y-m-d') }}')"
                         style="padding:3px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-size:0.75rem;cursor:pointer;">Edit</button>
                     <button type="button"
-                        onclick="alert('members clicked'); try { openManageMembers({{ $plan->id }}) } catch(e) { alert('err: ' + e.message) }"
+                        onclick="event.stopPropagation(); openManageMembers({{ $plan->id }})"
                         style="padding:3px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-size:0.75rem;cursor:pointer;">Members</button>
                 </div>
                 @endif
@@ -220,7 +220,7 @@ var plansData = {
     {{ $plan->id }}: {
         members: [
             @foreach($plan->members as $m)
-            { id: {{ $m->user->id }}, name: {{ json_encode($m->user->name) }} },
+            { id: {{ $m->user->id }}, name: @json($m->user->name) },
             @endforeach
         ]
     },
@@ -240,10 +240,8 @@ function openEditPlan(id, name, desc, start, end) {
 }
 
 function openManageMembers(planId) {
-    try {
     var data = plansData[planId] || { members: [] };
     var list = document.getElementById('members-list');
-    if (!list) { alert('ERROR: members-list not found'); return; }
     list.innerHTML = '';
     data.members.forEach(function(m) {
         var row = document.createElement('div');
@@ -259,13 +257,8 @@ function openManageMembers(planId) {
     if (!data.members.length) {
         list.innerHTML = '<p style="font-size:0.8125rem;color:#94a3b8;margin:0;">No members yet.</p>';
     }
-    var addForm = document.getElementById('add-member-form');
-    if (!addForm) { alert('ERROR: add-member-form not found'); return; }
-    addForm.action = planRouteBase + '/' + planId + '/members';
-    var modal = document.getElementById('manage-members-modal');
-    if (!modal) { alert('ERROR: manage-members-modal not found'); return; }
-    modal.style.display = 'flex';
-    } catch(e) { alert('openManageMembers error: ' + e.message); }
+    document.getElementById('add-member-form').action = planRouteBase + '/' + planId + '/members';
+    document.getElementById('manage-members-modal').style.display = 'flex';
 }
 
 document.addEventListener('click', function(e) {
