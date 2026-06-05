@@ -326,7 +326,7 @@ class ActionPlanController extends Controller
                     'assigned_user_ids' => $item->assigned_user_ids,
                     'week_commencing'   => $newDate,
                     'status'            => 'not_started',
-                    'notes'             => null,
+                    'notes'             => $item->notes,
                     'sort_order'        => $item->sort_order,
                 ]);
                 $created++;
