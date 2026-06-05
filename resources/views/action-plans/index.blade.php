@@ -35,12 +35,21 @@
         @if(!$showArchived) @can('admin') Click "New Plan" to create one.@endcan @endif
     </div>
     @else
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;">
+    <div id="plans-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;">
         @foreach($plans as $plan)
-        <div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:0.75rem;{{ $plan->is_archived ? 'opacity:0.7;' : '' }}">
+        <div data-id="{{ $plan->id }}" style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:0.75rem;{{ $plan->is_archived ? 'opacity:0.7;' : '' }}">
             <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:0.5rem;">
-                <a href="{{ route('action-plans.show', $plan) }}"
-                    style="font-size:1rem;font-weight:700;color:#1e293b;text-decoration:none;">{{ $plan->name }}</a>
+                <div style="display:flex;align-items:center;gap:0.5rem;min-width:0;">
+                    @can('admin')
+                    @if(!$showArchived)
+                    <span class="drag-handle" style="cursor:grab;color:#cbd5e1;flex-shrink:0;line-height:0;" title="Drag to reorder">
+                        <svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor"><circle cx="3" cy="3" r="1.5"/><circle cx="9" cy="3" r="1.5"/><circle cx="3" cy="8" r="1.5"/><circle cx="9" cy="8" r="1.5"/><circle cx="3" cy="13" r="1.5"/><circle cx="9" cy="13" r="1.5"/></svg>
+                    </span>
+                    @endif
+                    @endcan
+                    <a href="{{ route('action-plans.show', $plan) }}"
+                        style="font-size:1rem;font-weight:700;color:#1e293b;text-decoration:none;">{{ $plan->name }}</a>
+                </div>
                 @can('admin')
                 <div style="display:flex;gap:4px;flex-shrink:0;">
                     @if(!$plan->is_archived)
@@ -58,7 +67,7 @@
                     @endif
                 </div>
                 @endcan
-            </div>
+            </div>{{-- end header row --}}
             @if($plan->description)
             <p style="color:#64748b;font-size:0.8125rem;margin:0;">{{ $plan->description }}</p>
             @endif
@@ -232,6 +241,34 @@ document.addEventListener('click', function(e) {
         if (el && e.target === el) el.style.display = 'none';
     });
 });
+</script>
+@endif
+@endcan
+
+@can('admin')
+@if(!$showArchived)
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script>
+var grid = document.getElementById('plans-grid');
+if (grid) {
+    Sortable.create(grid, {
+        handle: '.drag-handle',
+        animation: 150,
+        onEnd: function() {
+            var ids = Array.from(grid.children).map(function(el) {
+                return el.getAttribute('data-id');
+            });
+            fetch('{{ route('action-plans.reorder') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ ids: ids })
+            });
+        }
+    });
+}
 </script>
 @endif
 @endcan

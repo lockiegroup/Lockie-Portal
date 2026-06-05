@@ -283,6 +283,7 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::delete('/{plan}/items/{item}',                    [ActionPlanController::class, 'destroyItem'])->name('items.destroy');
         Route::post('/{plan}/copy',                              [ActionPlanController::class, 'copyItems'])->name('items.copy');
         Route::middleware('can:admin')->group(function () {
+            Route::post('/reorder',                              [ActionPlanController::class, 'reorder'])->name('reorder');
             Route::post('/',                                     [ActionPlanController::class, 'store'])->name('store');
             Route::put('/{plan}',                                [ActionPlanController::class, 'update'])->name('update');
             Route::delete('/{plan}',                             [ActionPlanController::class, 'destroy'])->name('destroy');

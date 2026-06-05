@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ActionPlan extends Model
 {
-    protected $fillable = ['name', 'description', 'created_by', 'is_archived', 'start_date', 'end_date'];
+    protected $fillable = ['name', 'description', 'created_by', 'is_archived', 'start_date', 'end_date', 'sort_order'];
 
     protected function casts(): array
     {

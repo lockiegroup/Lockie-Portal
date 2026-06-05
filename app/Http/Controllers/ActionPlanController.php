@@ -31,7 +31,7 @@ class ActionPlanController extends Controller
 
         $query = ActionPlan::with(['members.user'])
             ->where('is_archived', $showArchived)
-            ->orderBy('name');
+            ->orderBy('sort_order')->orderBy('name');
 
         $plans = $this->isAdmin()
             ? $query->get()
@@ -84,6 +84,16 @@ class ActionPlanController extends Controller
         abort_unless($this->isAdmin(), 403);
         $plan->delete();
         return redirect()->route('action-plans.index')->with('success', 'Plan deleted.');
+    }
+
+    public function reorder(Request $request): \Illuminate\Http\JsonResponse
+    {
+        abort_unless($this->isAdmin(), 403);
+        $request->validate(['ids' => 'required|array', 'ids.*' => 'integer']);
+        foreach ($request->ids as $order => $id) {
+            ActionPlan::where('id', $id)->update(['sort_order' => $order]);
+        }
+        return response()->json(['ok' => true]);
     }
 
     public function archive(ActionPlan $plan): RedirectResponse
