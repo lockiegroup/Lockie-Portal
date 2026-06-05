@@ -19,7 +19,6 @@ class User extends Authenticatable
         'key_accounts_admin' => 'Key Accounts Admin',
         'key_actions_admin'  => 'Key Actions Admin',
         'action_plans_admin' => 'Action Plans Admin',
-        'reminders'          => 'Order Reminders',
         'factory_training'   => 'Factory Training',
     ];
 
@@ -27,7 +26,6 @@ class User extends Authenticatable
         'sales'            => 'Sales',
         'stock'            => 'Stock Overview',
         'stock_ordering'   => 'Stock Watchlist',
-        'health_safety'    => 'Health & Safety',
         'envelopes'        => 'Church Envelopes',
         'policies'         => 'Policies',
         'print_schedule'   => 'Print Schedule',
@@ -35,6 +33,7 @@ class User extends Authenticatable
         'key_accounts'     => 'Key Accounts',
         'crm'              => 'Customer Insights (CRM)',
         'factory_training' => 'Factory Training',
+        'reminders'        => 'Order Reminders',
     ];
 
     protected $fillable = ['name', 'email', 'password', 'role', 'is_active', 'permissions', 'modules', 'last_login_at'];
