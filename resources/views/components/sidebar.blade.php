@@ -49,8 +49,8 @@
         @if($user->hasModule('sales') || $user->can('cash_flow') || $user->hasModule('amazon'))
         <div style="height:1px;background:#1e293b;margin:10px 4px 2px;"></div>
         <button onclick="sbSection('finance')" class="sb-section-btn sb-label" data-tip="Finance">
-            <span style="font-size:0.625rem;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:0.1em;">Finance</span>
-            <svg id="sc-finance" style="width:10px;height:10px;flex-shrink:0;transition:transform 0.2s;color:#334155;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            <span style="font-size:0.625rem;font-weight:700;text-transform:uppercase;">Finance</span>
+            <svg id="sc-finance" style="width:10px;height:10px;flex-shrink:0;transition:transform 0.2s;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div id="ss-finance">
             @if($user->hasModule('sales'))
@@ -86,8 +86,8 @@
         @if($user->hasModule('stock') || $user->can('stock_ordering'))
         <div style="height:1px;background:#1e293b;margin:10px 4px 2px;"></div>
         <button onclick="sbSection('stock')" class="sb-section-btn sb-label" data-tip="Stock">
-            <span style="font-size:0.625rem;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:0.1em;">Stock</span>
-            <svg id="sc-stock" style="width:10px;height:10px;flex-shrink:0;transition:transform 0.2s;color:#334155;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            <span style="font-size:0.625rem;font-weight:700;text-transform:uppercase;">Stock</span>
+            <svg id="sc-stock" style="width:10px;height:10px;flex-shrink:0;transition:transform 0.2s;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div id="ss-stock">
             @if($user->hasModule('stock'))
@@ -114,8 +114,8 @@
         @if($showKeyActions || $showActionPlans)
         <div style="height:1px;background:#1e293b;margin:10px 4px 2px;"></div>
         <button onclick="sbSection('planning')" class="sb-section-btn sb-label" data-tip="Planning">
-            <span style="font-size:0.625rem;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:0.1em;">Planning</span>
-            <svg id="sc-planning" style="width:10px;height:10px;flex-shrink:0;transition:transform 0.2s;color:#334155;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            <span style="font-size:0.625rem;font-weight:700;text-transform:uppercase;">Planning</span>
+            <svg id="sc-planning" style="width:10px;height:10px;flex-shrink:0;transition:transform 0.2s;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div id="ss-planning">
             @if($showKeyActions)
@@ -141,8 +141,8 @@
         @if($user->hasModule('key_accounts') || $user->hasModule('crm') || $user->can('reminders'))
         <div style="height:1px;background:#1e293b;margin:10px 4px 2px;"></div>
         <button onclick="sbSection('customers')" class="sb-section-btn sb-label" data-tip="Customers">
-            <span style="font-size:0.625rem;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:0.1em;">Customers</span>
-            <svg id="sc-customers" style="width:10px;height:10px;flex-shrink:0;transition:transform 0.2s;color:#334155;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            <span style="font-size:0.625rem;font-weight:700;text-transform:uppercase;">Customers</span>
+            <svg id="sc-customers" style="width:10px;height:10px;flex-shrink:0;transition:transform 0.2s;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div id="ss-customers">
             @if($user->hasModule('key_accounts'))
@@ -180,8 +180,8 @@
         @if($user->hasModule('envelopes') || $user->hasModule('policies') || $user->can('factory_training_view') || $user->hasModule('print_schedule'))
         <div style="height:1px;background:#1e293b;margin:10px 4px 2px;"></div>
         <button onclick="sbSection('operations')" class="sb-section-btn sb-label" data-tip="Operations">
-            <span style="font-size:0.625rem;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:0.1em;">Operations</span>
-            <svg id="sc-operations" style="width:10px;height:10px;flex-shrink:0;transition:transform 0.2s;color:#334155;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            <span style="font-size:0.625rem;font-weight:700;text-transform:uppercase;">Operations</span>
+            <svg id="sc-operations" style="width:10px;height:10px;flex-shrink:0;transition:transform 0.2s;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div id="ss-operations">
             @if($user->hasModule('envelopes'))
@@ -233,8 +233,8 @@
         @canany(['manage_users', 'print_settings', 'envelope_settings', 'policy_settings', 'cash_flow', 'key_accounts_admin', 'imports'])
         <div style="height:1px;background:#1e293b;margin:10px 4px 2px;"></div>
         <button onclick="sbSection('admin')" class="sb-section-btn sb-label" data-tip="Admin">
-            <span style="font-size:0.625rem;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:0.1em;">Admin</span>
-            <svg id="sc-admin" style="width:10px;height:10px;flex-shrink:0;transition:transform 0.2s;color:#334155;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            <span style="font-size:0.625rem;font-weight:700;text-transform:uppercase;">Admin</span>
+            <svg id="sc-admin" style="width:10px;height:10px;flex-shrink:0;transition:transform 0.2s;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div id="ss-admin">
             @can('manage_users')
@@ -349,7 +349,18 @@
     transition: background 0.15s;
 }
 .sb-section-btn:hover {
-    background: rgba(255,255,255,0.04);
+    background: rgba(255,255,255,0.06);
+}
+.sb-section-btn span {
+    color: #64748b !important;
+    letter-spacing: 0.08em;
+}
+.sb-section-btn svg {
+    color: #475569 !important;
+}
+.sb-section-btn:hover span,
+.sb-section-btn:hover svg {
+    color: #94a3b8 !important;
 }
 </style>
 
@@ -378,9 +389,10 @@
 
     function sectionOpen(name) {
         var saved = localStorage.getItem('sb_sec_' + name);
-        // Always open if active route is in this section; otherwise use saved state or default open
+        // Always open if active route is in this section
         if (activeSections[name]) return true;
-        if (saved === null) return true;
+        // Use saved state; default collapsed
+        if (saved === null) return false;
         return saved === '1';
     }
 
