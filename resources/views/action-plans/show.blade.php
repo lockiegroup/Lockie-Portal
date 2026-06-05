@@ -164,7 +164,12 @@
                             {{ $statusLabels[$item->status] }}
                         </span>
                     </td>
-                    <td style="padding:9px 12px;color:#64748b;font-size:0.8rem;max-width:220px;">{{ $item->notes ?: '—' }}</td>
+                    <td style="padding:9px 12px;color:#64748b;font-size:0.8rem;max-width:220px;">
+                        @if($item->notes)
+                        <div style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.4;" title="{{ $item->notes }}">{{ $item->notes }}</div>
+                        @else —
+                        @endif
+                    </td>
                     <td style="padding:9px 12px;text-align:right;white-space:nowrap;">
                         <button onclick="toggleEdit('edit-{{ $item->id }}')"
                             style="padding:3px 8px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.72rem;cursor:pointer;margin-right:4px;">Edit</button>

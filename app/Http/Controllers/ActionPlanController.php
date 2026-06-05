@@ -245,12 +245,17 @@ class ActionPlanController extends Controller
                 }
             }
 
-            // Week commencing
+            // Week commencing — parse as DD/MM/YYYY, fallback to other formats
             $wcRaw = trim($data['wc date'] ?? $data['week commencing'] ?? $data['week_commencing'] ?? '');
             $wcRaw = preg_replace('/^wc\s*/i', '', $wcRaw);
             $wc    = null;
             if ($wcRaw) {
-                try { $wc = \Carbon\Carbon::parse($wcRaw)->format('Y-m-d'); } catch (\Exception $e) {}
+                foreach (['d/m/Y', 'j/n/Y', 'd-m-Y', 'Y-m-d', 'd/m/y'] as $fmt) {
+                    try {
+                        $wc = \Carbon\Carbon::createFromFormat($fmt, $wcRaw)->format('Y-m-d');
+                        break;
+                    } catch (\Exception $e) {}
+                }
             }
 
             // Date range check
