@@ -35,7 +35,6 @@
         @if(!$showArchived) @can('admin') Click "New Plan" to create one.@endcan @endif
     </div>
     @else
-    <div id="menu-backdrop" onclick="closeAllMenus()" style="display:none;position:fixed;inset:0;z-index:5;"></div>
     <div id="plans-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;">
         @foreach($plans as $plan)
         <div data-id="{{ $plan->id }}"
@@ -83,23 +82,13 @@
                     <button type="submit" style="padding:3px 10px;border-radius:6px;border:1px solid #bbf7d0;background:#f0fdf4;color:#166534;font-size:0.72rem;cursor:pointer;">Restore</button>
                 </form>
                 @else
-                <div style="position:relative;">
-                    <button onclick="toggleMenu({{ $plan->id }})"
-                        style="padding:4px 8px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-size:1rem;line-height:1;cursor:pointer;" title="Actions">&#8943;</button>
-                    <div id="menu-{{ $plan->id }}" style="display:none;position:absolute;bottom:calc(100% + 4px);right:0;background:#fff;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.1);min-width:140px;z-index:20;overflow:hidden;">
-                        <button onclick="openEditPlan({{ $plan->id }}, '{{ addslashes($plan->name) }}', '{{ addslashes($plan->description ?? '') }}', '{{ $plan->start_date?->format('Y-m-d') }}', '{{ $plan->end_date?->format('Y-m-d') }}')"
-                            style="display:block;width:100%;text-align:left;padding:8px 14px;border:none;background:none;font-size:0.8125rem;color:#334155;cursor:pointer;">Edit plan</button>
-                        <button onclick="openManageMembers({{ $plan->id }})"
-                            style="display:block;width:100%;text-align:left;padding:8px 14px;border:none;background:none;font-size:0.8125rem;color:#334155;cursor:pointer;border-top:1px solid #f1f5f9;">Manage members</button>
-                        <form action="{{ route('action-plans.duplicate', $plan) }}" method="POST" style="margin:0;border-top:1px solid #f1f5f9;">
-                            @csrf
-                            <button type="submit" style="display:block;width:100%;text-align:left;padding:8px 14px;border:none;background:none;font-size:0.8125rem;color:#334155;cursor:pointer;">Duplicate</button>
-                        </form>
-                        <form action="{{ route('action-plans.archive', $plan) }}" method="POST" style="margin:0;border-top:1px solid #f1f5f9;">
-                            @csrf
-                            <button type="submit" style="display:block;width:100%;text-align:left;padding:8px 14px;border:none;background:none;font-size:0.8125rem;color:#c2410c;cursor:pointer;">Archive</button>
-                        </form>
-                    </div>
+                <div style="display:flex;gap:0.375rem;align-items:center;">
+                    <button type="button"
+                        onclick="openEditPlan({{ $plan->id }}, '{{ addslashes($plan->name) }}', '{{ addslashes($plan->description ?? '') }}', '{{ $plan->start_date?->format('Y-m-d') }}', '{{ $plan->end_date?->format('Y-m-d') }}')"
+                        style="padding:3px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-size:0.75rem;cursor:pointer;">Edit</button>
+                    <button type="button"
+                        onclick="openManageMembers({{ $plan->id }})"
+                        style="padding:3px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-size:0.75rem;cursor:pointer;">Members</button>
                 </div>
                 @endif
                 @endcan
@@ -180,7 +169,11 @@
                     style="padding:0.45rem 1rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.8125rem;cursor:pointer;">Cancel</button>
             </div>
         </form>
-        <div style="display:flex;gap:0.5rem;padding-top:0.5rem;border-top:1px solid #f1f5f9;">
+        <div style="display:flex;gap:0.5rem;padding-top:0.5rem;border-top:1px solid #f1f5f9;flex-wrap:wrap;">
+            <form id="duplicate-plan-form" method="POST" style="margin:0;">
+                @csrf
+                <button type="submit" style="padding:0.35rem 0.75rem;border-radius:7px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.75rem;cursor:pointer;">Duplicate</button>
+            </form>
             <form id="archive-plan-form" method="POST" style="margin:0;">
                 @csrf
                 <button type="submit" style="padding:0.35rem 0.75rem;border-radius:7px;border:1px solid #fed7aa;background:#fff;color:#c2410c;font-size:0.75rem;cursor:pointer;">Archive Plan</button>
@@ -234,26 +227,15 @@ var plansData = {
     @endforeach
 };
 
-function toggleMenu(id) {
-    var menu = document.getElementById('menu-' + id);
-    var backdrop = document.getElementById('menu-backdrop');
-    var isOpen = menu.style.display !== 'none';
-    closeAllMenus();
-    if (!isOpen) {
-        menu.style.display = 'block';
-        backdrop.style.display = 'block';
-    }
-}
-
 function openEditPlan(id, name, desc, start, end) {
-    document.getElementById('edit-plan-form').action    = planRouteBase + '/' + id;
-    document.getElementById('archive-plan-form').action = planRouteBase + '/' + id + '/archive';
-    document.getElementById('delete-plan-form').action  = planRouteBase + '/' + id;
+    document.getElementById('edit-plan-form').action      = planRouteBase + '/' + id;
+    document.getElementById('duplicate-plan-form').action = planRouteBase + '/' + id + '/duplicate';
+    document.getElementById('archive-plan-form').action   = planRouteBase + '/' + id + '/archive';
+    document.getElementById('delete-plan-form').action    = planRouteBase + '/' + id;
     document.getElementById('edit-plan-name').value  = name;
     document.getElementById('edit-plan-desc').value  = desc;
     document.getElementById('edit-plan-start').value = start || '';
     document.getElementById('edit-plan-end').value   = end   || '';
-    closeAllMenus();
     document.getElementById('edit-plan-modal').style.display = 'flex';
 }
 
@@ -276,18 +258,10 @@ function openManageMembers(planId) {
         list.innerHTML = '<p style="font-size:0.8125rem;color:#94a3b8;margin:0;">No members yet.</p>';
     }
     document.getElementById('add-member-form').action = planRouteBase + '/' + planId + '/members';
-    closeAllMenus();
     document.getElementById('manage-members-modal').style.display = 'flex';
 }
 
-function closeAllMenus() {
-    document.querySelectorAll('[id^="menu-"]').forEach(function(m) { m.style.display = 'none'; });
-    var backdrop = document.getElementById('menu-backdrop');
-    if (backdrop) backdrop.style.display = 'none';
-}
-
 document.addEventListener('click', function(e) {
-    // Close modals when clicking backdrop
     ['create-plan-modal','edit-plan-modal','manage-members-modal'].forEach(function(id) {
         var el = document.getElementById(id);
         if (el && e.target === el) el.style.display = 'none';
