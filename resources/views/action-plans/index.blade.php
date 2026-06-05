@@ -84,7 +84,7 @@
                 @else
                 <div style="display:flex;gap:0.375rem;align-items:center;">
                     <button type="button"
-                        onclick="event.stopPropagation(); openEditPlan({{ $plan->id }}, '{{ addslashes($plan->name) }}', '{{ addslashes($plan->description ?? '') }}', '{{ $plan->start_date?->format('Y-m-d') }}', '{{ $plan->end_date?->format('Y-m-d') }}')"
+                        onclick="alert('JS works - plan ' + {{ $plan->id }}); event.stopPropagation(); openEditPlan({{ $plan->id }}, '{{ addslashes($plan->name) }}', '{{ addslashes($plan->description ?? '') }}', '{{ $plan->start_date?->format('Y-m-d') }}', '{{ $plan->end_date?->format('Y-m-d') }}')"
                         style="padding:3px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-size:0.75rem;cursor:pointer;">Edit</button>
                     <button type="button"
                         onclick="event.stopPropagation(); openManageMembers({{ $plan->id }})"
