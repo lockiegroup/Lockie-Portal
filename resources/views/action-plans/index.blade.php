@@ -240,8 +240,10 @@ function openEditPlan(id, name, desc, start, end) {
 }
 
 function openManageMembers(planId) {
+    try {
     var data = plansData[planId] || { members: [] };
     var list = document.getElementById('members-list');
+    if (!list) { alert('ERROR: members-list not found'); return; }
     list.innerHTML = '';
     data.members.forEach(function(m) {
         var row = document.createElement('div');
@@ -257,8 +259,13 @@ function openManageMembers(planId) {
     if (!data.members.length) {
         list.innerHTML = '<p style="font-size:0.8125rem;color:#94a3b8;margin:0;">No members yet.</p>';
     }
-    document.getElementById('add-member-form').action = planRouteBase + '/' + planId + '/members';
-    document.getElementById('manage-members-modal').style.display = 'flex';
+    var addForm = document.getElementById('add-member-form');
+    if (!addForm) { alert('ERROR: add-member-form not found'); return; }
+    addForm.action = planRouteBase + '/' + planId + '/members';
+    var modal = document.getElementById('manage-members-modal');
+    if (!modal) { alert('ERROR: manage-members-modal not found'); return; }
+    modal.style.display = 'flex';
+    } catch(e) { alert('openManageMembers error: ' + e.message); }
 }
 
 document.addEventListener('click', function(e) {
