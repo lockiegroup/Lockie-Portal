@@ -38,7 +38,24 @@ class ImportsController extends Controller
             ->latest('created_at')
             ->first();
 
-        return view('imports.index', compact('doKA', 'doStock', 'doCrm', 'substitutions', 'salesFrom', 'salesTo', 'lastImport'));
+        $creditsFrom = $creditsTo = null;
+        $creditsRange = DB::table('credits_lines')
+            ->selectRaw('MIN(credit_date) as min_d, MAX(credit_date) as max_d')
+            ->first();
+        if ($creditsRange && $creditsRange->min_d) {
+            $creditsFrom = Carbon::parse($creditsRange->min_d)->format('jS M Y');
+            $creditsTo   = Carbon::parse($creditsRange->max_d)->format('jS M Y');
+        }
+
+        $lastCreditsImport = ActivityLog::whereIn('action', ['imports.credits', 'imports.credits.error'])
+            ->latest('created_at')
+            ->first();
+
+        return view('imports.index', compact(
+            'doKA', 'doStock', 'doCrm', 'substitutions',
+            'salesFrom', 'salesTo', 'lastImport',
+            'creditsFrom', 'creditsTo', 'lastCreditsImport'
+        ));
     }
 
     public function storeSubstitution(Request $request): RedirectResponse
@@ -191,7 +208,6 @@ class ImportsController extends Controller
 
             ActivityLog::record('imports.sales', "Imported {$count} sales line(s)");
 
-
             return back()->with('success', "Imported {$count} sales line(s) into master sales table.");
         } catch (\Throwable $e) {
             \Log::error('storeSales:error', ['message' => substr($e->getMessage(), 0, 500), 'file' => $e->getFile(), 'line' => $e->getLine()]);
@@ -199,6 +215,111 @@ class ImportsController extends Controller
                 ActivityLog::record('imports.sales.error', substr('Import failed: ' . $e->getMessage(), 0, 250));
             } catch (\Throwable) {}
             return back()->withErrors(['file' => 'Import failed: ' . substr($e->getMessage(), 0, 200)]);
+        }
+    }
+
+    public function storeCredits(Request $request): RedirectResponse
+    {
+        abort_unless(auth()->user()->can('imports'), 403);
+
+        $request->validate(['file' => 'required|file|mimes:xlsx,xls,csv|max:20480']);
+
+        $file = $request->file('file');
+        $ext  = strtolower($file->getClientOriginalExtension());
+
+        ini_set('memory_limit', '512M');
+
+        try {
+            $rows = in_array($ext, ['xlsx', 'xls'])
+                ? $this->parseSpreadsheet($file->getRealPath())
+                : $this->parseCsv($file->getRealPath());
+
+            if (empty($rows)) {
+                return back()->withErrors(['credits_file' => 'File appears empty.']);
+            }
+
+            $header = array_map(fn($h) => strtolower(trim((string)($h ?? ''))), $rows[0]);
+
+            $colCreditNo   = array_search('credit number', $header);
+            $colCreditDate = array_search('credit date',   $header);
+            $colCustomer   = array_search('customer code', $header);
+            $colProduct    = array_search('product code',  $header);
+            $colQty        = array_search('quantity',      $header);
+            $colSubTotal   = array_search('sub total',     $header);
+            $colStatus     = array_search('status',        $header);
+
+            $missing = [];
+            foreach (['credit date' => 'Credit Date', 'customer code' => 'Customer Code', 'product code' => 'Product Code', 'quantity' => 'Quantity', 'sub total' => 'Sub Total'] as $key => $label) {
+                if (array_search($key, $header) === false) $missing[] = $label;
+            }
+            if (!empty($missing)) {
+                return back()->withErrors(['credits_file' => 'Required columns not found: ' . implode(', ', $missing) . '. Expected: Credit Number, Credit Date, Customer Code, Product Code, Quantity, Sub Total, Status.']);
+            }
+
+            // Apply the same product-code substitution rules used for sales
+            $substitutions = StockWatchlistSubstitution::all()->map(fn($s) => [
+                'find'    => strtoupper($s->find),
+                'replace' => strtoupper($s->replace),
+            ])->all();
+
+            array_shift($rows);
+
+            $insertRows = [];
+            $now        = now()->toDateTimeString();
+
+            foreach ($rows as $row) {
+                $status = strtolower(trim((string)($colStatus !== false ? ($row[$colStatus] ?? '') : '')));
+                if ($status === 'cancelled') continue;
+
+                $creditDate = $this->parseDate($row[$colCreditDate] ?? null, $ext);
+                if ($creditDate === null) continue;
+
+                $productCode = strtoupper(substr(trim((string)($colProduct !== false ? ($row[$colProduct] ?? '') : '')), 0, 100));
+                foreach ($substitutions as $sub) {
+                    if ($productCode && str_contains($productCode, $sub['find'])) {
+                        $productCode = str_replace($sub['find'], $sub['replace'], $productCode);
+                    }
+                }
+
+                $insertRows[] = [
+                    'credit_no'     => $colCreditNo !== false ? (substr(trim((string)($row[$colCreditNo] ?? '')), 0, 50) ?: null) : null,
+                    'credit_date'   => $creditDate->format('Y-m-d'),
+                    'customer_code' => $colCustomer !== false ? (substr(trim((string)($row[$colCustomer] ?? '')), 0, 100) ?: null) : null,
+                    'product_code'  => $productCode ?: null,
+                    'quantity'      => max(0, (float)str_replace([',', '£', '$', '€'], '', $colQty !== false ? ($row[$colQty] ?? 0) : 0)),
+                    'sub_total'     => max(0, (float)str_replace([',', '£', '$', '€'], '', $colSubTotal !== false ? ($row[$colSubTotal] ?? 0) : 0)),
+                    'status'        => $status ? substr($status, 0, 50) : null,
+                    'created_at'    => $now,
+                    'updated_at'    => $now,
+                ];
+            }
+
+            unset($rows);
+
+            $count = count($insertRows);
+
+            $request->session()->save();
+            ignore_user_abort(true);
+            set_time_limit(0);
+
+            DB::statement('TRUNCATE TABLE credits_lines');
+
+            DB::transaction(function () use ($insertRows) {
+                foreach (array_chunk($insertRows, 4000) as $chunk) {
+                    DB::table('credits_lines')->insert($chunk);
+                }
+            });
+            unset($insertRows);
+
+            ActivityLog::record('imports.credits', "Imported {$count} credit line(s)");
+
+            return back()->with('credits_success', "Imported {$count} credit line(s) into credits table.");
+        } catch (\Throwable $e) {
+            \Log::error('storeCredits:error', ['message' => substr($e->getMessage(), 0, 500), 'file' => $e->getFile(), 'line' => $e->getLine()]);
+            try {
+                ActivityLog::record('imports.credits.error', substr('Credits import failed: ' . $e->getMessage(), 0, 250));
+            } catch (\Throwable) {}
+            return back()->withErrors(['credits_file' => 'Import failed: ' . substr($e->getMessage(), 0, 200)]);
         }
     }
 

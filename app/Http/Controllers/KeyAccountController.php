@@ -67,6 +67,33 @@ class KeyAccountController extends Controller
                     'q4'    => (float) $row->q4,
                 ];
             }
+
+            // Subtract credits from sales figures
+            DB::table('credits_lines')
+                ->selectRaw("
+                    customer_code,
+                    YEAR(credit_date) AS year,
+                    SUM(sub_total) AS total,
+                    SUM(CASE WHEN MONTH(credit_date) BETWEEN 1  AND 3  THEN sub_total ELSE 0 END) AS q1,
+                    SUM(CASE WHEN MONTH(credit_date) BETWEEN 4  AND 6  THEN sub_total ELSE 0 END) AS q2,
+                    SUM(CASE WHEN MONTH(credit_date) BETWEEN 7  AND 9  THEN sub_total ELSE 0 END) AS q3,
+                    SUM(CASE WHEN MONTH(credit_date) BETWEEN 10 AND 12 THEN sub_total ELSE 0 END) AS q4
+                ")
+                ->whereIn('customer_code', $customerCodes)
+                ->whereRaw('credit_date BETWEEN ? AND ?', [$filterFrom, $filterTo])
+                ->groupByRaw('customer_code, YEAR(credit_date)')
+                ->get()
+                ->each(function ($cr) use (&$salesByYear) {
+                    $year = (int) $cr->year;
+                    $code = $cr->customer_code;
+                    if (isset($salesByYear[$year][$code])) {
+                        $salesByYear[$year][$code]['total'] -= (float) $cr->total;
+                        $salesByYear[$year][$code]['q1']    -= (float) $cr->q1;
+                        $salesByYear[$year][$code]['q2']    -= (float) $cr->q2;
+                        $salesByYear[$year][$code]['q3']    -= (float) $cr->q3;
+                        $salesByYear[$year][$code]['q4']    -= (float) $cr->q4;
+                    }
+                });
         }
 
         $dataYears = $dataYears ? array_values(array_unique($dataYears)) : [$currentYear];

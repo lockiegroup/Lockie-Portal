@@ -55,6 +55,25 @@ class CrmController extends Controller
 
         $customers = $query->get();
 
+        // Subtract credits from customer totals (credits have no warehouse column, applied globally)
+        $creditMap = DB::table('credits_lines')
+            ->selectRaw("
+                customer_code,
+                SUM(CASE WHEN credit_date >= ? THEN sub_total ELSE 0 END) as current_credit,
+                SUM(CASE WHEN credit_date >= ? AND credit_date < ? THEN sub_total ELSE 0 END) as prev_credit
+            ", [$curr1, $prev1, $curr1])
+            ->groupBy('customer_code')
+            ->get()
+            ->keyBy('customer_code');
+
+        foreach ($customers as $c) {
+            $cr = $creditMap->get($c->customer_code);
+            if ($cr) {
+                $c->current_total = (float) $c->current_total - (float) $cr->current_credit;
+                $c->prev_total    = (float) $c->prev_total    - (float) $cr->prev_credit;
+            }
+        }
+
         if ($search) {
             $customers = $customers->filter(fn($c) =>
                 str_contains(strtolower($c->customer ?? ''), strtolower($search)) ||
@@ -154,8 +173,17 @@ class CrmController extends Controller
         }
         $kpi = $kpiQ->first();
 
-        $total12m    = (float) ($kpi->total12m ?? 0);
-        $totalPrev12 = (float) ($kpi->prev12m  ?? 0);
+        // Subtract credits from KPI totals
+        $creditKpi = DB::table('credits_lines')
+            ->where('customer_code', $customerCode)
+            ->selectRaw("
+                SUM(CASE WHEN credit_date >= ? THEN sub_total ELSE 0 END) as credit12m,
+                SUM(CASE WHEN credit_date >= ? AND credit_date < ? THEN sub_total ELSE 0 END) as prev_credit12m
+            ", [$cut12, $cut24, $cut12])
+            ->first();
+
+        $total12m    = (float) ($kpi->total12m ?? 0) - (float) ($creditKpi->credit12m    ?? 0);
+        $totalPrev12 = (float) ($kpi->prev12m  ?? 0) - (float) ($creditKpi->prev_credit12m ?? 0);
         $lastOrder   = $kpi->last_order_date  ? Carbon::parse($kpi->last_order_date)  : null;
         $firstOrder  = $kpi->first_order_date ? Carbon::parse($kpi->first_order_date) : null;
 
@@ -183,14 +211,30 @@ class CrmController extends Controller
             $qtrQ->where('warehouse', $warehouse);
         }
 
+        // Subtract credits per year/quarter
+        $creditsByYear = DB::table('credits_lines')
+            ->where('customer_code', $customerCode)
+            ->selectRaw("
+                YEAR(credit_date) as yr,
+                SUM(CASE WHEN MONTH(credit_date) BETWEEN 1  AND 3  THEN sub_total ELSE 0 END) as q1,
+                SUM(CASE WHEN MONTH(credit_date) BETWEEN 4  AND 6  THEN sub_total ELSE 0 END) as q2,
+                SUM(CASE WHEN MONTH(credit_date) BETWEEN 7  AND 9  THEN sub_total ELSE 0 END) as q3,
+                SUM(CASE WHEN MONTH(credit_date) BETWEEN 10 AND 12 THEN sub_total ELSE 0 END) as q4,
+                SUM(sub_total) as total
+            ")
+            ->groupByRaw('YEAR(credit_date)')
+            ->get()
+            ->keyBy('yr');
+
         $byYear = [];
         foreach ($qtrQ->get() as $row) {
+            $cr = $creditsByYear->get($row->yr);
             $byYear[(int) $row->yr] = [
-                'q1'    => (float) $row->q1,
-                'q2'    => (float) $row->q2,
-                'q3'    => (float) $row->q3,
-                'q4'    => (float) $row->q4,
-                'total' => (float) $row->total,
+                'q1'    => (float) $row->q1    - (float) ($cr->q1    ?? 0),
+                'q2'    => (float) $row->q2    - (float) ($cr->q2    ?? 0),
+                'q3'    => (float) $row->q3    - (float) ($cr->q3    ?? 0),
+                'q4'    => (float) $row->q4    - (float) ($cr->q4    ?? 0),
+                'total' => (float) $row->total - (float) ($cr->total ?? 0),
             ];
         }
 
@@ -211,11 +255,19 @@ class CrmController extends Controller
             $prodQ->where('warehouse', $warehouse);
         }
 
+        // Subtract credits per product
+        $creditProducts = DB::table('credits_lines')
+            ->where('customer_code', $customerCode)
+            ->selectRaw("product_code, SUM(sub_total) as total, SUM(quantity) as qty")
+            ->groupBy('product_code')
+            ->get()
+            ->keyBy('product_code');
+
         $topProducts = $prodQ->get()->map(fn($r) => [
             'product_code' => $r->product_code,
             'description'  => $r->description ?: $r->product_code,
-            'total'        => (float) $r->total,
-            'qty'          => (float) $r->qty,
+            'total'        => (float) $r->total - (float) ($creditProducts->get($r->product_code)?->total ?? 0),
+            'qty'          => (float) $r->qty   - (float) ($creditProducts->get($r->product_code)?->qty   ?? 0),
             'orders'       => (int) $r->orders,
         ])->values();
 

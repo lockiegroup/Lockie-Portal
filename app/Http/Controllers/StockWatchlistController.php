@@ -84,6 +84,18 @@ class StockWatchlistController extends Controller
                 ->each(function ($s) use (&$salesMap) {
                     $salesMap[$s->product_code][(int)$s->year][(int)$s->month] = (float)$s->qty_sold;
                 });
+
+            // Subtract returned/credited quantities
+            DB::table('credits_lines')
+                ->selectRaw("product_code, YEAR(credit_date) AS year, MONTH(credit_date) AS month, SUM(quantity) AS qty_credited")
+                ->whereIn('product_code', $productCodes)
+                ->whereRaw('credit_date BETWEEN ? AND ?', [$filterFrom, $filterTo])
+                ->groupByRaw('product_code, YEAR(credit_date), MONTH(credit_date)')
+                ->get()
+                ->each(function ($c) use (&$salesMap) {
+                    $existing = $salesMap[$c->product_code][(int)$c->year][(int)$c->month] ?? 0;
+                    $salesMap[$c->product_code][(int)$c->year][(int)$c->month] = $existing - (float)$c->qty_credited;
+                });
         }
 
         $years = [];
@@ -97,6 +109,18 @@ class StockWatchlistController extends Controller
                 ->pluck('yr')
                 ->map(fn($y) => (int)$y)
                 ->all();
+
+            // Include any years that only appear in credits
+            $creditYears = DB::table('credits_lines')
+                ->selectRaw('DISTINCT YEAR(credit_date) AS yr')
+                ->whereIn('product_code', $productCodes)
+                ->whereRaw('credit_date BETWEEN ? AND ?', [$filterFrom, $filterTo])
+                ->pluck('yr')
+                ->map(fn($y) => (int)$y)
+                ->all();
+
+            $years = array_values(array_unique(array_merge($years, $creditYears)));
+            sort($years);
         }
         if (empty($years)) {
             $years = [(int)$now->year];
