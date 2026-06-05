@@ -17,8 +17,10 @@ class User extends Authenticatable
         'cash_flow'          => 'Cash Flow',
         'policy_settings'    => 'Policy Settings',
         'key_accounts_admin' => 'Key Accounts Admin',
+        'key_actions_admin'  => 'Key Actions Admin',
+        'action_plans_admin' => 'Action Plans Admin',
         'reminders'          => 'Order Reminders',
-        'factory_training' => 'Factory Training',
+        'factory_training'   => 'Factory Training',
     ];
 
     const MODULES = [
@@ -33,7 +35,6 @@ class User extends Authenticatable
         'key_accounts'     => 'Key Accounts',
         'crm'              => 'Customer Insights (CRM)',
         'factory_training' => 'Factory Training',
-        'action_plans'     => 'Action Plans',
     ];
 
     protected $fillable = ['name', 'email', 'password', 'role', 'is_active', 'permissions', 'modules', 'last_login_at'];

@@ -17,12 +17,18 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class KeyActionController extends Controller
 {
+    private function isSiteAdmin(): bool
+    {
+        $user = auth()->user();
+        return $user->isMaster() || $user->hasPermission('key_actions_admin');
+    }
+
     // ── Groups ────────────────────────────────────────────────────────────────
 
     public function index(): View
     {
         $user   = auth()->user();
-        $groups = $user->isMaster()
+        $groups = $this->isSiteAdmin()
             ? KeyActionGroup::withCount('tasks')->with('members')->orderBy('name')->get()
             : KeyActionGroup::whereHas('members', fn($q) => $q->where('user_id', $user->id))
                 ->withCount('tasks')
@@ -30,14 +36,14 @@ class KeyActionController extends Controller
                 ->orderBy('name')
                 ->get();
 
-        $allUsers = $user->isMaster() ? User::where('is_active', true)->orderBy('name')->get() : collect();
+        $allUsers = $this->isSiteAdmin() ? User::where('is_active', true)->orderBy('name')->get() : collect();
 
         return view('key-actions.index', compact('groups', 'allUsers'));
     }
 
     public function store(Request $request): RedirectResponse
     {
-        abort_unless(auth()->user()->isMaster(), 403);
+        abort_unless($this->isSiteAdmin(), 403);
 
         $data = $request->validate(['name' => 'required|string|max:100']);
 
@@ -56,7 +62,7 @@ class KeyActionController extends Controller
     public function show(KeyActionGroup $group): View
     {
         $user = auth()->user();
-        abort_unless($user->isMaster() || $group->hasMember($user), 403);
+        abort_unless($this->isSiteAdmin() || $group->hasMember($user), 403);
 
         $group->load(['members' => fn($q) => $q->orderBy('name')]);
 
@@ -103,8 +109,8 @@ class KeyActionController extends Controller
             $allColumns = $allRaw;
         }
 
-        $isGroupAdmin = $user->isMaster() || $group->isAdmin($user);
-        $allUsers     = $user->isMaster()
+        $isGroupAdmin = $this->isSiteAdmin() || $group->isAdmin($user);
+        $allUsers     = $this->isSiteAdmin()
             ? User::where('is_active', true)->orderBy('name')->get()
             : collect();
 
@@ -116,7 +122,7 @@ class KeyActionController extends Controller
     public function update(Request $request, KeyActionGroup $group): JsonResponse
     {
         $user = auth()->user();
-        abort_unless($user->isMaster() || $group->isAdmin($user), 403);
+        abort_unless($this->isSiteAdmin() || $group->isAdmin($user), 403);
 
         $data = $request->validate(['name' => 'required|string|max:100']);
         $group->update($data);
@@ -129,7 +135,7 @@ class KeyActionController extends Controller
     public function destroy(KeyActionGroup $group): RedirectResponse
     {
         $user = auth()->user();
-        abort_unless($user->isMaster() || $group->isAdmin($user), 403);
+        abort_unless($this->isSiteAdmin() || $group->isAdmin($user), 403);
 
         $name = $group->name;
         $group->delete();
@@ -144,7 +150,7 @@ class KeyActionController extends Controller
     public function uploadAgenda(Request $request, KeyActionGroup $group): JsonResponse
     {
         $user = auth()->user();
-        abort_unless($user->isMaster() || $group->isAdmin($user), 403);
+        abort_unless($this->isSiteAdmin() || $group->isAdmin($user), 403);
 
         $request->validate([
             'agenda' => 'required|file|mimes:pdf,doc,docx|max:20480',
@@ -168,7 +174,7 @@ class KeyActionController extends Controller
     public function downloadAgenda(KeyActionGroup $group): BinaryFileResponse
     {
         $user = auth()->user();
-        abort_unless($user->isMaster() || $group->hasMember($user), 403);
+        abort_unless($this->isSiteAdmin() || $group->hasMember($user), 403);
         abort_unless($group->agenda_path && Storage::exists($group->agenda_path), 404);
 
         return response()->file(
@@ -180,7 +186,7 @@ class KeyActionController extends Controller
     public function deleteAgenda(KeyActionGroup $group): JsonResponse
     {
         $user = auth()->user();
-        abort_unless($user->isMaster() || $group->isAdmin($user), 403);
+        abort_unless($this->isSiteAdmin() || $group->isAdmin($user), 403);
 
         if ($group->agenda_path && Storage::exists($group->agenda_path)) {
             Storage::delete($group->agenda_path);
@@ -196,7 +202,7 @@ class KeyActionController extends Controller
     public function storeBucket(Request $request, KeyActionGroup $group): JsonResponse
     {
         $user = auth()->user();
-        abort_unless($user->isMaster() || $group->isAdmin($user), 403);
+        abort_unless($this->isSiteAdmin() || $group->isAdmin($user), 403);
 
         $data = $request->validate(['name' => 'required|string|max:100']);
 
@@ -212,7 +218,7 @@ class KeyActionController extends Controller
     public function updateBucket(Request $request, KeyActionGroup $group, KeyActionBucket $bucket): JsonResponse
     {
         $user = auth()->user();
-        abort_unless($user->isMaster() || $group->isAdmin($user), 403);
+        abort_unless($this->isSiteAdmin() || $group->isAdmin($user), 403);
         abort_unless($bucket->group_id === $group->id, 404);
 
         $data = $request->validate(['name' => 'required|string|max:100']);
@@ -224,7 +230,7 @@ class KeyActionController extends Controller
     public function destroyBucket(KeyActionGroup $group, KeyActionBucket $bucket): JsonResponse
     {
         $user = auth()->user();
-        abort_unless($user->isMaster() || $group->isAdmin($user), 403);
+        abort_unless($this->isSiteAdmin() || $group->isAdmin($user), 403);
         abort_unless($bucket->group_id === $group->id, 404);
 
         $bucket->delete();
@@ -234,7 +240,7 @@ class KeyActionController extends Controller
     public function reorderColumns(Request $request, KeyActionGroup $group): JsonResponse
     {
         $user = auth()->user();
-        abort_unless($user->isMaster() || $group->isAdmin($user), 403);
+        abort_unless($this->isSiteAdmin() || $group->isAdmin($user), 403);
 
         $data = $request->validate([
             'columns'        => 'required|array',
@@ -251,7 +257,7 @@ class KeyActionController extends Controller
     public function addMember(Request $request, KeyActionGroup $group): JsonResponse
     {
         $user = auth()->user();
-        abort_unless($user->isMaster() || $group->isAdmin($user), 403);
+        abort_unless($this->isSiteAdmin() || $group->isAdmin($user), 403);
 
         $data = $request->validate([
             'user_id' => 'required|exists:users,id',
@@ -272,7 +278,7 @@ class KeyActionController extends Controller
     public function removeMember(KeyActionGroup $group, User $member): JsonResponse
     {
         $user = auth()->user();
-        abort_unless($user->isMaster() || $group->isAdmin($user), 403);
+        abort_unless($this->isSiteAdmin() || $group->isAdmin($user), 403);
 
         $group->members()->detach($member->id);
 
@@ -284,7 +290,7 @@ class KeyActionController extends Controller
     public function updateMember(Request $request, KeyActionGroup $group, User $member): JsonResponse
     {
         $user = auth()->user();
-        abort_unless($user->isMaster() || $group->isAdmin($user), 403);
+        abort_unless($this->isSiteAdmin() || $group->isAdmin($user), 403);
 
         $data = $request->validate(['role' => 'required|in:admin,member']);
         $group->members()->updateExistingPivot($member->id, ['role' => $data['role']]);
@@ -299,7 +305,7 @@ class KeyActionController extends Controller
     public function showTask(KeyActionGroup $group, KeyActionTask $task): JsonResponse
     {
         $user = auth()->user();
-        abort_unless($user->isMaster() || $group->hasMember($user), 403);
+        abort_unless($this->isSiteAdmin() || $group->hasMember($user), 403);
         abort_unless($task->group_id === $group->id, 404);
 
         $task->load(['assignee', 'comments.user']);
@@ -318,7 +324,7 @@ class KeyActionController extends Controller
     public function storeTask(Request $request, KeyActionGroup $group): JsonResponse
     {
         $user = auth()->user();
-        abort_unless($user->isMaster() || $group->hasMember($user), 403);
+        abort_unless($this->isSiteAdmin() || $group->hasMember($user), 403);
 
         $data = $request->validate([
             'title'       => 'required|string|max:255',
@@ -348,7 +354,7 @@ class KeyActionController extends Controller
     public function updateTask(Request $request, KeyActionGroup $group, KeyActionTask $task): JsonResponse
     {
         $user = auth()->user();
-        abort_unless($user->isMaster() || $group->hasMember($user), 403);
+        abort_unless($this->isSiteAdmin() || $group->hasMember($user), 403);
         abort_unless($task->group_id === $group->id, 404);
 
         $data = $request->validate([
@@ -368,7 +374,7 @@ class KeyActionController extends Controller
     public function completeTask(KeyActionGroup $group, KeyActionTask $task): JsonResponse
     {
         $user = auth()->user();
-        abort_unless($user->isMaster() || $group->hasMember($user), 403);
+        abort_unless($this->isSiteAdmin() || $group->hasMember($user), 403);
         abort_unless($task->group_id === $group->id, 404);
 
         $wasCompleted = $task->completed;
@@ -388,7 +394,7 @@ class KeyActionController extends Controller
     public function destroyTask(KeyActionGroup $group, KeyActionTask $task): JsonResponse
     {
         $user = auth()->user();
-        abort_unless($user->isMaster() || $group->hasMember($user), 403);
+        abort_unless($this->isSiteAdmin() || $group->hasMember($user), 403);
         abort_unless($task->group_id === $group->id, 404);
 
         $title = $task->title;
@@ -402,7 +408,7 @@ class KeyActionController extends Controller
     public function reorderTasks(Request $request, KeyActionGroup $group): JsonResponse
     {
         $user = auth()->user();
-        abort_unless($user->isMaster() || $group->hasMember($user), 403);
+        abort_unless($this->isSiteAdmin() || $group->hasMember($user), 403);
 
         $data = $request->validate([
             'tasks'               => 'required|array',
@@ -451,7 +457,7 @@ class KeyActionController extends Controller
     public function storeComment(Request $request, KeyActionGroup $group, KeyActionTask $task): JsonResponse
     {
         $user = auth()->user();
-        abort_unless($user->isMaster() || $group->hasMember($user), 403);
+        abort_unless($this->isSiteAdmin() || $group->hasMember($user), 403);
         abort_unless($task->group_id === $group->id, 404);
 
         $data = $request->validate(['body' => 'required|string|max:2000']);
