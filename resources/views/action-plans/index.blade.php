@@ -83,7 +83,7 @@
                 </form>
                 @else
                 <div style="position:relative;">
-                    <button onclick="toggleMenu({{ $plan->id }})"
+                    <button onclick="event.stopPropagation(); toggleMenu({{ $plan->id }})"
                         style="padding:4px 8px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-size:1rem;line-height:1;cursor:pointer;" title="Actions">&#8943;</button>
                     <div id="menu-{{ $plan->id }}" style="display:none;position:absolute;bottom:calc(100% + 4px);right:0;background:#fff;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.1);min-width:140px;z-index:10;overflow:hidden;">
                         <button onclick="openEditPlan({{ $plan->id }}, '{{ addslashes($plan->name) }}', '{{ addslashes($plan->description ?? '') }}', '{{ $plan->start_date?->format('Y-m-d') }}', '{{ $plan->end_date?->format('Y-m-d') }}')"
