@@ -41,11 +41,11 @@
             style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;display:flex;flex-direction:column;{{ $plan->is_archived ? 'opacity:0.7;' : '' }}position:relative;">
 
             {{-- Clickable body --}}
-            <a href="{{ route('action-plans.show', $plan) }}" style="display:flex;flex-direction:column;gap:0.6rem;padding:1.25rem 1.5rem;text-decoration:none;flex:1;">
+            <div onclick="window.location.href='{{ route('action-plans.show', $plan) }}'" style="display:flex;flex-direction:column;gap:0.6rem;padding:1.25rem 1.5rem;flex:1;cursor:pointer;">
                 <div style="display:flex;align-items:center;gap:0.5rem;padding-right:2rem;">
                     @can('admin')
                     @if(!$showArchived)
-                    <span class="drag-handle" onclick="event.preventDefault()" style="cursor:grab;color:#d1d5db;flex-shrink:0;line-height:0;" title="Drag to reorder">
+                    <span class="drag-handle" onclick="event.stopPropagation()" style="cursor:grab;color:#d1d5db;flex-shrink:0;line-height:0;" title="Drag to reorder">
                         <svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor"><circle cx="2" cy="2" r="1.25"/><circle cx="8" cy="2" r="1.25"/><circle cx="2" cy="7" r="1.25"/><circle cx="8" cy="7" r="1.25"/><circle cx="2" cy="12" r="1.25"/><circle cx="8" cy="12" r="1.25"/></svg>
                     </span>
                     @endif
@@ -70,10 +70,10 @@
                     @endforeach
                 </div>
                 @endif
-            </a>
+            </div>
 
             {{-- Footer --}}
-            <div style="padding:0.75rem 1.5rem;border-top:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;">
+            <div onclick="event.stopPropagation()" style="padding:0.75rem 1.5rem;border-top:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;">
                 <span style="font-size:0.8rem;color:#94a3b8;">{{ $plan->items()->count() }} {{ str('task')->plural($plan->items()->count()) }}</span>
                 @can('admin')
                 @if($plan->is_archived)
@@ -84,10 +84,10 @@
                 @else
                 <div style="display:flex;gap:0.375rem;align-items:center;">
                     <button type="button"
-                        onclick="openEditPlan({{ $plan->id }}, '{{ addslashes($plan->name) }}', '{{ addslashes($plan->description ?? '') }}', '{{ $plan->start_date?->format('Y-m-d') }}', '{{ $plan->end_date?->format('Y-m-d') }}')"
+                        onclick="event.stopPropagation(); openEditPlan({{ $plan->id }}, '{{ addslashes($plan->name) }}', '{{ addslashes($plan->description ?? '') }}', '{{ $plan->start_date?->format('Y-m-d') }}', '{{ $plan->end_date?->format('Y-m-d') }}')"
                         style="padding:3px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-size:0.75rem;cursor:pointer;">Edit</button>
                     <button type="button"
-                        onclick="openManageMembers({{ $plan->id }})"
+                        onclick="event.stopPropagation(); openManageMembers({{ $plan->id }})"
                         style="padding:3px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-size:0.75rem;cursor:pointer;">Members</button>
                 </div>
                 @endif
