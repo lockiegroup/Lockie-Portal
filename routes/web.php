@@ -291,6 +291,7 @@ Route::middleware(['auth', 'otp'])->group(function () {
             Route::post('/{plan}/duplicate',                     [ActionPlanController::class, 'duplicate'])->name('duplicate');
             Route::post('/{plan}/members',                       [ActionPlanController::class, 'addMember'])->name('members.add');
             Route::delete('/{plan}/members/{user}',              [ActionPlanController::class, 'removeMember'])->name('members.remove');
+            Route::post('/{plan}/import',                        [ActionPlanController::class, 'import'])->name('import');
         });
     });
 });

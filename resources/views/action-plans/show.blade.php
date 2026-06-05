@@ -21,6 +21,13 @@
             </div>
         </div>
         <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:flex-start;">
+            @can('admin')
+            <button onclick="document.getElementById('import-modal').style.display='flex'"
+                style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.45rem 0.875rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.8125rem;font-weight:600;cursor:pointer;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Import CSV
+            </button>
+            @endcan
             <button onclick="document.getElementById('copy-modal').style.display='flex'"
                 style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.45rem 0.875rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.8125rem;font-weight:600;cursor:pointer;">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -242,6 +249,37 @@
 
 </main>
 
+@can('admin')
+{{-- Import CSV Modal --}}
+<div id="import-modal" style="display:none;position:fixed;inset:0;z-index:100;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);padding:1rem;">
+    <div style="background:#fff;border-radius:14px;width:100%;max-width:500px;padding:1.5rem;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+        <h2 style="font-size:1rem;font-weight:700;color:#1e293b;margin:0 0 0.375rem;">Import CSV</h2>
+        <p style="font-size:0.8rem;color:#64748b;margin:0 0 1.25rem;">Export your spreadsheet as CSV. Required column headers (row 1):</p>
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:0.75rem 1rem;font-size:0.775rem;color:#475569;font-family:monospace;margin-bottom:1.25rem;line-height:1.7;">
+            Brand, Task, Assigned To, WC Date, Status, Notes
+        </div>
+        <ul style="font-size:0.775rem;color:#64748b;margin:0 0 1.25rem;padding-left:1.25rem;line-height:1.8;">
+            <li><strong>Brand</strong> — Lockie, JWP, H&amp;H, All (or blank)</li>
+            <li><strong>Assigned To</strong> — full name(s) as shown in portal, comma-separated</li>
+            <li><strong>WC Date</strong> — any date format, e.g. <em>03/11/2025</em> or <em>WC 3/11/2025</em></li>
+            <li><strong>Status</strong> — Not Started, In Progress, Completed, Cancelled, Booked In</li>
+        </ul>
+        <form action="{{ route('action-plans.import', $plan) }}" method="POST" enctype="multipart/form-data">
+            @csrf
+            <div style="margin-bottom:1rem;">
+                <input type="file" name="csv_file" accept=".csv,.txt" required
+                    style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;background:#fff;">
+            </div>
+            <div style="display:flex;gap:0.5rem;">
+                <button type="submit" style="padding:0.45rem 1rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.8125rem;font-weight:600;border:none;cursor:pointer;">Import</button>
+                <button type="button" onclick="document.getElementById('import-modal').style.display='none'"
+                    style="padding:0.45rem 1rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.8125rem;cursor:pointer;">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+@endcan
+
 {{-- Copy Tasks Modal --}}
 <div id="copy-modal" style="display:none;position:fixed;inset:0;z-index:100;align-items:flex-start;justify-content:center;background:rgba(0,0,0,0.45);padding:2rem 1rem;overflow-y:auto;">
     <div style="background:#fff;border-radius:14px;width:100%;max-width:700px;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
@@ -301,8 +339,10 @@ function toggleAllCopy(cb) {
     document.querySelectorAll('#copy-modal input[name="item_ids[]"]').forEach(function(c) { c.checked = cb.checked; });
 }
 document.addEventListener('click', function(e) {
-    var modal = document.getElementById('copy-modal');
-    if (modal && e.target === modal) modal.style.display = 'none';
+    ['copy-modal','import-modal'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el && e.target === el) el.style.display = 'none';
+    });
 });
 </script>
 

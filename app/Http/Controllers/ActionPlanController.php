@@ -193,6 +193,91 @@ class ActionPlanController extends Controller
         return redirect()->back()->with('success', 'Task deleted.');
     }
 
+    public function import(Request $request, ActionPlan $plan): RedirectResponse
+    {
+        abort_unless($this->isAdmin(), 403);
+        $request->validate(['csv_file' => 'required|file|mimes:csv,txt']);
+
+        $path    = $request->file('csv_file')->getRealPath();
+        $handle  = fopen($path, 'r');
+        $header  = array_map('trim', fgetcsv($handle));
+        $header  = array_map('strtolower', $header);
+
+        $allUsers = User::where('is_active', true)->pluck('id', 'name');
+        $brands   = array_map('strtolower', ActionPlanItem::BRANDS);
+        $statuses = array_keys(ActionPlanItem::STATUSES);
+
+        $imported = 0;
+        $skipped  = 0;
+
+        while (($row = fgetcsv($handle)) !== false) {
+            if (count($row) < 2) { $skipped++; continue; }
+            $data = array_combine($header, array_pad($row, count($header), ''));
+
+            $title = trim($data['task'] ?? $data['title'] ?? '');
+            if (!$title) { $skipped++; continue; }
+
+            // Brand
+            $brand     = trim($data['brand'] ?? '');
+            $brandKeys = array_map('strtolower', ActionPlanItem::BRANDS);
+            $brandMatch = array_search(strtolower($brand), $brandKeys);
+            $brand = $brandMatch !== false ? ActionPlanItem::BRANDS[$brandMatch] : null;
+
+            // Assigned users — match by full name
+            $assignedIds = [];
+            $assignedRaw = trim($data['assigned to'] ?? $data['assigned_to'] ?? '');
+            if ($assignedRaw) {
+                foreach (preg_split('/[,\/]/', $assignedRaw) as $name) {
+                    $name = trim($name);
+                    if ($id = $allUsers->get($name)) {
+                        $assignedIds[] = $id;
+                    }
+                }
+            }
+
+            // Week commencing
+            $wcRaw = trim($data['wc date'] ?? $data['week commencing'] ?? $data['week_commencing'] ?? '');
+            $wcRaw = preg_replace('/^wc\s*/i', '', $wcRaw);
+            $wc    = null;
+            if ($wcRaw) {
+                try { $wc = \Carbon\Carbon::parse($wcRaw)->format('Y-m-d'); } catch (\Exception $e) {}
+            }
+
+            // Date range check
+            if ($wc && $plan->end_date && \Carbon\Carbon::parse($wc)->gt($plan->end_date)) {
+                $skipped++; continue;
+            }
+
+            // Status
+            $statusRaw = strtolower(trim($data['status'] ?? ''));
+            $statusMap = [
+                'not started' => 'not_started', 'not_started' => 'not_started',
+                'in progress' => 'in_progress',  'in_progress' => 'in_progress',
+                'completed'   => 'completed',
+                'cancelled'   => 'cancelled',
+                'booked in'   => 'booked_in',    'booked_in' => 'booked_in',
+            ];
+            $status = $statusMap[$statusRaw] ?? 'not_started';
+
+            $plan->items()->create([
+                'brand'             => $brand,
+                'title'             => $title,
+                'assigned_user_ids' => $assignedIds ?: null,
+                'week_commencing'   => $wc,
+                'status'            => $status,
+                'notes'             => trim($data['notes'] ?? '') ?: null,
+            ]);
+            $imported++;
+        }
+
+        fclose($handle);
+
+        $msg = $imported . ' ' . str('task')->plural($imported) . ' imported.';
+        if ($skipped) $msg .= ' ' . $skipped . ' rows skipped (empty or out of range).';
+
+        return redirect()->route('action-plans.show', $plan)->with('success', $msg);
+    }
+
     public function copyItems(Request $request, ActionPlan $plan): RedirectResponse
     {
         $this->authorisePlan($plan);
