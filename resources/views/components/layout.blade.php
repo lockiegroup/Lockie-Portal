@@ -50,7 +50,7 @@
             transition: background 0.12s, color 0.12s; cursor: pointer;
         }
         .sb-item:hover     { background: rgba(255,255,255,0.06); color: #cbd5e1; }
-        .sb-item.sb-active { background: rgba(225,29,72,0.12); color: #fb7185; }
+        .sb-item.sb-active { background: rgba(146,170,200,0.1); color: #92aac8; }
 
         .sb-sub-item {
             display: flex; align-items: center;
@@ -59,7 +59,7 @@
             text-decoration: none; white-space: nowrap; transition: background 0.12s, color 0.12s;
         }
         .sb-sub-item:hover     { background: rgba(255,255,255,0.04); color: #94a3b8; }
-        .sb-sub-item.sb-active { color: #fb7185; }
+        .sb-sub-item.sb-active { color: #92aac8; }
 
         .sb-icon { width: 17px; height: 17px; flex-shrink: 0; }
         .sb-nav::-webkit-scrollbar { display: none; }
