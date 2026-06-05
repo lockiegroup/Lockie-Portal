@@ -102,7 +102,7 @@
                     @endif
                 </div>
                 <p class="text-sm text-slate-500">Export from <strong>Reports → Purchases → Credit Notes</strong> in Unleashed.</p>
-                <p class="text-xs text-slate-400 mt-0.5">Required columns: Credit Number, Credit Date, Customer Code, Product Code, Quantity, Sub Total, Status &mdash; Warehouse is optional but recommended for accurate per-warehouse filtering.</p>
+                <p class="text-xs text-slate-400 mt-0.5">Required columns: Credit Number, Credit Date, Customer Code, Product Code, Quantity, Warehouse, Sub Total, Status</p>
             </div>
 
             <div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:0.75rem;margin-bottom:1rem;">

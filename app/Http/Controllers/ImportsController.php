@@ -250,11 +250,11 @@ class ImportsController extends Controller
             $colStatus     = array_search('status',        $header);
 
             $missing = [];
-            foreach (['credit date' => 'Credit Date', 'customer code' => 'Customer Code', 'product code' => 'Product Code', 'quantity' => 'Quantity', 'sub total' => 'Sub Total'] as $key => $label) {
+            foreach (['credit date' => 'Credit Date', 'customer code' => 'Customer Code', 'product code' => 'Product Code', 'quantity' => 'Quantity', 'warehouse' => 'Warehouse', 'sub total' => 'Sub Total'] as $key => $label) {
                 if (array_search($key, $header) === false) $missing[] = $label;
             }
             if (!empty($missing)) {
-                return back()->withErrors(['credits_file' => 'Required columns not found: ' . implode(', ', $missing) . '. Expected: Credit Number, Credit Date, Customer Code, Product Code, Quantity, Sub Total, Status.']);
+                return back()->withErrors(['credits_file' => 'Required columns not found: ' . implode(', ', $missing) . '. Expected: Credit Number, Credit Date, Customer Code, Product Code, Quantity, Warehouse, Sub Total, Status.']);
             }
 
             // Apply the same product-code substitution rules used for sales
