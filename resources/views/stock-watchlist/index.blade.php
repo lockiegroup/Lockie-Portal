@@ -10,10 +10,6 @@
             <span id="sync-status" class="text-sm text-slate-400">
                 @if($syncedAt) Last synced {{ \Carbon\Carbon::parse($syncedAt)->diffForHumans() }} @else Not yet synced @endif
             </span>
-            <a href="{{ route('imports.index') }}"
-               class="inline-flex items-center px-4 py-2 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50 transition">
-                Import Sales
-            </a>
             <button id="sync-skus-btn" onclick="runSyncSkus()"
                 class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-300 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">
                 <svg id="sync-skus-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
