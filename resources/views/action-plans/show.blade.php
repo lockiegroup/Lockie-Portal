@@ -131,10 +131,14 @@
         $monthLabel = $monthKey === 'no-date' ? 'No Date' : \Carbon\Carbon::createFromFormat('Y-m', $monthKey)->format('F Y');
     @endphp
     <div style="margin-bottom:1.75rem;">
-        <h2 style="font-size:0.75rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 0.5rem;padding:0 0 0.375rem;border-bottom:2px solid #e2e8f0;">
-            {{ $monthLabel }} <span style="font-weight:400;color:#cbd5e1;">({{ $items->count() }})</span>
-        </h2>
-        <div style="background:#fff;border-radius:10px;border:1px solid #e2e8f0;overflow:hidden;">
+        <button type="button" onclick="toggleMonth('month-{{ $monthKey }}')"
+            style="display:flex;align-items:center;gap:0.5rem;width:100%;background:none;border:none;border-bottom:2px solid #e2e8f0;padding:0 0 0.375rem;margin:0 0 0.5rem;cursor:pointer;text-align:left;">
+            <svg id="chev-{{ $monthKey }}" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5" style="flex-shrink:0;transition:transform 0.2s;"><polyline points="6 9 12 15 18 9"/></svg>
+            <span style="font-size:0.75rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;">
+                {{ $monthLabel }} <span style="font-weight:400;color:#cbd5e1;">({{ $items->count() }})</span>
+            </span>
+        </button>
+        <div id="month-{{ $monthKey }}" style="background:#fff;border-radius:10px;border:1px solid #e2e8f0;overflow:hidden;">
             <table style="width:100%;border-collapse:collapse;font-size:0.8125rem;">
                 <thead>
                     <tr style="background:#f8fafc;border-bottom:1px solid #e2e8f0;">
@@ -336,6 +340,30 @@
 </div>
 
 <script>
+function toggleMonth(id) {
+    var el = document.getElementById(id);
+    var key = id.replace('month-', '');
+    var chev = document.getElementById('chev-' + key);
+    if (!el) return;
+    var collapsed = el.style.display === 'none';
+    el.style.display = collapsed ? '' : 'none';
+    if (chev) chev.style.transform = collapsed ? '' : 'rotate(-90deg)';
+}
+
+// Auto-collapse past months on load
+(function() {
+    var now = new Date();
+    var currentKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+    document.querySelectorAll('[id^="month-"]').forEach(function(el) {
+        var key = el.id.replace('month-', '');
+        if (key !== 'no-date' && key < currentKey) {
+            el.style.display = 'none';
+            var chev = document.getElementById('chev-' + key);
+            if (chev) chev.style.transform = 'rotate(-90deg)';
+        }
+    });
+})();
+
 function toggleEdit(id) {
     var el = document.getElementById(id);
     if (el) el.style.display = el.style.display === 'none' ? 'table-row' : 'none';
