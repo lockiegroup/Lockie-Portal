@@ -35,6 +35,7 @@
         @if(!$showArchived) @can('admin') Click "New Plan" to create one.@endcan @endif
     </div>
     @else
+    <div id="menu-backdrop" onclick="closeAllMenus()" style="display:none;position:fixed;inset:0;z-index:5;"></div>
     <div id="plans-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;">
         @foreach($plans as $plan)
         <div data-id="{{ $plan->id }}"
@@ -83,9 +84,9 @@
                 </form>
                 @else
                 <div style="position:relative;">
-                    <button onclick="handleMenuToggle(event, {{ $plan->id }})"
+                    <button onclick="toggleMenu({{ $plan->id }})"
                         style="padding:4px 8px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-size:1rem;line-height:1;cursor:pointer;" title="Actions">&#8943;</button>
-                    <div id="menu-{{ $plan->id }}" style="display:none;position:absolute;bottom:calc(100% + 4px);right:0;background:#fff;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.1);min-width:140px;z-index:10;overflow:hidden;">
+                    <div id="menu-{{ $plan->id }}" style="display:none;position:absolute;bottom:calc(100% + 4px);right:0;background:#fff;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.1);min-width:140px;z-index:20;overflow:hidden;">
                         <button onclick="openEditPlan({{ $plan->id }}, '{{ addslashes($plan->name) }}', '{{ addslashes($plan->description ?? '') }}', '{{ $plan->start_date?->format('Y-m-d') }}', '{{ $plan->end_date?->format('Y-m-d') }}')"
                             style="display:block;width:100%;text-align:left;padding:8px 14px;border:none;background:none;font-size:0.8125rem;color:#334155;cursor:pointer;">Edit plan</button>
                         <button onclick="openManageMembers({{ $plan->id }})"
@@ -233,18 +234,15 @@ var plansData = {
     @endforeach
 };
 
-function handleMenuToggle(e, id) {
-    e.stopPropagation();
-    toggleMenu(id);
-}
-
 function toggleMenu(id) {
     var menu = document.getElementById('menu-' + id);
-    // Close all other menus first
-    document.querySelectorAll('[id^="menu-"]').forEach(function(m) {
-        if (m.id !== 'menu-' + id) m.style.display = 'none';
-    });
-    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    var backdrop = document.getElementById('menu-backdrop');
+    var isOpen = menu.style.display !== 'none';
+    closeAllMenus();
+    if (!isOpen) {
+        menu.style.display = 'block';
+        backdrop.style.display = 'block';
+    }
 }
 
 function openEditPlan(id, name, desc, start, end) {
@@ -284,13 +282,11 @@ function openManageMembers(planId) {
 
 function closeAllMenus() {
     document.querySelectorAll('[id^="menu-"]').forEach(function(m) { m.style.display = 'none'; });
+    var backdrop = document.getElementById('menu-backdrop');
+    if (backdrop) backdrop.style.display = 'none';
 }
 
 document.addEventListener('click', function(e) {
-    // Close ⋯ menus when clicking outside
-    if (!e.target.closest('[id^="menu-"]') && !e.target.closest('button[onclick^="handleMenuToggle"]')) {
-        closeAllMenus();
-    }
     // Close modals when clicking backdrop
     ['create-plan-modal','edit-plan-modal','manage-members-modal'].forEach(function(id) {
         var el = document.getElementById(id);
