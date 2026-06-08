@@ -472,8 +472,9 @@ function buildComment(c) {
     const div = document.createElement('div');
     div.id    = 'comment-' + c.id;
     div.style = 'background:#f8fafc;border-radius:0.5rem;padding:0.5rem 0.75rem;position:relative;';
+    const safeBody = c.body.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
     div.innerHTML = `<p style="font-size:0.7rem;font-weight:700;color:#64748b;margin:0 0 2px;">${c.user_name} · ${c.created_at}</p>
-                     <p style="font-size:0.8125rem;color:#1e293b;margin:0;padding-right:1.25rem;">${c.body}</p>
+                     <p style="font-size:0.8125rem;color:#1e293b;margin:0;padding-right:1.25rem;white-space:pre-wrap;">${safeBody}</p>
                      <button onclick="deleteComment(${c.id})" title="Delete comment"
                              style="position:absolute;top:0.375rem;right:0.5rem;background:none;border:none;cursor:pointer;color:#cbd5e1;font-size:0.7rem;line-height:1;padding:0;">✕</button>`;
     return div;
