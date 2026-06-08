@@ -172,12 +172,13 @@
     <div style="border-top:1px solid #f1f5f9;padding-top:1rem;">
         <p style="font-size:0.75rem;font-weight:700;color:#64748b;margin:0 0 0.75rem;text-transform:uppercase;letter-spacing:0.05em;">Comments</p>
         <div id="comments-list" style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:0.75rem;"></div>
-        <div style="display:flex;gap:0.5rem;">
-            <input type="text" id="comment-input" placeholder="Add a comment…"
-                   style="flex:1;border:1px solid #d1d5db;border-radius:0.375rem;padding:0.375rem 0.5rem;font-size:0.8125rem;"
-                   onkeydown="if(event.key==='Enter')submitComment()">
+        <div style="display:flex;gap:0.5rem;align-items:flex-end;">
+            <textarea id="comment-input" placeholder="Add a comment…" rows="1"
+                   style="flex:1;border:1px solid #d1d5db;border-radius:0.375rem;padding:0.375rem 0.5rem;font-size:0.8125rem;resize:none;overflow-y:hidden;line-height:1.4;"
+                   onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitComment();}"
+                   oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px';"></textarea>
             <button onclick="submitComment()"
-                    style="background:#1e293b;color:#fff;border:none;border-radius:0.375rem;padding:0.375rem 0.75rem;font-size:0.8125rem;font-weight:600;cursor:pointer;">
+                    style="background:#1e293b;color:#fff;border:none;border-radius:0.375rem;padding:0.375rem 0.75rem;font-size:0.8125rem;font-weight:600;cursor:pointer;flex-shrink:0;">
                 Send
             </button>
         </div>
