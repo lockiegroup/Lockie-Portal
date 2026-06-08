@@ -384,7 +384,8 @@ class ChurchEnvelopeController extends Controller
                 'specials'     => $specials,
             ]);
         } catch (\Throwable $e) {
-            return response()->json(['success' => false, 'error' => $e->getMessage()], 422);
+            \Log::error('Envelope generation failed', ['error' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
+            return response()->json(['success' => false, 'error' => 'Generation failed. Please try again or contact support.'], 422);
         }
     }
 

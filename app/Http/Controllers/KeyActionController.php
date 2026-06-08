@@ -484,6 +484,7 @@ class KeyActionController extends Controller
     {
         $user = auth()->user();
         abort_unless($task->group_id === $group->id, 404);
+        abort_unless($this->isSiteAdmin() || $group->hasMember($user), 403);
         abort_unless($user->isMaster() || $comment->user_id === $user->id, 403);
 
         $comment->delete();

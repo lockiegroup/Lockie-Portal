@@ -25,5 +25,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('factory_training',      fn($user) => $user->hasPermission('factory_training'));
         Gate::define('factory_training_view', fn($user) => $user->hasPermission('factory_training') || $user->hasModule('factory_training'));
         Gate::define('imports',               fn($user) => $user->isMaster() || $user->hasPermission('imports'));
+        Gate::define('action_plans_admin',    fn($user) => $user->isMaster() || $user->hasPermission('action_plans_admin'));
+        Gate::define('key_actions_admin',     fn($user) => $user->isMaster() || $user->hasPermission('key_actions_admin'));
     }
 }

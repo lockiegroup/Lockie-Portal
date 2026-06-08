@@ -78,7 +78,9 @@ class LoginController extends Controller
     private function sendOtp(User $user, string $otp): void
     {
         if (!config('mail.mailers.smtp.host')) {
-            logger()->info("[DEV] OTP for {$user->email}: {$otp}");
+            if (app()->environment('local')) {
+                logger()->info("[DEV] OTP for {$user->email}: {$otp}");
+            }
             return;
         }
 

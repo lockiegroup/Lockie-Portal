@@ -95,10 +95,8 @@ class StockController extends Controller
 
             return response()->json(['success' => true, 'stockByWarehouse' => $stockByWarehouse]);
         } catch (\Throwable $e) {
-            return response()->json([
-                'success' => false,
-                'error'   => get_class($e) . ': ' . $e->getMessage(),
-            ], 500);
+            \Log::error('Stock sync failed', ['error' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
+            return response()->json(['success' => false, 'error' => 'Sync failed. Please try again or contact support.'], 500);
         }
     }
 }

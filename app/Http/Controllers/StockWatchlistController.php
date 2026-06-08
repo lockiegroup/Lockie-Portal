@@ -188,7 +188,7 @@ class StockWatchlistController extends Controller
             return response()->json(['ok' => true, 'products' => $result['products']]);
         } catch (\Throwable $e) {
             \Log::error('StockWatchlist sync failed', ['error' => $e->getMessage()]);
-            return response()->json(['ok' => false, 'error' => $e->getMessage()], 500);
+            return response()->json(['ok' => false, 'error' => 'Sync failed. Please try again or contact support.'], 500);
         }
     }
 
@@ -200,7 +200,7 @@ class StockWatchlistController extends Controller
             return response()->json(['ok' => true, 'products' => $result['fetched'], 'db_count' => $result['db_count']]);
         } catch (\Throwable $e) {
             \Log::error('StockWatchlist product sync failed', ['error' => $e->getMessage()]);
-            return response()->json(['ok' => false, 'error' => $e->getMessage()], 500);
+            return response()->json(['ok' => false, 'error' => 'Sync failed. Please try again or contact support.'], 500);
         }
     }
 

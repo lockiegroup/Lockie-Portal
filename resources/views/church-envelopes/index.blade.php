@@ -414,7 +414,7 @@
         updateSummary();
 
         // ── Verse library ────────────────────────────────────────────────────
-        const VERSES = {!! $verses->mapWithKeys(fn($v) => ['v'.$v->id => $v->lines])->toJson() !!};
+        const VERSES = @json($verses->mapWithKeys(fn($v) => ['v'.$v->id => $v->lines]));
 
         function applyVerse(key) {
             if (key === 'custom') return;

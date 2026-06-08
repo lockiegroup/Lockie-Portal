@@ -31,7 +31,7 @@ class PolicyController extends Controller
 
         $file     = $request->file('file');
         $stored   = $file->store('policies');
-        $fileName = $file->getClientOriginalName();
+        $fileName = basename($file->getClientOriginalName());
 
         CompanyPolicy::create([
             'title'            => $data['title'],

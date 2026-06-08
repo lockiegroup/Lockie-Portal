@@ -20,11 +20,11 @@ class ImpersonateController extends Controller
 
     public function stop(): RedirectResponse
     {
-        $originalId = session()->pull('impersonating_id');
+        abort_unless(session('impersonating_id'), 403);
 
-        if ($originalId) {
-            auth()->loginUsingId($originalId);
-        }
+        $originalId = session()->pull('impersonating_id');
+        auth()->loginUsingId($originalId);
+        session(['otp_verified' => true]);
 
         return redirect()->route('admin.users.index');
     }

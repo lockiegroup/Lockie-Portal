@@ -49,7 +49,7 @@ class AmazonController extends Controller
                 'result'  => $result,
             ]);
         } catch (\Throwable $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => 'An unexpected error occurred. Please try again or contact support.'], 500);
         }
     }
 
@@ -135,7 +135,7 @@ class AmazonController extends Controller
             $service->reprocessSettlement($settlement);
             return response()->json(['ok' => true]);
         } catch (\Throwable $e) {
-            return response()->json(['ok' => false, 'message' => $e->getMessage()], 500);
+            return response()->json(['ok' => false, 'message' => 'An unexpected error occurred. Please try again or contact support.'], 500);
         }
     }
 
@@ -166,7 +166,7 @@ class AmazonController extends Controller
             $count = $service->lookupUnleashedOrders($settlement);
             return response()->json(['ok' => true, 'matched' => $count]);
         } catch (\Throwable $e) {
-            return response()->json(['ok' => false, 'message' => $e->getMessage()], 500);
+            return response()->json(['ok' => false, 'message' => 'An unexpected error occurred. Please try again or contact support.'], 500);
         }
     }
 
@@ -231,7 +231,8 @@ public function profitReport(Request $request): JsonResponse
         try {
             (new XeroService())->handleOAuthCallback($code);
         } catch (\Throwable $e) {
-            return redirect()->route('amazon.index')->with('error', 'Xero connection failed: ' . $e->getMessage());
+            \Log::error('Xero OAuth callback failed', ['error' => $e->getMessage()]);
+            return redirect()->route('amazon.index')->with('error', 'Xero connection failed. Please try again or contact support.');
         }
 
         return redirect()->route('amazon.index')->with('success', 'Xero connected successfully.');
@@ -336,7 +337,7 @@ public function profitReport(Request $request): JsonResponse
                 'status'  => $settlement->fresh()->status,
             ]);
         } catch (\Throwable $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => 'An unexpected error occurred. Please try again or contact support.'], 500);
         }
     }
 }

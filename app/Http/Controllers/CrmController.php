@@ -360,6 +360,8 @@ class CrmController extends Controller
 
     public function destroyContact(string $customerCode, KeyAccountContact $contact): RedirectResponse
     {
+        abort_unless($contact->keyAccount?->account_code === $customerCode, 404);
+
         $contact->delete();
 
         return back()->with('crm_success', 'Contact entry removed.');
