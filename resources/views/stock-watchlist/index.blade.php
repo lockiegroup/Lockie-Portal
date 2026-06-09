@@ -96,8 +96,8 @@
                     class="border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-64">
             </div>
         </div>
-        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <table class="w-full text-sm">
+        <div class="bg-white rounded-xl border border-slate-200 overflow-x-auto">
+            <table class="w-full text-sm" style="min-width:600px;">
                 <thead>
                     <tr class="bg-slate-900 text-white text-left">
                         <th class="px-4 py-3 font-semibold">Code</th>
