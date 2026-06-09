@@ -18,6 +18,12 @@
                 @endif
             </div>
         </div>
+        @can('module:crm')
+        <a href="{{ route('crm.show', $keyAccount->account_code) }}"
+           class="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-700 text-white text-sm font-semibold rounded-lg transition">
+            View Sales Data →
+        </a>
+        @endcan
     </div>
 
     @if(session('success'))
