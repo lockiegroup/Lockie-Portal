@@ -15,9 +15,7 @@
                 {{ $customerCode }}
                 @if($customerType) &bull; {{ $customerType }} @endif
                 @if($keyAccount)
-                    @php $label = $keyAccount->type === 'key' ? 'Key Account' : 'Growth Account'; @endphp
-                    &bull; <span style="color:{{ $keyAccount->type === 'key' ? '#0369a1' : '#059669' }};font-weight:600;">{{ $label }}</span>
-                    @if($keyAccount->user) &bull; {{ $keyAccount->user->name }} @endif
+                    &bull; <a href="{{ route('key-accounts.show', $keyAccount) }}" style="color:#6366f1;text-decoration:none;">View Key Account &rarr;</a>
                 @endif
             </p>
         </div>
@@ -193,8 +191,9 @@
 
     </div>
 
-    {{-- CRM section --}}
+    {{-- Key / Growth Account sections --}}
     @php
+        // Use CRM-owned routes when no Key Account record exists yet
         $notesAction   = $keyAccount ? route('key-accounts.notes.update', $keyAccount) : route('crm.notes.update', $customerCode);
         $contactAction = $keyAccount ? route('key-accounts.contacts.store', $keyAccount) : route('crm.contacts.store', $customerCode);
     @endphp
@@ -205,116 +204,120 @@
         </div>
     @endif
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
+    @if($keyAccount && $keyAccount->user_id)
+        {{-- Account badge + manager --}}
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.5rem;">
+            <span style="display:inline-block;padding:3px 10px;border-radius:999px;font-size:0.8125rem;font-weight:600;
+                         background:{{ $keyAccount->type === 'key' ? '#e0f2fe' : '#d1fae5' }};
+                         color:{{ $keyAccount->type === 'key' ? '#0369a1' : '#059669' }};">
+                {{ $keyAccount->type === 'key' ? 'Key Account' : 'Growth Account' }}
+            </span>
+            <span style="font-size:0.875rem;color:#64748b;">
+                Account manager: <strong style="color:#334155;">{{ $keyAccount->user->name }}</strong>
+            </span>
+            <a href="{{ route('key-accounts.show', $keyAccount) }}"
+               style="margin-left:auto;font-size:0.8125rem;color:#64748b;text-decoration:none;">
+                View in Key Accounts &rarr;
+            </a>
+        </div>
+    @endif
 
-        {{-- Left: Notes + Log Contact --}}
-        <div style="display:flex;flex-direction:column;gap:16px;">
+        {{-- Notes --}}
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:0.875rem;padding:1.5rem;margin-bottom:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+            <h2 style="font-size:0.875rem;font-weight:600;color:#1e293b;margin-bottom:0.875rem;">Notes</h2>
+            <form action="{{ $notesAction }}" method="POST">
+                @csrf @method('PATCH')
+                <textarea name="notes" rows="3" placeholder="Any notes about this account…"
+                    style="width:100%;padding:10px 14px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;color:#1e293b;resize:none;box-sizing:border-box;">{{ old('notes', $keyAccount?->notes) }}</textarea>
+                <div style="margin-top:8px;display:flex;justify-content:flex-end;">
+                    <button type="submit"
+                        style="padding:7px 18px;background:#1e293b;color:#fff;border:none;border-radius:8px;font-size:0.875rem;font-weight:500;cursor:pointer;">
+                        Save Notes
+                    </button>
+                </div>
+            </form>
+        </div>
 
-            {{-- Notes --}}
-            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:0.875rem;padding:1.5rem;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-                <h2 style="font-size:0.875rem;font-weight:600;color:#1e293b;margin-bottom:0.875rem;">Notes</h2>
-                <form action="{{ $notesAction }}" method="POST">
-                    @csrf @method('PATCH')
-                    <textarea name="notes" rows="4" placeholder="Any notes about this account…"
-                        style="width:100%;padding:10px 14px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;color:#1e293b;resize:none;box-sizing:border-box;">{{ old('notes', $keyAccount?->notes) }}</textarea>
-                    <div style="margin-top:8px;display:flex;justify-content:flex-end;">
-                        <button type="submit"
-                            style="padding:7px 18px;background:#1e293b;color:#fff;border:none;border-radius:8px;font-size:0.875rem;font-weight:500;cursor:pointer;">
-                            Save Notes
-                        </button>
+        {{-- Log contact --}}
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:0.875rem;padding:1.5rem;margin-bottom:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+            <h2 style="font-size:0.875rem;font-weight:600;color:#1e293b;margin-bottom:0.875rem;">Log Contact</h2>
+            <form action="{{ $contactAction }}" method="POST">
+                @csrf
+                @if($errors->has('contacted_at') || $errors->has('note'))
+                    <div style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;font-size:0.8125rem;border-radius:8px;padding:8px 12px;margin-bottom:10px;">
+                        {{ $errors->first() }}
                     </div>
-                </form>
-            </div>
-
-            {{-- Log Contact --}}
-            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:0.875rem;padding:1.5rem;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-                <h2 style="font-size:0.875rem;font-weight:600;color:#1e293b;margin-bottom:0.875rem;">Log Contact</h2>
-                <form action="{{ $contactAction }}" method="POST">
-                    @csrf
-                    @if($errors->has('contacted_at') || $errors->has('note'))
-                        <div style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;font-size:0.8125rem;border-radius:8px;padding:8px 12px;margin-bottom:10px;">
-                            {{ $errors->first() }}
-                        </div>
-                    @endif
-                    <div style="margin-bottom:10px;">
+                @endif
+                <div style="display:grid;grid-template-columns:180px 1fr;gap:12px;align-items:start;">
+                    <div>
                         <label style="display:block;font-size:0.8125rem;font-weight:500;color:#475569;margin-bottom:5px;">Date</label>
                         <input type="date" name="contacted_at" value="{{ old('contacted_at', now()->format('Y-m-d')) }}" required
                             style="width:100%;padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;">
                     </div>
                     <div>
                         <label style="display:block;font-size:0.8125rem;font-weight:500;color:#475569;margin-bottom:5px;">Note</label>
-                        <textarea name="note" rows="3" required placeholder="What was discussed or actioned…"
+                        <textarea name="note" rows="2" required placeholder="What was discussed or actioned…"
                             style="width:100%;padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;resize:none;box-sizing:border-box;">{{ old('note') }}</textarea>
                     </div>
-                    <div style="margin-top:10px;display:flex;justify-content:flex-end;">
-                        <button type="submit"
-                            style="padding:7px 18px;background:#1e293b;color:#fff;border:none;border-radius:8px;font-size:0.875rem;font-weight:500;cursor:pointer;">
-                            Log Contact
-                        </button>
-                    </div>
-                </form>
-            </div>
-
+                </div>
+                <div style="margin-top:10px;display:flex;justify-content:flex-end;">
+                    <button type="submit"
+                        style="padding:7px 18px;background:#1e293b;color:#fff;border:none;border-radius:8px;font-size:0.875rem;font-weight:500;cursor:pointer;">
+                        Log Contact
+                    </button>
+                </div>
+            </form>
         </div>
 
-        {{-- Right: Contact History + Gift History --}}
-        <div style="display:flex;flex-direction:column;gap:16px;">
-
-            {{-- Contact History --}}
-            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:0.875rem;padding:1.5rem;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-                <h2 style="font-size:0.875rem;font-weight:600;color:#1e293b;margin-bottom:0.875rem;">Contact History</h2>
-                @if(!$keyAccount || $keyAccount->contacts->isEmpty())
-                    <p style="font-size:0.875rem;color:#94a3b8;">No contacts logged yet.</p>
-                @else
-                    <div style="display:flex;flex-direction:column;gap:0;">
-                        @foreach($keyAccount->contacts as $contact)
-                            <div style="display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid #f1f5f9;">
-                                <span style="font-size:0.7rem;color:#94a3b8;white-space:nowrap;padding-top:2px;width:70px;flex-shrink:0;">
-                                    {{ $contact->contacted_at->format('d M Y') }}
-                                </span>
-                                <span style="font-size:0.8125rem;color:#334155;flex:1;line-height:1.45;">{{ $contact->note }}</span>
-                                <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-                                    <span style="font-size:0.7rem;color:#94a3b8;white-space:nowrap;">{{ $contact->user?->name ?? '—' }}</span>
-                                    <form action="{{ $keyAccount ? route('key-accounts.contacts.destroy', [$keyAccount, $contact]) : route('crm.contacts.destroy', [$customerCode, $contact]) }}" method="POST"
-                                        onsubmit="return confirm('Remove this contact entry?')" style="margin:0;">
-                                        @csrf @method('DELETE')
-                                        <button type="submit" style="background:none;border:none;color:#cbd5e1;font-size:1.125rem;cursor:pointer;line-height:1;padding:0;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#cbd5e1'">&times;</button>
-                                    </form>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-                @endif
-            </div>
-
-            {{-- Gift History --}}
-            @if($keyAccount && $keyAccount->gifts->isNotEmpty())
-            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:0.875rem;padding:1.5rem;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-                <h2 style="font-size:0.875rem;font-weight:600;color:#1e293b;margin-bottom:0.875rem;">Gift History</h2>
-                <table style="width:100%;border-collapse:collapse;font-size:0.8125rem;">
-                    <thead>
-                        <tr style="border-bottom:1px solid #e2e8f0;">
-                            <th style="text-align:left;padding-bottom:8px;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Date</th>
-                            <th style="text-align:left;padding-bottom:8px;padding-left:12px;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Recipient</th>
-                            <th style="text-align:left;padding-bottom:8px;padding-left:12px;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Gift</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($keyAccount->gifts as $gift)
-                            <tr style="border-bottom:1px solid #f1f5f9;">
-                                <td style="padding:8px 0;color:#64748b;white-space:nowrap;font-size:0.8125rem;">{{ $gift->gifted_at->format('d M Y') }}</td>
-                                <td style="padding:8px 0 8px 12px;color:#334155;">{{ $gift->recipient }}</td>
-                                <td style="padding:8px 0 8px 12px;color:#334155;">{{ $gift->description }}</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
+        {{-- Contact history --}}
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:0.875rem;padding:1.5rem;margin-bottom:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+            <h2 style="font-size:0.875rem;font-weight:600;color:#1e293b;margin-bottom:0.875rem;">Contact History</h2>
+            @if(!$keyAccount || $keyAccount->contacts->isEmpty())
+                <p style="font-size:0.875rem;color:#94a3b8;">No contacts logged yet.</p>
+            @else
+                <div style="display:flex;flex-direction:column;gap:0;">
+                    @foreach($keyAccount->contacts as $contact)
+                        <div style="display:flex;align-items:flex-start;gap:16px;padding:10px 0;border-bottom:1px solid #f1f5f9;">
+                            <span style="font-size:0.75rem;color:#94a3b8;white-space:nowrap;padding-top:2px;width:80px;flex-shrink:0;">
+                                {{ $contact->contacted_at->format('d M Y') }}
+                            </span>
+                            <span style="font-size:0.875rem;color:#334155;flex:1;">{{ $contact->note }}</span>
+                            <span style="font-size:0.75rem;color:#94a3b8;white-space:nowrap;flex-shrink:0;">{{ $contact->user?->name ?? '—' }}</span>
+                            <form action="{{ $keyAccount ? route('key-accounts.contacts.destroy', [$keyAccount, $contact]) : route('crm.contacts.destroy', [$customerCode, $contact]) }}" method="POST"
+                                onsubmit="return confirm('Remove this contact entry?')" style="margin:0;">
+                                @csrf @method('DELETE')
+                                <button type="submit" style="background:none;border:none;color:#cbd5e1;font-size:1.125rem;cursor:pointer;line-height:1;padding:0;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#cbd5e1'">&times;</button>
+                            </form>
+                        </div>
+                    @endforeach
+                </div>
             @endif
-
         </div>
 
-    </div>
+        {{-- Gift history (only exists if there's a Key Account record with gifts) --}}
+        @if($keyAccount && $keyAccount->gifts->isNotEmpty())
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:0.875rem;padding:1.5rem;margin-bottom:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+            <h2 style="font-size:0.875rem;font-weight:600;color:#1e293b;margin-bottom:0.875rem;">Gift History</h2>
+            <table style="width:100%;border-collapse:collapse;font-size:0.875rem;">
+                <thead>
+                    <tr style="border-bottom:1px solid #e2e8f0;">
+                        <th style="text-align:left;padding-bottom:8px;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Date</th>
+                        <th style="text-align:left;padding-bottom:8px;padding-left:16px;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Recipient</th>
+                        <th style="text-align:left;padding-bottom:8px;padding-left:16px;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Gift</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($keyAccount->gifts as $gift)
+                        <tr style="border-bottom:1px solid #f1f5f9;">
+                            <td style="padding:8px 0;color:#64748b;white-space:nowrap;">{{ $gift->gifted_at->format('d M Y') }}</td>
+                            <td style="padding:8px 0 8px 16px;color:#334155;">{{ $gift->recipient }}</td>
+                            <td style="padding:8px 0 8px 16px;color:#334155;">{{ $gift->description }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @endif
 
 </main>
 </x-layout>
