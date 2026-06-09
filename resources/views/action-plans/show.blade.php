@@ -133,8 +133,8 @@
                 {{ $monthLabel }} <span style="font-weight:400;color:#cbd5e1;">({{ $items->count() }})</span>
             </span>
         </button>
-        <div id="month-{{ $monthKey }}" style="background:#fff;border-radius:10px;border:1px solid #e2e8f0;overflow:hidden;">
-            <table style="width:100%;border-collapse:collapse;font-size:0.8125rem;">
+        <div id="month-{{ $monthKey }}" style="background:#fff;border-radius:10px;border:1px solid #e2e8f0;overflow-x:auto;">
+            <table style="width:100%;min-width:600px;border-collapse:collapse;font-size:0.8125rem;">
                 <thead>
                     <tr style="background:#f8fafc;border-bottom:1px solid #e2e8f0;">
                         <th style="padding:7px 12px;text-align:left;font-size:0.68rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;width:90px;">Brand</th>
