@@ -223,7 +223,8 @@
             <form action="{{ $notesAction }}" method="POST">
                 @csrf @method('PATCH')
                 <textarea name="notes" rows="3" placeholder="Any notes about this account…"
-                    style="width:100%;padding:10px 14px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;color:#1e293b;resize:none;box-sizing:border-box;">{{ old('notes', $keyAccount?->notes) }}</textarea>
+                    style="width:100%;padding:10px 14px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;color:#1e293b;resize:none;box-sizing:border-box;overflow-y:hidden;"
+                    oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'">{{ old('notes', $keyAccount?->notes) }}</textarea>
                 <div style="margin-top:8px;display:flex;justify-content:flex-end;">
                     <button type="submit"
                         style="padding:7px 18px;background:#1e293b;color:#fff;border:none;border-radius:8px;font-size:0.875rem;font-weight:500;cursor:pointer;">
@@ -315,4 +316,10 @@
         @endif
 
 </main>
+<script>
+    document.querySelectorAll('textarea[name="notes"]').forEach(t => {
+        t.style.height = 'auto';
+        t.style.height = t.scrollHeight + 'px';
+    });
+</script>
 </x-layout>
