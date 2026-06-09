@@ -764,10 +764,12 @@ async function removeAgenda() {
 // ── Task drag-and-drop ────────────────────────────────────────────────────────
 document.querySelectorAll('.task-list').forEach(list => {
     Sortable.create(list, {
-        group:      'tasks',
-        animation:  150,
-        ghostClass: 'sortable-ghost',
-        dragClass:  'sortable-drag',
+        group:           'tasks',
+        animation:       150,
+        ghostClass:      'sortable-ghost',
+        dragClass:       'sortable-drag',
+        delay:           400,
+        delayOnTouchOnly: true,
         onStart() { window._dragging = true; },
         onEnd()    { setTimeout(() => { window._dragging = false; }, 50); saveTaskOrder(); },
     });
@@ -797,11 +799,13 @@ async function saveTaskOrder() {
 
 // ── Column drag-and-drop ──────────────────────────────────────────────────────
 Sortable.create(document.getElementById('board'), {
-    animation:  150,
-    handle:     '.col-drag-handle',
-    filter:     '.col-add-btn',
-    ghostClass: 'col-ghost',
-    dragClass:  'col-drag',
+    animation:        150,
+    handle:           '.col-drag-handle',
+    filter:           '.col-add-btn',
+    ghostClass:       'col-ghost',
+    dragClass:        'col-drag',
+    delay:            400,
+    delayOnTouchOnly: true,
     onEnd() { saveColumnOrder(); },
 });
 
