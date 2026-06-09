@@ -119,7 +119,7 @@ class KeyAccountController extends Controller
         return redirect()->route('key-accounts.index');
     }
 
-    public function show(KeyAccount $keyAccount): View
+    public function show(KeyAccount $keyAccount): RedirectResponse
     {
         $user    = auth()->user();
         $isAdmin = $user->can('key_accounts_admin');
@@ -128,9 +128,7 @@ class KeyAccountController extends Controller
             abort(403);
         }
 
-        $keyAccount->load(['contacts.user', 'gifts']);
-
-        return view('key-accounts.show', compact('keyAccount', 'isAdmin'));
+        return redirect()->route('crm.show', $keyAccount->account_code);
     }
 
     public function storeContact(Request $request, KeyAccount $keyAccount): RedirectResponse

@@ -108,7 +108,7 @@
                     @endphp
                     <tr class="hover:bg-slate-50 transition-colors">
                         <td class="px-4 py-3">
-                            <a href="{{ route('key-accounts.show', $account) }}" class="font-semibold text-sky-700 hover:underline">{{ $account->account_code }}</a>
+                            <a href="{{ route('crm.show', $account->account_code) }}" class="font-semibold text-sky-700 hover:underline">{{ $account->account_code }}</a>
                             <div class="text-xs text-slate-500">{{ $account->name }}</div>
                         </td>
                         <td class="px-4 py-3">
