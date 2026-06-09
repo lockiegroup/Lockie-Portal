@@ -146,11 +146,12 @@ class CrmController extends Controller
             ->selectRaw('MAX(customer) as customer, MAX(customer_type) as customer_type, COUNT(*) as cnt')
             ->first();
 
-        abort_if(!$check || $check->cnt == 0, 404);
+        $keyAccount = KeyAccount::with(['user', 'contacts.user', 'gifts'])->where('account_code', $customerCode)->first();
 
-        $customer     = $check->customer;
-        $customerType = $check->customer_type;
-        $keyAccount   = KeyAccount::with(['user', 'contacts.user', 'gifts'])->where('account_code', $customerCode)->first();
+        abort_if((!$check || $check->cnt == 0) && !$keyAccount, 404);
+
+        $customer     = $check?->customer     ?? $keyAccount->name;
+        $customerType = $check?->customer_type ?? null;
 
         $warehouses = DB::table('sales_lines')
             ->where('customer_code', $customerCode)
