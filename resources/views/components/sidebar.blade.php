@@ -8,7 +8,7 @@
     $activeStock      = request()->routeIs('stock.*') || $isWatchlistSection;
     $activePlanning   = request()->routeIs('key-actions.*') || request()->routeIs('action-plans.*');
     $activeCustomers  = request()->routeIs('key-accounts.*') || request()->routeIs('crm.*') || request()->routeIs('reminders.*');
-    $activeOperations = request()->routeIs('church-envelopes.*') || request()->routeIs('policies.*') || request()->routeIs('training.*') || $isPrintSection;
+    $activeOperations = request()->routeIs('church-envelopes.*') || request()->routeIs('policies.*') || request()->routeIs('training.*') || request()->routeIs('letter-filter.*') || $isPrintSection;
     $activeAdmin      = request()->routeIs('admin.*') || request()->routeIs('imports.*');
 
     $showKeyActions  = $user->isMaster() || $user->can('admin') || \App\Models\KeyActionGroup::whereHas('members', fn($q) => $q->where('user_id', $user->id))->exists();
@@ -191,6 +191,17 @@
                     <polyline points="22,6 12,13 2,6"/>
                 </svg>
                 <span class="sb-label">Church Envelopes</span>
+            </a>
+            @endif
+            @if($user->hasModule('envelopes'))
+            <a href="{{ route('letter-filter.index') }}" class="sb-item{{ request()->routeIs('letter-filter.*') ? ' sb-active' : '' }}" data-tip="Letter Filter">
+                <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="9" y1="13" x2="15" y2="13"/>
+                    <line x1="9" y1="17" x2="13" y2="17"/>
+                </svg>
+                <span class="sb-label">Letter Filter</span>
             </a>
             @endif
             @if($user->hasModule('policies'))

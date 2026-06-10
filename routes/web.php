@@ -7,6 +7,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SalesController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\ChurchEnvelopeController;
+use App\Http\Controllers\LetterFilterController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\EnvelopeSettingsController;
 use App\Http\Controllers\Admin\PrintScheduleSettingController;
@@ -52,6 +53,11 @@ Route::middleware(['auth', 'otp'])->group(function () {
     Route::get('/church-envelopes', [ChurchEnvelopeController::class, 'index'])->name('church-envelopes.index');
     Route::post('/church-envelopes/parse', [ChurchEnvelopeController::class, 'parse'])->name('church-envelopes.parse');
     Route::post('/church-envelopes/generate', [ChurchEnvelopeController::class, 'generate'])->name('church-envelopes.generate');
+
+    // Letter Filter
+    Route::get('/letter-filter', [LetterFilterController::class, 'index'])->name('letter-filter.index');
+    Route::post('/letter-filter/process', [LetterFilterController::class, 'process'])->name('letter-filter.process');
+    Route::get('/letter-filter/download/{key}/{file}', [LetterFilterController::class, 'download'])->name('letter-filter.download');
 
     // Print Schedule
     Route::prefix('print-schedule')->name('print.')->group(function () {
