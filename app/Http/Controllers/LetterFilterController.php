@@ -21,6 +21,8 @@ class LetterFilterController extends Controller
             'codes' => ['required', 'string'],
         ]);
 
+        try {
+
         // Parse the pasted account codes — split on whitespace, commas, newlines
         $rawCodes    = preg_split('/[\s,;]+/', strtoupper(trim($request->input('codes'))), -1, PREG_SPLIT_NO_EMPTY);
         $orderedSet  = array_flip(array_filter($rawCodes));
@@ -94,7 +96,7 @@ class LetterFilterController extends Controller
         );
 
         // Store everything in session-keyed temp files
-        $key = uniqid('lf_', true);
+        $key = bin2hex(random_bytes(12));
         $dir = storage_path("app/letter-filter/{$key}");
         mkdir($dir, 0755, true);
         file_put_contents("{$dir}/filtered.pdf",      $filteredPdf);
@@ -113,6 +115,11 @@ class LetterFilterController extends Controller
         $this->cleanOldDirs(storage_path('app/letter-filter'));
 
         return response()->json(['key' => $key]);
+
+        } catch (\Throwable $e) {
+            \Log::error('Letter filter failed', ['error' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]);
+            return response()->json(['error' => 'Processing failed: ' . $e->getMessage()], 500);
+        }
     }
 
     public function download(Request $request, string $key, string $file)
@@ -129,8 +136,13 @@ class LetterFilterController extends Controller
 
     private function extractCode(string $text): ?string
     {
-        // Match "ACC NO: X0000" or "ACC NO:X0000" — letter(s) followed by digits
+        // Primary: "ACC NO: X0000" when parser keeps label and value together
         if (preg_match('/ACC\s*NO[:\s]+([A-Z]{1,3}\d{3,6})/i', $text, $m)) {
+            return strtoupper(trim($m[1]));
+        }
+        // Fallback: account code appears as a standalone line (e.g. smalot splits fields)
+        // Pattern: exactly one letter followed by 4–6 digits, alone on its own line
+        if (preg_match('/^([A-Z]\d{4,6})$/m', $text, $m)) {
             return strtoupper(trim($m[1]));
         }
         return null;
