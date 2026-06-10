@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Smalot\PdfParser\Parser;
 use setasign\Fpdi\Fpdi;
 
@@ -14,7 +13,7 @@ class LetterFilterController extends Controller
         return view('letter-filter.index');
     }
 
-    public function process(Request $request): Response
+    public function process(Request $request): \Illuminate\Http\JsonResponse
     {
         $request->validate([
             'pdf'   => ['required', 'file', 'mimes:pdf', 'max:102400'], // 100 MB
