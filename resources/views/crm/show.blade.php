@@ -253,7 +253,8 @@
                     <div>
                         <label style="display:block;font-size:0.8125rem;font-weight:500;color:#475569;margin-bottom:5px;">Note</label>
                         <textarea name="note" rows="2" required placeholder="What was discussed or actioned…"
-                            style="width:100%;padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;resize:none;box-sizing:border-box;">{{ old('note') }}</textarea>
+                            oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
+                            style="width:100%;padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;resize:none;box-sizing:border-box;overflow-y:hidden;">{{ old('note') }}</textarea>
                     </div>
                 </div>
                 <div style="margin-top:10px;display:flex;justify-content:flex-end;">
@@ -277,7 +278,7 @@
                             <span style="font-size:0.75rem;color:#94a3b8;white-space:nowrap;padding-top:2px;width:80px;flex-shrink:0;">
                                 {{ $contact->contacted_at->format('d M Y') }}
                             </span>
-                            <span style="font-size:0.875rem;color:#334155;flex:1;">{{ $contact->note }}</span>
+                            <span style="font-size:0.875rem;color:#334155;flex:1;white-space:pre-wrap;">{!! e($contact->note) !!}</span>
                             <span style="font-size:0.75rem;color:#94a3b8;white-space:nowrap;flex-shrink:0;">{{ $contact->user?->name ?? '—' }}</span>
                             <form action="{{ $keyAccount ? route('key-accounts.contacts.destroy', [$keyAccount, $contact]) : route('crm.contacts.destroy', [$customerCode, $contact]) }}" method="POST"
                                 onsubmit="return confirm('Remove this contact entry?')" style="margin:0;">
