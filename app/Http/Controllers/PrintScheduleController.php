@@ -454,9 +454,11 @@ class PrintScheduleController extends Controller
             for ($i = 0; $i < $count; $i++) {
                 $from           = $start + $i * $packSize;
                 $to             = min($from + $packSize - 1, $end);
+                $fmt            = $prefix . sprintf('%0' . $width . 'd', $from);
+                $fmtTo          = $prefix . sprintf('%0' . $width . 'd', $to);
                 $uniqueLabels[] = $isUniverseal
-                    ? sprintf('%d   %d', $from, $to)   // Universeal: plain numbers, wide space
-                    : $prefix . sprintf('%0' . $width . 'd', $from) . ' - ' . $prefix . sprintf('%0' . $width . 'd', $to);
+                    ? $fmt . '   ' . $fmtTo   // Universeal: wide space, no dash
+                    : $fmt . ' - ' . $fmtTo;
             }
         } else {
             $count        = max(1, (int) ($job->order_quantity ?? 1));
