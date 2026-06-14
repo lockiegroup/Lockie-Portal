@@ -12,8 +12,10 @@ use App\Services\UnleashedService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
+use setasign\Fpdf\Fpdf;
 
 class PrintScheduleController extends Controller
 {
@@ -430,5 +432,149 @@ class PrintScheduleController extends Controller
         \App\Models\ActivityLog::record('print.manual_archive', "Archived manual job: {$job->product_description}");
 
         return response()->json(['success' => true]);
+    }
+
+    // ── Label generation ─────────────────────────────────────────────────────────
+
+    public function downloadLabels(Request $request, PrintJob $job): Response
+    {
+        $branded  = $request->boolean('branded', true);
+        $packSize = max(1, (int) $request->input('pack_size', 100));
+
+        $parsed    = $this->parseJobComment($job->line_comment ?? '');
+        $recipient = trim($job->delivery_name ?: ($job->customer_name ?? ''));
+
+        if ($parsed['num_start'] !== null) {
+            $labels = [];
+            $start  = $parsed['num_start'];
+            $end    = $parsed['num_end'];
+            $count  = (int) ceil(($end - $start + 1) / $packSize);
+            for ($i = 0; $i < $count; $i++) {
+                $from     = $start + $i * $packSize;
+                $to       = min($from + $packSize - 1, $end);
+                $labels[] = sprintf('%06d - %06d', $from, $to);
+            }
+        } else {
+            $qty    = max(1, (int) ($job->order_quantity ?? 1));
+            $count  = (int) ceil($qty / $packSize);
+            $text   = $parsed['printed'];
+            $labels = array_fill(0, $count, $text);
+        }
+
+        $pdf      = $this->buildLabelPdf($labels, $recipient, $branded);
+        $filename = 'labels-' . preg_replace('/[^A-Za-z0-9-]/', '-', $job->order_number ?? 'job') . '.pdf';
+
+        return response($pdf, 200, [
+            'Content-Type'        => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    }
+
+    private function parseJobComment(string $text): array
+    {
+        $result = ['num_start' => null, 'num_end' => null, 'printed' => null];
+        if (preg_match('/Numbered:\s*(\d+)\s*[-–]+\s*(\d+)/i', $text, $m)) {
+            $result['num_start'] = (int) $m[1];
+            $result['num_end']   = (int) $m[2];
+        }
+        if (preg_match('/Printed:\s*(.+)/i', $text, $m)) {
+            $result['printed'] = trim($m[1]);
+        }
+        return $result;
+    }
+
+    private function buildLabelPdf(array $labels, string $recipient, bool $branded): string
+    {
+        // Avery L7651 – 65 labels per A4 sheet, 5 columns × 13 rows
+        $lw = 38.1;   // label width mm
+        $lh = 21.2;   // label height mm
+        $ml = 4.65;   // left margin mm
+        $mt = 10.65;  // top margin mm
+        $cg = 2.5;    // column gap mm
+
+        $pdf = new Fpdf('P', 'mm', 'A4');
+        $pdf->SetMargins(0, 0, 0);
+        $pdf->SetAutoPageBreak(false, 0);
+        $pdf->AddPage();
+
+        foreach ($labels as $idx => $rangeOrText) {
+            if ($idx > 0 && $idx % 65 === 0) {
+                $pdf->AddPage();
+            }
+            $pos = $idx % 65;
+            $col = $pos % 5;
+            $row = intdiv($pos, 5);
+            $x   = $ml + $col * ($lw + $cg);
+            $y   = $mt + $row * $lh;
+            $this->drawLabel($pdf, $x, $y, $lw, $lh, $recipient, $rangeOrText, $branded);
+        }
+
+        return $pdf->Output('', 'S');
+    }
+
+    private function drawLabel(Fpdf $pdf, float $x, float $y, float $w, float $h, string $recipient, ?string $rangeOrText, bool $branded): void
+    {
+        $pad = 0.8;
+        $iw  = $w - $pad * 2;
+
+        $pdf->SetTextColor(0, 0, 0);
+
+        if ($branded) {
+            $lines = [
+                ['text' => 'JW Products',             'style' => 'B', 'size' => 7.5, 'cellH' => 2.9],
+                ['text' => 'sales@jwproducts.co.uk',  'style' => '',  'size' => 5.5, 'cellH' => 2.3],
+                ['text' => '01252 624 305',            'style' => '',  'size' => 6.0, 'cellH' => 2.4],
+                ['text' => strtoupper($recipient),     'style' => 'B', 'size' => 6.0, 'cellH' => 2.4],
+                ['text' => $rangeOrText ?? '',         'style' => 'B', 'size' => ($rangeOrText ? 8.0 : 0.0), 'cellH' => 3.0],
+            ];
+            $totalH = array_sum(array_column($lines, 'cellH'));
+            $lineY  = $y + ($h - $totalH) / 2;
+
+            foreach ($lines as $line) {
+                if ($line['size'] < 0.5 || $line['text'] === '') {
+                    $lineY += $line['cellH'];
+                    continue;
+                }
+                $size = $line['size'];
+                $pdf->SetFont('Helvetica', $line['style'], $size);
+                while ($size > 3.5 && $pdf->GetStringWidth($line['text']) > $iw) {
+                    $size -= 0.5;
+                    $pdf->SetFont('Helvetica', $line['style'], $size);
+                }
+                $pdf->SetXY($x + $pad, $lineY);
+                $pdf->Cell($iw, $line['cellH'], $line['text'], 0, 0, 'C');
+                $lineY += $line['cellH'];
+            }
+        } else {
+            if ($rangeOrText) {
+                $recH  = 3.5;
+                $rngH  = 4.5;
+                $startY = $y + ($h - $recH - $rngH) / 2;
+
+                $size = 8.0;
+                $pdf->SetFont('Helvetica', 'B', $size);
+                $text = strtoupper($recipient);
+                while ($size > 3.5 && $pdf->GetStringWidth($text) > $iw) {
+                    $size -= 0.5;
+                    $pdf->SetFont('Helvetica', 'B', $size);
+                }
+                $pdf->SetXY($x + $pad, $startY);
+                $pdf->Cell($iw, $recH, $text, 0, 0, 'C');
+
+                $pdf->SetFont('Helvetica', 'B', 10.0);
+                $pdf->SetXY($x + $pad, $startY + $recH);
+                $pdf->Cell($iw, $rngH, $rangeOrText, 0, 0, 'C');
+            } else {
+                $size = 9.0;
+                $text = strtoupper($recipient);
+                $pdf->SetFont('Helvetica', 'B', $size);
+                while ($size > 3.5 && $pdf->GetStringWidth($text) > $iw) {
+                    $size -= 0.5;
+                    $pdf->SetFont('Helvetica', 'B', $size);
+                }
+                $pdf->SetXY($x + $pad, $y + ($h - 4.0) / 2);
+                $pdf->Cell($iw, 4.0, $text, 0, 0, 'C');
+            }
+        }
     }
 }
