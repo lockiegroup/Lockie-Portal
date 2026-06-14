@@ -1098,8 +1098,15 @@
         <input type="hidden" id="lm-num-start">
         <input type="hidden" id="lm-num-end">
         <input type="hidden" id="lm-order-qty">
+        <input type="hidden" id="lm-universeal" value="0">
 
-        <div style="margin-bottom:1rem;">
+        {{-- Universeal notice (shown instead of branding options for Universeal jobs) --}}
+        <div id="lm-universeal-notice" style="display:none;margin-bottom:1rem;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:9px 12px;font-size:0.8125rem;color:#1d4ed8;line-height:1.5;">
+            Universeal format — 4 columns, each label printed twice
+        </div>
+
+        {{-- Branding (hidden for Universeal) --}}
+        <div id="lm-brand-row" style="margin-bottom:1rem;">
             <p style="font-size:0.8125rem;font-weight:500;color:#475569;margin:0 0 8px;">Branding</p>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
                 <label style="display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-size:0.875rem;color:#1e293b;padding:8px;border:2px solid #1e293b;border-radius:8px;background:#f8fafc;" id="lm-opt-branded">
@@ -1135,48 +1142,62 @@
 
 <script>
 function openLabelModal(btn) {
+    const isUniverseal = btn.dataset.universeal === '1';
     document.getElementById('lm-job-id').value    = btn.dataset.jobId;
     document.getElementById('lm-num-start').value = btn.dataset.numStart || '';
     document.getElementById('lm-num-end').value   = btn.dataset.numEnd   || '';
     document.getElementById('lm-order-qty').value = btn.dataset.orderQty || '0';
     document.getElementById('lm-pack-size').value = btn.dataset.defaultPack || '100';
+    document.getElementById('lm-universeal').value = isUniverseal ? '1' : '0';
 
-    const hasNumbered = btn.dataset.numStart && btn.dataset.numEnd;
-    document.getElementById('lm-pack-row').style.display = hasNumbered ? 'block' : 'none';
+    const hasNumbered = !!(btn.dataset.numStart && btn.dataset.numEnd);
+    document.getElementById('lm-pack-row').style.display      = hasNumbered ? 'block' : 'none';
+    document.getElementById('lm-brand-row').style.display     = isUniverseal ? 'none'  : 'block';
+    document.getElementById('lm-universeal-notice').style.display = isUniverseal ? 'block' : 'none';
 
     lmUpdate();
     document.getElementById('label-modal').style.display = 'flex';
 }
 
 function lmUpdate() {
-    const numStart = parseInt(document.getElementById('lm-num-start').value) || 0;
-    const numEnd   = parseInt(document.getElementById('lm-num-end').value)   || 0;
-    const orderQty = parseInt(document.getElementById('lm-order-qty').value) || 0;
-    const packSize = Math.max(1, parseInt(document.getElementById('lm-pack-size').value) || 1);
+    const numStart    = parseInt(document.getElementById('lm-num-start').value) || 0;
+    const numEnd      = parseInt(document.getElementById('lm-num-end').value)   || 0;
+    const orderQty    = parseInt(document.getElementById('lm-order-qty').value) || 0;
+    const packSize    = Math.max(1, parseInt(document.getElementById('lm-pack-size').value) || 1);
+    const isUniverseal = document.getElementById('lm-universeal').value === '1';
 
     let info;
     if (numStart && numEnd && numEnd > numStart) {
         const total = numEnd - numStart + 1;
-        const count = Math.ceil(total / packSize);
-        info = `${total.toLocaleString()} items ÷ ${packSize.toLocaleString()} per pack = <strong>${count.toLocaleString()} label${count !== 1 ? 's' : ''}</strong>`;
+        const unique = Math.ceil(total / packSize);
+        const total_labels = isUniverseal ? unique * 2 : unique;
+        info = `${total.toLocaleString()} items ÷ ${packSize.toLocaleString()} per pack = ${unique.toLocaleString()} unique labels`;
+        if (isUniverseal) info += ` × 2 = <strong>${total_labels.toLocaleString()} labels</strong>`;
+        else info = `${total.toLocaleString()} items ÷ ${packSize.toLocaleString()} per pack = <strong>${unique.toLocaleString()} label${unique !== 1 ? 's' : ''}</strong>`;
     } else {
         const count = Math.max(1, orderQty);
-        info = `<strong>${count.toLocaleString()} label${count !== 1 ? 's' : ''}</strong> — one per pack`;
+        const total_labels = isUniverseal ? count * 2 : count;
+        info = isUniverseal
+            ? `${count.toLocaleString()} packs × 2 = <strong>${total_labels.toLocaleString()} labels</strong>`
+            : `<strong>${count.toLocaleString()} label${count !== 1 ? 's' : ''}</strong> — one per pack`;
     }
     document.getElementById('lm-info').innerHTML = info;
 
-    const branded = document.querySelector('input[name="lm-branded"]:checked').value === '1';
-    document.getElementById('lm-opt-branded').style.borderColor   = branded ? '#1e293b' : '#e2e8f0';
-    document.getElementById('lm-opt-branded').style.color         = branded ? '#1e293b' : '#64748b';
-    document.getElementById('lm-opt-unbranded').style.borderColor = branded ? '#e2e8f0' : '#1e293b';
-    document.getElementById('lm-opt-unbranded').style.color       = branded ? '#64748b' : '#1e293b';
+    if (!isUniverseal) {
+        const branded = document.querySelector('input[name="lm-branded"]:checked').value === '1';
+        document.getElementById('lm-opt-branded').style.borderColor   = branded ? '#1e293b' : '#e2e8f0';
+        document.getElementById('lm-opt-branded').style.color         = branded ? '#1e293b' : '#64748b';
+        document.getElementById('lm-opt-unbranded').style.borderColor = branded ? '#e2e8f0' : '#1e293b';
+        document.getElementById('lm-opt-unbranded').style.color       = branded ? '#64748b' : '#1e293b';
+    }
 }
 
 function lmDownload() {
-    const jobId    = document.getElementById('lm-job-id').value;
-    const branded  = document.querySelector('input[name="lm-branded"]:checked').value;
-    const packSize = document.getElementById('lm-pack-size').value;
-    window.open(`/print-schedule/jobs/${jobId}/labels?branded=${branded}&pack_size=${packSize}`, '_blank');
+    const jobId       = document.getElementById('lm-job-id').value;
+    const branded     = document.querySelector('input[name="lm-branded"]:checked').value;
+    const packSize    = document.getElementById('lm-pack-size').value;
+    const isUniverseal = document.getElementById('lm-universeal').value;
+    window.open(`/print-schedule/jobs/${jobId}/labels?branded=${branded}&pack_size=${packSize}&universeal=${isUniverseal}`, '_blank');
     document.getElementById('label-modal').style.display = 'none';
 }
 

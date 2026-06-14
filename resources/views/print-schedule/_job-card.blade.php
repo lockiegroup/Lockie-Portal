@@ -263,6 +263,7 @@
             data-num-end="{{ $_lNum['end'] ?? '' }}"
             data-order-qty="{{ $job->order_quantity ?? 0 }}"
             data-default-pack="{{ $_lNum['defaultPack'] }}"
+            data-universeal="{{ stripos($job->customer_name ?? '', 'universeal') !== false ? '1' : '0' }}"
             style="display:inline-flex;align-items:center;gap:5px;font-size:0.75rem;border-radius:8px;padding:5px 12px;border:1px solid #e2e8f0;background:#f8fafc;color:#475569;cursor:pointer;"
             onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'">
             <svg style="width:13px;height:13px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

@@ -437,32 +437,44 @@ class PrintScheduleController extends Controller
 
     public function downloadLabels(Request $request, PrintJob $job): Response
     {
-        $branded  = $request->boolean('branded', true);
-        $packSize = max(1, (int) $request->input('pack_size', 100));
+        $branded     = $request->boolean('branded', true);
+        $packSize    = max(1, (int) $request->input('pack_size', 100));
+        $isUniverseal = $request->boolean('universeal', false)
+                     || stripos($job->customer_name ?? '', 'universeal') !== false;
 
         $parsed = $this->parseJobComment($job->line_comment ?? '');
 
         if ($parsed['num_start'] !== null) {
-            $labels  = [];
-            $prefix  = $parsed['num_prefix'];
-            $width   = $parsed['num_width'];
-            $start   = $parsed['num_start'];
-            $end     = $parsed['num_end'];
-            $count   = (int) ceil(($end - $start + 1) / $packSize);
+            $uniqueLabels = [];
+            $prefix = $parsed['num_prefix'];
+            $width  = $parsed['num_width'];
+            $start  = $parsed['num_start'];
+            $end    = $parsed['num_end'];
+            $count  = (int) ceil(($end - $start + 1) / $packSize);
             for ($i = 0; $i < $count; $i++) {
-                $from     = $start + $i * $packSize;
-                $to       = min($from + $packSize - 1, $end);
-                $labels[] = $prefix . sprintf('%0' . $width . 'd', $from)
-                          . ' - '
-                          . $prefix . sprintf('%0' . $width . 'd', $to);
+                $from           = $start + $i * $packSize;
+                $to             = min($from + $packSize - 1, $end);
+                $uniqueLabels[] = $isUniverseal
+                    ? sprintf('%d   %d', $from, $to)   // Universeal: plain numbers, wide space
+                    : $prefix . sprintf('%0' . $width . 'd', $from) . ' - ' . $prefix . sprintf('%0' . $width . 'd', $to);
             }
         } else {
-            // order_quantity = number of packs; one label per pack, all identical
-            $count  = max(1, (int) ($job->order_quantity ?? 1));
-            $labels = array_fill(0, $count, null);
+            $count        = max(1, (int) ($job->order_quantity ?? 1));
+            $uniqueLabels = array_fill(0, $count, null);
         }
 
-        $pdf      = $this->buildLabelPdf($labels, $parsed['printed'], $branded);
+        // Universeal: duplicate each label (×2)
+        if ($isUniverseal) {
+            $labels = [];
+            foreach ($uniqueLabels as $lbl) {
+                $labels[] = $lbl;
+                $labels[] = $lbl;
+            }
+        } else {
+            $labels = $uniqueLabels;
+        }
+
+        $pdf      = $this->buildLabelPdf($labels, $parsed['printed'], $branded, $isUniverseal, $job->customer_name ?? '');
         $filename = 'labels-' . preg_replace('/[^A-Za-z0-9-]/', '-', $job->order_number ?? 'job') . '.pdf';
 
         return response($pdf, 200, [
@@ -491,14 +503,22 @@ class PrintScheduleController extends Controller
         return $result;
     }
 
-    private function buildLabelPdf(array $labels, ?string $printed, bool $branded): string
+    private function buildLabelPdf(array $labels, ?string $printed, bool $branded, bool $isUniverseal = false, string $customerName = ''): string
     {
-        // Avery L7651 – 65 labels per A4 sheet, 5 columns × 13 rows
-        $lw = 38.1;   // label width mm
-        $lh = 21.2;   // label height mm
-        $ml = 4.65;   // left margin mm
-        $mt = 10.65;  // top margin mm
-        $cg = 2.5;    // column gap mm
+        if ($isUniverseal) {
+            // 4 columns × 13 rows = 52 per page, wider labels
+            $cols = 4;
+            $lw   = 48.3;   // label width mm  (4 cols + 3×2.5mm gaps in 200.7mm usable)
+        } else {
+            // Avery L7651 – 5 columns × 13 rows = 65 per page
+            $cols = 5;
+            $lw   = 38.1;
+        }
+        $lh  = 21.2;
+        $ml  = 4.65;
+        $mt  = 10.65;
+        $cg  = 2.5;
+        $per = $cols * 13;
 
         $pdf = new \FPDF('P', 'mm', 'A4');
         $pdf->SetMargins(0, 0, 0);
@@ -506,18 +526,53 @@ class PrintScheduleController extends Controller
         $pdf->AddPage();
 
         foreach ($labels as $idx => $range) {
-            if ($idx > 0 && $idx % 65 === 0) {
+            if ($idx > 0 && $idx % $per === 0) {
                 $pdf->AddPage();
             }
-            $pos = $idx % 65;
-            $col = $pos % 5;
-            $row = intdiv($pos, 5);
+            $pos = $idx % $per;
+            $col = $pos % $cols;
+            $row = intdiv($pos, $cols);
             $x   = $ml + $col * ($lw + $cg);
             $y   = $mt + $row * $lh;
-            $this->drawLabel($pdf, $x, $y, $lw, $lh, $range, $printed, $branded);
+
+            if ($isUniverseal) {
+                $this->drawUniversealLabel($pdf, $x, $y, $lw, $lh, $customerName, $range, $printed);
+            } else {
+                $this->drawLabel($pdf, $x, $y, $lw, $lh, $range, $printed, $branded);
+            }
         }
 
         return $pdf->Output('', 'S');
+    }
+
+    private function drawUniversealLabel(\FPDF $pdf, float $x, float $y, float $w, float $h, string $customerName, ?string $range, ?string $printed): void
+    {
+        $pad = 1.0;
+        $iw  = $w - $pad * 2;
+        $pdf->SetTextColor(0, 0, 0);
+
+        // Three lines: customer name (top) / range (middle, large bold) / printed (bottom)
+        $nameText  = strtoupper(explode(' ', trim($customerName))[0]); // first word e.g. "UNIVERSEAL"
+        $lines = array_filter([
+            ['text' => $nameText,    'style' => 'B', 'size' => 8.0,  'cellH' => 3.2],
+            $range   ? ['text' => $range,   'style' => 'B', 'size' => 9.0,  'cellH' => 4.0] : null,
+            $printed ? ['text' => $printed, 'style' => '',  'size' => 7.5,  'cellH' => 3.0] : null,
+        ]);
+        $lines  = array_values($lines);
+        $totalH = array_sum(array_column($lines, 'cellH'));
+        $lineY  = $y + ($h - $totalH) / 2;
+
+        foreach ($lines as $line) {
+            $size = $line['size'];
+            $pdf->SetFont('Helvetica', $line['style'], $size);
+            while ($size > 4.0 && $pdf->GetStringWidth($line['text']) > $iw) {
+                $size -= 0.5;
+                $pdf->SetFont('Helvetica', $line['style'], $size);
+            }
+            $pdf->SetXY($x + $pad, $lineY);
+            $pdf->Cell($iw, $line['cellH'], $line['text'], 0, 0, 'C');
+            $lineY += $line['cellH'];
+        }
     }
 
     private function drawLabel(\FPDF $pdf, float $x, float $y, float $w, float $h, ?string $range, ?string $printed, bool $branded): void
