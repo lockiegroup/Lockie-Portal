@@ -440,27 +440,29 @@ class PrintScheduleController extends Controller
         $branded  = $request->boolean('branded', true);
         $packSize = max(1, (int) $request->input('pack_size', 100));
 
-        $parsed    = $this->parseJobComment($job->line_comment ?? '');
-        $recipient = trim($job->delivery_name ?: ($job->customer_name ?? ''));
+        $parsed = $this->parseJobComment($job->line_comment ?? '');
 
         if ($parsed['num_start'] !== null) {
-            $labels = [];
-            $start  = $parsed['num_start'];
-            $end    = $parsed['num_end'];
-            $count  = (int) ceil(($end - $start + 1) / $packSize);
+            $labels  = [];
+            $prefix  = $parsed['num_prefix'];
+            $width   = $parsed['num_width'];
+            $start   = $parsed['num_start'];
+            $end     = $parsed['num_end'];
+            $count   = (int) ceil(($end - $start + 1) / $packSize);
             for ($i = 0; $i < $count; $i++) {
                 $from     = $start + $i * $packSize;
                 $to       = min($from + $packSize - 1, $end);
-                $labels[] = sprintf('%06d - %06d', $from, $to);
+                $labels[] = $prefix . sprintf('%0' . $width . 'd', $from)
+                          . ' - '
+                          . $prefix . sprintf('%0' . $width . 'd', $to);
             }
         } else {
-            // order_quantity is already the number of packs — one label per pack
+            // order_quantity = number of packs; one label per pack, all identical
             $count  = max(1, (int) ($job->order_quantity ?? 1));
-            $text   = $parsed['printed'];
-            $labels = array_fill(0, $count, $text);
+            $labels = array_fill(0, $count, null);
         }
 
-        $pdf      = $this->buildLabelPdf($labels, $recipient, $branded);
+        $pdf      = $this->buildLabelPdf($labels, $parsed['printed'], $branded);
         $filename = 'labels-' . preg_replace('/[^A-Za-z0-9-]/', '-', $job->order_number ?? 'job') . '.pdf';
 
         return response($pdf, 200, [
@@ -471,18 +473,25 @@ class PrintScheduleController extends Controller
 
     private function parseJobComment(string $text): array
     {
-        $result = ['num_start' => null, 'num_end' => null, 'printed' => null];
-        if (preg_match('/Numbered:\s*(\d+)\s*[-–]+\s*(\d+)/i', $text, $m)) {
-            $result['num_start'] = (int) $m[1];
-            $result['num_end']   = (int) $m[2];
+        $result = ['num_start' => null, 'num_end' => null, 'num_prefix' => '', 'num_width' => 6, 'printed' => null];
+
+        // Handles "NUMBERED  L 060001 - L 260000" and "Numbered: 337001 - 347000"
+        if (preg_match('/NUMBERED[:\s]+([A-Z]+\s+)?(\d+)\s*[-–]+\s*(?:[A-Z]+\s+)?(\d+)/i', $text, $m)) {
+            $result['num_prefix'] = isset($m[1]) ? rtrim($m[1]) : '';  // e.g. "L" (no trailing space)
+            $result['num_start']  = (int) $m[2];
+            $result['num_end']    = (int) $m[3];
+            $result['num_width']  = strlen($m[2]);
         }
-        if (preg_match('/Printed:\s*(.+)/i', $text, $m)) {
+
+        // Handles "PRINTED  SJH 01 410 3000" and "Printed: 0300 300 3636"
+        if (preg_match('/PRINTED[:\s]+(.+)/i', $text, $m)) {
             $result['printed'] = trim($m[1]);
         }
+
         return $result;
     }
 
-    private function buildLabelPdf(array $labels, string $recipient, bool $branded): string
+    private function buildLabelPdf(array $labels, ?string $printed, bool $branded): string
     {
         // Avery L7651 – 65 labels per A4 sheet, 5 columns × 13 rows
         $lw = 38.1;   // label width mm
@@ -496,7 +505,7 @@ class PrintScheduleController extends Controller
         $pdf->SetAutoPageBreak(false, 0);
         $pdf->AddPage();
 
-        foreach ($labels as $idx => $rangeOrText) {
+        foreach ($labels as $idx => $range) {
             if ($idx > 0 && $idx % 65 === 0) {
                 $pdf->AddPage();
             }
@@ -505,26 +514,26 @@ class PrintScheduleController extends Controller
             $row = intdiv($pos, 5);
             $x   = $ml + $col * ($lw + $cg);
             $y   = $mt + $row * $lh;
-            $this->drawLabel($pdf, $x, $y, $lw, $lh, $recipient, $rangeOrText, $branded);
+            $this->drawLabel($pdf, $x, $y, $lw, $lh, $range, $printed, $branded);
         }
 
         return $pdf->Output('', 'S');
     }
 
-    private function drawLabel(\FPDF $pdf, float $x, float $y, float $w, float $h, string $recipient, ?string $rangeOrText, bool $branded): void
+    private function drawLabel(\FPDF $pdf, float $x, float $y, float $w, float $h, ?string $range, ?string $printed, bool $branded): void
     {
         $pad = 0.8;
         $iw  = $w - $pad * 2;
-
         $pdf->SetTextColor(0, 0, 0);
 
         if ($branded) {
+            // Lines: JW Products / email / phone / range / printed
             $lines = [
-                ['text' => 'JW Products',             'style' => 'B', 'size' => 7.5, 'cellH' => 2.9],
-                ['text' => 'sales@jwproducts.co.uk',  'style' => '',  'size' => 5.5, 'cellH' => 2.3],
-                ['text' => '01252 624 305',            'style' => '',  'size' => 6.0, 'cellH' => 2.4],
-                ['text' => strtoupper($recipient),     'style' => 'B', 'size' => 6.0, 'cellH' => 2.4],
-                ['text' => $rangeOrText ?? '',         'style' => 'B', 'size' => ($rangeOrText ? 8.0 : 0.0), 'cellH' => 3.0],
+                ['text' => 'JW Products',            'style' => 'B', 'size' => 7.5, 'cellH' => 2.8],
+                ['text' => 'sales@jwproducts.co.uk', 'style' => '',  'size' => 5.5, 'cellH' => 2.2],
+                ['text' => '01252 624 305',           'style' => '',  'size' => 6.0, 'cellH' => 2.3],
+                ['text' => $range   ?? '',            'style' => 'B', 'size' => $range   ? 8.5 : 0.0, 'cellH' => 3.2],
+                ['text' => $printed ?? '',            'style' => '',  'size' => $printed ? 6.5 : 0.0, 'cellH' => 2.5],
             ];
             $totalH = array_sum(array_column($lines, 'cellH'));
             $lineY  = $y + ($h - $totalH) / 2;
@@ -545,34 +554,25 @@ class PrintScheduleController extends Controller
                 $lineY += $line['cellH'];
             }
         } else {
-            if ($rangeOrText) {
-                $recH  = 3.5;
-                $rngH  = 4.5;
-                $startY = $y + ($h - $recH - $rngH) / 2;
+            // Unbranded: range (big) + printed text, vertically centred
+            $lines = array_filter([
+                $range   ? ['text' => $range,   'style' => 'B', 'size' => 10.0, 'cellH' => 4.5] : null,
+                $printed ? ['text' => $printed, 'style' => '',  'size' => 7.5,  'cellH' => 3.2] : null,
+            ]);
+            $lines  = array_values($lines);
+            $totalH = array_sum(array_column($lines, 'cellH'));
+            $lineY  = $y + ($h - $totalH) / 2;
 
-                $size = 8.0;
-                $pdf->SetFont('Helvetica', 'B', $size);
-                $text = strtoupper($recipient);
-                while ($size > 3.5 && $pdf->GetStringWidth($text) > $iw) {
+            foreach ($lines as $line) {
+                $size = $line['size'];
+                $pdf->SetFont('Helvetica', $line['style'], $size);
+                while ($size > 3.5 && $pdf->GetStringWidth($line['text']) > $iw) {
                     $size -= 0.5;
-                    $pdf->SetFont('Helvetica', 'B', $size);
+                    $pdf->SetFont('Helvetica', $line['style'], $size);
                 }
-                $pdf->SetXY($x + $pad, $startY);
-                $pdf->Cell($iw, $recH, $text, 0, 0, 'C');
-
-                $pdf->SetFont('Helvetica', 'B', 10.0);
-                $pdf->SetXY($x + $pad, $startY + $recH);
-                $pdf->Cell($iw, $rngH, $rangeOrText, 0, 0, 'C');
-            } else {
-                $size = 9.0;
-                $text = strtoupper($recipient);
-                $pdf->SetFont('Helvetica', 'B', $size);
-                while ($size > 3.5 && $pdf->GetStringWidth($text) > $iw) {
-                    $size -= 0.5;
-                    $pdf->SetFont('Helvetica', 'B', $size);
-                }
-                $pdf->SetXY($x + $pad, $y + ($h - 4.0) / 2);
-                $pdf->Cell($iw, 4.0, $text, 0, 0, 'C');
+                $pdf->SetXY($x + $pad, $lineY);
+                $pdf->Cell($iw, $line['cellH'], $line['text'], 0, 0, 'C');
+                $lineY += $line['cellH'];
             }
         }
     }
