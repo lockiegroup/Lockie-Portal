@@ -4,6 +4,8 @@
     $noteCount       = $job->notes->count();
     $activeRun       = $job->runs->first(fn($r) => $r->ended_at === null);
     $lastRun         = $job->runs->last();
+    $endedRuns       = $job->runs->filter(fn($r) => $r->ended_at !== null);
+    $prevPacks       = $endedRuns->sum('packs_produced');
     $portalPaused    = !$activeRun && $lastRun && $lastRun->end_reason === 'pause';
     $portalEnded     = !$activeRun && $lastRun && $lastRun->end_reason === 'complete';
 
@@ -242,7 +244,11 @@
             </div>
             @if($activeRun->progress_packs !== null)
                 <div style="font-size:0.75rem;color:#15803d;margin-top:3px;padding-left:15px;">
-                    Last update {{ $activeRun->progress_at->format('H:i') }}: <strong>{{ number_format($activeRun->progress_packs) }} packs done</strong>
+                    Last update {{ $activeRun->progress_at->format('H:i') }}: <strong>{{ number_format($activeRun->progress_packs + $prevPacks) }} packs total</strong>
+                </div>
+            @elseif($prevPacks > 0)
+                <div style="font-size:0.75rem;color:#15803d;margin-top:3px;padding-left:15px;">
+                    <strong>{{ number_format($prevPacks) }} packs</strong> done before this run
                 </div>
             @endif
         </div>

@@ -470,8 +470,10 @@
     @else
         @foreach($jobs as $job)
             @php
-                $activeRun = $job->runs->first(fn($r) => $r->ended_at === null);
-                $lastRun   = $job->runs->last();
+                $activeRun    = $job->runs->first(fn($r) => $r->ended_at === null);
+                $lastRun      = $job->runs->last();
+                $endedRuns    = $job->runs->filter(fn($r) => $r->ended_at !== null);
+                $prevPacks    = $endedRuns->sum('packs_produced'); // cumulative from all ended runs
                 if ($activeRun) {
                     $state = 'running';
                 } elseif ($lastRun && $lastRun->end_reason === 'pause') {
@@ -531,8 +533,11 @@
                         by <span>{{ $activeRun->user?->name ?? 'Unknown' }}</span>
                         @if($activeRun->progress_packs !== null)
                             &nbsp;·&nbsp;
-                            <span style="color:#4ade80;font-weight:600;">{{ number_format($activeRun->progress_packs) }} packs done</span>
+                            <span style="color:#4ade80;font-weight:600;">{{ number_format($activeRun->progress_packs + $prevPacks) }} packs total</span>
                             <span style="color:#475569;"> (updated {{ $activeRun->progress_at->format('H:i') }})</span>
+                        @elseif($prevPacks > 0)
+                            &nbsp;·&nbsp;
+                            <span style="color:#4ade80;font-weight:600;">{{ number_format($prevPacks) }} packs before this run</span>
                         @endif
                     </div>
                 @elseif($state === 'paused' && $lastRun)
@@ -563,8 +568,8 @@
                             @csrf
                             <label style="font-size:0.85rem;color:#64748b;white-space:nowrap;font-weight:600;">Packs done:</label>
                             <input type="number" name="progress_packs" min="0"
-                                value="{{ $activeRun->progress_packs ?? '' }}"
-                                placeholder="0"
+                                value="{{ $activeRun->progress_packs !== null ? $activeRun->progress_packs + $prevPacks : ($prevPacks ?: '') }}"
+                                placeholder="{{ $prevPacks > 0 ? $prevPacks : '0' }}"
                                 inputmode="numeric"
                                 style="flex:1;background:transparent;border:none;color:#f1f5f9;font-size:1.25rem;font-weight:700;outline:none;width:80px;">
                             <button type="submit" class="btn btn-success btn-sm">Update</button>
