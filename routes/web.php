@@ -35,6 +35,7 @@ Route::get('/', fn() => redirect()->route('login'));
 // Tablet — PIN-based, no standard auth required
 Route::prefix('tablet')->name('tablet.')->group(function () {
     Route::get('/{machine}',                          [TabletController::class, 'show'])->name('show');
+    Route::get('/{machine}/jobs-hash',                [TabletController::class, 'jobsHash'])->name('jobs.hash');
     Route::post('/{machine}/login',                   [TabletController::class, 'pinLogin'])->name('login');
     Route::post('/{machine}/logout',                  [TabletController::class, 'logout'])->name('logout');
     Route::post('/{machine}/jobs/{job}/progress',     [TabletController::class, 'updateProgress'])->name('jobs.progress');

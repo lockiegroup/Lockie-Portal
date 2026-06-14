@@ -163,6 +163,20 @@ class TabletController extends Controller
         return redirect()->route('tablet.show', $machine);
     }
 
+    public function jobsHash(string $machine): \Illuminate\Http\JsonResponse
+    {
+        if (!$this->validMachine($machine)) abort(404);
+
+        $jobs = PrintJob::active()
+            ->where('board', $machine)
+            ->orderBy('position')
+            ->get(['id', 'position']);
+
+        $hash = md5($jobs->map(fn($j) => $j->id . ':' . $j->position)->implode(','));
+
+        return response()->json(['hash' => $hash, 'count' => $jobs->count()]);
+    }
+
     public function updateProgress(string $machine, Request $request, PrintJob $job): RedirectResponse
     {
         if (!$this->validMachine($machine)) abort(404);

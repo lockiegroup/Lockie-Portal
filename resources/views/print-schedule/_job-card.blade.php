@@ -2,7 +2,9 @@
     $requiredDateFmt = $job->required_date ? $job->required_date->format('d M Y') : null;
     $orderDateFmt    = $job->order_date    ? $job->order_date->format('d M Y')    : null;
     $noteCount       = $job->notes->count();
-    $activeRun       = $job->runs->first();
+    $activeRun       = $job->runs->first(fn($r) => $r->ended_at === null);
+    $lastRun         = $job->runs->last();
+    $portalPaused    = !$activeRun && $lastRun && $lastRun->end_reason === 'pause';
 
     // Parse line comment for label generation
     $_lNum = ['start' => null, 'end' => null, 'defaultPack' => 100];
@@ -15,7 +17,7 @@
     }
 @endphp
 
-<div class="job-card bg-white rounded-xl border shadow-sm select-none {{ $activeRun ? 'border-green-400' : ($job->is_manual ? 'border-green-300' : 'border-slate-200') }}" style="padding: 1.25rem 1.5rem;"
+<div class="job-card bg-white rounded-xl border shadow-sm select-none {{ $activeRun ? 'border-green-400' : ($portalPaused ? 'border-amber-400' : ($job->is_manual ? 'border-green-300' : 'border-slate-200')) }}" style="padding: 1.25rem 1.5rem;"
      data-job-id="{{ $job->id }}"
      data-order-number="{{ $job->order_number }}"
      data-current-board="{{ $job->board }}"
@@ -228,7 +230,7 @@
         <div id="date-change-log-{{ $job->id }}" class="hidden"></div>
     @endif
 
-    {{-- Running indicator (tablet operator has started this job) --}}
+    {{-- Running indicator --}}
     @if($activeRun)
         <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:6px 10px;margin-bottom:0.75rem;">
             <div style="display:flex;align-items:center;gap:7px;">
@@ -240,6 +242,25 @@
             @if($activeRun->progress_packs !== null)
                 <div style="font-size:0.75rem;color:#15803d;margin-top:3px;padding-left:15px;">
                     Last update {{ $activeRun->progress_at->format('H:i') }}: <strong>{{ number_format($activeRun->progress_packs) }} packs done</strong>
+                </div>
+            @endif
+        </div>
+    @endif
+
+    {{-- Paused indicator --}}
+    @if($portalPaused)
+        <div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:6px 10px;margin-bottom:0.75rem;">
+            <div style="display:flex;align-items:center;gap:7px;">
+                <span style="font-size:0.75rem;">⏸</span>
+                <span style="font-size:0.75rem;color:#92400e;font-weight:600;">Paused on {{ ucwords(str_replace('_', ' ', $lastRun->machine)) }}</span>
+                @if($lastRun->packs_produced !== null)
+                    <span style="font-size:0.75rem;color:#b45309;">— {{ number_format($lastRun->packs_produced) }} packs done</span>
+                @endif
+            </div>
+            @if($lastRun->pause_reason)
+                <div style="font-size:0.75rem;color:#b45309;margin-top:3px;padding-left:15px;">
+                    Reason: <strong>{{ $lastRun->pause_reason }}</strong>
+                    &nbsp;·&nbsp; Paused at {{ $lastRun->ended_at->format('H:i') }}
                 </div>
             @endif
         </div>

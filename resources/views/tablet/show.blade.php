@@ -610,6 +610,47 @@
 
 
 {{-- ════════════════════════════════════════════
+     UPDATE BANNER (real-time poll detected change)
+     ════════════════════════════════════════════ --}}
+@if($operator)
+<div id="update-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:200;background:#0284c7;color:#fff;padding:14px 24px;align-items:center;justify-content:center;gap:10px;font-weight:600;font-size:1rem;">
+    <svg style="width:18px;height:18px;animation:spin 1s linear infinite;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M21 12a9 9 0 1 1-9-9"/><path d="M21 3v4h-4"/>
+    </svg>
+    Job schedule updated — refreshing…
+</div>
+<style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+@endif
+
+{{-- ════════════════════════════════════════════
+     2-HOUR REMINDER MODAL
+     ════════════════════════════════════════════ --}}
+@if($operator)
+<div class="modal-backdrop" id="reminder-modal">
+    <div class="modal" style="border-color:#d97706;">
+        <h3 style="color:#fbbf24;">⏱ Progress Update Due</h3>
+        <p id="reminder-job-name" style="color:#94a3b8;margin-bottom:8px;font-size:0.9rem;"></p>
+        <p style="color:#64748b;font-size:0.85rem;margin-bottom:20px;">
+            It's been 2 hours since the last update. Please log the current packs count.
+        </p>
+        <form id="reminder-form" method="POST">
+            @csrf
+            <div class="modal-field">
+                <label>Packs produced so far</label>
+                <input type="number" name="progress_packs" min="0" placeholder="0" inputmode="numeric" required
+                    style="font-size:2rem;font-weight:700;text-align:center;padding:16px;">
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-ghost btn-md"
+                    onclick="closeModal('reminder-modal')">Remind me later</button>
+                <button type="submit" class="btn btn-success btn-md">Log Update</button>
+            </div>
+        </form>
+    </div>
+</div>
+@endif
+
+{{-- ════════════════════════════════════════════
      PAUSE MODAL
      ════════════════════════════════════════════ --}}
 <div class="modal-backdrop" id="pause-modal">
@@ -777,6 +818,10 @@ function hPinDone() {
 // ── Close any modal ──
 function closeModal(id) {
     document.getElementById(id).classList.remove('open');
+    // If reminder was dismissed, allow it to re-appear after 30 minutes
+    if (id === 'reminder-modal') {
+        setTimeout(function() { _reminderShown = false; _checkReminder(); }, 30 * 60 * 1000);
+    }
 }
 
 // Close on backdrop click
@@ -785,6 +830,78 @@ document.querySelectorAll('.modal-backdrop').forEach(function(el) {
         if (e.target === el) el.classList.remove('open');
     });
 });
+
+@if($operator)
+// ── Job list polling (real-time updates) ──
+@php
+    $jobsHash = md5($jobs->map(fn($j) => $j->id . ':' . $j->position)->implode(','));
+@endphp
+const _currentHash = '{{ $jobsHash }}';
+const _hashUrl     = '{{ route('tablet.jobs.hash', $machine) }}';
+let _reloading     = false;
+
+function _pollJobs() {
+    if (_reloading) return;
+    fetch(_hashUrl, { cache: 'no-store' })
+        .then(r => r.json())
+        .then(data => {
+            if (data.hash !== _currentHash && !_reloading) {
+                _reloading = true;
+                const banner = document.getElementById('update-banner');
+                if (banner) {
+                    banner.style.display = 'flex';
+                    setTimeout(() => location.reload(), 2000);
+                } else {
+                    location.reload();
+                }
+            }
+        })
+        .catch(() => {});
+}
+setInterval(_pollJobs, 30000);
+
+// ── 2-hour progress reminder ──
+@php
+    $reminderJobs = $jobs->filter(fn($j) => $j->runs->first() !== null)->map(fn($j) => [
+        'id'          => $j->id,
+        'name'        => $j->customer_name,
+        'progressUrl' => route('tablet.jobs.progress', [$machine, $j->id]),
+        'lastUpdate'  => ($j->runs->first()->progress_at ?? $j->runs->first()->started_at)->timestamp * 1000,
+    ])->values();
+@endphp
+const _reminderJobs = @json($reminderJobs);
+const _TWO_HOURS    = 2 * 60 * 60 * 1000;
+let _reminderShown  = false;
+
+function _checkReminder() {
+    if (_reminderShown) return;
+    const now = Date.now();
+    let mostOverdue = null, maxElapsed = 0;
+    _reminderJobs.forEach(function(job) {
+        const elapsed = now - job.lastUpdate;
+        if (elapsed >= _TWO_HOURS && elapsed > maxElapsed) {
+            maxElapsed = elapsed;
+            mostOverdue = job;
+        }
+    });
+    if (mostOverdue) {
+        _reminderShown = true;
+        document.getElementById('reminder-job-name').textContent = mostOverdue.name;
+        document.getElementById('reminder-form').action = mostOverdue.progressUrl;
+        document.getElementById('reminder-modal').classList.add('open');
+    }
+}
+
+// Schedule each running job's reminder
+_reminderJobs.forEach(function(job) {
+    const elapsed = Date.now() - job.lastUpdate;
+    const delay   = Math.max(0, _TWO_HOURS - elapsed);
+    setTimeout(_checkReminder, delay);
+});
+// Also recheck every minute in case it was dismissed and more time passes
+setInterval(_checkReminder, 60 * 1000);
+_checkReminder();
+@endif
 </script>
 
 </body>

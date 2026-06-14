@@ -33,7 +33,7 @@ class PrintScheduleController extends Controller
                 ->with([
                     'notes',
                     'dateChanges.user',
-                    'runs' => fn($q) => $q->whereNull('ended_at')->with('user'),
+                    'runs' => fn($q) => $q->orderBy('started_at')->with('user'),
                 ])
                 ->get();
         }
