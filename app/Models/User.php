@@ -14,7 +14,6 @@ class User extends Authenticatable
         'manage_users'       => 'Manage Users',
         'print_settings'     => 'Print Settings',
         'envelope_settings'  => 'Envelope Settings',
-        'cash_flow'          => 'Cash Flow',
         'policy_settings'    => 'Policy Settings',
         'key_accounts_admin' => 'Key Accounts Admin',
         'key_actions_admin'  => 'Key Actions Admin',

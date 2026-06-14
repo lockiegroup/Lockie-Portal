@@ -13,7 +13,7 @@ use App\Http\Controllers\Admin\EnvelopeSettingsController;
 use App\Http\Controllers\Admin\PrintScheduleSettingController;
 use App\Http\Controllers\PrintScheduleController;
 use App\Http\Controllers\PrintJobArchiveController;
-use App\Http\Controllers\CashFlowController;
+use App\Http\Controllers\CrmController;
 use App\Http\Controllers\PolicyController;
 use App\Http\Controllers\Admin\PolicyController as AdminPolicyController;
 use App\Http\Controllers\Admin\ActivityLogController;
@@ -23,7 +23,6 @@ use App\Http\Controllers\ImportsController;
 use App\Http\Controllers\KeyAccountController;
 use App\Http\Controllers\Admin\KeyAccountAdminController;
 use App\Http\Controllers\KeyActionController;
-use App\Http\Controllers\CrmController;
 use App\Http\Controllers\RemindersController;
 use App\Http\Controllers\TrainingController;
 use App\Http\Controllers\ImpersonateController;
@@ -80,17 +79,6 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::post('/jobs/{job}/manual-complete', [PrintScheduleController::class, 'completeManual'])->name('jobs.manual.complete');
         Route::post('/jobs/{job}/manual-archive', [PrintScheduleController::class, 'archiveManual'])->name('jobs.manual.archive');
         Route::get('/jobs/{job}/labels', [PrintScheduleController::class, 'downloadLabels'])->name('jobs.labels');
-    });
-
-    // Cash Flow
-    Route::middleware('can:cash_flow')->prefix('cash-flow')->name('cash-flow.')->group(function () {
-        Route::get('/', [CashFlowController::class, 'index'])->name('index');
-        Route::post('/entries', [CashFlowController::class, 'store'])->name('store');
-        Route::put('/entries/{entry}', [CashFlowController::class, 'update'])->name('update');
-        Route::delete('/entries/{entry}', [CashFlowController::class, 'destroy'])->name('destroy');
-        Route::post('/opening-balance', [CashFlowController::class, 'updateOpeningBalance'])->name('opening-balance');
-        Route::post('/categories', [CashFlowController::class, 'storeCategory'])->name('categories.store');
-        Route::delete('/categories/{category}', [CashFlowController::class, 'destroyCategory'])->name('categories.destroy');
     });
 
     // Company Policies — all authenticated staff can view

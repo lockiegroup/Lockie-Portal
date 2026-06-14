@@ -4,7 +4,7 @@
     $user               = auth()->user();
     $initials           = $user ? strtoupper(mb_substr($user->name ?? $user->email, 0, 2)) : '??';
 
-    $activeFinance    = request()->routeIs('sales*') || request()->routeIs('cash-flow.*') || request()->routeIs('amazon.*');
+    $activeFinance    = request()->routeIs('sales*') || request()->routeIs('amazon.*');
     $activeStock      = request()->routeIs('stock.*') || $isWatchlistSection;
     $activePlanning   = request()->routeIs('key-actions.*') || request()->routeIs('action-plans.*');
     $activeCustomers  = request()->routeIs('key-accounts.*') || request()->routeIs('crm.*') || request()->routeIs('reminders.*');
@@ -46,7 +46,7 @@
         </a>
 
         {{-- FINANCE --}}
-        @if($user->hasModule('sales') || $user->can('cash_flow') || $user->hasModule('amazon'))
+        @if($user->hasModule('sales') || $user->hasModule('amazon'))
         <div style="height:1px;background:#1e293b;margin:10px 4px 2px;"></div>
         <button onclick="sbSection('finance')" class="sb-section-btn sb-label" data-tip="Finance">
             <span style="font-size:0.625rem;font-weight:700;text-transform:uppercase;">Finance</span>
@@ -61,15 +61,6 @@
                 <span class="sb-label">Sales</span>
             </a>
             @endif
-            @can('cash_flow')
-            <a href="{{ route('cash-flow.index') }}" class="sb-item{{ request()->routeIs('cash-flow.*') ? ' sb-active' : '' }}" data-tip="Cash Flow">
-                <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="12" y1="1" x2="12" y2="23"/>
-                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                </svg>
-                <span class="sb-label">Cash Flow</span>
-            </a>
-            @endcan
             @if($user->hasModule('amazon'))
             <a href="{{ route('amazon.index') }}" class="sb-item{{ request()->routeIs('amazon.*') ? ' sb-active' : '' }}" data-tip="Amazon &amp; Xero">
                 <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -241,7 +232,7 @@
         @endif
 
         {{-- ADMIN --}}
-        @canany(['manage_users', 'print_settings', 'envelope_settings', 'policy_settings', 'cash_flow', 'key_accounts_admin', 'imports'])
+        @canany(['manage_users', 'print_settings', 'envelope_settings', 'policy_settings', 'key_accounts_admin', 'imports'])
         <div style="height:1px;background:#1e293b;margin:10px 4px 2px;"></div>
         <button onclick="sbSection('admin')" class="sb-section-btn sb-label" data-tip="Admin">
             <span style="font-size:0.625rem;font-weight:700;text-transform:uppercase;">Admin</span>
