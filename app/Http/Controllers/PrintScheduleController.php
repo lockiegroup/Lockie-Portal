@@ -30,7 +30,11 @@ class PrintScheduleController extends Controller
         foreach (array_keys($boards) as $boardKey) {
             $boardJobs[$boardKey] = PrintJob::active()->where('board', $boardKey)
                 ->orderBy('position')
-                ->with(['notes', 'dateChanges.user'])
+                ->with([
+                    'notes',
+                    'dateChanges.user',
+                    'runs' => fn($q) => $q->whereNull('ended_at')->with('user'),
+                ])
                 ->get();
         }
 

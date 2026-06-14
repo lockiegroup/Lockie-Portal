@@ -2,6 +2,7 @@
     $requiredDateFmt = $job->required_date ? $job->required_date->format('d M Y') : null;
     $orderDateFmt    = $job->order_date    ? $job->order_date->format('d M Y')    : null;
     $noteCount       = $job->notes->count();
+    $activeRun       = $job->runs->first();
 
     // Parse line comment for label generation
     $_lNum = ['start' => null, 'end' => null, 'defaultPack' => 100];
@@ -14,7 +15,7 @@
     }
 @endphp
 
-<div class="job-card bg-white rounded-xl border shadow-sm select-none {{ $job->is_manual ? 'border-green-300' : 'border-slate-200' }}" style="padding: 1.25rem 1.5rem;"
+<div class="job-card bg-white rounded-xl border shadow-sm select-none {{ $activeRun ? 'border-green-400' : ($job->is_manual ? 'border-green-300' : 'border-slate-200') }}" style="padding: 1.25rem 1.5rem;"
      data-job-id="{{ $job->id }}"
      data-order-number="{{ $job->order_number }}"
      data-current-board="{{ $job->board }}"
@@ -225,6 +226,16 @@
         </div>
     @else
         <div id="date-change-log-{{ $job->id }}" class="hidden"></div>
+    @endif
+
+    {{-- Running indicator (tablet operator has started this job) --}}
+    @if($activeRun)
+        <div style="display:flex;align-items:center;gap:7px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:5px 10px;margin-bottom:0.75rem;">
+            <span style="width:8px;height:8px;border-radius:50%;background:#16a34a;display:inline-block;animation:psRun 1.5s infinite;flex-shrink:0;"></span>
+            <span style="font-size:0.75rem;color:#15803d;font-weight:600;">Running on {{ ucwords(str_replace('_', ' ', $activeRun->machine)) }}</span>
+            <span style="font-size:0.75rem;color:#4ade80;">—</span>
+            <span style="font-size:0.75rem;color:#16a34a;">{{ $activeRun->user?->name ?? 'Operator' }}, since {{ $activeRun->started_at->format('H:i') }}</span>
+        </div>
     @endif
 
     {{-- Row 5: Material checked | Notes toggle | Part complete --}}

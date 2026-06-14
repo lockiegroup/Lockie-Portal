@@ -1,5 +1,11 @@
 <x-layout title="A1 Print Schedule — Lockie Portal">
 
+    <style>
+        @keyframes psRun {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50%       { opacity: 0.4; transform: scale(0.65); }
+        }
+    </style>
 
     <main class="max-w-5xl mx-auto px-4 sm:px-6 py-8">
 
