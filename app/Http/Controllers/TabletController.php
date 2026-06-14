@@ -151,12 +151,29 @@ class TabletController extends Controller
             'packs_produced' => 'nullable|integer|min:0',
         ]);
 
+        // Active run (currently running)
         $run = $job->runs()->where('machine', $machine)->whereNull('ended_at')->first();
         if ($run) {
             $run->update([
                 'ended_at'       => now(),
                 'end_reason'     => 'complete',
                 'packs_produced' => $data['packs_produced'] ?? null,
+            ]);
+            return redirect()->route('tablet.show', $machine);
+        }
+
+        // Paused run — promote it to complete
+        $pausedRun = $job->runs()
+            ->where('machine', $machine)
+            ->where('end_reason', 'pause')
+            ->orderByDesc('ended_at')
+            ->first();
+
+        if ($pausedRun) {
+            $pausedRun->update([
+                'end_reason'     => 'complete',
+                'packs_produced' => $data['packs_produced'] ?? $pausedRun->packs_produced,
+                'pause_reason'   => null,
             ]);
         }
 
