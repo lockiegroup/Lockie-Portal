@@ -78,6 +78,7 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::get('/', [PrintScheduleController::class, 'index'])->name('index');
         Route::get('/archive', [PrintJobArchiveController::class, 'index'])->name('archive');
         Route::get('/overview', [PrintScheduleController::class, 'overview'])->name('overview');
+        Route::get('/machine-log', [PrintScheduleController::class, 'machineLog'])->name('machine-log');
         Route::post('/sync', [PrintScheduleController::class, 'sync'])->name('sync');
         Route::get('/sync/status', [PrintScheduleController::class, 'syncStatus'])->name('sync.status');
         Route::post('/jobs/{job}/unarchive', [PrintScheduleController::class, 'unarchive'])->name('jobs.unarchive');

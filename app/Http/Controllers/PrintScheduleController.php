@@ -111,6 +111,51 @@ class PrintScheduleController extends Controller
         ));
     }
 
+    public function machineLog(Request $request): View
+    {
+        $date    = $request->input('date', today()->format('Y-m-d'));
+        $machine = $request->input('machine', 'all');
+        $machines = PrintJob::MACHINES;
+
+        $query = \App\Models\PrintJobRun::with(['user', 'printJob:id,customer_name,product_code,order_number'])
+            ->whereIn('machine', $machines)
+            ->whereDate('started_at', $date)
+            ->orderBy('machine')
+            ->orderBy('started_at');
+
+        if ($machine !== 'all' && in_array($machine, $machines)) {
+            $query->where('machine', $machine);
+        }
+
+        $allRuns = $query->get();
+
+        // Group by machine, compute gaps between consecutive runs
+        $byMachine = [];
+        foreach ($machines as $m) {
+            if ($machine !== 'all' && $machine !== $m) continue;
+            $machineRuns = $allRuns->where('machine', $m)->values();
+            if ($machineRuns->isEmpty()) continue;
+
+            $entries = [];
+            foreach ($machineRuns as $i => $run) {
+                $gapSeconds = null;
+                if ($i > 0) {
+                    $prev = $machineRuns[$i - 1];
+                    if ($prev->ended_at !== null) {
+                        $gap = $run->started_at->diffInSeconds($prev->ended_at);
+                        if ($gap > 60) { // only show gaps > 1 minute
+                            $gapSeconds = $gap;
+                        }
+                    }
+                }
+                $entries[] = ['run' => $run, 'gap' => $gapSeconds];
+            }
+            $byMachine[$m] = $entries;
+        }
+
+        return view('print-schedule.machine-log', compact('byMachine', 'machines', 'date', 'machine'));
+    }
+
     // Mon–Thu = full 8h day (weight 1.0), Fri = 5h day (8:00–13:30 minus 30min break, weight 5/8)
     private const DAY_WEIGHTS = [
         1 => 1.0,          // Monday

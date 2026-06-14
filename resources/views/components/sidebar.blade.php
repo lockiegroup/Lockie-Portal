@@ -226,6 +226,9 @@
                 <a href="{{ route('print.overview') }}" class="sb-sub-item{{ request()->routeIs('print.overview') ? ' sb-active' : '' }}">Overview</a>
                 <a href="{{ route('print.index') }}" class="sb-sub-item{{ request()->routeIs('print.index') ? ' sb-active' : '' }}">Schedule</a>
                 <a href="{{ route('print.archive') }}" class="sb-sub-item{{ request()->routeIs('print.archive') ? ' sb-active' : '' }}">Archive</a>
+                @can('print_settings')
+                <a href="{{ route('print.machine-log') }}" class="sb-sub-item{{ request()->routeIs('print.machine-log') ? ' sb-active' : '' }}">Machine Log</a>
+                @endcan
             </div>
             @endif
         </div>
