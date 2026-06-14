@@ -15,7 +15,6 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
-use setasign\Fpdf\Fpdf;
 
 class PrintScheduleController extends Controller
 {
@@ -492,7 +491,7 @@ class PrintScheduleController extends Controller
         $mt = 10.65;  // top margin mm
         $cg = 2.5;    // column gap mm
 
-        $pdf = new Fpdf('P', 'mm', 'A4');
+        $pdf = new \FPDF('P', 'mm', 'A4');
         $pdf->SetMargins(0, 0, 0);
         $pdf->SetAutoPageBreak(false, 0);
         $pdf->AddPage();
@@ -512,7 +511,7 @@ class PrintScheduleController extends Controller
         return $pdf->Output('', 'S');
     }
 
-    private function drawLabel(Fpdf $pdf, float $x, float $y, float $w, float $h, string $recipient, ?string $rangeOrText, bool $branded): void
+    private function drawLabel(\FPDF $pdf, float $x, float $y, float $w, float $h, string $recipient, ?string $rangeOrText, bool $branded): void
     {
         $pad = 0.8;
         $iw  = $w - $pad * 2;
