@@ -16,12 +16,16 @@ class PrintJobRun extends Model
         'end_reason',
         'packs_produced',
         'pause_reason',
+        'progress_packs',
+        'progress_at',
     ];
 
     protected $casts = [
         'started_at'     => 'datetime',
         'ended_at'       => 'datetime',
+        'progress_at'    => 'datetime',
         'packs_produced' => 'integer',
+        'progress_packs' => 'integer',
     ];
 
     public function printJob(): BelongsTo

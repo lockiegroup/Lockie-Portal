@@ -37,6 +37,7 @@ Route::prefix('tablet')->name('tablet.')->group(function () {
     Route::get('/{machine}',                          [TabletController::class, 'show'])->name('show');
     Route::post('/{machine}/login',                   [TabletController::class, 'pinLogin'])->name('login');
     Route::post('/{machine}/logout',                  [TabletController::class, 'logout'])->name('logout');
+    Route::post('/{machine}/jobs/{job}/progress',     [TabletController::class, 'updateProgress'])->name('jobs.progress');
     Route::post('/{machine}/jobs/{job}/start',        [TabletController::class, 'startJob'])->name('jobs.start');
     Route::post('/{machine}/jobs/{job}/pause',        [TabletController::class, 'pauseJob'])->name('jobs.pause');
     Route::post('/{machine}/jobs/{job}/resume',       [TabletController::class, 'resumeJob'])->name('jobs.resume');

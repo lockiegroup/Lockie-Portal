@@ -529,6 +529,11 @@
                     <div class="job-run-info">
                         Started {{ $activeRun->started_at->format('H:i') }}
                         by <span>{{ $activeRun->user?->name ?? 'Unknown' }}</span>
+                        @if($activeRun->progress_packs !== null)
+                            &nbsp;·&nbsp;
+                            <span style="color:#4ade80;font-weight:600;">{{ number_format($activeRun->progress_packs) }} packs done</span>
+                            <span style="color:#475569;"> (updated {{ $activeRun->progress_at->format('H:i') }})</span>
+                        @endif
                     </div>
                 @elseif($state === 'paused' && $lastRun)
                     <div class="job-run-info">
@@ -552,6 +557,19 @@
                         </form>
 
                     @elseif($state === 'running')
+                        {{-- Progress update --}}
+                        <form method="POST" action="{{ route('tablet.jobs.progress', [$machine, $job]) }}"
+                            style="display:flex;align-items:center;gap:10px;flex:1;min-width:220px;background:#0f172a;border:2px solid #334155;border-radius:10px;padding:8px 12px;">
+                            @csrf
+                            <label style="font-size:0.85rem;color:#64748b;white-space:nowrap;font-weight:600;">Packs done:</label>
+                            <input type="number" name="progress_packs" min="0"
+                                value="{{ $activeRun->progress_packs ?? '' }}"
+                                placeholder="0"
+                                inputmode="numeric"
+                                style="flex:1;background:transparent;border:none;color:#f1f5f9;font-size:1.25rem;font-weight:700;outline:none;width:80px;">
+                            <button type="submit" class="btn btn-success btn-sm">Update</button>
+                        </form>
+
                         <button class="btn btn-warning btn-lg"
                             onclick="openPauseModal('{{ route('tablet.jobs.pause', [$machine, $job]) }}')">
                             ⏸ Pause

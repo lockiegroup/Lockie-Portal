@@ -163,6 +163,27 @@ class TabletController extends Controller
         return redirect()->route('tablet.show', $machine);
     }
 
+    public function updateProgress(string $machine, Request $request, PrintJob $job): RedirectResponse
+    {
+        if (!$this->validMachine($machine)) abort(404);
+        $operator = $this->getOperator($machine);
+        if (!$operator) return redirect()->route('tablet.show', $machine);
+
+        $data = $request->validate([
+            'progress_packs' => 'required|integer|min:0',
+        ]);
+
+        $run = $job->runs()->where('machine', $machine)->whereNull('ended_at')->first();
+        if ($run) {
+            $run->update([
+                'progress_packs' => $data['progress_packs'],
+                'progress_at'    => now(),
+            ]);
+        }
+
+        return redirect()->route('tablet.show', $machine);
+    }
+
     public function handoverJob(string $machine, Request $request, PrintJob $job): RedirectResponse
     {
         if (!$this->validMachine($machine)) abort(404);

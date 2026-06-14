@@ -230,11 +230,18 @@
 
     {{-- Running indicator (tablet operator has started this job) --}}
     @if($activeRun)
-        <div style="display:flex;align-items:center;gap:7px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:5px 10px;margin-bottom:0.75rem;">
-            <span style="width:8px;height:8px;border-radius:50%;background:#16a34a;display:inline-block;animation:psRun 1.5s infinite;flex-shrink:0;"></span>
-            <span style="font-size:0.75rem;color:#15803d;font-weight:600;">Running on {{ ucwords(str_replace('_', ' ', $activeRun->machine)) }}</span>
-            <span style="font-size:0.75rem;color:#4ade80;">—</span>
-            <span style="font-size:0.75rem;color:#16a34a;">{{ $activeRun->user?->name ?? 'Operator' }}, since {{ $activeRun->started_at->format('H:i') }}</span>
+        <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:6px 10px;margin-bottom:0.75rem;">
+            <div style="display:flex;align-items:center;gap:7px;">
+                <span style="width:8px;height:8px;border-radius:50%;background:#16a34a;display:inline-block;animation:psRun 1.5s infinite;flex-shrink:0;"></span>
+                <span style="font-size:0.75rem;color:#15803d;font-weight:600;">Running on {{ ucwords(str_replace('_', ' ', $activeRun->machine)) }}</span>
+                <span style="font-size:0.75rem;color:#86efac;">—</span>
+                <span style="font-size:0.75rem;color:#16a34a;">{{ $activeRun->user?->name ?? 'Operator' }}, since {{ $activeRun->started_at->format('H:i') }}</span>
+            </div>
+            @if($activeRun->progress_packs !== null)
+                <div style="font-size:0.75rem;color:#15803d;margin-top:3px;padding-left:15px;">
+                    Last update {{ $activeRun->progress_at->format('H:i') }}: <strong>{{ number_format($activeRun->progress_packs) }} packs done</strong>
+                </div>
+            @endif
         </div>
     @endif
 
