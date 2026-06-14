@@ -455,8 +455,8 @@ class PrintScheduleController extends Controller
                 $labels[] = sprintf('%06d - %06d', $from, $to);
             }
         } else {
-            $qty    = max(1, (int) ($job->order_quantity ?? 1));
-            $count  = (int) ceil($qty / $packSize);
+            // order_quantity is already the number of packs — one label per pack
+            $count  = max(1, (int) ($job->order_quantity ?? 1));
             $text   = $parsed['printed'];
             $labels = array_fill(0, $count, $text);
         }
