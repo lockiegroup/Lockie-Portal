@@ -9,7 +9,6 @@
                 <p class="text-slate-500 text-sm mt-1">Operator activity, job durations, and idle time per machine.</p>
             </div>
 
-            {{-- Filters --}}
             <form method="GET" action="{{ route('print.machine-log') }}"
                 style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
                 <input type="date" name="date" value="{{ $date }}"
@@ -24,13 +23,13 @@
                         </option>
                     @endforeach
                 </select>
-                <a href="{{ route('print.machine-log', ['date' => today()->subDay()->format('Y-m-d'), 'machine' => $machine]) }}"
-                    class="text-sm text-slate-500 hover:text-slate-700 px-3 py-2 rounded-lg border border-slate-200 hover:border-slate-300 bg-white transition-colors">
+                <a href="{{ route('print.machine-log', ['date' => \Carbon\Carbon::parse($date)->subDay()->format('Y-m-d'), 'machine' => $machine]) }}"
+                    class="text-sm text-slate-500 hover:text-slate-700 px-3 py-2 rounded-lg border border-slate-200 bg-white transition-colors">
                     ← Yesterday
                 </a>
                 @if($date !== today()->format('Y-m-d'))
                     <a href="{{ route('print.machine-log', ['date' => today()->format('Y-m-d'), 'machine' => $machine]) }}"
-                        class="text-sm text-slate-500 hover:text-slate-700 px-3 py-2 rounded-lg border border-slate-200 hover:border-slate-300 bg-white transition-colors">
+                        class="text-sm text-slate-500 hover:text-slate-700 px-3 py-2 rounded-lg border border-slate-200 bg-white transition-colors">
                         Today →
                     </a>
                 @endif
@@ -48,50 +47,62 @@
         @else
 
             @php
-                // Summary stats
                 $totalRuns = 0;
                 $totalPacks = 0;
-                $totalRunSeconds = 0;
-                $totalGapSeconds = 0;
+                $totalRunSecs = 0;
+                $totalGapSecs = 0;
                 foreach ($byMachine as $entries) {
                     foreach ($entries as $entry) {
                         $run = $entry['run'];
                         $totalRuns++;
                         $totalPacks += $run->packs_produced ?? 0;
                         if ($run->ended_at) {
-                            $totalRunSeconds += $run->ended_at->diffInSeconds($run->started_at);
+                            $totalRunSecs += abs((int) $run->ended_at->diffInSeconds($run->started_at));
                         }
-                        $totalGapSeconds += $entry['gap'] ?? 0;
+                        $totalGapSecs += $entry['gap'] ?? 0;
                     }
+                }
+                function fmtDur(int $secs): string {
+                    $h = (int) floor($secs / 3600);
+                    $m = (int) floor(($secs % 3600) / 60);
+                    return ($h > 0 ? "{$h}h " : '') . "{$m}m";
                 }
             @endphp
 
             {{-- Summary bar --}}
             <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:1.5rem;">
-                @php
-                    $summaryItems = [
-                        ['label' => 'Total runs', 'value' => $totalRuns],
-                        ['label' => 'Total packs', 'value' => number_format($totalPacks)],
-                        ['label' => 'Machine time', 'value' => gmdate('H\h i\m', $totalRunSeconds)],
-                        ['label' => 'Idle time', 'value' => gmdate('H\h i\m', $totalGapSeconds)],
-                    ];
-                @endphp
-                @foreach($summaryItems as $item)
+                @foreach([
+                    ['Total runs',    $totalRuns],
+                    ['Total packs',   number_format($totalPacks)],
+                    ['Machine time',  fmtDur($totalRunSecs)],
+                    ['Idle time',     fmtDur($totalGapSecs)],
+                ] as [$label, $value])
                     <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px 20px;text-align:center;min-width:110px;">
-                        <div style="font-size:1.25rem;font-weight:700;color:#334155;">{{ $item['value'] }}</div>
-                        <div style="font-size:0.75rem;color:#94a3b8;margin-top:2px;">{{ $item['label'] }}</div>
+                        <div style="font-size:1.25rem;font-weight:700;color:#334155;">{{ $value }}</div>
+                        <div style="font-size:0.75rem;color:#94a3b8;margin-top:2px;">{{ $label }}</div>
                     </div>
                 @endforeach
             </div>
 
-            {{-- Per-machine sections --}}
             @foreach($byMachine as $machineName => $entries)
                 @php
-                    $machineLabel = ucwords(str_replace('_', ' ', $machineName));
-                    $machineRuns  = collect($entries)->pluck('run');
-                    $machinePacks = $machineRuns->sum('packs_produced');
-                    $machineRunSecs = $machineRuns->filter(fn($r) => $r->ended_at)->sum(fn($r) => $r->ended_at->diffInSeconds($r->started_at));
-                    $machineGapSecs = collect($entries)->sum('gap');
+                    $machineLabel    = ucwords(str_replace('_', ' ', $machineName));
+                    $machineRuns     = collect($entries)->pluck('run');
+                    $machinePacks    = $machineRuns->sum('packs_produced');
+                    $machineRunSecs  = $machineRuns->filter(fn($r) => $r->ended_at)->sum(fn($r) => abs((int) $r->ended_at->diffInSeconds($r->started_at)));
+                    $machineGapSecs  = collect($entries)->sum('gap');
+
+                    // Group consecutive runs by job
+                    $jobGroups = [];
+                    $prevJobId = null;
+                    foreach ($entries as $entry) {
+                        $jobId = $entry['run']->print_job_id ?? 'unknown';
+                        if ($jobId !== $prevJobId) {
+                            $jobGroups[] = ['job' => $entry['run']->printJob, 'entries' => []];
+                            $prevJobId = $jobId;
+                        }
+                        $jobGroups[count($jobGroups) - 1]['entries'][] = $entry;
+                    }
                 @endphp
 
                 <div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;margin-bottom:1.5rem;">
@@ -104,119 +115,149 @@
                         </div>
                         <div style="display:flex;gap:20px;font-size:0.8rem;color:#64748b;">
                             @if($machinePacks > 0)
-                                <span><strong style="color:#334155;">{{ number_format($machinePacks) }}</strong> packs</span>
+                                <span><strong style="color:#334155;">{{ number_format($machinePacks) }}</strong> packs done</span>
                             @endif
-                            <span>On: <strong style="color:#334155;">{{ gmdate('H\h i\m', $machineRunSecs) }}</strong></span>
-                            @if($machineGapSecs > 0)
-                                <span>Idle: <strong style="color:#ef4444;">{{ gmdate('H\h i\m', $machineGapSecs) }}</strong></span>
+                            <span>Running: <strong style="color:#334155;">{{ fmtDur($machineRunSecs) }}</strong></span>
+                            @if($machineGapSecs > 60)
+                                <span>Idle: <strong style="color:#ef4444;">{{ fmtDur($machineGapSecs) }}</strong></span>
                             @endif
                         </div>
                     </div>
 
-                    {{-- Runs --}}
-                    <div style="padding:0;">
-                        @foreach($entries as $entry)
-                            @php $run = $entry['run']; @endphp
+                    {{-- Job groups --}}
+                    @foreach($jobGroups as $gi => $group)
+                        @php
+                            $job         = $group['job'];
+                            $groupRuns   = collect($group['entries'])->pluck('run');
+                            $groupPacks  = $groupRuns->whereNotNull('packs_produced')->sum('packs_produced');
+                            $groupRunSecs = $groupRuns->filter(fn($r) => $r->ended_at)->sum(fn($r) => abs((int)$r->ended_at->diffInSeconds($r->started_at)));
+                        @endphp
 
-                            {{-- Gap row --}}
-                            @if($entry['gap'] !== null)
-                                @php
-                                    $gapMins = (int) round($entry['gap'] / 60);
-                                    $gapHrs  = floor($gapMins / 60);
-                                    $gapMin  = $gapMins % 60;
-                                    $gapStr  = $gapHrs > 0 ? "{$gapHrs}h {$gapMin}m" : "{$gapMins}m";
-                                    $gapAlert = $entry['gap'] >= 1800; // warn if gap ≥ 30 min
-                                @endphp
-                                <div style="display:flex;align-items:center;gap:10px;padding:6px 20px;background:{{ $gapAlert ? '#fef2f2' : '#fafafa' }};border-top:1px dashed {{ $gapAlert ? '#fca5a5' : '#e2e8f0' }};">
-                                    <svg style="width:13px;height:13px;color:{{ $gapAlert ? '#ef4444' : '#94a3b8' }};flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        {{-- Gap before this job group (gap from previous group's last run) --}}
+                        @if($gi > 0)
+                            @php
+                                $firstEntryGap = $group['entries'][0]['gap'] ?? null;
+                            @endphp
+                            @if($firstEntryGap !== null && $firstEntryGap > 60)
+                                @php $gapAlert = $firstEntryGap >= 1800; @endphp
+                                <div style="display:flex;align-items:center;gap:8px;padding:5px 20px;background:{{ $gapAlert ? '#fef2f2' : '#fafafa' }};border-top:1px dashed {{ $gapAlert ? '#fca5a5' : '#e2e8f0' }};">
+                                    <svg style="width:12px;height:12px;color:{{ $gapAlert ? '#ef4444' : '#94a3b8' }};flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
                                     </svg>
-                                    <span style="font-size:0.78rem;color:{{ $gapAlert ? '#b91c1c' : '#94a3b8' }};font-weight:{{ $gapAlert ? '600' : '400' }};">
-                                        {{ $gapStr }} idle{{ $gapAlert ? ' — no activity' : '' }}
+                                    <span style="font-size:0.75rem;color:{{ $gapAlert ? '#b91c1c' : '#94a3b8' }};font-weight:{{ $gapAlert ? '600' : '400' }};">
+                                        {{ fmtDur($firstEntryGap) }} idle between jobs
+                                    </span>
+                                </div>
+                            @endif
+                        @endif
+
+                        {{-- Job header --}}
+                        <div style="padding:10px 20px 8px;background:{{ $gi % 2 === 0 ? '#fff' : '#fafafa' }};border-top:{{ $gi > 0 ? '2px solid #e2e8f0' : 'none' }};display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                            <div>
+                                <span style="font-size:0.9rem;font-weight:700;color:#1e293b;">
+                                    {{ $job?->customer_name ?? 'Unknown Job' }}
+                                </span>
+                                @if($job?->product_code)
+                                    <span style="font-size:0.8rem;color:#94a3b8;font-family:monospace;margin-left:8px;">{{ $job->product_code }}</span>
+                                @endif
+                                @if($job?->order_number)
+                                    <span style="font-size:0.75rem;color:#94a3b8;margin-left:6px;">· {{ $job->order_number }}</span>
+                                @endif
+                            </div>
+                            <div style="display:flex;align-items:center;gap:16px;font-size:0.8rem;color:#64748b;">
+                                @if($job?->order_quantity)
+                                    <span>Order: <strong style="color:#334155;">{{ number_format($job->order_quantity) }} packs</strong></span>
+                                @endif
+                                @if($groupPacks > 0)
+                                    <span>Done this log: <strong style="color:#15803d;">{{ number_format($groupPacks) }} packs</strong></span>
+                                @endif
+                                <span>Time: <strong style="color:#334155;">{{ fmtDur($groupRunSecs) }}</strong></span>
+                            </div>
+                        </div>
+
+                        {{-- Runs for this job --}}
+                        @foreach($group['entries'] as $ei => $entry)
+                            @php
+                                $run = $entry['run'];
+                                $dur = $run->ended_at
+                                    ? abs((int) $run->ended_at->diffInSeconds($run->started_at))
+                                    : abs((int) now()->diffInSeconds($run->started_at));
+                                $durStr = fmtDur($dur);
+                            @endphp
+
+                            {{-- Idle gap between runs of the same job --}}
+                            @if($ei > 0 && ($entry['gap'] ?? null) > 60)
+                                @php $gapAlert = $entry['gap'] >= 1800; @endphp
+                                <div style="display:flex;align-items:center;gap:8px;padding:4px 40px;background:{{ $gapAlert ? '#fef2f2' : '#fafafa' }};border-top:1px dashed {{ $gapAlert ? '#fca5a5' : '#e2e8f0' }};">
+                                    <svg style="width:11px;height:11px;color:{{ $gapAlert ? '#ef4444' : '#94a3b8' }};flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                                    </svg>
+                                    <span style="font-size:0.72rem;color:{{ $gapAlert ? '#b91c1c' : '#94a3b8' }};font-weight:{{ $gapAlert ? '600' : '400' }};">
+                                        {{ fmtDur($entry['gap']) }} idle
                                     </span>
                                 </div>
                             @endif
 
-                            {{-- Run row --}}
-                            <div style="display:grid;grid-template-columns:140px 1fr 140px 80px 120px;align-items:center;gap:12px;padding:12px 20px;border-top:1px solid #f1f5f9;min-width:0;">
+                            <div style="display:grid;grid-template-columns:150px 130px 1fr 90px 130px;align-items:center;gap:8px;padding:9px 20px 9px 36px;border-top:1px solid #f1f5f9;background:{{ $gi % 2 === 0 ? '#fff' : '#fafafa' }};">
 
                                 {{-- Time --}}
                                 <div>
-                                    <div style="font-size:0.85rem;font-weight:600;color:#334155;font-family:monospace;">
+                                    <div style="font-size:0.82rem;font-weight:600;color:#334155;font-family:monospace;">
                                         {{ $run->started_at->format('H:i') }}
+                                        →
                                         @if($run->ended_at)
-                                            – {{ $run->ended_at->format('H:i') }}
+                                            {{ $run->ended_at->format('H:i') }}
                                         @else
-                                            – <span style="color:#16a34a;animation:pulse 1.5s infinite;">now</span>
+                                            <span style="color:#16a34a;">now</span>
                                         @endif
                                     </div>
-                                    <div style="font-size:0.72rem;color:#94a3b8;margin-top:2px;">
-                                        @if($run->ended_at)
-                                            {{ gmdate('H\h i\m', $run->ended_at->diffInSeconds($run->started_at)) }}
-                                        @else
-                                            Running…
-                                        @endif
-                                    </div>
-                                </div>
-
-                                {{-- Job --}}
-                                <div style="min-width:0;">
-                                    <div style="font-size:0.85rem;font-weight:600;color:#334155;truncate;">
-                                        {{ $run->printJob?->customer_name ?? '—' }}
-                                    </div>
-                                    @if($run->printJob?->product_code)
-                                        <div style="font-size:0.72rem;color:#94a3b8;margin-top:1px;font-family:monospace;">
-                                            {{ $run->printJob->product_code }}
-                                            @if($run->printJob->order_number)
-                                                · {{ $run->printJob->order_number }}
-                                            @endif
-                                        </div>
-                                    @endif
+                                    <div style="font-size:0.72rem;color:#94a3b8;margin-top:1px;">{{ $durStr }}</div>
                                 </div>
 
                                 {{-- Operator --}}
-                                <div style="font-size:0.85rem;color:#475569;">
+                                <div style="font-size:0.82rem;color:#475569;">
                                     {{ $run->user?->name ?? '—' }}
                                 </div>
+
+                                {{-- Spacer --}}
+                                <div></div>
 
                                 {{-- Packs --}}
                                 <div style="text-align:right;">
                                     @if($run->packs_produced !== null)
-                                        <span style="font-size:0.9rem;font-weight:700;color:#334155;">{{ number_format($run->packs_produced) }}</span>
+                                        <span style="font-size:0.95rem;font-weight:700;color:#334155;">{{ number_format($run->packs_produced) }}</span>
                                         <span style="font-size:0.7rem;color:#94a3b8;"> packs</span>
                                     @elseif($run->progress_packs !== null)
                                         <span style="font-size:0.85rem;font-weight:600;color:#64748b;">~{{ number_format($run->progress_packs) }}</span>
                                         <span style="font-size:0.7rem;color:#94a3b8;"> so far</span>
                                     @else
-                                        <span style="color:#cbd5e1;">—</span>
+                                        <span style="color:#cbd5e1;font-size:0.8rem;">—</span>
                                     @endif
                                 </div>
 
                                 {{-- Status --}}
-                                <div>
+                                <div style="text-align:right;">
                                     @if($run->end_reason === 'complete')
                                         <span style="font-size:0.72rem;font-weight:700;background:#dcfce7;color:#15803d;padding:3px 9px;border-radius:9999px;">Complete</span>
                                     @elseif($run->end_reason === 'pause')
                                         <span style="font-size:0.72rem;font-weight:700;background:#fef3c7;color:#92400e;padding:3px 9px;border-radius:9999px;">Paused</span>
                                         @if($run->pause_reason)
-                                            <div style="font-size:0.7rem;color:#b45309;margin-top:3px;">{{ $run->pause_reason }}</div>
+                                            <div style="font-size:0.7rem;color:#b45309;margin-top:3px;text-align:right;">{{ $run->pause_reason }}</div>
                                         @endif
                                     @elseif($run->end_reason === 'handover')
                                         <span style="font-size:0.72rem;font-weight:700;background:#ede9fe;color:#5b21b6;padding:3px 9px;border-radius:9999px;">Handover</span>
                                     @elseif($run->ended_at === null)
                                         <span style="font-size:0.72rem;font-weight:700;background:#dcfce7;color:#15803d;padding:3px 9px;border-radius:9999px;display:inline-flex;align-items:center;gap:5px;">
-                                            <span style="width:6px;height:6px;border-radius:50%;background:#16a34a;animation:psRun 1.5s infinite;"></span>
+                                            <span style="width:6px;height:6px;border-radius:50%;background:#16a34a;animation:psRun 1.5s infinite;display:inline-block;"></span>
                                             Running
                                         </span>
-                                    @else
-                                        <span style="color:#94a3b8;font-size:0.75rem;">—</span>
                                     @endif
                                 </div>
 
                             </div>
-
                         @endforeach
-                    </div>
+
+                    @endforeach
 
                 </div>
             @endforeach
