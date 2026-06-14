@@ -80,6 +80,17 @@
                     <p class="text-xs text-slate-400 mt-1">They can change this after logging in.</p>
                 </div>
 
+                <div style="border-top:1px solid #e2e8f0;padding-top:1.25rem;">
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">
+                        Factory tablet PIN
+                        <span class="text-slate-400 font-normal">(optional, 4–8 digits)</span>
+                    </label>
+                    <input type="text" name="operator_pin" inputmode="numeric" pattern="[0-9]*" maxlength="8"
+                        placeholder="e.g. 1234"
+                        class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
+                    <p style="font-size:0.75rem;color:#94a3b8;margin-top:4px;">Used to sign in on the factory machine tablet view.</p>
+                </div>
+
                 <button type="submit"
                     class="w-full bg-slate-900 hover:bg-slate-700 text-white font-semibold py-3 rounded-lg transition-colors">
                     Add Staff Member

@@ -36,13 +36,14 @@ class User extends Authenticatable
         'reminders'        => 'Order Reminders',
     ];
 
-    protected $fillable = ['name', 'email', 'password', 'role', 'is_active', 'permissions', 'modules', 'last_login_at'];
-    protected $hidden   = ['password', 'remember_token'];
+    protected $fillable = ['name', 'email', 'password', 'role', 'is_active', 'permissions', 'modules', 'last_login_at', 'operator_pin'];
+    protected $hidden   = ['password', 'remember_token', 'operator_pin'];
 
     protected function casts(): array
     {
         return [
             'password'      => 'hashed',
+            'operator_pin'  => 'hashed',
             'is_active'     => 'boolean',
             'permissions'   => 'array',
             'modules'       => 'array',

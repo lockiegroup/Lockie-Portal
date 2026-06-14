@@ -77,6 +77,11 @@ class PrintJob extends Model
         return $query->whereNull('archived_at');
     }
 
+    public function runs(): HasMany
+    {
+        return $this->hasMany(PrintJobRun::class);
+    }
+
     public function notes(): HasMany
     {
         return $this->hasMany(PrintJobNote::class);

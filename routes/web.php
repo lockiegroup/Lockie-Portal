@@ -27,9 +27,22 @@ use App\Http\Controllers\RemindersController;
 use App\Http\Controllers\TrainingController;
 use App\Http\Controllers\ImpersonateController;
 use App\Http\Controllers\ActionPlanController;
+use App\Http\Controllers\TabletController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn() => redirect()->route('login'));
+
+// Tablet — PIN-based, no standard auth required
+Route::prefix('tablet')->name('tablet.')->group(function () {
+    Route::get('/{machine}',                          [TabletController::class, 'show'])->name('show');
+    Route::post('/{machine}/login',                   [TabletController::class, 'pinLogin'])->name('login');
+    Route::post('/{machine}/logout',                  [TabletController::class, 'logout'])->name('logout');
+    Route::post('/{machine}/jobs/{job}/start',        [TabletController::class, 'startJob'])->name('jobs.start');
+    Route::post('/{machine}/jobs/{job}/pause',        [TabletController::class, 'pauseJob'])->name('jobs.pause');
+    Route::post('/{machine}/jobs/{job}/resume',       [TabletController::class, 'resumeJob'])->name('jobs.resume');
+    Route::post('/{machine}/jobs/{job}/end',          [TabletController::class, 'endJob'])->name('jobs.end');
+    Route::post('/{machine}/jobs/{job}/handover',     [TabletController::class, 'handoverJob'])->name('jobs.handover');
+});
 
 // Guest routes
 Route::middleware('guest')->group(function () {

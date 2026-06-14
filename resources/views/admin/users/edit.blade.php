@@ -94,6 +94,21 @@
                         class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
                 </div>
 
+                <div style="border-top:1px solid #e2e8f0;padding-top:1.25rem;">
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">
+                        Factory tablet PIN
+                        <span class="text-slate-400 font-normal">(4–8 digits, leave blank to keep current)</span>
+                    </label>
+                    <input type="text" name="operator_pin" inputmode="numeric" pattern="[0-9]*" maxlength="8"
+                        placeholder="e.g. 1234"
+                        class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
+                    <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+                        <input type="checkbox" name="clear_operator_pin" id="clear_operator_pin" value="1" style="width:14px;height:14px;">
+                        <label for="clear_operator_pin" style="font-size:0.8rem;color:#94a3b8;cursor:pointer;">Remove tablet PIN</label>
+                    </div>
+                    <p style="font-size:0.75rem;color:#94a3b8;margin-top:4px;">Used to sign in on the factory machine tablet view.</p>
+                </div>
+
                 <button type="submit"
                     class="w-full bg-slate-900 hover:bg-slate-700 text-white font-semibold py-3 rounded-lg transition-colors">
                     Save Changes

@@ -28,10 +28,11 @@ class UserController extends Controller
         $isMaster = auth()->user()->isMaster();
 
         $data = $request->validate([
-            'name'     => 'required|string|max:100',
-            'email'    => 'required|email|unique:users,email',
-            'role'     => ['required', 'in:staff' . ($isMaster ? ',master' : '')],
-            'password' => ['required', Password::min(8)->mixedCase()->numbers()],
+            'name'         => 'required|string|max:100',
+            'email'        => 'required|email|unique:users,email',
+            'role'         => ['required', 'in:staff' . ($isMaster ? ',master' : '')],
+            'password'     => ['required', Password::min(8)->mixedCase()->numbers()],
+            'operator_pin' => 'nullable|digits_between:4,8',
         ]);
 
         $permissions = null;
@@ -50,7 +51,7 @@ class UserController extends Controller
             $modules = count($checked) === count(User::MODULES) ? null : $checked;
         }
 
-        User::create([
+        $createData = [
             'name'        => $data['name'],
             'email'       => strtolower($data['email']),
             'role'        => $data['role'],
@@ -58,7 +59,12 @@ class UserController extends Controller
             'modules'     => $modules,
             'password'    => Hash::make($data['password']),
             'is_active'   => true,
-        ]);
+        ];
+        if (!empty($data['operator_pin'])) {
+            $createData['operator_pin'] = $data['operator_pin'];
+        }
+
+        User::create($createData);
 
         \App\Models\ActivityLog::record('users.create', "Created user: {$data['name']} ({$data['email']})");
 
@@ -77,10 +83,11 @@ class UserController extends Controller
         $isMaster = auth()->user()->isMaster();
 
         $data = $request->validate([
-            'name'     => 'required|string|max:100',
-            'email'    => 'required|email|unique:users,email,' . $user->id,
-            'role'     => ['required', 'in:staff' . ($isMaster ? ',master' : '')],
-            'password' => ['nullable', Password::min(8)->mixedCase()->numbers()],
+            'name'         => 'required|string|max:100',
+            'email'        => 'required|email|unique:users,email,' . $user->id,
+            'role'         => ['required', 'in:staff' . ($isMaster ? ',master' : '')],
+            'password'     => ['nullable', Password::min(8)->mixedCase()->numbers()],
+            'operator_pin' => 'nullable|digits_between:4,8',
         ]);
 
         $user->name      = $data['name'];
@@ -108,6 +115,12 @@ class UserController extends Controller
 
         if (!empty($data['password'])) {
             $user->password = Hash::make($data['password']);
+        }
+
+        if (!empty($data['operator_pin'])) {
+            $user->operator_pin = $data['operator_pin'];
+        } elseif ($request->boolean('clear_operator_pin')) {
+            $user->operator_pin = null;
         }
 
         $user->save();
