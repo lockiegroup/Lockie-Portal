@@ -402,6 +402,7 @@
     @if($operator)
         <div class="operator-info">
             <span class="operator-name">Operator: <span>{{ $operator->name }}</span></span>
+            <button class="btn btn-ghost btn-sm" onclick="openSwitchModal()">⇄ Switch Machine</button>
             <form method="POST" action="{{ route('tablet.logout', $machine) }}" style="margin:0;">
                 @csrf
                 <button type="submit" class="btn btn-ghost btn-sm">Sign Out</button>
@@ -452,6 +453,19 @@
     @if(session('error'))
         <div style="background:#450a0a;border:1px solid #dc2626;color:#fca5a5;padding:12px 16px;border-radius:10px;margin-bottom:16px;">
             {{ session('error') }}
+        </div>
+    @endif
+
+    @if(session('start_blocked'))
+        <div style="background:#431407;border:2px solid #ea580c;color:#fed7aa;padding:14px 16px;border-radius:12px;margin-bottom:16px;display:flex;align-items:center;gap:12px;">
+            <span style="font-size:1.25rem;flex-shrink:0;">⚠️</span>
+            <div>
+                <div style="font-weight:700;font-size:1rem;margin-bottom:3px;">Can't start — another job is already running</div>
+                <div style="font-size:0.875rem;opacity:0.85;">
+                    <strong>{{ session('start_blocked') }}</strong> is currently running on this machine.
+                    Please <strong>pause</strong> or <strong>end</strong> that job before starting a new one.
+                </div>
+            </div>
         </div>
     @endif
 
@@ -613,6 +627,44 @@
 </div>
 @endif
 
+
+{{-- ════════════════════════════════════════════
+     SWITCH MACHINE MODAL
+     ════════════════════════════════════════════ --}}
+@if($operator)
+<div class="modal-backdrop" id="switch-modal">
+    <div class="modal" style="max-width:480px;">
+        <h3>⇄ Switch Machine</h3>
+
+        <div id="switch-warning" style="display:none;background:#431407;border:1px solid #ea580c;border-radius:10px;padding:12px 14px;margin-bottom:20px;color:#fed7aa;font-size:0.9rem;">
+            <strong>⚠️ A job is currently running.</strong><br>
+            Please <strong>pause or end</strong> the current job before switching machines.
+        </div>
+
+        <p style="color:#64748b;font-size:0.875rem;margin-bottom:20px;">Select the machine you want to move to:</p>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            @foreach(\App\Models\PrintJob::MACHINES as $m)
+                @if($m !== $machine)
+                    <a href="{{ route('tablet.show', $m) }}"
+                        class="machine-switch-btn btn btn-ghost btn-lg"
+                        style="text-decoration:none;display:flex;align-items:center;justify-content:center;font-size:1rem;">
+                        {{ ucwords(str_replace('_', ' ', $m)) }}
+                    </a>
+                @else
+                    <div style="display:flex;align-items:center;justify-content:center;height:52px;border-radius:10px;border:2px solid #334155;color:#475569;font-size:1rem;font-weight:600;background:#0f172a;opacity:0.5;">
+                        {{ ucwords(str_replace('_', ' ', $m)) }} ← here
+                    </div>
+                @endif
+            @endforeach
+        </div>
+
+        <div class="modal-actions" style="margin-top:20px;">
+            <button type="button" class="btn btn-ghost btn-md" onclick="closeModal('switch-modal')" style="flex:none;">Cancel</button>
+        </div>
+    </div>
+</div>
+@endif
 
 {{-- ════════════════════════════════════════════
      UPDATE BANNER (real-time poll detected change)
@@ -818,6 +870,22 @@ function updateHandoverDisplay() {
 }
 function hPinDone() {
     document.getElementById('handover-pin-input').value = handoverPin;
+}
+
+// ── Switch machine modal ──
+function openSwitchModal() {
+    const hasRunning = document.querySelectorAll('.state-running').length > 0;
+    const warning    = document.getElementById('switch-warning');
+    const btns       = document.querySelectorAll('.machine-switch-btn');
+    if (warning) {
+        warning.style.display = hasRunning ? 'block' : 'none';
+    }
+    btns.forEach(function(btn) {
+        btn.style.opacity        = hasRunning ? '0.35' : '1';
+        btn.style.pointerEvents  = hasRunning ? 'none' : '';
+        btn.style.cursor         = hasRunning ? 'not-allowed' : '';
+    });
+    document.getElementById('switch-modal').classList.add('open');
 }
 
 // ── Close any modal ──

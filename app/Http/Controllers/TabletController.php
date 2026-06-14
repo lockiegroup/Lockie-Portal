@@ -86,9 +86,21 @@ class TabletController extends Controller
         $operator = $this->getOperator($machine);
         if (!$operator) return redirect()->route('tablet.show', $machine);
 
+        // Block if this exact job is already running
         $active = $job->runs()->where('machine', $machine)->whereNull('ended_at')->first();
         if ($active) {
-            return redirect()->route('tablet.show', $machine)->with('error', 'Job is already running.');
+            return redirect()->route('tablet.show', $machine)->with('error', 'This job is already running.');
+        }
+
+        // Block if a different job is already running on this machine
+        $otherActive = PrintJobRun::where('machine', $machine)
+            ->where('print_job_id', '!=', $job->id)
+            ->whereNull('ended_at')
+            ->with('printJob:id,customer_name')
+            ->first();
+        if ($otherActive) {
+            return redirect()->route('tablet.show', $machine)
+                ->with('start_blocked', $otherActive->printJob?->customer_name ?? 'another job');
         }
 
         PrintJobRun::create([
@@ -130,6 +142,16 @@ class TabletController extends Controller
         if (!$this->validMachine($machine)) abort(404);
         $operator = $this->getOperator($machine);
         if (!$operator) return redirect()->route('tablet.show', $machine);
+
+        $otherActive = PrintJobRun::where('machine', $machine)
+            ->where('print_job_id', '!=', $job->id)
+            ->whereNull('ended_at')
+            ->with('printJob:id,customer_name')
+            ->first();
+        if ($otherActive) {
+            return redirect()->route('tablet.show', $machine)
+                ->with('start_blocked', $otherActive->printJob?->customer_name ?? 'another job');
+        }
 
         PrintJobRun::create([
             'print_job_id' => $job->id,
