@@ -158,6 +158,70 @@
                     @endforelse
 
                 </div>
+
+                {{-- Machine run history (today) --}}
+                @if(in_array($boardKey, $machines) && isset($machineHistory[$boardKey]) && $machineHistory[$boardKey]->count() > 0)
+                    @php $history = $machineHistory[$boardKey]; @endphp
+                    <div style="margin-top:2rem;border-top:1px solid #e2e8f0;padding-top:1.25rem;">
+                        <button onclick="this.nextElementSibling.classList.toggle('hidden');this.querySelector('svg').classList.toggle('rotate-180')"
+                            style="display:flex;align-items:center;gap:8px;font-size:0.8rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;background:none;border:none;cursor:pointer;padding:0;margin-bottom:0.75rem;">
+                            <svg style="width:14px;height:14px;transition:transform 0.2s;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <polyline points="6 9 12 15 18 9"/>
+                            </svg>
+                            Today's Run History ({{ $history->count() }} {{ Str::plural('run', $history->count()) }})
+                        </button>
+                        <div class="hidden">
+                            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
+                                <table style="width:100%;border-collapse:collapse;font-size:0.8rem;">
+                                    <thead>
+                                        <tr style="background:#f1f5f9;border-bottom:1px solid #e2e8f0;">
+                                            <th style="text-align:left;padding:8px 12px;color:#64748b;font-weight:600;">Time</th>
+                                            <th style="text-align:left;padding:8px 12px;color:#64748b;font-weight:600;">Job</th>
+                                            <th style="text-align:left;padding:8px 12px;color:#64748b;font-weight:600;">Operator</th>
+                                            <th style="text-align:right;padding:8px 12px;color:#64748b;font-weight:600;">Packs</th>
+                                            <th style="text-align:left;padding:8px 12px;color:#64748b;font-weight:600;">Reason</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($history as $run)
+                                            <tr style="border-bottom:1px solid #f1f5f9;">
+                                                <td style="padding:8px 12px;color:#475569;white-space:nowrap;">
+                                                    {{ $run->started_at->format('H:i') }} – {{ $run->ended_at->format('H:i') }}
+                                                    <span style="color:#94a3b8;font-size:0.72rem;display:block;">
+                                                        {{ gmdate('H\h i\m', $run->ended_at->diffInSeconds($run->started_at)) }}
+                                                    </span>
+                                                </td>
+                                                <td style="padding:8px 12px;">
+                                                    <span style="font-weight:600;color:#334155;">{{ $run->printJob?->customer_name ?? '—' }}</span>
+                                                    @if($run->printJob?->product_code)
+                                                        <span style="color:#94a3b8;display:block;font-size:0.72rem;">{{ $run->printJob->product_code }}</span>
+                                                    @endif
+                                                </td>
+                                                <td style="padding:8px 12px;color:#475569;">{{ $run->user?->name ?? '—' }}</td>
+                                                <td style="padding:8px 12px;text-align:right;font-weight:600;color:#334155;">
+                                                    {{ $run->packs_produced !== null ? number_format($run->packs_produced) : '—' }}
+                                                </td>
+                                                <td style="padding:8px 12px;">
+                                                    @if($run->end_reason === 'complete')
+                                                        <span style="font-size:0.72rem;font-weight:700;background:#dcfce7;color:#15803d;padding:2px 7px;border-radius:9999px;">Complete</span>
+                                                    @elseif($run->end_reason === 'pause')
+                                                        <span style="font-size:0.72rem;font-weight:700;background:#fef3c7;color:#92400e;padding:2px 7px;border-radius:9999px;">Paused</span>
+                                                        @if($run->pause_reason)
+                                                            <span style="color:#94a3b8;display:block;font-size:0.72rem;margin-top:2px;">{{ $run->pause_reason }}</span>
+                                                        @endif
+                                                    @elseif($run->end_reason === 'handover')
+                                                        <span style="font-size:0.72rem;font-weight:700;background:#ede9fe;color:#5b21b6;padding:2px 7px;border-radius:9999px;">Handover</span>
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
             </div>
         @endforeach
 

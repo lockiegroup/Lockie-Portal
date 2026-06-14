@@ -5,6 +5,7 @@
     $activeRun       = $job->runs->first(fn($r) => $r->ended_at === null);
     $lastRun         = $job->runs->last();
     $portalPaused    = !$activeRun && $lastRun && $lastRun->end_reason === 'pause';
+    $portalEnded     = !$activeRun && $lastRun && $lastRun->end_reason === 'complete';
 
     // Parse line comment for label generation
     $_lNum = ['start' => null, 'end' => null, 'defaultPack' => 100];
@@ -242,6 +243,25 @@
             @if($activeRun->progress_packs !== null)
                 <div style="font-size:0.75rem;color:#15803d;margin-top:3px;padding-left:15px;">
                     Last update {{ $activeRun->progress_at->format('H:i') }}: <strong>{{ number_format($activeRun->progress_packs) }} packs done</strong>
+                </div>
+            @endif
+        </div>
+    @endif
+
+    {{-- Ended indicator --}}
+    @if($portalEnded)
+        <div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:6px 10px;margin-bottom:0.75rem;">
+            <div style="display:flex;align-items:center;gap:7px;">
+                <span style="font-size:0.75rem;">■</span>
+                <span style="font-size:0.75rem;color:#475569;font-weight:600;">Ended on {{ ucwords(str_replace('_', ' ', $lastRun->machine)) }}</span>
+                <span style="font-size:0.75rem;color:#94a3b8;">at {{ $lastRun->ended_at->format('H:i') }}</span>
+                @if($lastRun->packs_produced !== null)
+                    <span style="font-size:0.75rem;color:#475569;">— <strong>{{ number_format($lastRun->packs_produced) }} packs done</strong></span>
+                @endif
+            </div>
+            @if($lastRun->user)
+                <div style="font-size:0.75rem;color:#94a3b8;margin-top:3px;padding-left:15px;">
+                    Operator: {{ $lastRun->user->name }}
                 </div>
             @endif
         </div>

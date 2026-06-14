@@ -87,6 +87,17 @@ class PrintScheduleController extends Controller
                 $orderLineCounts[$key] = ($orderLineCounts[$key] ?? 0) + 1;
             });
 
+        // Today's completed/paused runs per machine for the history log
+        $machineHistory = [];
+        foreach ($machines as $machine) {
+            $machineHistory[$machine] = \App\Models\PrintJobRun::where('machine', $machine)
+                ->whereNotNull('ended_at')
+                ->whereDate('started_at', today())
+                ->orderBy('started_at')
+                ->with(['user', 'printJob:id,customer_name,product_code,order_number'])
+                ->get();
+        }
+
         return view('print-schedule.index', compact(
             'boardJobs',
             'boards',
@@ -95,7 +106,8 @@ class PrintScheduleController extends Controller
             'machineLeadTimes',
             'throughputs',
             'lastSync',
-            'orderLineCounts'
+            'orderLineCounts',
+            'machineHistory'
         ));
     }
 
