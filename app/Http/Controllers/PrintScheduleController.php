@@ -568,15 +568,9 @@ class PrintScheduleController extends Controller
 
     private function buildLabelPdf(array $labels, ?string $printed, bool $branded, bool $isUniverseal = false, string $customerName = ''): string
     {
-        if ($isUniverseal) {
-            // 4 columns × 13 rows = 52 per page, wider labels
-            $cols = 4;
-            $lw   = 48.3;   // label width mm  (4 cols + 3×2.5mm gaps in 200.7mm usable)
-        } else {
-            // Avery L7651 – 5 columns × 13 rows = 65 per page
-            $cols = 5;
-            $lw   = 38.1;
-        }
+        // Avery L7651 – 5 columns × 13 rows = 65 per page (standard sheet for all label types)
+        $cols = 5;
+        $lw   = 38.1;
         $lh  = 21.2;
         $ml  = 4.65;
         $mt  = 10.65;
@@ -617,9 +611,9 @@ class PrintScheduleController extends Controller
         // Three lines: customer name (top) / range (middle, large bold) / printed (bottom)
         $nameText  = strtoupper(explode(' ', trim($customerName))[0]); // first word e.g. "UNIVERSEAL"
         $lines = array_filter([
-            ['text' => $nameText,    'style' => 'B', 'size' => 8.0,  'cellH' => 3.2],
-            $range   ? ['text' => $range,   'style' => 'B', 'size' => 9.0,  'cellH' => 4.0] : null,
-            $printed ? ['text' => $printed, 'style' => '',  'size' => 7.5,  'cellH' => 3.0] : null,
+            ['text' => $nameText,    'style' => 'B', 'size' => 9.0,  'cellH' => 3.8],
+            $range   ? ['text' => $range,   'style' => 'B', 'size' => 10.5, 'cellH' => 4.8] : null,
+            $printed ? ['text' => $printed, 'style' => '',  'size' => 8.0,  'cellH' => 3.4] : null,
         ]);
         $lines  = array_values($lines);
         $totalH = array_sum(array_column($lines, 'cellH'));
@@ -640,18 +634,18 @@ class PrintScheduleController extends Controller
 
     private function drawLabel(\FPDF $pdf, float $x, float $y, float $w, float $h, ?string $range, ?string $printed, bool $branded): void
     {
-        $pad = 0.8;
+        $pad = 1.0;
         $iw  = $w - $pad * 2;
         $pdf->SetTextColor(0, 0, 0);
 
         if ($branded) {
             // Lines: JW Products / email / phone / range / printed
             $lines = [
-                ['text' => 'JW Products',            'style' => 'B', 'size' => 7.5, 'cellH' => 2.8],
-                ['text' => 'sales@jwproducts.co.uk', 'style' => '',  'size' => 5.5, 'cellH' => 2.2],
-                ['text' => '01252 624 305',           'style' => '',  'size' => 6.0, 'cellH' => 2.3],
-                ['text' => $range   ?? '',            'style' => 'B', 'size' => $range   ? 8.5 : 0.0, 'cellH' => 3.2],
-                ['text' => $printed ?? '',            'style' => '',  'size' => $printed ? 6.5 : 0.0, 'cellH' => 2.5],
+                ['text' => 'JW Products',            'style' => 'B', 'size' => 8.5, 'cellH' => 3.2],
+                ['text' => 'sales@jwproducts.co.uk', 'style' => '',  'size' => 6.0, 'cellH' => 2.6],
+                ['text' => '01252 624 305',           'style' => '',  'size' => 6.5, 'cellH' => 2.6],
+                ['text' => $range   ?? '',            'style' => 'B', 'size' => $range   ? 9.5 : 0.0, 'cellH' => 3.6],
+                ['text' => $printed ?? '',            'style' => '',  'size' => $printed ? 7.5 : 0.0, 'cellH' => 2.8],
             ];
             $totalH = array_sum(array_column($lines, 'cellH'));
             $lineY  = $y + ($h - $totalH) / 2;
@@ -674,8 +668,8 @@ class PrintScheduleController extends Controller
         } else {
             // Unbranded: range (big) + printed text, vertically centred
             $lines = array_filter([
-                $range   ? ['text' => $range,   'style' => 'B', 'size' => 10.0, 'cellH' => 4.5] : null,
-                $printed ? ['text' => $printed, 'style' => '',  'size' => 7.5,  'cellH' => 3.2] : null,
+                $range   ? ['text' => $range,   'style' => 'B', 'size' => 12.0, 'cellH' => 5.2] : null,
+                $printed ? ['text' => $printed, 'style' => '',  'size' => 9.0,  'cellH' => 4.0] : null,
             ]);
             $lines  = array_values($lines);
             $totalH = array_sum(array_column($lines, 'cellH'));
