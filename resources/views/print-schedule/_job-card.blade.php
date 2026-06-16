@@ -256,13 +256,22 @@
 
     {{-- Ended indicator --}}
     @if($portalEnded)
+        @php
+            $endedPacks = $lastRun->packs_produced ?? $lastRun->progress_packs;
+            $totalEndedPacks = $prevPacks ?: $endedPacks;
+        @endphp
         <div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:6px 10px;margin-bottom:0.75rem;">
-            <div style="display:flex;align-items:center;gap:7px;">
+            <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
                 <span style="font-size:0.75rem;">■</span>
                 <span style="font-size:0.75rem;color:#475569;font-weight:600;">Ended on {{ ucwords(str_replace('_', ' ', $lastRun->machine)) }}</span>
                 <span style="font-size:0.75rem;color:#94a3b8;">at {{ $lastRun->ended_at->format('H:i') }}</span>
-                @if($lastRun->packs_produced !== null)
-                    <span style="font-size:0.75rem;color:#475569;">— <strong>{{ number_format($lastRun->packs_produced) }} packs done</strong></span>
+                @if($totalEndedPacks !== null)
+                    <span style="font-size:0.75rem;color:#475569;">— <strong>{{ number_format($totalEndedPacks) }} packs</strong></span>
+                @endif
+                @if($lastRun->fully_complete)
+                    <span style="font-size:0.7rem;font-weight:700;background:#dcfce7;color:#15803d;padding:1px 7px;border-radius:9999px;">✓ Fully complete</span>
+                @else
+                    <span style="font-size:0.7rem;font-weight:700;background:#fef3c7;color:#92400e;padding:1px 7px;border-radius:9999px;">Partial run</span>
                 @endif
             </div>
             @if($lastRun->user)
@@ -275,12 +284,13 @@
 
     {{-- Paused indicator --}}
     @if($portalPaused)
+        @php $pausedPacks = $lastRun->packs_produced ?? $lastRun->progress_packs; @endphp
         <div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:6px 10px;margin-bottom:0.75rem;">
             <div style="display:flex;align-items:center;gap:7px;">
                 <span style="font-size:0.75rem;">⏸</span>
                 <span style="font-size:0.75rem;color:#92400e;font-weight:600;">Paused on {{ ucwords(str_replace('_', ' ', $lastRun->machine)) }}</span>
-                @if($lastRun->packs_produced !== null)
-                    <span style="font-size:0.75rem;color:#b45309;">— {{ number_format($lastRun->packs_produced) }} packs done</span>
+                @if($pausedPacks !== null)
+                    <span style="font-size:0.75rem;color:#b45309;">— {{ number_format($pausedPacks) }} packs done</span>
                 @endif
             </div>
             @if($lastRun->pause_reason)

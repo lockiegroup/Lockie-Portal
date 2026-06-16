@@ -18,6 +18,7 @@ class PrintJobRun extends Model
         'pause_reason',
         'progress_packs',
         'progress_at',
+        'fully_complete',
     ];
 
     protected $casts = [
@@ -26,6 +27,7 @@ class PrintJobRun extends Model
         'progress_at'    => 'datetime',
         'packs_produced' => 'integer',
         'progress_packs' => 'integer',
+        'fully_complete' => 'boolean',
     ];
 
     public function printJob(): BelongsTo

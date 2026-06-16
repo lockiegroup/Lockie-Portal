@@ -547,18 +547,20 @@
                         by <span>{{ $activeRun->user?->name ?? 'Unknown' }}</span>
                         @if($activeRun->progress_packs !== null)
                             &nbsp;·&nbsp;
-                            <span style="color:#4ade80;font-weight:600;">{{ number_format($activeRun->progress_packs + $prevPacks) }} packs total</span>
+                            <span style="color:#4ade80;font-weight:600;">{{ number_format($activeRun->progress_packs) }} packs done</span>
                             <span style="color:#475569;"> (updated {{ $activeRun->progress_at->format('H:i') }})</span>
                         @elseif($prevPacks > 0)
                             &nbsp;·&nbsp;
-                            <span style="color:#4ade80;font-weight:600;">{{ number_format($prevPacks) }} packs before this run</span>
+                            <span style="color:#4ade80;font-weight:600;">{{ number_format($prevPacks) }} packs from previous runs</span>
                         @endif
                     </div>
+                    <div id="countdown-{{ $job->id }}" style="font-size:0.78rem;color:#64748b;margin-top:5px;"></div>
                 @elseif($state === 'paused' && $lastRun)
                     <div class="job-run-info">
                         Paused at {{ $lastRun->ended_at->format('H:i') }}
-                        @if($lastRun->packs_produced !== null)
-                            &nbsp;·&nbsp; <span>{{ number_format($lastRun->packs_produced) }} packs done</span>
+                        @php $pausedDisplayPacks = $lastRun->packs_produced ?? $lastRun->progress_packs; @endphp
+                        @if($pausedDisplayPacks !== null)
+                            &nbsp;·&nbsp; <span>{{ number_format($pausedDisplayPacks) }} packs done</span>
                         @endif
                         @if($lastRun->pause_reason)
                             &nbsp;·&nbsp; <span>{{ $lastRun->pause_reason }}</span>
@@ -576,13 +578,14 @@
                         </form>
 
                     @elseif($state === 'running')
+                        @php $currentPacks = $activeRun->progress_packs !== null ? $activeRun->progress_packs : $prevPacks; @endphp
                         {{-- Progress update --}}
                         <form method="POST" action="{{ route('tablet.jobs.progress', [$machine, $job]) }}"
                             style="display:flex;align-items:center;gap:10px;flex:1;min-width:220px;background:#0f172a;border:2px solid #334155;border-radius:10px;padding:8px 12px;">
                             @csrf
                             <label style="font-size:0.85rem;color:#64748b;white-space:nowrap;font-weight:600;">Packs done:</label>
-                            <input type="number" name="progress_packs" min="0"
-                                value="{{ $activeRun->progress_packs !== null ? $activeRun->progress_packs + $prevPacks : ($prevPacks ?: '') }}"
+                            <input type="number" name="progress_packs" min="0" max="{{ $job->order_quantity }}"
+                                value="{{ $activeRun->progress_packs !== null ? $activeRun->progress_packs : ($prevPacks ?: '') }}"
                                 placeholder="{{ $prevPacks > 0 ? $prevPacks : '0' }}"
                                 inputmode="numeric"
                                 style="flex:1;background:transparent;border:none;color:#f1f5f9;font-size:1.25rem;font-weight:700;outline:none;width:80px;">
@@ -590,11 +593,11 @@
                         </form>
 
                         <button class="btn btn-warning btn-lg"
-                            onclick="openPauseModal('{{ route('tablet.jobs.pause', [$machine, $job]) }}')">
+                            onclick="openPauseModal('{{ route('tablet.jobs.pause', [$machine, $job]) }}', {{ (int)$currentPacks }}, {{ (int)$job->order_quantity }})">
                             ⏸ Pause
                         </button>
                         <button class="btn btn-danger btn-lg"
-                            onclick="openEndModal('{{ route('tablet.jobs.end', [$machine, $job]) }}')">
+                            onclick="openEndModal('{{ route('tablet.jobs.end', [$machine, $job]) }}', {{ (int)$currentPacks }}, {{ (int)$job->order_quantity }})">
                             ■ End Job
                         </button>
                         <button class="btn btn-primary btn-lg"
@@ -603,12 +606,13 @@
                         </button>
 
                     @elseif($state === 'paused')
+                        @php $pausedCurrentPacks = $lastRun->packs_produced ?? $lastRun->progress_packs ?? $prevPacks; @endphp
                         <form method="POST" action="{{ route('tablet.jobs.resume', [$machine, $job]) }}" style="margin:0;">
                             @csrf
                             <button type="submit" class="btn btn-success btn-lg">▶ Resume</button>
                         </form>
                         <button class="btn btn-danger btn-lg"
-                            onclick="openEndModal('{{ route('tablet.jobs.end', [$machine, $job]) }}')">
+                            onclick="openEndModal('{{ route('tablet.jobs.end', [$machine, $job]) }}', {{ (int)($pausedCurrentPacks ?? 0) }}, {{ (int)$job->order_quantity }})">
                             ■ End Job
                         </button>
 
@@ -699,7 +703,7 @@
             </div>
             <div class="modal-actions">
                 <button type="button" class="btn btn-ghost btn-md"
-                    onclick="closeModal('reminder-modal')">Remind me later</button>
+                    onclick="_remindLater()">Remind me later (+2h)</button>
                 <button type="submit" class="btn btn-success btn-md">Log Update</button>
             </div>
         </form>
@@ -716,8 +720,8 @@
         <form id="pause-form" method="POST">
             @csrf
             <div class="modal-field">
-                <label>Packs produced so far (optional)</label>
-                <input type="number" name="packs_produced" min="0" placeholder="0" inputmode="numeric">
+                <label>Packs produced so far</label>
+                <input type="number" id="pause-packs-input" name="packs_produced" min="0" placeholder="0" inputmode="numeric">
             </div>
             <div class="modal-field">
                 <label>Reason for pausing</label>
@@ -746,13 +750,22 @@
         <h3>■ End Job</h3>
         <form id="end-form" method="POST">
             @csrf
+            <input type="hidden" name="fully_complete" id="fully-complete-input" value="0">
             <div class="modal-field">
-                <label>Packs produced this run (optional)</label>
-                <input type="number" name="packs_produced" min="0" placeholder="0" inputmode="numeric">
+                <label>Total packs done so far</label>
+                <input type="number" id="end-packs-input" name="packs_produced" min="0" placeholder="0" inputmode="numeric">
             </div>
-            <p style="color:#64748b;font-size:0.85rem;margin-bottom:4px;">
-                This will mark the run as complete. The job will remain on the board.
-            </p>
+            <div class="modal-field">
+                <label>Is this job fully complete?</label>
+                <div class="reason-buttons">
+                    <div class="reason-btn" id="btn-job-complete-yes" onclick="setJobComplete(true)">
+                        ✓ Yes — all packs done
+                    </div>
+                    <div class="reason-btn active" id="btn-job-complete-no" onclick="setJobComplete(false)">
+                        ↻ No — more runs needed
+                    </div>
+                </div>
+            </div>
             <div class="modal-actions">
                 <button type="button" class="btn btn-ghost btn-md" onclick="closeModal('end-modal')">Cancel</button>
                 <button type="submit" class="btn btn-danger btn-md">End Job</button>
@@ -821,26 +834,41 @@ function pinSubmit() {
 // ── Pause modal ──
 let pauseSelectedReason = '';
 
-function openPauseModal(action) {
+function openPauseModal(action, currentPacks, maxPacks) {
     document.getElementById('pause-form').action = action;
     pauseSelectedReason = '';
-    document.querySelectorAll('.reason-btn').forEach(b => b.classList.remove('active'));
+    // Reset reason buttons (only pause reason buttons, not end modal buttons)
+    document.querySelectorAll('#pause-modal .reason-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('pause-reason-input').value = '';
+    // Pre-fill packs with last known value
+    const packsInput = document.getElementById('pause-packs-input');
+    packsInput.max = maxPacks || '';
+    packsInput.value = (currentPacks > 0) ? currentPacks : '';
     document.getElementById('pause-modal').classList.add('open');
 }
 
 function selectReason(btn, reason) {
     pauseSelectedReason = reason;
-    document.querySelectorAll('.reason-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('#pause-modal .reason-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('pause-reason-input').value = reason !== 'Other' ? reason : '';
     if (reason === 'Other') document.getElementById('pause-reason-input').focus();
 }
 
 // ── End modal ──
-function openEndModal(action) {
+function openEndModal(action, currentPacks, maxPacks) {
     document.getElementById('end-form').action = action;
+    const packsInput = document.getElementById('end-packs-input');
+    packsInput.max = maxPacks || '';
+    packsInput.value = (currentPacks > 0) ? currentPacks : '';
+    setJobComplete(false);
     document.getElementById('end-modal').classList.add('open');
+}
+
+function setJobComplete(val) {
+    document.getElementById('fully-complete-input').value = val ? '1' : '0';
+    document.getElementById('btn-job-complete-yes').classList.toggle('active', val);
+    document.getElementById('btn-job-complete-no').classList.toggle('active', !val);
 }
 
 // ── Handover modal ──
@@ -891,10 +919,6 @@ function openSwitchModal() {
 // ── Close any modal ──
 function closeModal(id) {
     document.getElementById(id).classList.remove('open');
-    // If reminder was dismissed, allow it to re-appear after 30 minutes
-    if (id === 'reminder-modal') {
-        setTimeout(function() { _reminderShown = false; _checkReminder(); }, 30 * 60 * 1000);
-    }
 }
 
 // Close on backdrop click
@@ -933,21 +957,40 @@ function _pollJobs() {
 }
 setInterval(_pollJobs, 30000);
 
-// ── 2-hour progress reminder ──
+// ── 2-hour progress reminder (localStorage-backed so page refresh preserves snooze) ──
 @php
-    $reminderJobs = $jobs->filter(fn($j) => $j->runs->first() !== null)->map(fn($j) => [
-        'id'          => $j->id,
-        'name'        => $j->customer_name,
-        'progressUrl' => route('tablet.jobs.progress', [$machine, $j->id]),
-        'lastUpdate'  => ($j->runs->first()->progress_at ?? $j->runs->first()->started_at)->timestamp * 1000,
-    ])->values();
+    $reminderJobs = $jobs->filter(function($j) {
+        return $j->runs->first(fn($r) => $r->ended_at === null) !== null;
+    })->map(function($j) use ($machine) {
+        $activeRun = $j->runs->first(fn($r) => $r->ended_at === null);
+        return [
+            'id'          => $j->id,
+            'name'        => $j->customer_name,
+            'progressUrl' => route('tablet.jobs.progress', [$machine, $j->id]),
+            'lastUpdate'  => ($activeRun->progress_at ?? $activeRun->started_at)->timestamp * 1000,
+        ];
+    })->values();
 @endphp
-const _reminderJobs = @json($reminderJobs);
-const _TWO_HOURS    = 2 * 60 * 60 * 1000;
-let _reminderShown  = false;
+const _reminderJobs   = @json($reminderJobs);
+const _TWO_HOURS      = 2 * 60 * 60 * 1000;
+const _SNOOZE_KEY     = 'reminderSnoozeUntil_{{ $machine }}';
+
+function _isSnoozed() {
+    const until = parseInt(localStorage.getItem(_SNOOZE_KEY) || '0', 10);
+    return Date.now() < until;
+}
+
+function _snooze2h() {
+    localStorage.setItem(_SNOOZE_KEY, Date.now() + _TWO_HOURS);
+}
+
+function _remindLater() {
+    _snooze2h();
+    closeModal('reminder-modal');
+}
 
 function _checkReminder() {
-    if (_reminderShown) return;
+    if (_isSnoozed()) return;
     const now = Date.now();
     let mostOverdue = null, maxElapsed = 0;
     _reminderJobs.forEach(function(job) {
@@ -958,22 +1001,53 @@ function _checkReminder() {
         }
     });
     if (mostOverdue) {
-        _reminderShown = true;
         document.getElementById('reminder-job-name').textContent = mostOverdue.name;
         document.getElementById('reminder-form').action = mostOverdue.progressUrl;
+        // Pre-fill reminder packs input with the inline progress input value if available
+        const reminderInput = document.querySelector('#reminder-form input[name="progress_packs"]');
+        if (reminderInput) reminderInput.value = '';
         document.getElementById('reminder-modal').classList.add('open');
     }
 }
 
-// Schedule each running job's reminder
+// ── Countdown timers on each running job card ──
+function _fmtCountdown(ms) {
+    if (ms <= 0) return null;
+    const totalMins = Math.ceil(ms / 60000);
+    const h = Math.floor(totalMins / 60);
+    const m = totalMins % 60;
+    return h > 0 ? h + 'h ' + m + 'm' : m + 'm';
+}
+
+function _updateCountdowns() {
+    const now = Date.now();
+    _reminderJobs.forEach(function(job) {
+        const el = document.getElementById('countdown-' + job.id);
+        if (!el) return;
+        const remaining = _TWO_HOURS - (now - job.lastUpdate);
+        if (remaining <= 0) {
+            el.textContent = '⚠ Qty update overdue — please log packs!';
+            el.style.color = '#ef4444';
+            el.style.fontWeight = '600';
+        } else {
+            const fmt = _fmtCountdown(remaining);
+            el.textContent = 'Qty update due in ' + fmt;
+            el.style.fontWeight = '400';
+            el.style.color = remaining < 20 * 60 * 1000 ? '#f97316' : '#64748b';
+        }
+    });
+}
+
+// Schedule each running job's first reminder trigger
 _reminderJobs.forEach(function(job) {
-    const elapsed = Date.now() - job.lastUpdate;
-    const delay   = Math.max(0, _TWO_HOURS - elapsed);
+    const delay = Math.max(0, _TWO_HOURS - (Date.now() - job.lastUpdate));
     setTimeout(_checkReminder, delay);
 });
-// Also recheck every minute in case it was dismissed and more time passes
+
 setInterval(_checkReminder, 60 * 1000);
+setInterval(_updateCountdowns, 30 * 1000);
 _checkReminder();
+_updateCountdowns();
 @endif
 </script>
 

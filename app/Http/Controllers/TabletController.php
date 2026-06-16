@@ -171,7 +171,10 @@ class TabletController extends Controller
 
         $data = $request->validate([
             'packs_produced' => 'nullable|integer|min:0',
+            'fully_complete' => 'nullable|boolean',
         ]);
+
+        $fullyComplete = filter_var($request->input('fully_complete', false), FILTER_VALIDATE_BOOLEAN);
 
         // Active run (currently running)
         $run = $job->runs()->where('machine', $machine)->whereNull('ended_at')->first();
@@ -180,6 +183,7 @@ class TabletController extends Controller
                 'ended_at'       => now(),
                 'end_reason'     => 'complete',
                 'packs_produced' => $data['packs_produced'] ?? null,
+                'fully_complete' => $fullyComplete,
             ]);
             return redirect()->route('tablet.show', $machine);
         }
@@ -196,6 +200,7 @@ class TabletController extends Controller
                 'end_reason'     => 'complete',
                 'packs_produced' => $data['packs_produced'] ?? $pausedRun->packs_produced,
                 'pause_reason'   => null,
+                'fully_complete' => $fullyComplete,
             ]);
         }
 
