@@ -244,7 +244,7 @@
             </div>
             @if($activeRun->progress_packs !== null)
                 <div style="font-size:0.75rem;color:#15803d;margin-top:3px;padding-left:15px;">
-                    Last update {{ $activeRun->progress_at->format('H:i') }}: <strong>{{ number_format($activeRun->progress_packs + $prevPacks) }} packs total</strong>
+                    Last update {{ $activeRun->progress_at->format('H:i') }}: <strong>{{ number_format($activeRun->progress_packs) }} packs total</strong>
                 </div>
             @elseif($prevPacks > 0)
                 <div style="font-size:0.75rem;color:#15803d;margin-top:3px;padding-left:15px;">
