@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
     <title>{{ $machineName }} — Factory Tablet</title>
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        a[href^="tel"], a[href^="sms"] { color: inherit; text-decoration: none; pointer-events: none; }
 
         body {
             background: #0f172a;
@@ -400,7 +402,13 @@
      HEADER
      ════════════════════════════════════════════ --}}
 <div class="tab-header">
-    {{-- Left: operator controls (or empty space when not logged in) --}}
+    {{-- Left: logo + machine name --}}
+    <div style="display:flex;align-items:center;gap:10px;white-space:nowrap;flex-shrink:0;">
+        <img src="{{ asset('images/logo.png') }}" alt="Lockie Group" style="height:28px;width:auto;opacity:0.9;flex-shrink:0;">
+        <h1>{{ $machineName }}</h1>
+    </div>
+
+    {{-- Right: operator controls --}}
     <div>
         @if($operator)
             <div class="operator-info">
@@ -412,12 +420,6 @@
                 </form>
             </div>
         @endif
-    </div>
-
-    {{-- Right: logo + machine name --}}
-    <div style="display:flex;align-items:center;gap:10px;white-space:nowrap;flex-shrink:0;">
-        <h1>{{ $machineName }}</h1>
-        <img src="{{ asset('images/logo.png') }}" alt="Lockie Group" style="height:28px;width:auto;opacity:0.9;flex-shrink:0;">
     </div>
 </div>
 
