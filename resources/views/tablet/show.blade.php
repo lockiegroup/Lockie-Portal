@@ -19,27 +19,36 @@
         .tab-header {
             background: #1e293b;
             border-bottom: 2px solid #334155;
-            padding: 16px 24px;
+            padding: 12px 20px;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            gap: 10px;
             position: sticky;
             top: 0;
             z-index: 10;
+            flex-wrap: wrap;
         }
-        .tab-header h1 { font-size: 1.25rem; }
+        .tab-header h1 { font-size: 1.1rem; font-weight: 700; color: #f8fafc; letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; }
         .tab-header .operator-info {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 10px;
+            flex-wrap: wrap;
         }
         .tab-header .operator-name {
-            font-size: 1rem;
+            font-size: 0.9rem;
             color: #94a3b8;
         }
         .tab-header .operator-name span {
             color: #38bdf8;
             font-weight: 600;
+        }
+        .op-label { display: inline; }
+        @media (max-width: 500px) {
+            .tab-header { padding: 10px 14px; }
+            .op-label { display: none; }
+            .btn-sm { padding: 7px 11px; font-size: 0.78rem; }
         }
 
         /* ── Buttons ── */
@@ -395,7 +404,7 @@
     <div>
         @if($operator)
             <div class="operator-info">
-                <span class="operator-name">Operator: <span>{{ $operator->name }}</span></span>
+                <span class="operator-name"><span class="op-label">Operator: </span><span>{{ $operator->name }}</span></span>
                 <button class="btn btn-ghost btn-sm" onclick="openSwitchModal()">⇄ Switch Machine</button>
                 <form method="POST" action="{{ route('tablet.logout', $machine) }}" style="margin:0;">
                     @csrf
@@ -406,9 +415,9 @@
     </div>
 
     {{-- Right: logo + machine name --}}
-    <div style="display:flex;align-items:center;gap:12px;">
-        <h1 style="font-size:1.25rem;font-weight:700;color:#f8fafc;letter-spacing:0.05em;text-transform:uppercase;">{{ $machineName }}</h1>
-        <img src="{{ asset('images/logo.png') }}" alt="Lockie Group" style="height:32px;width:auto;opacity:0.9;">
+    <div style="display:flex;align-items:center;gap:10px;white-space:nowrap;flex-shrink:0;">
+        <h1>{{ $machineName }}</h1>
+        <img src="{{ asset('images/logo.png') }}" alt="Lockie Group" style="height:28px;width:auto;opacity:0.9;flex-shrink:0;">
     </div>
 </div>
 
