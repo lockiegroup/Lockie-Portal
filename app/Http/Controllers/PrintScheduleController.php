@@ -622,12 +622,12 @@ class PrintScheduleController extends Controller
         foreach ($lines as $line) {
             $size = $line['size'];
             $pdf->SetFont('Helvetica', $line['style'], $size);
-            while ($size > 4.0 && $pdf->GetStringWidth($line['text']) > $iw) {
+            while ($size > 4.0 && $pdf->GetStringWidth($line['text']) > $w) {
                 $size -= 0.5;
                 $pdf->SetFont('Helvetica', $line['style'], $size);
             }
-            $pdf->SetXY($x + $pad, $lineY);
-            $pdf->Cell($iw, $line['cellH'], $line['text'], 0, 0, 'C');
+            $pdf->SetXY($x, $lineY);
+            $pdf->Cell($w, $line['cellH'], $line['text'], 0, 0, 'C');
             $lineY += $line['cellH'];
         }
     }
@@ -641,11 +641,11 @@ class PrintScheduleController extends Controller
         if ($branded) {
             // Lines: JW Products / email / phone / range / printed
             $lines = [
-                ['text' => 'JW Products',            'style' => 'B', 'size' => 8.5, 'cellH' => 3.2],
-                ['text' => 'sales@jwproducts.co.uk', 'style' => '',  'size' => 6.0, 'cellH' => 2.6],
-                ['text' => '01252 624 305',           'style' => '',  'size' => 6.5, 'cellH' => 2.6],
-                ['text' => $range   ?? '',            'style' => 'B', 'size' => $range   ? 9.5 : 0.0, 'cellH' => 3.6],
-                ['text' => $printed ?? '',            'style' => '',  'size' => $printed ? 7.5 : 0.0, 'cellH' => 2.8],
+                ['text' => 'JW Products',            'style' => 'B', 'size' => 8.0, 'cellH' => 3.0],
+                ['text' => 'sales@jwproducts.co.uk', 'style' => '',  'size' => 5.5, 'cellH' => 2.2],
+                ['text' => '01252 624 305',           'style' => '',  'size' => 5.5, 'cellH' => 2.2],
+                ['text' => $range   ?? '',            'style' => 'B', 'size' => $range   ? 9.0 : 0.0, 'cellH' => 3.4],
+                ['text' => $printed ?? '',            'style' => '',  'size' => $printed ? 7.0 : 0.0, 'cellH' => 2.6],
             ];
             $totalH = array_sum(array_column($lines, 'cellH'));
             $lineY  = $y + ($h - $totalH) / 2;
@@ -657,19 +657,19 @@ class PrintScheduleController extends Controller
                 }
                 $size = $line['size'];
                 $pdf->SetFont('Helvetica', $line['style'], $size);
-                while ($size > 3.5 && $pdf->GetStringWidth($line['text']) > $iw) {
+                while ($size > 3.5 && $pdf->GetStringWidth($line['text']) > $w) {
                     $size -= 0.5;
                     $pdf->SetFont('Helvetica', $line['style'], $size);
                 }
-                $pdf->SetXY($x + $pad, $lineY);
-                $pdf->Cell($iw, $line['cellH'], $line['text'], 0, 0, 'C');
+                $pdf->SetXY($x, $lineY);
+                $pdf->Cell($w, $line['cellH'], $line['text'], 0, 0, 'C');
                 $lineY += $line['cellH'];
             }
         } else {
             // Unbranded: range (big) + printed text, vertically centred
             $lines = array_filter([
-                $range   ? ['text' => $range,   'style' => 'B', 'size' => 12.0, 'cellH' => 5.2] : null,
-                $printed ? ['text' => $printed, 'style' => '',  'size' => 9.0,  'cellH' => 4.0] : null,
+                $range   ? ['text' => $range,   'style' => 'B', 'size' => 11.0, 'cellH' => 4.8] : null,
+                $printed ? ['text' => $printed, 'style' => '',  'size' => 8.5,  'cellH' => 3.6] : null,
             ]);
             $lines  = array_values($lines);
             $totalH = array_sum(array_column($lines, 'cellH'));
@@ -678,12 +678,12 @@ class PrintScheduleController extends Controller
             foreach ($lines as $line) {
                 $size = $line['size'];
                 $pdf->SetFont('Helvetica', $line['style'], $size);
-                while ($size > 3.5 && $pdf->GetStringWidth($line['text']) > $iw) {
+                while ($size > 3.5 && $pdf->GetStringWidth($line['text']) > $w) {
                     $size -= 0.5;
                     $pdf->SetFont('Helvetica', $line['style'], $size);
                 }
-                $pdf->SetXY($x + $pad, $lineY);
-                $pdf->Cell($iw, $line['cellH'], $line['text'], 0, 0, 'C');
+                $pdf->SetXY($x, $lineY);
+                $pdf->Cell($w, $line['cellH'], $line['text'], 0, 0, 'C');
                 $lineY += $line['cellH'];
             }
         }
