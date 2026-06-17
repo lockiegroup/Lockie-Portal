@@ -27,13 +27,7 @@
             top: 0;
             z-index: 10;
         }
-        .tab-header h1 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #f8fafc;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-        }
+        .tab-header h1 { font-size: 1.25rem; }
         .tab-header .operator-info {
             display: flex;
             align-items: center;
@@ -397,18 +391,25 @@
      HEADER
      ════════════════════════════════════════════ --}}
 <div class="tab-header">
-    <h1>{{ $machineName }}</h1>
+    {{-- Left: operator controls (or empty space when not logged in) --}}
+    <div>
+        @if($operator)
+            <div class="operator-info">
+                <span class="operator-name">Operator: <span>{{ $operator->name }}</span></span>
+                <button class="btn btn-ghost btn-sm" onclick="openSwitchModal()">⇄ Switch Machine</button>
+                <form method="POST" action="{{ route('tablet.logout', $machine) }}" style="margin:0;">
+                    @csrf
+                    <button type="submit" class="btn btn-ghost btn-sm">Sign Out</button>
+                </form>
+            </div>
+        @endif
+    </div>
 
-    @if($operator)
-        <div class="operator-info">
-            <span class="operator-name">Operator: <span>{{ $operator->name }}</span></span>
-            <button class="btn btn-ghost btn-sm" onclick="openSwitchModal()">⇄ Switch Machine</button>
-            <form method="POST" action="{{ route('tablet.logout', $machine) }}" style="margin:0;">
-                @csrf
-                <button type="submit" class="btn btn-ghost btn-sm">Sign Out</button>
-            </form>
-        </div>
-    @endif
+    {{-- Right: logo + machine name --}}
+    <div style="display:flex;align-items:center;gap:12px;">
+        <h1 style="font-size:1.25rem;font-weight:700;color:#f8fafc;letter-spacing:0.05em;text-transform:uppercase;">{{ $machineName }}</h1>
+        <img src="{{ asset('images/logo.png') }}" alt="Lockie Group" style="height:32px;width:auto;opacity:0.9;">
+    </div>
 </div>
 
 {{-- ════════════════════════════════════════════
