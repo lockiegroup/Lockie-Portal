@@ -515,7 +515,7 @@
                             <div class="job-desc">{{ $job->product_description }}</div>
                         @endif
                         @if($job->line_comment)
-                            <div class="job-comment">{{ $job->line_comment }}</div>
+                            <div class="job-comment" style="white-space:pre-wrap;">{{ $job->line_comment }}</div>
                         @endif
                     </div>
 
