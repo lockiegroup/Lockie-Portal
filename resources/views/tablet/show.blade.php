@@ -1026,7 +1026,17 @@ function _updateCountdowns() {
         if (!el) return;
         const remaining = _TWO_HOURS - (now - job.lastUpdate);
         if (remaining <= 0) {
-            el.textContent = '⚠ Qty update overdue — please log packs!';
+            const overdueMins = Math.floor((now - job.lastUpdate - _TWO_HOURS) / 60000);
+            const lastTime = new Date(job.lastUpdate).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+            let overdueStr;
+            if (overdueMins < 60) {
+                overdueStr = overdueMins + ' min' + (overdueMins !== 1 ? 's' : '');
+            } else {
+                const h = Math.floor(overdueMins / 60);
+                const m = overdueMins % 60;
+                overdueStr = h + 'h' + (m > 0 ? ' ' + m + 'm' : '');
+            }
+            el.textContent = '⚠ Qty update overdue — last logged ' + lastTime + ', ' + overdueStr + ' overdue';
             el.style.color = '#ef4444';
             el.style.fontWeight = '600';
         } else {
