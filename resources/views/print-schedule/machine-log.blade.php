@@ -97,7 +97,9 @@
                         if ($run->ended_at) {
                             $totalRunSecs += abs((int) $run->ended_at->diffInSeconds($run->started_at));
                         } else {
-                            $totalRunSecs += abs((int) now()->diffInSeconds($run->started_at));
+                            // Use progress_at so the rate reflects packs ÷ measured time, not packs ÷ elapsed-to-now
+                            $rateEnd = $run->progress_at ?? now();
+                            $totalRunSecs += abs((int) $rateEnd->diffInSeconds($run->started_at));
                         }
                         $totalGapSecs += $entry['gap'] ?? 0;
                     }
@@ -200,8 +202,11 @@
                             $groupRuns   = collect($group['entries'])->pluck('run');
                             $groupPacks  = $groupRuns->whereNotNull('packs_produced')->sum('packs_produced');
                             $groupRunSecs = $groupRuns->filter(fn($r) => $r->ended_at)->sum(fn($r) => abs((int)$r->ended_at->diffInSeconds($r->started_at)));
-                            // Include active run duration and packs for rate
-                            $activeRunSecs = $groupRuns->whereNull('ended_at')->sum(fn($r) => abs((int) now()->diffInSeconds($r->started_at)));
+                            // Include active run duration and packs for rate (use progress_at so rate doesn't decay)
+                            $activeRunSecs = $groupRuns->whereNull('ended_at')->sum(fn($r) =>
+                                $r->progress_at
+                                    ? abs((int) $r->progress_at->diffInSeconds($r->started_at))
+                                    : abs((int) now()->diffInSeconds($r->started_at)));
                             $groupTotalSecs = $groupRunSecs + $activeRunSecs;
                             // progress_packs on an active run is the cumulative total across all runs,
                             // so use it directly as the total; otherwise sum packs_produced from ended runs.
@@ -283,7 +288,12 @@
                                     $packsThisRun = null;
                                 }
 
-                                $hours = $dur > 0 ? $dur / 3600 : 0;
+                                // Rate uses progress_at as endpoint so it stays stable after last update
+                                $rateEndTime = $run->ended_at ?? $run->progress_at;
+                                $rateSecs = $rateEndTime
+                                    ? abs((int) $rateEndTime->diffInSeconds($run->started_at))
+                                    : $dur;
+                                $hours = $rateSecs > 0 ? $rateSecs / 3600 : 0;
                                 $ratePerHr = ($packsThisRun && $hours >= 0.1) ? (int) round($packsThisRun / $hours) : null;
                                 $rateStr = null;
                                 if ($ratePerHr !== null) {
