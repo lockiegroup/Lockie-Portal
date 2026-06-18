@@ -266,6 +266,7 @@ class PrintScheduleSyncService
             $asmDeliveryCity     = null;
             $asmDeliveryPostcode = null;
             $asmDeliveryAddress  = null;
+            $lineComment         = $comments; // default; overridden by SO line if available
             if ($soNumber && isset($soData[$soNumber])) {
                 $sd          = $soData[$soNumber];
                 $matchedLine = null;
@@ -282,6 +283,9 @@ class PrintScheduleSyncService
                 }
                 if ($matchedLine) {
                     $soTotal = (float) ($matchedLine['LineTotal'] ?? 0);
+                    // Use the SO line's print data (Comments/LineComment) — the assembly's own
+                    // Comments field usually just says "Created for Invoice SO-XXXXX."
+                    $lineComment = $matchedLine['Comments'] ?? $matchedLine['LineComment'] ?? $comments;
                 }
                 $soRequiredDate      = $unleashed->parseDate($sd['requiredDate'] ?? null);
                 $customerName        = $sd['customerName'] ?? $soNumber;
@@ -310,7 +314,7 @@ class PrintScheduleSyncService
                     'customer_name'       => $customerName,
                     'product_code'        => $productCode,
                     'product_description' => $productDescription,
-                    'line_comment'        => $comments,
+                    'line_comment'        => $lineComment,
                     'delivery_name'       => $asmDeliveryName,
                     'delivery_city'       => $asmDeliveryCity,
                     'delivery_postcode'   => $asmDeliveryPostcode,
@@ -337,7 +341,7 @@ class PrintScheduleSyncService
                     'customer_ref'           => null,
                     'product_code'           => $productCode,
                     'product_description'    => $productDescription,
-                    'line_comment'           => $comments,
+                    'line_comment'           => $lineComment,
                     'delivery_name'          => $asmDeliveryName,
                     'delivery_city'          => $asmDeliveryCity,
                     'delivery_postcode'      => $asmDeliveryPostcode,
