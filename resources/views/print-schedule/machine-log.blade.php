@@ -131,10 +131,13 @@
                             $groupRuns   = collect($group['entries'])->pluck('run');
                             $groupPacks  = $groupRuns->whereNotNull('packs_produced')->sum('packs_produced');
                             $groupRunSecs = $groupRuns->filter(fn($r) => $r->ended_at)->sum(fn($r) => abs((int)$r->ended_at->diffInSeconds($r->started_at)));
-                            // Also include active run duration for rate
+                            // Include active run duration and packs for rate
                             $activeRunSecs = $groupRuns->whereNull('ended_at')->sum(fn($r) => abs((int) now()->diffInSeconds($r->started_at)));
                             $groupTotalSecs = $groupRunSecs + $activeRunSecs;
-                            $bestPacks = $groupPacks ?: $groupRuns->whereNotNull('progress_packs')->max('progress_packs');
+                            // progress_packs on an active run is the cumulative total across all runs,
+                            // so use it directly as the total; otherwise sum packs_produced from ended runs.
+                            $activeCumulativePacks = $groupRuns->whereNull('ended_at')->whereNotNull('progress_packs')->max('progress_packs');
+                            $bestPacks = $activeCumulativePacks ?? $groupPacks;
                             $groupHours = $groupTotalSecs > 0 ? $groupTotalSecs / 3600 : 0;
                             $groupRate = ($bestPacks && $groupHours >= 0.1) ? (int) round($bestPacks / $groupHours) : null;
                             $groupRateStr = $groupRate
@@ -195,10 +198,24 @@
                                     : abs((int) now()->diffInSeconds($run->started_at));
                                 $durStr = fmtDur($dur);
 
-                                // Rate: packs per hour
-                                $packsForRate = $run->packs_produced ?? $run->progress_packs;
+                                // packs_produced is per-run; progress_packs is cumulative across all runs.
+                                // For rate on runs using progress_packs, subtract previous ended runs' packs.
+                                $prevEndedPacks = collect($group['entries'])
+                                    ->take($ei)
+                                    ->pluck('run')
+                                    ->whereNotNull('packs_produced')
+                                    ->sum('packs_produced');
+
+                                if ($run->packs_produced !== null) {
+                                    $packsThisRun = $run->packs_produced;
+                                } elseif ($run->progress_packs !== null) {
+                                    $packsThisRun = max(0, $run->progress_packs - $prevEndedPacks);
+                                } else {
+                                    $packsThisRun = null;
+                                }
+
                                 $hours = $dur > 0 ? $dur / 3600 : 0;
-                                $ratePerHr = ($packsForRate && $hours >= 0.1) ? (int) round($packsForRate / $hours) : null;
+                                $ratePerHr = ($packsThisRun && $hours >= 0.1) ? (int) round($packsThisRun / $hours) : null;
                                 $rateStr = null;
                                 if ($ratePerHr !== null) {
                                     $rateStr = $ratePerHr >= 1000
