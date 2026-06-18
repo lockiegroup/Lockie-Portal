@@ -115,7 +115,7 @@
                     } else {
                         // packs_produced is cumulative total at each pause/end, so use the most recent value
                         $totalPacks += $groupRuns->filter(fn($r) => $r->packs_produced !== null && $r->ended_at !== null)
-                            ->sortByDesc(fn($r) => $r->ended_at)->first()?->packs_produced ?? 0;
+                            ->sortByDesc(fn($r) => $r->ended_at?->timestamp)->first()?->packs_produced ?? 0;
                     }
                 }
 
@@ -183,7 +183,7 @@
                             $machinePacks += $ap;
                         } else {
                             $machinePacks += $jgRuns->filter(fn($r) => $r->packs_produced !== null && $r->ended_at !== null)
-                                ->sortByDesc(fn($r) => $r->ended_at)->first()?->packs_produced ?? 0;
+                                ->sortByDesc(fn($r) => $r->ended_at?->timestamp)->first()?->packs_produced ?? 0;
                         }
                     }
                 @endphp
@@ -223,7 +223,7 @@
                             // An active run's progress_packs is always the current cumulative total.
                             $activePacks = $groupRuns->whereNull('ended_at')->whereNotNull('progress_packs')->max('progress_packs');
                             $lastEndedPacks = $groupRuns->filter(fn($r) => $r->packs_produced !== null && $r->ended_at !== null)
-                                ->sortByDesc(fn($r) => $r->ended_at)->first()?->packs_produced ?? 0;
+                                ->sortByDesc(fn($r) => $r->ended_at?->timestamp)->first()?->packs_produced ?? 0;
                             $groupPacks = $activePacks ?? $lastEndedPacks;
                             $groupHours = $groupTotalSecs > 0 ? $groupTotalSecs / 3600 : 0;
                             $groupRate = ($groupPacks && $groupHours >= 0.1) ? (int) round($groupPacks / $groupHours) : null;

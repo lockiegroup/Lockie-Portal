@@ -6,7 +6,7 @@
     $lastRun         = $job->runs->last();
     $endedRuns       = $job->runs->filter(fn($r) => $r->ended_at !== null);
     // packs_produced is the operator's cumulative running total, so use the most recent value not a sum
-    $lastEndedRun    = $endedRuns->sortByDesc('ended_at')->first();
+    $lastEndedRun    = $endedRuns->sortByDesc(fn($r) => $r->ended_at?->timestamp)->first();
     $prevPacks       = $lastEndedRun?->packs_produced ?? 0;
     $portalPaused    = !$activeRun && $lastRun && $lastRun->end_reason === 'pause';
     $portalEnded     = !$activeRun && $lastRun && $lastRun->end_reason === 'complete';
