@@ -5,7 +5,9 @@
     $activeRun       = $job->runs->first(fn($r) => $r->ended_at === null);
     $lastRun         = $job->runs->last();
     $endedRuns       = $job->runs->filter(fn($r) => $r->ended_at !== null);
-    $prevPacks       = $endedRuns->sum('packs_produced');
+    // packs_produced is the operator's cumulative running total, so use the most recent value not a sum
+    $lastEndedRun    = $endedRuns->sortByDesc('ended_at')->first();
+    $prevPacks       = $lastEndedRun?->packs_produced ?? 0;
     $portalPaused    = !$activeRun && $lastRun && $lastRun->end_reason === 'pause';
     $portalEnded     = !$activeRun && $lastRun && $lastRun->end_reason === 'complete';
 
@@ -257,8 +259,8 @@
     {{-- Ended indicator --}}
     @if($portalEnded)
         @php
-            $endedPacks = $lastRun->packs_produced ?? $lastRun->progress_packs;
-            $totalEndedPacks = $prevPacks ?: $endedPacks;
+            // packs_produced is the cumulative total at the time the run ended
+            $totalEndedPacks = $lastRun->packs_produced ?? $lastRun->progress_packs;
         @endphp
         <div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:6px 10px;margin-bottom:0.75rem;">
             <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
