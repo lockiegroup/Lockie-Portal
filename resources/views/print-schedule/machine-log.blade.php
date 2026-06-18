@@ -86,13 +86,14 @@
                 $totalPacks = 0;
                 $totalRunSecs = 0;
                 $totalGapSecs = 0;
-                $bestTotalPacks = 0; // use max progress_packs (cumulative) as running total
+
+                // Flatten all entries for global totals
+                $allEntries = [];
                 foreach ($byMachine as $entries) {
                     foreach ($entries as $entry) {
-                        $run = $entry['run'];
+                        $allEntries[] = $entry;
                         $totalRuns++;
-                        $totalPacks += $run->packs_produced ?? 0;
-                        $bestTotalPacks += $run->packs_produced ?? ($run->progress_packs ?? 0);
+                        $run = $entry['run'];
                         if ($run->ended_at) {
                             $totalRunSecs += abs((int) $run->ended_at->diffInSeconds($run->started_at));
                         } else {
@@ -101,10 +102,25 @@
                         $totalGapSecs += $entry['gap'] ?? 0;
                     }
                 }
-                $avgRatePerHr = ($bestTotalPacks > 0 && $totalRunSecs > 0)
-                    ? (int) round($bestTotalPacks / ($totalRunSecs / 3600))
+
+                // Group by job to avoid double-counting cumulative progress_packs.
+                // For each job: if an active run has progress_packs it is the cumulative total;
+                // otherwise sum packs_produced from all ended runs in the group.
+                $summaryJobGroups = collect($allEntries)->groupBy(fn($e) => $e['run']->print_job_id ?? 'unknown');
+                foreach ($summaryJobGroups as $groupEntries) {
+                    $groupRuns = collect($groupEntries)->pluck('run');
+                    $activePacks = $groupRuns->whereNull('ended_at')->whereNotNull('progress_packs')->max('progress_packs');
+                    if ($activePacks !== null) {
+                        $totalPacks += $activePacks;
+                    } else {
+                        $totalPacks += $groupRuns->whereNotNull('packs_produced')->sum('packs_produced');
+                    }
+                }
+
+                $avgRatePerHr = ($totalPacks > 0 && $totalRunSecs > 0)
+                    ? (int) round($totalPacks / ($totalRunSecs / 3600))
                     : null;
-                $avgRateStr = $avgRatePerHr
+                $avgRateStr = $avgRatePerHr !== null
                     ? ($avgRatePerHr >= 1000
                         ? number_format($avgRatePerHr / 1000, 1) . 'k/hr'
                         : number_format($avgRatePerHr) . '/hr')
