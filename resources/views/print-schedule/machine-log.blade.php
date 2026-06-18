@@ -131,6 +131,15 @@
                             $groupRuns   = collect($group['entries'])->pluck('run');
                             $groupPacks  = $groupRuns->whereNotNull('packs_produced')->sum('packs_produced');
                             $groupRunSecs = $groupRuns->filter(fn($r) => $r->ended_at)->sum(fn($r) => abs((int)$r->ended_at->diffInSeconds($r->started_at)));
+                            // Also include active run duration for rate
+                            $activeRunSecs = $groupRuns->whereNull('ended_at')->sum(fn($r) => abs((int) now()->diffInSeconds($r->started_at)));
+                            $groupTotalSecs = $groupRunSecs + $activeRunSecs;
+                            $bestPacks = $groupPacks ?: $groupRuns->whereNotNull('progress_packs')->max('progress_packs');
+                            $groupHours = $groupTotalSecs > 0 ? $groupTotalSecs / 3600 : 0;
+                            $groupRate = ($bestPacks && $groupHours >= 0.1) ? (int) round($bestPacks / $groupHours) : null;
+                            $groupRateStr = $groupRate
+                                ? ($groupRate >= 1000 ? number_format($groupRate / 1000, 1) . 'k/hr' : number_format($groupRate) . '/hr')
+                                : null;
                         @endphp
 
                         {{-- Gap before this job group (gap from previous group's last run) --}}
@@ -172,10 +181,12 @@
                                     <span>Done this log: <strong style="color:#15803d;">{{ number_format($groupPacks) }} packs</strong></span>
                                 @endif
                                 <span>Time: <strong style="color:#334155;">{{ fmtDur($groupRunSecs) }}</strong></span>
+                                @if($groupRateStr)
+                                    <span style="font-weight:700;color:#0284c7;background:#eff6ff;padding:2px 8px;border-radius:6px;font-size:0.78rem;">~{{ $groupRateStr }}</span>
+                                @endif
                             </div>
                         </div>
 
-                        {{-- Runs for this job --}}
                         @foreach($group['entries'] as $ei => $entry)
                             @php
                                 $run = $entry['run'];
@@ -183,6 +194,17 @@
                                     ? abs((int) $run->ended_at->diffInSeconds($run->started_at))
                                     : abs((int) now()->diffInSeconds($run->started_at));
                                 $durStr = fmtDur($dur);
+
+                                // Rate: packs per hour
+                                $packsForRate = $run->packs_produced ?? $run->progress_packs;
+                                $hours = $dur > 0 ? $dur / 3600 : 0;
+                                $ratePerHr = ($packsForRate && $hours >= 0.1) ? (int) round($packsForRate / $hours) : null;
+                                $rateStr = null;
+                                if ($ratePerHr !== null) {
+                                    $rateStr = $ratePerHr >= 1000
+                                        ? number_format($ratePerHr / 1000, 1) . 'k/hr'
+                                        : number_format($ratePerHr) . '/hr';
+                                }
                             @endphp
 
                             {{-- Idle gap between runs of the same job --}}
@@ -198,7 +220,7 @@
                                 </div>
                             @endif
 
-                            <div style="display:grid;grid-template-columns:150px 130px 1fr 90px 130px;align-items:center;gap:8px;padding:9px 20px 9px 36px;border-top:1px solid #f1f5f9;background:{{ $gi % 2 === 0 ? '#fff' : '#fafafa' }};">
+                            <div style="display:grid;grid-template-columns:150px 120px 1fr 120px 100px 130px;align-items:center;gap:8px;padding:9px 20px 9px 36px;border-top:1px solid #f1f5f9;background:{{ $gi % 2 === 0 ? '#fff' : '#fafafa' }};">
 
                                 {{-- Time --}}
                                 <div>
@@ -219,8 +241,28 @@
                                     {{ $run->user?->name ?? '—' }}
                                 </div>
 
-                                {{-- Spacer --}}
-                                <div></div>
+                                {{-- Last qty update --}}
+                                <div>
+                                    @if($run->progress_packs !== null && $run->progress_at !== null)
+                                        <div style="font-size:0.75rem;color:#475569;">
+                                            Last update <span style="font-family:monospace;color:#334155;">{{ $run->progress_at->format('H:i') }}</span>
+                                        </div>
+                                        <div style="font-size:0.72rem;color:#64748b;margin-top:1px;">
+                                            {{ number_format($run->progress_packs) }} packs logged
+                                        </div>
+                                    @elseif($run->ended_at === null)
+                                        <span style="font-size:0.72rem;color:#cbd5e1;">No updates logged</span>
+                                    @endif
+                                </div>
+
+                                {{-- Rate --}}
+                                <div style="text-align:right;">
+                                    @if($rateStr)
+                                        <span style="font-size:0.78rem;font-weight:700;color:#0284c7;background:#eff6ff;padding:3px 8px;border-radius:6px;white-space:nowrap;">
+                                            ~{{ $rateStr }}
+                                        </span>
+                                    @endif
+                                </div>
 
                                 {{-- Packs --}}
                                 <div style="text-align:right;">
@@ -238,7 +280,9 @@
                                 {{-- Status --}}
                                 <div style="text-align:right;">
                                     @if($run->end_reason === 'complete')
-                                        <span style="font-size:0.72rem;font-weight:700;background:#dcfce7;color:#15803d;padding:3px 9px;border-radius:9999px;">Complete</span>
+                                        <span style="font-size:0.72rem;font-weight:700;background:#dcfce7;color:#15803d;padding:3px 9px;border-radius:9999px;">
+                                            @if($run->fully_complete) ✓ Complete @else Ended @endif
+                                        </span>
                                     @elseif($run->end_reason === 'pause')
                                         <span style="font-size:0.72rem;font-weight:700;background:#fef3c7;color:#92400e;padding:3px 9px;border-radius:9999px;">Paused</span>
                                         @if($run->pause_reason)
