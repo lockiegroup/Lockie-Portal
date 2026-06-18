@@ -22,7 +22,7 @@ class PrintJob extends Model
         'awaiting_despatch'  => 'Awaiting Despatch',
     ];
 
-    public const MACHINES = ['auto_1', 'auto_2', 'auto_3', 'baby'];
+    public const MACHINES = ['auto_1', 'auto_2', 'auto_3', 'baby', 'laser', 'coditherm'];
 
     protected $fillable = [
         'unleashed_guid',
