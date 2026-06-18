@@ -105,9 +105,7 @@
                     }
                 }
 
-                // Group by job to avoid double-counting cumulative progress_packs.
-                // For each job: if an active run has progress_packs it is the cumulative total;
-                // otherwise sum packs_produced from all ended runs in the group.
+                // Group runs by job and use the last cumulative packs_produced per group (not a sum)
                 $summaryJobGroups = collect($allEntries)->groupBy(fn($e) => $e['run']->print_job_id ?? 'unknown');
                 foreach ($summaryJobGroups as $groupEntries) {
                     $groupRuns = collect($groupEntries)->pluck('run');
@@ -115,7 +113,9 @@
                     if ($activePacks !== null) {
                         $totalPacks += $activePacks;
                     } else {
-                        $totalPacks += $groupRuns->whereNotNull('packs_produced')->sum('packs_produced');
+                        // packs_produced is cumulative total at each pause/end, so use the most recent value
+                        $totalPacks += $groupRuns->filter(fn($r) => $r->packs_produced !== null && $r->ended_at !== null)
+                            ->sortByDesc(fn($r) => $r->ended_at)->first()?->packs_produced ?? 0;
                     }
                 }
 
@@ -157,11 +157,10 @@
 
             @foreach($byMachine as $machineName => $entries)
                 @php
-                    $machineLabel    = ucwords(str_replace('_', ' ', $machineName));
-                    $machineRuns     = collect($entries)->pluck('run');
-                    $machinePacks    = $machineRuns->sum('packs_produced');
-                    $machineRunSecs  = $machineRuns->filter(fn($r) => $r->ended_at)->sum(fn($r) => abs((int) $r->ended_at->diffInSeconds($r->started_at)));
-                    $machineGapSecs  = collect($entries)->sum('gap');
+                    $machineLabel   = ucwords(str_replace('_', ' ', $machineName));
+                    $machineRuns    = collect($entries)->pluck('run');
+                    $machineRunSecs = $machineRuns->filter(fn($r) => $r->ended_at)->sum(fn($r) => abs((int) $r->ended_at->diffInSeconds($r->started_at)));
+                    $machineGapSecs = collect($entries)->sum('gap');
 
                     // Group consecutive runs by job
                     $jobGroups = [];
@@ -173,6 +172,19 @@
                             $prevJobId = $jobId;
                         }
                         $jobGroups[count($jobGroups) - 1]['entries'][] = $entry;
+                    }
+
+                    // packs_produced is the cumulative total, so sum per job group (not per run)
+                    $machinePacks = 0;
+                    foreach ($jobGroups as $jg) {
+                        $jgRuns = collect($jg['entries'])->pluck('run');
+                        $ap = $jgRuns->whereNull('ended_at')->whereNotNull('progress_packs')->max('progress_packs');
+                        if ($ap !== null) {
+                            $machinePacks += $ap;
+                        } else {
+                            $machinePacks += $jgRuns->filter(fn($r) => $r->packs_produced !== null && $r->ended_at !== null)
+                                ->sortByDesc(fn($r) => $r->ended_at)->first()?->packs_produced ?? 0;
+                        }
                     }
                 @endphp
 
@@ -198,22 +210,23 @@
                     {{-- Job groups --}}
                     @foreach($jobGroups as $gi => $group)
                         @php
-                            $job         = $group['job'];
-                            $groupRuns   = collect($group['entries'])->pluck('run');
-                            $groupPacks  = $groupRuns->whereNotNull('packs_produced')->sum('packs_produced');
+                            $job          = $group['job'];
+                            $groupRuns    = collect($group['entries'])->pluck('run');
                             $groupRunSecs = $groupRuns->filter(fn($r) => $r->ended_at)->sum(fn($r) => abs((int)$r->ended_at->diffInSeconds($r->started_at)));
-                            // Include active run duration and packs for rate (use progress_at so rate doesn't decay)
+                            // Include active run duration (use progress_at so rate doesn't decay after last update)
                             $activeRunSecs = $groupRuns->whereNull('ended_at')->sum(fn($r) =>
                                 $r->progress_at
                                     ? abs((int) $r->progress_at->diffInSeconds($r->started_at))
                                     : abs((int) now()->diffInSeconds($r->started_at)));
                             $groupTotalSecs = $groupRunSecs + $activeRunSecs;
-                            // progress_packs on an active run is the cumulative total across all runs,
-                            // so use it directly as the total; otherwise sum packs_produced from ended runs.
-                            $activeCumulativePacks = $groupRuns->whereNull('ended_at')->whereNotNull('progress_packs')->max('progress_packs');
-                            $bestPacks = $activeCumulativePacks ?? $groupPacks;
+                            // packs_produced is the cumulative total at each pause/end — use the most recent value.
+                            // An active run's progress_packs is always the current cumulative total.
+                            $activePacks = $groupRuns->whereNull('ended_at')->whereNotNull('progress_packs')->max('progress_packs');
+                            $lastEndedPacks = $groupRuns->filter(fn($r) => $r->packs_produced !== null && $r->ended_at !== null)
+                                ->sortByDesc(fn($r) => $r->ended_at)->first()?->packs_produced ?? 0;
+                            $groupPacks = $activePacks ?? $lastEndedPacks;
                             $groupHours = $groupTotalSecs > 0 ? $groupTotalSecs / 3600 : 0;
-                            $groupRate = ($bestPacks && $groupHours >= 0.1) ? (int) round($bestPacks / $groupHours) : null;
+                            $groupRate = ($groupPacks && $groupHours >= 0.1) ? (int) round($groupPacks / $groupHours) : null;
                             $groupRateStr = $groupRate
                                 ? ($groupRate >= 1000 ? number_format($groupRate / 1000, 1) . 'k/hr' : number_format($groupRate) . '/hr')
                                 : null;
@@ -272,18 +285,18 @@
                                     : abs((int) now()->diffInSeconds($run->started_at));
                                 $durStr = fmtDur($dur);
 
-                                // packs_produced is per-run; progress_packs is cumulative across all runs.
-                                // For rate on runs using progress_packs, subtract previous ended runs' packs.
-                                $prevEndedPacks = collect($group['entries'])
+                                // Both packs_produced and progress_packs are cumulative running totals.
+                                // The delta for this run = this run's value minus the previous run's cumulative total.
+                                $prevCumPacks = collect($group['entries'])
                                     ->take($ei)
                                     ->pluck('run')
-                                    ->whereNotNull('packs_produced')
-                                    ->sum('packs_produced');
+                                    ->filter(fn($r) => $r->packs_produced !== null)
+                                    ->last()?->packs_produced ?? 0;
 
                                 if ($run->packs_produced !== null) {
-                                    $packsThisRun = $run->packs_produced;
+                                    $packsThisRun = max(0, $run->packs_produced - $prevCumPacks);
                                 } elseif ($run->progress_packs !== null) {
-                                    $packsThisRun = max(0, $run->progress_packs - $prevEndedPacks);
+                                    $packsThisRun = max(0, $run->progress_packs - $prevCumPacks);
                                 } else {
                                     $packsThisRun = null;
                                 }
