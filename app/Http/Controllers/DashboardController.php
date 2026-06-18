@@ -39,7 +39,7 @@ class DashboardController extends Controller
             $today      = now()->startOfDay();
             $printStats = [];
 
-            foreach (PrintJob::MACHINES as $machine) {
+            foreach (array_keys($throughputs) as $machine) {
                 $jobs           = PrintJob::active()->where('board', $machine)->orderBy('position')->get();
                 $totalRemaining = $jobs->sum(fn($j) => $j->remaining_quantity);
                 $tp             = $throughputs[$machine] ?? 350;

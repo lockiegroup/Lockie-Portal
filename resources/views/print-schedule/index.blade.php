@@ -122,8 +122,8 @@
                     {{ $boardLabel }}
                 </div>
 
-                {{-- Machine lead time banner --}}
-                @if(in_array($boardKey, $machines))
+                {{-- Machine lead time banner (only for throughput-tracked machines) --}}
+                @if(in_array($boardKey, $machines) && array_key_exists($boardKey, $throughputs))
                     @php
                         $machineJobs = $boardJobs[$boardKey];
                         $totalRemaining = $machineJobs->sum(fn($j) => $j->remaining_quantity);
