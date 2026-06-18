@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Models\PrintJobRun;
 
 class User extends Authenticatable
 {
@@ -87,5 +88,10 @@ class User extends Authenticatable
     public function otpCodes()
     {
         return $this->hasMany(OtpCode::class);
+    }
+
+    public function runs()
+    {
+        return $this->hasMany(PrintJobRun::class);
     }
 }

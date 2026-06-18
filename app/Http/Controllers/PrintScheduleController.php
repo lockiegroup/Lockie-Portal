@@ -111,25 +111,34 @@ class PrintScheduleController extends Controller
         ));
     }
 
-    public function machineLog(Request $request): View
+    private function buildMachineLogQuery(Request $request): array
     {
-        $date    = $request->input('date', today()->format('Y-m-d'));
-        $machine = $request->input('machine', 'all');
+        $dateFrom = $request->input('date_from', today()->format('Y-m-d'));
+        $dateTo   = $request->input('date_to',   $dateFrom);
+        $machine  = $request->input('machine', 'all');
+        $operator = $request->input('operator', 'all');
         $machines = PrintJob::MACHINES;
 
-        $query = \App\Models\PrintJobRun::with(['user', 'printJob:id,customer_name,product_code,order_number'])
+        // Clamp so date_to is never before date_from
+        if ($dateTo < $dateFrom) $dateTo = $dateFrom;
+
+        $query = \App\Models\PrintJobRun::with(['user', 'printJob:id,customer_name,product_code,order_number,order_quantity'])
             ->whereIn('machine', $machines)
-            ->whereDate('started_at', $date)
+            ->whereDate('started_at', '>=', $dateFrom)
+            ->whereDate('started_at', '<=', $dateTo)
             ->orderBy('machine')
             ->orderBy('started_at');
 
         if ($machine !== 'all' && in_array($machine, $machines)) {
             $query->where('machine', $machine);
         }
+        if ($operator !== 'all') {
+            $query->where('user_id', $operator);
+        }
 
         $allRuns = $query->get();
 
-        // Group by machine, compute gaps between consecutive runs
+        // Group by machine, compute gaps
         $byMachine = [];
         foreach ($machines as $m) {
             if ($machine !== 'all' && $machine !== $m) continue;
@@ -143,9 +152,7 @@ class PrintScheduleController extends Controller
                     $prev = $machineRuns[$i - 1];
                     if ($prev->ended_at !== null) {
                         $gap = $run->started_at->diffInSeconds($prev->ended_at);
-                        if ($gap > 60) { // only show gaps > 1 minute
-                            $gapSeconds = $gap;
-                        }
+                        if ($gap > 60) $gapSeconds = $gap;
                     }
                 }
                 $entries[] = ['run' => $run, 'gap' => $gapSeconds];
@@ -153,7 +160,68 @@ class PrintScheduleController extends Controller
             $byMachine[$m] = $entries;
         }
 
-        return view('print-schedule.machine-log', compact('byMachine', 'machines', 'date', 'machine'));
+        // All operators who have runs in this date range (for the dropdown)
+        $operators = \App\Models\User::whereHas('runs', function ($q) use ($dateFrom, $dateTo) {
+            $q->whereDate('started_at', '>=', $dateFrom)->whereDate('started_at', '<=', $dateTo);
+        })->orderBy('name')->get(['id', 'name']);
+
+        return compact('byMachine', 'machines', 'operators', 'dateFrom', 'dateTo', 'machine', 'operator');
+    }
+
+    public function machineLog(Request $request): View
+    {
+        $data = $this->buildMachineLogQuery($request);
+        return view('print-schedule.machine-log', $data);
+    }
+
+    public function machineLogExport(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $data    = $this->buildMachineLogQuery($request);
+        $from    = $data['dateFrom'];
+        $to      = $data['dateTo'];
+        $suffix  = $from === $to ? $from : "{$from}_to_{$to}";
+
+        $headers = [
+            'Content-Type'        => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"machine-log-{$suffix}.csv\"",
+        ];
+
+        return response()->stream(function () use ($data) {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, ['Date', 'Machine', 'Operator', 'Customer', 'Order #', 'Product', 'Order Qty', 'Start', 'End', 'Duration (min)', 'Packs Produced', 'Progress Packs', 'Status', 'Pause Reason', 'Fully Complete', 'Rate (packs/hr)']);
+
+            foreach ($data['byMachine'] as $machineName => $entries) {
+                foreach ($entries as $entry) {
+                    $run = $entry['run'];
+                    $dur = $run->ended_at
+                        ? abs((int) $run->ended_at->diffInSeconds($run->started_at))
+                        : abs((int) now()->diffInSeconds($run->started_at));
+                    $hours = $dur > 0 ? $dur / 3600 : 0;
+                    $packs = $run->packs_produced ?? $run->progress_packs;
+                    $rate  = ($packs && $hours >= 0.1) ? (int) round($packs / $hours) : null;
+
+                    fputcsv($out, [
+                        $run->started_at->format('Y-m-d'),
+                        ucwords(str_replace('_', ' ', $machineName)),
+                        $run->user?->name ?? '',
+                        $run->printJob?->customer_name ?? '',
+                        $run->printJob?->order_number ?? '',
+                        $run->printJob?->product_code ?? '',
+                        $run->printJob?->order_quantity ?? '',
+                        $run->started_at->format('H:i'),
+                        $run->ended_at?->format('H:i') ?? 'Running',
+                        round($dur / 60, 1),
+                        $run->packs_produced ?? '',
+                        $run->progress_packs ?? '',
+                        $run->ended_at === null ? 'Running' : ($run->end_reason ?? ''),
+                        $run->pause_reason ?? '',
+                        $run->fully_complete ? 'Yes' : 'No',
+                        $rate ?? '',
+                    ]);
+                }
+            }
+            fclose($out);
+        }, 200, $headers);
     }
 
     // Mon–Thu = full 8h day (weight 1.0), Fri = 5h day (8:00–13:30 minus 30min break, weight 5/8)

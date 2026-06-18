@@ -9,31 +9,66 @@
                 <p class="text-slate-500 text-sm mt-1">Operator activity, job durations, and idle time per machine.</p>
             </div>
 
-            <form method="GET" action="{{ route('print.machine-log') }}"
-                style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-                <input type="date" name="date" value="{{ $date }}"
-                    onchange="this.form.submit()"
-                    class="text-sm border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-rose-500">
-                <select name="machine" onchange="this.form.submit()"
-                    class="text-sm border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-rose-500 bg-white">
-                    <option value="all" {{ $machine === 'all' ? 'selected' : '' }}>All machines</option>
-                    @foreach($machines as $m)
-                        <option value="{{ $m }}" {{ $machine === $m ? 'selected' : '' }}>
-                            {{ ucwords(str_replace('_', ' ', $m)) }}
-                        </option>
-                    @endforeach
-                </select>
-                <a href="{{ route('print.machine-log', ['date' => \Carbon\Carbon::parse($date)->subDay()->format('Y-m-d'), 'machine' => $machine]) }}"
-                    class="text-sm text-slate-500 hover:text-slate-700 px-3 py-2 rounded-lg border border-slate-200 bg-white transition-colors">
-                    ← Yesterday
-                </a>
-                @if($date !== today()->format('Y-m-d'))
-                    <a href="{{ route('print.machine-log', ['date' => today()->format('Y-m-d'), 'machine' => $machine]) }}"
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <form method="GET" action="{{ route('print.machine-log') }}" id="log-filter-form"
+                    style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+
+                    {{-- Date range --}}
+                    <input type="date" name="date_from" value="{{ $dateFrom }}"
+                        onchange="this.form.submit()"
+                        class="text-sm border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                        title="From date">
+                    <span class="text-slate-400 text-sm">→</span>
+                    <input type="date" name="date_to" value="{{ $dateTo }}"
+                        onchange="this.form.submit()"
+                        class="text-sm border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                        title="To date">
+
+                    {{-- Machine --}}
+                    <select name="machine" onchange="this.form.submit()"
+                        class="text-sm border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-rose-500 bg-white">
+                        <option value="all" {{ $machine === 'all' ? 'selected' : '' }}>All machines</option>
+                        @foreach($machines as $m)
+                            <option value="{{ $m }}" {{ $machine === $m ? 'selected' : '' }}>
+                                {{ ucwords(str_replace('_', ' ', $m)) }}
+                            </option>
+                        @endforeach
+                    </select>
+
+                    {{-- Operator --}}
+                    <select name="operator" onchange="this.form.submit()"
+                        class="text-sm border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-rose-500 bg-white">
+                        <option value="all" {{ $operator === 'all' ? 'selected' : '' }}>All operators</option>
+                        @foreach($operators as $op)
+                            <option value="{{ $op->id }}" {{ $operator == $op->id ? 'selected' : '' }}>
+                                {{ $op->name }}
+                            </option>
+                        @endforeach
+                    </select>
+
+                    {{-- Quick nav --}}
+                    <a href="{{ route('print.machine-log', ['date_from' => \Carbon\Carbon::parse($dateFrom)->subDay()->format('Y-m-d'), 'date_to' => \Carbon\Carbon::parse($dateFrom)->subDay()->format('Y-m-d'), 'machine' => $machine, 'operator' => $operator]) }}"
                         class="text-sm text-slate-500 hover:text-slate-700 px-3 py-2 rounded-lg border border-slate-200 bg-white transition-colors">
-                        Today →
+                        ← Yesterday
                     </a>
-                @endif
-            </form>
+                    @if($dateFrom !== today()->format('Y-m-d') || $dateTo !== today()->format('Y-m-d'))
+                        <a href="{{ route('print.machine-log', ['date_from' => today()->format('Y-m-d'), 'date_to' => today()->format('Y-m-d'), 'machine' => $machine, 'operator' => $operator]) }}"
+                            class="text-sm text-slate-500 hover:text-slate-700 px-3 py-2 rounded-lg border border-slate-200 bg-white transition-colors">
+                            Today →
+                        </a>
+                    @endif
+                </form>
+
+                {{-- Export CSV --}}
+                <a href="{{ route('print.machine-log.export', ['date_from' => $dateFrom, 'date_to' => $dateTo, 'machine' => $machine, 'operator' => $operator]) }}"
+                    style="display:inline-flex;align-items:center;gap:6px;font-size:0.875rem;padding:8px 14px;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;color:#475569;text-decoration:none;white-space:nowrap;transition:background 0.15s;"
+                    onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'">
+                    <svg style="width:14px;height:14px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Export CSV
+                </a>
+            </div>
         </div>
 
         @if(collect($byMachine)->isEmpty())
@@ -51,17 +86,29 @@
                 $totalPacks = 0;
                 $totalRunSecs = 0;
                 $totalGapSecs = 0;
+                $bestTotalPacks = 0; // use max progress_packs (cumulative) as running total
                 foreach ($byMachine as $entries) {
                     foreach ($entries as $entry) {
                         $run = $entry['run'];
                         $totalRuns++;
                         $totalPacks += $run->packs_produced ?? 0;
+                        $bestTotalPacks += $run->packs_produced ?? ($run->progress_packs ?? 0);
                         if ($run->ended_at) {
                             $totalRunSecs += abs((int) $run->ended_at->diffInSeconds($run->started_at));
+                        } else {
+                            $totalRunSecs += abs((int) now()->diffInSeconds($run->started_at));
                         }
                         $totalGapSecs += $entry['gap'] ?? 0;
                     }
                 }
+                $avgRatePerHr = ($bestTotalPacks > 0 && $totalRunSecs > 0)
+                    ? (int) round($bestTotalPacks / ($totalRunSecs / 3600))
+                    : null;
+                $avgRateStr = $avgRatePerHr
+                    ? ($avgRatePerHr >= 1000
+                        ? number_format($avgRatePerHr / 1000, 1) . 'k/hr'
+                        : number_format($avgRatePerHr) . '/hr')
+                    : null;
                 function fmtDur(int $secs): string {
                     $h = (int) floor($secs / 3600);
                     $m = (int) floor(($secs % 3600) / 60);
@@ -71,14 +118,20 @@
 
             {{-- Summary bar --}}
             <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:1.5rem;">
-                @foreach([
-                    ['Total runs',    $totalRuns],
-                    ['Total packs',   number_format($totalPacks)],
-                    ['Machine time',  fmtDur($totalRunSecs)],
-                    ['Idle time',     fmtDur($totalGapSecs)],
-                ] as [$label, $value])
+                @php
+                $summaryCards = [
+                    ['Total runs',   $totalRuns,                  null],
+                    ['Total packs',  number_format($totalPacks),  null],
+                    ['Machine time', fmtDur($totalRunSecs),       null],
+                    ['Idle time',    fmtDur($totalGapSecs),       null],
+                ];
+                if ($avgRateStr) {
+                    $summaryCards[] = ['Avg rate', '~' . $avgRateStr, '#0284c7'];
+                }
+            @endphp
+            @foreach($summaryCards as [$label, $value, $colour])
                     <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px 20px;text-align:center;min-width:110px;">
-                        <div style="font-size:1.25rem;font-weight:700;color:#334155;">{{ $value }}</div>
+                        <div style="font-size:1.25rem;font-weight:700;color:{{ $colour ?? '#334155' }};">{{ $value }}</div>
                         <div style="font-size:0.75rem;color:#94a3b8;margin-top:2px;">{{ $label }}</div>
                     </div>
                 @endforeach
