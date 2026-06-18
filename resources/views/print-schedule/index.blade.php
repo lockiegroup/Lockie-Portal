@@ -127,7 +127,7 @@
                     @php
                         $machineJobs = $boardJobs[$boardKey];
                         $totalRemaining = $machineJobs->sum(fn($j) => $j->remaining_quantity);
-                        $leadTime = $machineLeadTimes[$boardKey];
+                        $leadTime = $machineLeadTimes[$boardKey] ?? 0;
                     @endphp
                     <div class="mb-4 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm" style="display:flex;flex-wrap:wrap;align-items:center;gap:4px 24px;" id="banner-{{ $boardKey }}">
                         <span class="font-medium text-blue-800">
@@ -138,7 +138,7 @@
                         </span>
                         <span class="text-blue-600">
                             ~<span class="lead-time-{{ $boardKey }}">{{ $leadTime }}</span> days lead time
-                            <span class="text-blue-400 text-xs">({{ $throughputs[$boardKey] }} packs/day)</span>
+                            <span class="text-blue-400 text-xs">({{ $throughputs[$boardKey] ?? 0 }} packs/day)</span>
                         </span>
                     </div>
                 @endif
