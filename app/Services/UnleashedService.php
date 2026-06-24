@@ -735,32 +735,76 @@ class UnleashedService
      */
     public function fetchOpenSalesOrderAllocations(): array
     {
+        // Fetch standard open SO statuses in parallel
         $results = $this->parallelPaginate([
-            'parked'     => ['SalesOrders', ['orderStatus' => 'Parked']],
-            'placed'     => ['SalesOrders', ['orderStatus' => 'Placed']],
+            'parked'      => ['SalesOrders', ['orderStatus' => 'Parked']],
+            'placed'      => ['SalesOrders', ['orderStatus' => 'Placed']],
             'backordered' => ['SalesOrders', ['orderStatus' => 'Backordered']],
-            'calloff'    => ['SalesOrders', ['customOrderStatus' => 'Call Off']],
         ], 200);
 
         $all = array_merge(
             $results['parked']      ?? [],
             $results['placed']      ?? [],
             $results['backordered'] ?? [],
-            $results['calloff']     ?? [],
         );
 
+        // Custom status "Call Off" requires separate fetch with rawurlencode-style encoding.
+        // Wrapped in try/catch so a failed request (e.g. status not configured on this account)
+        // doesn't abort the entire allocation sync.
+        try {
+            $qs          = 'customOrderStatus=' . rawurlencode('Call Off');
+            $callOffPage = Http::timeout(30)
+                ->withHeaders($this->headers($qs))
+                ->get(self::BASE_URL . '/SalesOrders?' . $qs . '&pageSize=200&pageNumber=1');
+            if ($callOffPage->successful()) {
+                $callOffItems = $callOffPage->json()['Items'] ?? [];
+                $totalPages   = $callOffPage->json()['Pagination']['NumberOfPages'] ?? 1;
+                $all          = array_merge($all, $callOffItems);
+                // Fetch remaining pages if needed
+                if ($totalPages > 1) {
+                    $extraResponses = Http::pool(function ($pool) use ($qs, $totalPages) {
+                        $calls = [];
+                        foreach (range(2, $totalPages) as $page) {
+                            $fullQs  = $qs . '&pageSize=200&pageNumber=' . $page;
+                            $calls[] = $pool->as($page)
+                                ->timeout(30)
+                                ->withHeaders($this->headers($fullQs))
+                                ->get(self::BASE_URL . '/SalesOrders?' . $fullQs);
+                        }
+                        return $calls;
+                    });
+                    foreach (range(2, $totalPages) as $page) {
+                        $res = $extraResponses[$page] ?? null;
+                        if ($res && !$res instanceof \Throwable && $res->successful()) {
+                            $all = array_merge($all, $res->json()['Items'] ?? []);
+                        }
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::warning('fetchOpenSalesOrderAllocations: Call Off fetch failed: ' . $e->getMessage());
+        }
+
         $aggregated = [];
+        $lineCount  = 0;
         foreach ($all as $so) {
             foreach ($so['SalesOrderLines'] ?? [] as $line) {
                 $code = $line['Product']['ProductCode'] ?? null;
                 if (!$code) continue;
-                $ordered  = (float) ($line['OrderQuantity']    ?? 0);
-                $shipped  = (float) ($line['ShipQuantity']     ?? 0);
+                $ordered   = (float) ($line['OrderQuantity'] ?? 0);
+                $shipped   = (float) ($line['ShipQuantity']  ?? 0);
                 $remaining = max(0.0, $ordered - $shipped);
                 if ($remaining <= 0) continue;
                 $aggregated[$code] = ($aggregated[$code] ?? 0.0) + $remaining;
+                $lineCount++;
             }
         }
+
+        \Log::info('fetchOpenSalesOrderAllocations', [
+            'orders'                 => count($all),
+            'lines_with_allocation'  => $lineCount,
+            'products'               => count($aggregated),
+        ]);
 
         return $aggregated;
     }
