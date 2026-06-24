@@ -728,6 +728,44 @@ class UnleashedService
     }
 
     /**
+     * Fetch open sales orders and aggregate unshipped qty per ProductCode.
+     * Includes Parked, Placed, and Back Order statuses plus the common
+     * custom statuses (Call Off, etc.) that represent committed stock.
+     * Returns: ['PROD001' => 50.0, ...]
+     */
+    public function fetchOpenSalesOrderAllocations(): array
+    {
+        $results = $this->parallelPaginate([
+            'parked'     => ['SalesOrders', ['orderStatus' => 'Parked']],
+            'placed'     => ['SalesOrders', ['orderStatus' => 'Placed']],
+            'backordered' => ['SalesOrders', ['orderStatus' => 'Backordered']],
+            'calloff'    => ['SalesOrders', ['customOrderStatus' => 'Call Off']],
+        ], 200);
+
+        $all = array_merge(
+            $results['parked']      ?? [],
+            $results['placed']      ?? [],
+            $results['backordered'] ?? [],
+            $results['calloff']     ?? [],
+        );
+
+        $aggregated = [];
+        foreach ($all as $so) {
+            foreach ($so['SalesOrderLines'] ?? [] as $line) {
+                $code = $line['Product']['ProductCode'] ?? null;
+                if (!$code) continue;
+                $ordered  = (float) ($line['OrderQuantity']    ?? 0);
+                $shipped  = (float) ($line['ShipQuantity']     ?? 0);
+                $remaining = max(0.0, $ordered - $shipped);
+                if ($remaining <= 0) continue;
+                $aggregated[$code] = ($aggregated[$code] ?? 0.0) + $remaining;
+            }
+        }
+
+        return $aggregated;
+    }
+
+    /**
      * Fetch open purchase orders and aggregate remaining qty + earliest due date per ProductCode.
      * Returns: ['PROD001' => ['qty' => 50.0, 'date' => '2026-05-15'], ...]
      */

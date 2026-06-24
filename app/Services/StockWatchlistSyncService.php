@@ -33,6 +33,9 @@ class StockWatchlistSyncService
         // Open PO data — placed, receiving, parked
         $poMap = $unleashed->fetchOpenPurchaseOrders();
 
+        // Open SO allocations — aggregated unshipped qty from open sales orders
+        $soMap = $unleashed->fetchOpenSalesOrderAllocations();
+
         // Product groups — fetch and store in unleashed_products
         $groupMap = $unleashed->fetchProductGroupsByCodes($productCodes);
         $now = now();
@@ -53,7 +56,7 @@ class StockWatchlistSyncService
                 ['product_code' => $code],
                 [
                     'qty_on_hand'      => $s  ? $s['on_hand']    : 0,
-                    'qty_allocated'    => $s  ? $s['allocated']   : 0,
+                    'qty_allocated'    => $soMap[$code] ?? 0,
                     'total_cost'       => $s  ? $s['total_cost']  : 0,
                     'qty_on_order'     => $po ? $po['qty']        : 0,
                     'po_expected_date' => $po ? $po['date']       : null,
