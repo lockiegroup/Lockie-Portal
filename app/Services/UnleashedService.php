@@ -748,28 +748,30 @@ class UnleashedService
             $results['backordered'] ?? [],
         );
 
-        // Custom status "Call Off" requires separate fetch with rawurlencode-style encoding.
-        // Wrapped in try/catch so a failed request (e.g. status not configured on this account)
-        // doesn't abort the entire allocation sync.
+        // Custom status "Call Off" — build the full query string first so the HMAC signature
+        // covers all parameters (Unleashed signs the complete query string, not just the filter).
+        // Wrapped in try/catch so a failed request doesn't abort the entire allocation sync.
         try {
-            $qs          = 'customOrderStatus=' . rawurlencode('Call Off');
+            $callOffQs   = http_build_query(['pageSize' => 200, 'pageNumber' => 1])
+                         . '&customOrderStatus=' . rawurlencode('Call Off');
             $callOffPage = Http::timeout(30)
-                ->withHeaders($this->headers($qs))
-                ->get(self::BASE_URL . '/SalesOrders?' . $qs . '&pageSize=200&pageNumber=1');
+                ->withHeaders($this->headers($callOffQs))
+                ->get(self::BASE_URL . '/SalesOrders?' . $callOffQs);
             if ($callOffPage->successful()) {
                 $callOffItems = $callOffPage->json()['Items'] ?? [];
                 $totalPages   = $callOffPage->json()['Pagination']['NumberOfPages'] ?? 1;
                 $all          = array_merge($all, $callOffItems);
-                // Fetch remaining pages if needed
+                \Log::info('fetchOpenSalesOrderAllocations: Call Off', ['orders' => count($callOffItems), 'pages' => $totalPages]);
                 if ($totalPages > 1) {
-                    $extraResponses = Http::pool(function ($pool) use ($qs, $totalPages) {
+                    $extraResponses = Http::pool(function ($pool) use ($totalPages) {
                         $calls = [];
                         foreach (range(2, $totalPages) as $page) {
-                            $fullQs  = $qs . '&pageSize=200&pageNumber=' . $page;
+                            $qs      = http_build_query(['pageSize' => 200, 'pageNumber' => $page])
+                                     . '&customOrderStatus=' . rawurlencode('Call Off');
                             $calls[] = $pool->as($page)
                                 ->timeout(30)
-                                ->withHeaders($this->headers($fullQs))
-                                ->get(self::BASE_URL . '/SalesOrders?' . $fullQs);
+                                ->withHeaders($this->headers($qs))
+                                ->get(self::BASE_URL . '/SalesOrders?' . $qs);
                         }
                         return $calls;
                     });
@@ -780,6 +782,8 @@ class UnleashedService
                         }
                     }
                 }
+            } else {
+                \Log::warning('fetchOpenSalesOrderAllocations: Call Off returned ' . $callOffPage->status() . ': ' . $callOffPage->body());
             }
         } catch (\Exception $e) {
             \Log::warning('fetchOpenSalesOrderAllocations: Call Off fetch failed: ' . $e->getMessage());
