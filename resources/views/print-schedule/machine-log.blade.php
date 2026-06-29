@@ -207,7 +207,8 @@
                         </div>
                     </div>
 
-                    {{-- Job groups --}}
+                    {{-- Job groups — wrapped for horizontal scroll on narrow screens --}}
+                    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
                     @foreach($jobGroups as $gi => $group)
                         @php
                             $job          = $group['job'];
@@ -251,7 +252,7 @@
                         @endif
 
                         {{-- Job header --}}
-                        <div style="padding:10px 20px 8px;background:{{ $gi % 2 === 0 ? '#fff' : '#fafafa' }};border-top:{{ $gi > 0 ? '2px solid #e2e8f0' : 'none' }};display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                        <div style="padding:10px 20px 8px;background:{{ $gi % 2 === 0 ? '#fff' : '#fafafa' }};border-top:{{ $gi > 0 ? '2px solid #e2e8f0' : 'none' }};display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;min-width:680px;">
                             <div>
                                 <span style="font-size:0.9rem;font-weight:700;color:#1e293b;">
                                     {{ $job?->customer_name ?? 'Unknown Job' }}
@@ -329,7 +330,7 @@
                                 </div>
                             @endif
 
-                            <div style="display:grid;grid-template-columns:150px 120px 1fr 120px 100px 130px;align-items:center;gap:8px;padding:9px 20px 9px 36px;border-top:1px solid #f1f5f9;background:{{ $gi % 2 === 0 ? '#fff' : '#fafafa' }};">
+                            <div style="display:grid;grid-template-columns:150px 120px 1fr 120px 100px 130px;align-items:center;gap:8px;padding:9px 20px 9px 36px;border-top:1px solid #f1f5f9;background:{{ $gi % 2 === 0 ? '#fff' : '#fafafa' }};min-width:680px;">
 
                                 {{-- Time --}}
                                 <div>
@@ -411,6 +412,7 @@
                         @endforeach
 
                     @endforeach
+                    </div>{{-- end scroll wrapper --}}
 
                 </div>
             @endforeach
