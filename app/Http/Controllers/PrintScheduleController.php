@@ -333,15 +333,41 @@ class PrintScheduleController extends Controller
                     : null;
 
                 // Rate based on progress_at so it doesn't decay after last update
-                $rateStr = null;
+                $rateStr  = null;
+                $ratePPH  = null; // numeric packs/hr for on-track calc
+                $secs     = 0;
                 if ($packsThisRun > 0 && $active->progress_at) {
                     $secs  = max(1, abs((int) $active->progress_at->diffInSeconds($active->started_at)));
                     $hours = $secs / 3600;
                     if ($hours >= 0.05) {
-                        $rate    = (int) round($packsThisRun / $hours);
+                        $ratePPH = $packsThisRun / $hours;
+                        $rate    = (int) round($ratePPH);
                         $rateStr = $rate >= 1000
                             ? number_format($rate / 1000, 1) . 'k/hr'
                             : number_format($rate) . '/hr';
+                    }
+                }
+
+                // Progress % and on-track status
+                $orderQty     = $active->printJob?->order_quantity;
+                $totalDone    = $active->progress_packs;
+                $pctComplete  = ($orderQty > 0 && $totalDone !== null)
+                    ? min(100, (int) round($totalDone / $orderQty * 100))
+                    : null;
+
+                $onTrack      = null;
+                $requiredDate = $active->printJob?->required_date;
+                if ($orderQty > 0 && $totalDone !== null && $requiredDate) {
+                    $remaining  = max(0, $orderQty - $totalDone);
+                    $hoursLeft  = now()->diffInSeconds($requiredDate, false) / 3600;
+                    if ($remaining <= 0) {
+                        $onTrack = 'complete';
+                    } elseif ($hoursLeft <= 0) {
+                        $onTrack = 'overdue';
+                    } elseif ($ratePPH !== null && $ratePPH > 0) {
+                        $neededPPH = $remaining / $hoursLeft;
+                        $ratio     = $ratePPH / max(0.001, $neededPPH);
+                        $onTrack   = $ratio >= 0.9 ? 'on_track' : ($ratio >= 0.7 ? 'at_risk' : 'behind');
                     }
                 }
 
@@ -357,6 +383,10 @@ class PrintScheduleController extends Controller
                     'packs_this_run' => $packsThisRun,
                     'progress_at'    => $active->progress_at?->toIso8601String(),
                     'rate_str'       => $rateStr,
+                    'order_qty'      => $orderQty,
+                    'pct_complete'   => $pctComplete,
+                    'on_track'       => $onTrack,
+                    'due_date'       => $requiredDate?->format('d M'),
                 ];
                 continue;
             }
