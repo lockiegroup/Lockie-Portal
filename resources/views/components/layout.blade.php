@@ -71,6 +71,7 @@
             #mobile-topbar { display: flex; }
             body.sb-open #sidebar    { transform: translateX(0); }
             body.sb-open #sb-overlay { display: block; }
+            body.sb-open             { overflow: hidden; }
         }
     </style>
     @endauth
