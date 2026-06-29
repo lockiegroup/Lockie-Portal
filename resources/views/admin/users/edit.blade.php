@@ -115,7 +115,7 @@
                     </label>
                     <input type="text" name="operator_pin" id="operator-pin" inputmode="numeric" pattern="[0-9]*" maxlength="8"
                         placeholder="e.g. 1234"
-                        value="{{ old('operator_pin', $user->operator_pin) }}"
+                        value="{{ old('operator_pin') }}"
                         {{ $isTabletOnly ? 'required' : '' }}
                         class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
                     <div id="clear-pin-row" style="display:flex;align-items:center;gap:8px;margin-top:8px;{{ $isTabletOnly ? 'display:none!important;' : '' }}">

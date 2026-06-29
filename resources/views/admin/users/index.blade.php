@@ -44,12 +44,17 @@
                     <td class="px-5 py-4">
                         @if(is_null($user->email))
                             <span class="inline-block px-2 py-0.5 rounded-full text-xs" style="background:#ecfdf5;color:#059669;font-weight:600;">Tablet</span>
-                        @elseif($user->role === 'master')
-                            <span class="inline-block px-2 py-0.5 rounded-full text-xs font-600" style="background:#f3e8ff;color:#7c3aed;font-weight:600;">Master</span>
-                        @elseif($user->role === 'admin')
-                            <span class="inline-block px-2 py-0.5 rounded-full text-xs" style="background:#e0f2fe;color:#0369a1;font-weight:600;">Admin</span>
                         @else
-                            <span class="inline-block px-2 py-0.5 rounded-full text-xs" style="background:#f1f5f9;color:#475569;font-weight:600;">Staff</span>
+                            @if($user->role === 'master')
+                                <span class="inline-block px-2 py-0.5 rounded-full text-xs" style="background:#f3e8ff;color:#7c3aed;font-weight:600;">Master</span>
+                            @elseif($user->role === 'admin')
+                                <span class="inline-block px-2 py-0.5 rounded-full text-xs" style="background:#e0f2fe;color:#0369a1;font-weight:600;">Admin</span>
+                            @else
+                                <span class="inline-block px-2 py-0.5 rounded-full text-xs" style="background:#f1f5f9;color:#475569;font-weight:600;">Staff</span>
+                            @endif
+                            @if($user->operator_pin)
+                                <span class="inline-block px-2 py-0.5 rounded-full text-xs" style="background:#ecfdf5;color:#059669;font-weight:600;">+ Tablet</span>
+                            @endif
                         @endif
                     </td>
                     <td class="px-5 py-4">
