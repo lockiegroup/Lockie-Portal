@@ -341,49 +341,49 @@ class PrintScheduleController extends Controller
                     ? max(0, $active->progress_packs - $baseline)
                     : null;
 
-                // Average daily rate: all runs on this machine today
-                // Sum packs and running seconds across completed runs + current run
-                $dayStart    = now()->startOfDay();
-                $todayRuns   = PrintJobRun::where('machine', $machine)
+                // Helper: sum packs and seconds from a collection of runs (plus current active)
+                $dayStart  = now()->startOfDay();
+                $todayRuns = PrintJobRun::where('machine', $machine)
                     ->where('started_at', '>=', $dayStart)
                     ->get();
 
-                $totalPacks = 0;
-                $totalSecs  = 0;
-                foreach ($todayRuns as $run) {
-                    if ($run->id === $active->id) {
-                        // Current run: use progress data up to progress_at
-                        if ($packsThisRun > 0 && $active->progress_at) {
-                            $totalPacks += $packsThisRun;
-                            $totalSecs  += max(1, abs((int) $active->progress_at->diffInSeconds($active->started_at)));
-                        }
-                    } elseif ($run->ended_at && $run->packs_produced > 0) {
-                        // Completed run: use packs delta from its own baseline
-                        $runBaseline = PrintJobRun::where('machine', $machine)
-                            ->where('print_job_id', $run->print_job_id)
-                            ->where('ended_at', '<', $run->ended_at)
-                            ->whereNotNull('packs_produced')
-                            ->max('packs_produced') ?? 0;
-                        $runPacks = max(0, $run->packs_produced - $runBaseline);
-                        if ($runPacks > 0) {
-                            $totalPacks += $runPacks;
-                            $totalSecs  += max(1, abs((int) $run->ended_at->diffInSeconds($run->started_at)));
+                $calcRate = function (iterable $runs) use ($active, $packsThisRun, $machine): array {
+                    $totalPacks = 0;
+                    $totalSecs  = 0;
+                    foreach ($runs as $run) {
+                        if ($run->id === $active->id) {
+                            if ($packsThisRun > 0 && $active->progress_at) {
+                                $totalPacks += $packsThisRun;
+                                $totalSecs  += max(1, abs((int) $active->progress_at->diffInSeconds($active->started_at)));
+                            }
+                        } elseif ($run->ended_at && $run->packs_produced > 0) {
+                            $runBaseline = PrintJobRun::where('machine', $machine)
+                                ->where('print_job_id', $run->print_job_id)
+                                ->where('id', '<', $run->id)
+                                ->whereNotNull('packs_produced')
+                                ->max('packs_produced') ?? 0;
+                            $runPacks = max(0, $run->packs_produced - $runBaseline);
+                            if ($runPacks > 0) {
+                                $totalPacks += $runPacks;
+                                $totalSecs  += max(1, abs((int) $run->ended_at->diffInSeconds($run->started_at)));
+                            }
                         }
                     }
-                }
+                    if ($totalPacks <= 0 || $totalSecs <= 0) return [null, null];
+                    $hours = $totalSecs / 3600;
+                    if ($hours < 0.05) return [null, null];
+                    $pph = $totalPacks / $hours;
+                    $n   = (int) round($pph);
+                    $str = $n >= 1000 ? number_format($pph / 1000, 1) . 'k/hr' : number_format($n) . '/hr';
+                    return [$pph, $str];
+                };
 
-                $rateStr = null;
-                $ratePPH = null;
-                if ($totalPacks > 0 && $totalSecs > 0) {
-                    $totalHours = $totalSecs / 3600;
-                    if ($totalHours >= 0.05) {
-                        $ratePPH = $totalPacks / $totalHours;
-                        $rate    = (int) round($ratePPH);
-                        $rateStr = $rate >= 1000
-                            ? number_format($rate / 1000, 1) . 'k/hr'
-                            : number_format($rate) . '/hr';
-                    }
-                }
+                // Avg today: all jobs on this machine today
+                [$rateTodayPPH, $rateTodayStr] = $calcRate($todayRuns);
+
+                // Avg job: only runs for this specific job on this machine today
+                $jobRuns = $todayRuns->where('print_job_id', $active->print_job_id);
+                [$rateJobPPH, $rateJobStr] = $calcRate($jobRuns);
 
                 // Progress %
                 $orderQty    = $active->printJob?->order_quantity;
@@ -392,38 +392,38 @@ class PrintScheduleController extends Controller
                     ? min(100, (int) round($totalDone / $orderQty * 100))
                     : null;
 
-                // On-track: compare actual rate vs machine target rate
-                $onTrack    = null;
-                $targetPPH  = isset($throughputs[$machine])
-                    ? $throughputs[$machine] / $workHours
-                    : null;
-                $targetStr  = $targetPPH !== null
+                // On-track: compare avg job rate vs machine target (job rate is more meaningful)
+                $onTrack   = null;
+                $targetPPH = isset($throughputs[$machine]) ? $throughputs[$machine] / $workHours : null;
+                $targetStr = $targetPPH !== null
                     ? ((int) round($targetPPH) >= 1000
                         ? number_format($targetPPH / 1000, 1) . 'k/hr'
                         : number_format((int) round($targetPPH)) . '/hr')
                     : null;
 
-                if ($ratePPH !== null && $targetPPH !== null) {
-                    $ratio   = $ratePPH / $targetPPH;
+                $compareRate = $rateJobPPH ?? $rateTodayPPH;
+                if ($compareRate !== null && $targetPPH !== null) {
+                    $ratio   = $compareRate / $targetPPH;
                     $onTrack = $ratio >= 0.9 ? 'on_track' : ($ratio >= 0.7 ? 'at_risk' : 'behind');
                 }
 
                 $result[$machine] = [
-                    'state'          => 'running',
-                    'label'          => PrintJob::BOARDS[$machine],
-                    'operator'       => $active->user?->name,
-                    'job_number'     => $active->printJob?->order_number,
-                    'product_code'   => $active->printJob?->product_code,
-                    'customer'       => $active->printJob?->customer_name,
-                    'started_at'     => $active->started_at->toIso8601String(),
-                    'progress_packs' => $active->progress_packs,
-                    'packs_this_run' => $packsThisRun,
-                    'progress_at'    => $active->progress_at?->toIso8601String(),
-                    'rate_str'       => $rateStr,
-                    'target_str'     => $targetStr,
-                    'order_qty'      => $orderQty,
-                    'pct_complete'   => $pctComplete,
-                    'on_track'       => $onTrack,
+                    'state'           => 'running',
+                    'label'           => PrintJob::BOARDS[$machine],
+                    'operator'        => $active->user?->name,
+                    'job_number'      => $active->printJob?->order_number,
+                    'product_code'    => $active->printJob?->product_code,
+                    'customer'        => $active->printJob?->customer_name,
+                    'started_at'      => $active->started_at->toIso8601String(),
+                    'progress_packs'  => $active->progress_packs,
+                    'packs_this_run'  => $packsThisRun,
+                    'progress_at'     => $active->progress_at?->toIso8601String(),
+                    'rate_today_str'  => $rateTodayStr,
+                    'rate_job_str'    => $rateJobStr,
+                    'target_str'      => $targetStr,
+                    'order_qty'       => $orderQty,
+                    'pct_complete'    => $pctComplete,
+                    'on_track'        => $onTrack,
                 ];
                 continue;
             }
