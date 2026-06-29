@@ -25,14 +25,15 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
-        $isMaster = auth()->user()->isMaster();
+        $isMaster   = auth()->user()->isMaster();
+        $tabletOnly = $request->boolean('tablet_only');
 
         $data = $request->validate([
             'name'         => 'required|string|max:100',
-            'email'        => 'required|email|unique:users,email',
+            'email'        => $tabletOnly ? 'nullable|email|unique:users,email' : 'required|email|unique:users,email',
             'role'         => ['required', 'in:staff' . ($isMaster ? ',master' : '')],
-            'password'     => ['required', Password::min(8)->mixedCase()->numbers()],
-            'operator_pin' => 'nullable|digits_between:4,8',
+            'password'     => $tabletOnly ? 'nullable|string' : ['required', Password::min(8)->mixedCase()->numbers()],
+            'operator_pin' => $tabletOnly ? 'required|digits_between:4,8' : 'nullable|digits_between:4,8',
         ]);
 
         $permissions = null;
@@ -52,21 +53,20 @@ class UserController extends Controller
         }
 
         $createData = [
-            'name'        => $data['name'],
-            'email'       => strtolower($data['email']),
-            'role'        => $data['role'],
-            'permissions' => $permissions,
-            'modules'     => $modules,
-            'password'    => Hash::make($data['password']),
-            'is_active'   => true,
+            'name'         => $data['name'],
+            'email'        => isset($data['email']) ? strtolower($data['email']) : null,
+            'role'         => $data['role'],
+            'permissions'  => $permissions,
+            'modules'      => $modules,
+            'password'     => Hash::make($data['password'] ?? \Illuminate\Support\Str::random(32)),
+            'is_active'    => true,
+            'operator_pin' => $data['operator_pin'] ?? null,
         ];
-        if (!empty($data['operator_pin'])) {
-            $createData['operator_pin'] = $data['operator_pin'];
-        }
 
         User::create($createData);
 
-        \App\Models\ActivityLog::record('users.create', "Created user: {$data['name']} ({$data['email']})");
+        $identifier = $data['email'] ?? "PIN {$data['operator_pin']}";
+        \App\Models\ActivityLog::record('users.create', "Created user: {$data['name']} ({$identifier})");
 
         return redirect()->route('admin.users.index')->with('success', "{$data['name']} has been added.");
     }
@@ -80,18 +80,19 @@ class UserController extends Controller
 
     public function update(Request $request, User $user)
     {
-        $isMaster = auth()->user()->isMaster();
+        $isMaster   = auth()->user()->isMaster();
+        $tabletOnly = $request->boolean('tablet_only');
 
         $data = $request->validate([
             'name'         => 'required|string|max:100',
-            'email'        => 'required|email|unique:users,email,' . $user->id,
+            'email'        => $tabletOnly ? 'nullable|email|unique:users,email,' . $user->id : 'required|email|unique:users,email,' . $user->id,
             'role'         => ['required', 'in:staff' . ($isMaster ? ',master' : '')],
-            'password'     => ['nullable', Password::min(8)->mixedCase()->numbers()],
-            'operator_pin' => 'nullable|digits_between:4,8',
+            'password'     => $tabletOnly ? ['nullable', 'string'] : ['nullable', Password::min(8)->mixedCase()->numbers()],
+            'operator_pin' => $tabletOnly ? 'required|digits_between:4,8' : 'nullable|digits_between:4,8',
         ]);
 
         $user->name      = $data['name'];
-        $user->email     = strtolower($data['email']);
+        $user->email     = isset($data['email']) ? strtolower($data['email']) : null;
         $user->role      = $data['role'];
         $user->is_active = $request->boolean('is_active');
 

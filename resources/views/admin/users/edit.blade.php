@@ -19,9 +19,22 @@
                         class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
                 </div>
 
-                <div>
+                @php $isTabletOnly = old('tablet_only') ? (bool)old('tablet_only') : is_null($user->email); @endphp
+
+                <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:0.625rem;padding:12px 16px;">
+                    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                        <input type="checkbox" name="tablet_only" id="tablet-only" value="1"
+                            style="width:16px;height:16px;accent-color:#0369a1;cursor:pointer;"
+                            {{ $isTabletOnly ? 'checked' : '' }}
+                            onchange="toggleTabletOnly(this.checked)">
+                        <span style="font-size:0.875rem;font-weight:500;color:#0369a1;">Tablet only — PIN login, no web access</span>
+                    </label>
+                </div>
+
+                <div id="email-field" style="{{ $isTabletOnly ? 'display:none;' : '' }}">
                     <label class="block text-sm font-medium text-slate-700 mb-1.5">Email address</label>
-                    <input type="email" name="email" value="{{ old('email', $user->email) }}" required
+                    <input type="email" name="email" id="email-input" value="{{ old('email', $user->email) }}"
+                        {{ $isTabletOnly ? '' : 'required' }}
                         class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
                 </div>
 
@@ -87,9 +100,9 @@
                     <label for="is_active" class="text-sm font-medium text-slate-700">Account active</label>
                 </div>
 
-                <div>
+                <div id="password-field" style="{{ $isTabletOnly ? 'display:none;' : '' }}">
                     <label class="block text-sm font-medium text-slate-700 mb-1.5">New password <span class="text-slate-400 font-normal">(leave blank to keep current)</span></label>
-                    <input type="password" name="password"
+                    <input type="password" name="password" id="password-input"
                         placeholder="Min 8 chars, uppercase, number"
                         class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
                 </div>
@@ -97,12 +110,15 @@
                 <div style="border-top:1px solid #e2e8f0;padding-top:1.25rem;">
                     <label class="block text-sm font-medium text-slate-700 mb-1.5">
                         Factory tablet PIN
-                        <span class="text-slate-400 font-normal">(4–8 digits, leave blank to keep current)</span>
+                        <span id="pin-optional" class="text-slate-400 font-normal" style="{{ $isTabletOnly ? 'display:none;' : '' }}">(4–8 digits, leave blank to keep current)</span>
+                        <span id="pin-required" class="text-red-500 font-normal" style="{{ $isTabletOnly ? '' : 'display:none;' }}">(required for tablet-only users)</span>
                     </label>
-                    <input type="text" name="operator_pin" inputmode="numeric" pattern="[0-9]*" maxlength="8"
+                    <input type="text" name="operator_pin" id="operator-pin" inputmode="numeric" pattern="[0-9]*" maxlength="8"
                         placeholder="e.g. 1234"
+                        value="{{ old('operator_pin', $user->operator_pin) }}"
+                        {{ $isTabletOnly ? 'required' : '' }}
                         class="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition">
-                    <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+                    <div id="clear-pin-row" style="display:flex;align-items:center;gap:8px;margin-top:8px;{{ $isTabletOnly ? 'display:none!important;' : '' }}">
                         <input type="checkbox" name="clear_operator_pin" id="clear_operator_pin" value="1" style="width:14px;height:14px;">
                         <label for="clear_operator_pin" style="font-size:0.8rem;color:#94a3b8;cursor:pointer;">Remove tablet PIN</label>
                     </div>
@@ -120,6 +136,15 @@
     <script>
     function togglePermissions(role) {
         document.getElementById('staff-controls').style.display = role === 'master' ? 'none' : '';
+    }
+    function toggleTabletOnly(tabletOnly) {
+        document.getElementById('email-field').style.display    = tabletOnly ? 'none' : '';
+        document.getElementById('password-field').style.display = tabletOnly ? 'none' : '';
+        document.getElementById('email-input').required         = !tabletOnly;
+        document.getElementById('operator-pin').required        = tabletOnly;
+        document.getElementById('pin-optional').style.display   = tabletOnly ? 'none' : '';
+        document.getElementById('pin-required').style.display   = tabletOnly ? '' : 'none';
+        document.getElementById('clear-pin-row').style.display  = tabletOnly ? 'none' : 'flex';
     }
     </script>
 </x-layout>
