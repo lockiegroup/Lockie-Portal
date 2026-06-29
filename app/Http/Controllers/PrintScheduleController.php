@@ -401,11 +401,11 @@ class PrintScheduleController extends Controller
                         : number_format((int) round($targetPPH)) . '/hr')
                     : null;
 
-                $compareRate = $rateJobPPH ?? $rateTodayPPH;
-                if ($compareRate !== null && $targetPPH !== null) {
-                    $ratio   = $compareRate / $targetPPH;
-                    $onTrack = $ratio >= 0.9 ? 'on_track' : ($ratio >= 0.7 ? 'at_risk' : 'behind');
-                }
+                $rateStatus = fn(?float $pph) => $pph === null || $targetPPH === null ? null
+                    : ($pph / $targetPPH >= 0.9 ? 'on_track' : ($pph / $targetPPH >= 0.7 ? 'at_risk' : 'behind'));
+
+                $onTrack      = $rateStatus($rateJobPPH);
+                $onTrackToday = $rateStatus($rateTodayPPH);
 
                 $result[$machine] = [
                     'state'           => 'running',
@@ -419,6 +419,7 @@ class PrintScheduleController extends Controller
                     'packs_this_run'  => $packsThisRun,
                     'progress_at'     => $active->progress_at?->toIso8601String(),
                     'rate_today_str'  => $rateTodayStr,
+                    'on_track_today'  => $onTrackToday,
                     'rate_job_str'    => $rateJobStr,
                     'target_str'      => $targetStr,
                     'order_qty'       => $orderQty,

@@ -390,7 +390,7 @@ function renderMachines(machines) {
                 ${progressBar(info)}
                 <div class="prod-metrics">
                     <div class="prod-metric"><span class="prod-metric-value" style="color:${rateColor(info.on_track)}">${info.rate_job_str ? esc(info.rate_job_str) : '&mdash;'}</span><span class="prod-metric-label">Avg job</span></div>
-                    <div class="prod-metric"><span class="prod-metric-value">${info.rate_today_str ? esc(info.rate_today_str) : '&mdash;'}</span><span class="prod-metric-label">Avg today</span></div>
+                    <div class="prod-metric"><span class="prod-metric-value" style="color:${rateColor(info.on_track_today)}">${info.rate_today_str ? esc(info.rate_today_str) : '&mdash;'}</span><span class="prod-metric-label">Avg today</span></div>
                     ${info.target_str ? `<div class="prod-metric"><span class="prod-metric-value" style="color:#475569;">${esc(info.target_str)}</span><span class="prod-metric-label">Target</span></div>` : ''}
                 </div>
                 <div class="prod-footer">
