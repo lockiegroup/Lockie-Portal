@@ -609,7 +609,7 @@
                             ⏸ Pause
                         </button>
                         <button class="btn btn-danger btn-lg"
-                            onclick="openEndModal('{{ route('tablet.jobs.end', [$machine, $job]) }}', {{ (int)$currentPacks }}, {{ (int)$job->order_quantity }})">
+                            onclick="openEndModal('{{ route('tablet.jobs.end', [$machine, $job]) }}', {{ (int)$currentPacks }}, {{ (int)$job->order_quantity }}, {{ $activeRun->progress_at ? $activeRun->progress_at->timestamp * 1000 : 'null' }})">
                             ■ End Job
                         </button>
                         <button class="btn btn-primary btn-lg"
@@ -760,7 +760,7 @@
 <div class="modal-backdrop" id="end-modal">
     <div class="modal">
         <h3>■ End Job</h3>
-        <form id="end-form" method="POST">
+        <form id="end-form" method="POST" onsubmit="endModalSubmit(event)">
             @csrf
             <input type="hidden" name="fully_complete" id="fully-complete-input" value="0">
             <div class="modal-field">
@@ -868,13 +868,36 @@ function selectReason(btn, reason) {
 }
 
 // ── End modal ──
-function openEndModal(action, currentPacks, maxPacks) {
+function openEndModal(action, currentPacks, maxPacks, progressAtMs) {
     document.getElementById('end-form').action = action;
+    document.getElementById('end-form').dataset.progressAt = progressAtMs ?? '';
     const packsInput = document.getElementById('end-packs-input');
     packsInput.max = maxPacks || '';
     packsInput.value = (currentPacks > 0) ? currentPacks : '';
     setJobComplete(false);
     document.getElementById('end-modal').classList.add('open');
+}
+
+function endModalSubmit(e) {
+    const form        = document.getElementById('end-form');
+    const progressAt  = form.dataset.progressAt ? parseInt(form.dataset.progressAt) : null;
+    const fullyDone   = document.getElementById('fully-complete-input').value === '1';
+
+    if (!fullyDone && progressAt) {
+        const diffMs   = Date.now() - progressAt;
+        const diffMins = Math.round(diffMs / 60000);
+        if (diffMins >= 10) {
+            const hrs  = Math.floor(diffMins / 60);
+            const mins = diffMins % 60;
+            const ago  = hrs > 0 ? `${hrs}h ${mins}m` : `${mins} minutes`;
+            const ok = confirm(
+                `You last logged your packs ${ago} ago.\n\n` +
+                `Ending now means you are confirming no additional packs have been done since then.\n\n` +
+                `Are you sure?`
+            );
+            if (!ok) { e.preventDefault(); return; }
+        }
+    }
 }
 
 function setJobComplete(val) {
