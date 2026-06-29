@@ -361,13 +361,15 @@ class PrintScheduleController extends Controller
                 continue;
             }
 
-            // Most recent paused run within last 16 hours
-            $paused = PrintJobRun::where('machine', $machine)
-                ->where('end_reason', 'pause')
+            // Most recent ended run — only treat as paused if the last thing that happened was a pause
+            $lastRun = PrintJobRun::where('machine', $machine)
+                ->whereNotNull('ended_at')
                 ->where('ended_at', '>=', now()->subHours(16))
                 ->with(['user', 'printJob'])
                 ->latest('ended_at')
                 ->first();
+
+            $paused = ($lastRun && $lastRun->end_reason === 'pause') ? $lastRun : null;
 
             if ($paused) {
                 $result[$machine] = [
