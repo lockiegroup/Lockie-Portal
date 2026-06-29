@@ -309,8 +309,17 @@ class PrintScheduleController extends Controller
 
     public function productionStatus(): JsonResponse
     {
-        $machines = PrintJob::MACHINES;
-        $result   = [];
+        $machines    = PrintJob::MACHINES;
+        $throughputs = $this->loadThroughputs();
+        $result      = [];
+
+        // Target packs/hr per machine = daily throughput ÷ net working hours per day
+        $workStart     = PrintScheduleSetting::getValue('work_start',    '08:00');
+        $workEnd       = PrintScheduleSetting::getValue('work_end',      '16:30');
+        $breakMins     = (int) PrintScheduleSetting::getValue('break_minutes', '30');
+        [$sh, $sm]     = array_map('intval', explode(':', $workStart));
+        [$eh, $em]     = array_map('intval', explode(':', $workEnd));
+        $workHours     = max(1, (($eh * 60 + $em) - ($sh * 60 + $sm) - $breakMins) / 60);
 
         foreach ($machines as $machine) {
             // Active run (machine is running)
@@ -333,9 +342,8 @@ class PrintScheduleController extends Controller
                     : null;
 
                 // Rate based on progress_at so it doesn't decay after last update
-                $rateStr  = null;
-                $ratePPH  = null; // numeric packs/hr for on-track calc
-                $secs     = 0;
+                $rateStr = null;
+                $ratePPH = null;
                 if ($packsThisRun > 0 && $active->progress_at) {
                     $secs  = max(1, abs((int) $active->progress_at->diffInSeconds($active->started_at)));
                     $hours = $secs / 3600;
@@ -348,27 +356,27 @@ class PrintScheduleController extends Controller
                     }
                 }
 
-                // Progress % and on-track status
-                $orderQty     = $active->printJob?->order_quantity;
-                $totalDone    = $active->progress_packs;
-                $pctComplete  = ($orderQty > 0 && $totalDone !== null)
+                // Progress %
+                $orderQty    = $active->printJob?->order_quantity;
+                $totalDone   = $active->progress_packs;
+                $pctComplete = ($orderQty > 0 && $totalDone !== null)
                     ? min(100, (int) round($totalDone / $orderQty * 100))
                     : null;
 
-                $onTrack      = null;
-                $requiredDate = $active->printJob?->required_date;
-                if ($orderQty > 0 && $totalDone !== null && $requiredDate) {
-                    $remaining  = max(0, $orderQty - $totalDone);
-                    $hoursLeft  = now()->diffInSeconds($requiredDate, false) / 3600;
-                    if ($remaining <= 0) {
-                        $onTrack = 'complete';
-                    } elseif ($hoursLeft <= 0) {
-                        $onTrack = 'overdue';
-                    } elseif ($ratePPH !== null && $ratePPH > 0) {
-                        $neededPPH = $remaining / $hoursLeft;
-                        $ratio     = $ratePPH / max(0.001, $neededPPH);
-                        $onTrack   = $ratio >= 0.9 ? 'on_track' : ($ratio >= 0.7 ? 'at_risk' : 'behind');
-                    }
+                // On-track: compare actual rate vs machine target rate
+                $onTrack    = null;
+                $targetPPH  = isset($throughputs[$machine])
+                    ? $throughputs[$machine] / $workHours
+                    : null;
+                $targetStr  = $targetPPH !== null
+                    ? ((int) round($targetPPH) >= 1000
+                        ? number_format($targetPPH / 1000, 1) . 'k/hr'
+                        : number_format((int) round($targetPPH)) . '/hr')
+                    : null;
+
+                if ($ratePPH !== null && $targetPPH !== null) {
+                    $ratio   = $ratePPH / $targetPPH;
+                    $onTrack = $ratio >= 0.9 ? 'on_track' : ($ratio >= 0.7 ? 'at_risk' : 'behind');
                 }
 
                 $result[$machine] = [
@@ -383,10 +391,10 @@ class PrintScheduleController extends Controller
                     'packs_this_run' => $packsThisRun,
                     'progress_at'    => $active->progress_at?->toIso8601String(),
                     'rate_str'       => $rateStr,
+                    'target_str'     => $targetStr,
                     'order_qty'      => $orderQty,
                     'pct_complete'   => $pctComplete,
                     'on_track'       => $onTrack,
-                    'due_date'       => $requiredDate?->format('d M'),
                 ];
                 continue;
             }

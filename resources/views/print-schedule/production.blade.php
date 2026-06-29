@@ -184,11 +184,9 @@
     border-radius: 9999px;
     white-space: nowrap;
 }
-.prod-on-track.track-ok       { background: #16a34a22; color: #4ade80; border: 1px solid #16a34a55; }
-.prod-on-track.track-risk     { background: #d9770622; color: #fbbf24; border: 1px solid #d9770655; }
-.prod-on-track.track-behind   { background: #dc262622; color: #f87171; border: 1px solid #dc262655; }
-.prod-on-track.track-overdue  { background: #7f1d1d44; color: #fca5a5; border: 1px solid #dc262655; }
-.prod-on-track.track-complete { background: #0e7490aa; color: #67e8f9; border: 1px solid #0891b255; }
+.prod-on-track.track-ok     { background: #16a34a22; color: #4ade80; border: 1px solid #16a34a55; }
+.prod-on-track.track-risk   { background: #d9770622; color: #fbbf24; border: 1px solid #d9770655; }
+.prod-on-track.track-behind { background: #dc262622; color: #f87171; border: 1px solid #dc262655; }
 
 /* ── Pause reason ── */
 .prod-pause-reason {
@@ -380,7 +378,8 @@ function renderMachines(machines) {
                 ${progressBar(info)}
                 <div class="prod-metrics">
                     ${info.packs_this_run != null ? `<div class="prod-metric"><span class="prod-metric-value">${fmt(info.packs_this_run)}</span><span class="prod-metric-label">Packs this run</span></div>` : ''}
-                    ${info.rate_str ? `<div class="prod-metric"><span class="prod-metric-value">${esc(info.rate_str)}</span><span class="prod-metric-label">Current rate</span></div>` : ''}
+                    ${info.rate_str ? `<div class="prod-metric"><span class="prod-metric-value">${esc(info.rate_str)}</span><span class="prod-metric-label">Actual rate</span></div>` : ''}
+                    ${info.target_str ? `<div class="prod-metric"><span class="prod-metric-value" style="color:#475569;">${esc(info.target_str)}</span><span class="prod-metric-label">Target rate</span></div>` : ''}
                 </div>
                 <div class="prod-footer">
                     <div class="prod-operator">
@@ -441,16 +440,13 @@ function progressBar(info) {
     const pct       = info.pct_complete;
     const done      = info.progress_packs ?? 0;
     const total     = info.order_qty;
-    // colour: green if on/ahead, amber if at risk, red if behind/overdue
-    const fillColor = info.on_track === 'behind' || info.on_track === 'overdue'
-        ? '#ef4444'
-        : info.on_track === 'at_risk'
-            ? '#f59e0b'
-            : '#16a34a';
+    const fillColor = info.on_track === 'behind'  ? '#ef4444'
+                    : info.on_track === 'at_risk'  ? '#f59e0b'
+                    : '#16a34a';
     return `
         <div class="prod-progress-wrap">
             <div class="prod-progress-row">
-                <span class="prod-progress-label">Progress${info.due_date ? ' &mdash; due ' + esc(info.due_date) : ''}</span>
+                <span class="prod-progress-label">Progress</span>
                 <span class="prod-progress-pct">${pct}%</span>
             </div>
             <div class="prod-progress-bar">
@@ -463,11 +459,9 @@ function progressBar(info) {
 function onTrackBadge(status) {
     if (!status) return '';
     const map = {
-        on_track: ['track-ok',      '&#10003; On Track'],
-        at_risk:  ['track-risk',    '&#9888; At Risk'],
-        behind:   ['track-behind',  '&#10005; Behind'],
-        overdue:  ['track-overdue', '&#9888; Overdue'],
-        complete: ['track-complete','&#10003; Target Met'],
+        on_track: ['track-ok',    '&#10003; At Rate'],
+        at_risk:  ['track-risk',  '&#9888; Slightly Slow'],
+        behind:   ['track-behind','&#10005; Below Rate'],
     };
     const [cls, label] = map[status] ?? [];
     if (!cls) return '';
