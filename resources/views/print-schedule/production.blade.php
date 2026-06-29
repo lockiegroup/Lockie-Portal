@@ -8,8 +8,10 @@
     inset: 0;
     z-index: 9999;
     background: #0f172a;
-    overflow-y: auto;
+    overflow: hidden;
     padding: 0;
+    display: flex;
+    flex-direction: column;
 }
 
 /* ── Grid ── */
@@ -18,6 +20,16 @@
     grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
     gap: 20px;
     padding: 24px;
+}
+
+/* ── Fullscreen grid: always 3 cols × 2 rows, fills the viewport ── */
+#prod-root.fullscreen-mode .prod-grid {
+    flex: 1;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 12px;
+    padding: 12px;
+    overflow: hidden;
 }
 
 /* ── Machine card ── */
@@ -30,6 +42,14 @@
     transition: box-shadow 0.2s;
     min-height: 220px;
     position: relative;
+}
+
+/* ── Fullscreen card: no min-height, let grid rows decide ── */
+#prod-root.fullscreen-mode .prod-card {
+    min-height: 0;
+    border-radius: 12px;
+    padding: 14px 18px 12px;
+    gap: 8px;
 }
 .prod-card.state-running  { background: #052e16; border: 1.5px solid #16a34a; }
 .prod-card.state-paused   { background: #422006; border: 1.5px solid #d97706; }
@@ -206,6 +226,19 @@
 #prod-root:not(.fullscreen-mode) .prod-header {
     padding-top: 0;
 }
+
+/* ── Fullscreen: compact header and smaller text ── */
+#prod-root.fullscreen-mode .prod-header {
+    padding: 8px 14px;
+    flex-shrink: 0;
+}
+#prod-root.fullscreen-mode .prod-job-number { font-size: 1.15rem; }
+#prod-root.fullscreen-mode .prod-metric-value { font-size: 0.95rem; }
+#prod-root.fullscreen-mode .prod-machine-name { font-size: 0.68rem; }
+#prod-root.fullscreen-mode .prod-product,
+#prod-root.fullscreen-mode .prod-customer { font-size: 0.72rem; }
+#prod-root.fullscreen-mode .prod-footer { padding-top: 6px; }
+#prod-root.fullscreen-mode .prod-pause-reason { padding: 5px 10px; font-size: 0.75rem; }
 </style>
 
 <main class="max-w-screen-xl mx-auto px-4 sm:px-6 py-8" style="background:#0f172a;min-height:100vh;">
