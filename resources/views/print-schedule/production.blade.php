@@ -206,11 +206,12 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 8px;
     margin-top: auto;
     padding-top: 10px;
     border-top: 1px solid #ffffff11;
+    min-width: 0;
 }
 .prod-operator {
     font-size: 0.78rem;
@@ -395,15 +396,14 @@ function renderMachines(machines) {
                     ${info.target_str ? `<div class="prod-metric"><span class="prod-metric-value" style="color:#475569;">${esc(info.target_str)}</span><span class="prod-metric-label">Target rate</span></div>` : ''}
                 </div>
                 <div class="prod-footer">
-                    <div class="prod-operator">
+                    <div class="prod-operator" style="min-width:0;flex:1;">
                         <svg style="width:12px;height:12px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-                        <strong>${esc(info.operator ?? 'Unknown')}</strong>
-                        &mdash; started ${timeAgo(info.started_at)}
+                        <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                            <strong>${esc(info.operator ?? 'Unknown')}</strong>
+                            &mdash; started ${timeAgo(info.started_at)}${info.progress_at ? ' (updated ' + timeAgo(info.progress_at) + ')' : ''}
+                        </span>
                     </div>
-                    <div style="display:flex;align-items:center;gap:8px;">
-                        ${onTrackBadge(info.on_track)}
-                        <div class="prod-last-update">${info.progress_at ? 'Last update ' + timeAgo(info.progress_at) : 'No updates yet'}</div>
-                    </div>
+                    ${onTrackBadge(info.on_track)}
                 </div>`;
 
         } else if (info.state === 'paused') {
