@@ -8,18 +8,36 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
 
 class TabletController extends Controller
 {
+    private const SESSION_TTL_HOURS = 12;
+
     private function sessionKey(string $machine): string
     {
         return "tablet_op_{$machine}";
     }
 
+    private function sessionAtKey(string $machine): string
+    {
+        return "tablet_op_{$machine}_at";
+    }
+
     private function getOperator(string $machine): ?User
     {
-        $userId = session($this->sessionKey($machine));
-        return $userId ? User::find($userId) : null;
+        $userId  = session($this->sessionKey($machine));
+        $loginAt = session($this->sessionAtKey($machine));
+
+        if (!$userId) return null;
+
+        // Auto-logout after 12 hours
+        if (!$loginAt || (now()->timestamp - $loginAt) > self::SESSION_TTL_HOURS * 3600) {
+            session()->forget([$this->sessionKey($machine), $this->sessionAtKey($machine)]);
+            return null;
+        }
+
+        return User::find($userId);
     }
 
     private function validMachine(string $machine): bool
@@ -55,10 +73,19 @@ class TabletController extends Controller
             abort(404);
         }
 
-        $pin = $request->input('pin', '');
+        $pin     = $request->input('pin', '');
+        $rateKey = 'tablet-pin:' . $request->ip();
 
-        if (strlen($pin) < 4) {
-            return back()->with('pin_error', 'PIN must be at least 4 digits.');
+        // Check lockout before anything else
+        if (RateLimiter::tooManyAttempts($rateKey, 5)) {
+            $seconds = RateLimiter::availableIn($rateKey);
+            $minutes = ceil($seconds / 60);
+            return back()->with('pin_error', "Too many failed attempts. Try again in {$minutes} minute(s).");
+        }
+
+        if (strlen($pin) < 6) {
+            RateLimiter::hit($rateKey, 300);
+            return back()->with('pin_error', 'PIN must be at least 6 digits.');
         }
 
         $user = User::whereNotNull('operator_pin')
@@ -66,17 +93,26 @@ class TabletController extends Controller
             ->first(fn($u) => Hash::check($pin, $u->operator_pin));
 
         if (!$user) {
-            return back()->with('pin_error', 'Incorrect PIN. Please try again.');
+            RateLimiter::hit($rateKey, 300); // 5 minute decay window
+            $remaining = 5 - RateLimiter::attempts($rateKey);
+            $msg = $remaining > 0
+                ? "Incorrect PIN. {$remaining} attempt(s) remaining."
+                : 'Incorrect PIN. Please try again.';
+            return back()->with('pin_error', $msg);
         }
 
-        session([$this->sessionKey($machine) => $user->id]);
+        RateLimiter::clear($rateKey);
+        session([
+            $this->sessionKey($machine)   => $user->id,
+            $this->sessionAtKey($machine) => now()->timestamp,
+        ]);
 
         return redirect()->route('tablet.show', $machine);
     }
 
     public function logout(string $machine): RedirectResponse
     {
-        session()->forget($this->sessionKey($machine));
+        session()->forget([$this->sessionKey($machine), $this->sessionAtKey($machine)]);
         return redirect()->route('tablet.show', $machine);
     }
 

@@ -838,7 +838,7 @@ function updateLoginDisplay() {
     el.textContent = loginPin.length ? '●'.repeat(loginPin.length) : '—';
 }
 function pinSubmit() {
-    if (loginPin.length < 4) return;
+    if (loginPin.length < 6) return;
     document.getElementById('pin-input').value = loginPin;
     document.getElementById('pin-form').submit();
 }

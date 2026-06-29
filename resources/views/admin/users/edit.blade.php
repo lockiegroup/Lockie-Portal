@@ -110,8 +110,8 @@
                 <div style="border-top:1px solid #e2e8f0;padding-top:1.25rem;">
                     <label class="block text-sm font-medium text-slate-700 mb-1.5">
                         Factory tablet PIN
-                        <span id="pin-optional" class="text-slate-400 font-normal" style="{{ $isTabletOnly ? 'display:none;' : '' }}">(4–8 digits, leave blank to keep current)</span>
-                        <span id="pin-required" class="text-red-500 font-normal" style="{{ $isTabletOnly ? '' : 'display:none;' }}">(required for tablet-only users)</span>
+                        <span id="pin-optional" class="text-slate-400 font-normal" style="{{ $isTabletOnly ? 'display:none;' : '' }}">(6–8 digits, leave blank to keep current)</span>
+                        <span id="pin-required" class="text-red-500 font-normal" style="{{ $isTabletOnly ? '' : 'display:none;' }}">(required, 6–8 digits)</span>
                     </label>
                     <input type="text" name="operator_pin" id="operator-pin" inputmode="numeric" pattern="[0-9]*" maxlength="8"
                         placeholder="e.g. 1234"

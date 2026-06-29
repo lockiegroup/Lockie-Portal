@@ -33,7 +33,7 @@ class UserController extends Controller
             'email'        => $tabletOnly ? 'nullable|email|unique:users,email' : 'required|email|unique:users,email',
             'role'         => ['required', 'in:staff' . ($isMaster ? ',master' : '')],
             'password'     => $tabletOnly ? 'nullable|string' : ['required', Password::min(8)->mixedCase()->numbers()],
-            'operator_pin' => $tabletOnly ? 'required|digits_between:4,8' : 'nullable|digits_between:4,8',
+            'operator_pin' => $tabletOnly ? 'required|digits_between:6,8' : 'nullable|digits_between:6,8',
         ]);
 
         $permissions = null;
@@ -88,7 +88,7 @@ class UserController extends Controller
             'email'        => $tabletOnly ? 'nullable|email|unique:users,email,' . $user->id : 'required|email|unique:users,email,' . $user->id,
             'role'         => ['required', 'in:staff' . ($isMaster ? ',master' : '')],
             'password'     => $tabletOnly ? ['nullable', 'string'] : ['nullable', Password::min(8)->mixedCase()->numbers()],
-            'operator_pin' => $tabletOnly ? 'required|digits_between:4,8' : 'nullable|digits_between:4,8',
+            'operator_pin' => $tabletOnly ? 'required|digits_between:6,8' : 'nullable|digits_between:6,8',
         ]);
 
         $user->name      = $data['name'];
