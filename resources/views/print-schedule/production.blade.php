@@ -377,7 +377,6 @@ function renderMachines(machines) {
                 </div>
                 ${progressBar(info)}
                 <div class="prod-metrics">
-                    ${info.packs_this_run != null ? `<div class="prod-metric"><span class="prod-metric-value">${fmt(info.packs_this_run)}</span><span class="prod-metric-label">Packs this run</span></div>` : ''}
                     ${info.rate_str ? `<div class="prod-metric"><span class="prod-metric-value">${esc(info.rate_str)}</span><span class="prod-metric-label">Actual rate</span></div>` : ''}
                     ${info.target_str ? `<div class="prod-metric"><span class="prod-metric-value" style="color:#475569;">${esc(info.target_str)}</span><span class="prod-metric-label">Target rate</span></div>` : ''}
                 </div>
