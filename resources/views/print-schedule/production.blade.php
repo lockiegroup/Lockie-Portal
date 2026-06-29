@@ -27,8 +27,8 @@
     flex: 1;
     grid-template-columns: repeat(3, 1fr);
     grid-template-rows: repeat(2, 1fr);
-    gap: 12px;
-    padding: 12px;
+    gap: 8px;
+    padding: 8px;
     overflow: hidden;
 }
 
@@ -47,9 +47,10 @@
 /* ── Fullscreen card: no min-height, let grid rows decide ── */
 #prod-root.fullscreen-mode .prod-card {
     min-height: 0;
-    border-radius: 12px;
-    padding: 14px 18px 12px;
-    gap: 8px;
+    border-radius: 10px;
+    padding: 10px 14px 10px;
+    gap: 5px;
+    overflow: hidden;
 }
 .prod-card.state-running  { background: #052e16; border: 1.5px solid #16a34a; }
 .prod-card.state-paused   { background: #422006; border: 1.5px solid #d97706; }
@@ -288,9 +289,6 @@
     padding: 8px 14px;
     flex-shrink: 0;
 }
-#prod-root.fullscreen-mode .prod-card {
-    overflow: hidden; /* clip rather than push rows off-screen */
-}
 #prod-root.fullscreen-mode .prod-job-number  { font-size: 1.05rem; }
 #prod-root.fullscreen-mode .prod-metric-value { font-size: 0.88rem; }
 #prod-root.fullscreen-mode .prod-metric-label { font-size: 0.62rem; }
@@ -387,8 +385,7 @@ function renderMachines(machines) {
                 </div>
                 <div>
                     <div class="prod-job-number">${esc(info.job_number ?? '—')}</div>
-                    <div class="prod-product">${esc(info.product_code ?? '')}</div>
-                    <div class="prod-customer">${esc(info.customer ?? '')}</div>
+                    <div class="prod-product">${esc(info.product_code ?? '')}${info.product_code && info.customer ? ' &middot; ' : ''}${esc(info.customer ?? '')}</div>
                 </div>
                 ${progressBar(info)}
                 <div class="prod-metrics">
@@ -401,7 +398,7 @@ function renderMachines(machines) {
                         <strong style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(info.operator ?? 'Unknown')}</strong>
                     </div>
                     <div class="prod-last-update" style="flex-shrink:0;white-space:nowrap;">
-                        ${timeAgo(info.started_at)}${info.progress_at ? ' &middot; upd ' + timeAgo(info.progress_at) : ''}
+                        started ${timeAgo(info.started_at)}${info.progress_at ? ' &middot; upd ' + timeAgo(info.progress_at) : ''}
                     </div>
                 </div>`;
 
@@ -413,8 +410,7 @@ function renderMachines(machines) {
                 </div>
                 <div>
                     <div class="prod-job-number">${esc(info.job_number ?? '—')}</div>
-                    <div class="prod-product">${esc(info.product_code ?? '')}</div>
-                    <div class="prod-customer">${esc(info.customer ?? '')}</div>
+                    <div class="prod-product">${esc(info.product_code ?? '')}${info.product_code && info.customer ? ' &middot; ' : ''}${esc(info.customer ?? '')}</div>
                 </div>
                 <div class="prod-pause-reason">
                     <svg style="width:14px;height:14px;flex-shrink:0;margin-top:1px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
