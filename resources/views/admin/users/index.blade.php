@@ -40,9 +40,11 @@
                 @foreach($users as $user)
                 <tr class="hover:bg-slate-50 transition-colors">
                     <td class="px-5 py-4 font-medium text-slate-800">{{ $user->name }}</td>
-                    <td class="px-5 py-4 text-slate-500">{{ $user->email }}</td>
+                    <td class="px-5 py-4 text-slate-500">{{ $user->email ?? '—' }}</td>
                     <td class="px-5 py-4">
-                        @if($user->role === 'master')
+                        @if(is_null($user->email))
+                            <span class="inline-block px-2 py-0.5 rounded-full text-xs" style="background:#ecfdf5;color:#059669;font-weight:600;">Tablet</span>
+                        @elseif($user->role === 'master')
                             <span class="inline-block px-2 py-0.5 rounded-full text-xs font-600" style="background:#f3e8ff;color:#7c3aed;font-weight:600;">Master</span>
                         @elseif($user->role === 'admin')
                             <span class="inline-block px-2 py-0.5 rounded-full text-xs" style="background:#e0f2fe;color:#0369a1;font-weight:600;">Admin</span>

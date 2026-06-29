@@ -116,15 +116,19 @@
         document.getElementById('staff-controls').style.display = role === 'master' ? 'none' : '';
     }
     function toggleTabletOnly(tabletOnly) {
+        const emailInput    = document.getElementById('email-input');
+        const passwordInput = document.getElementById('password-input');
         document.getElementById('email-field').style.display    = tabletOnly ? 'none' : '';
         document.getElementById('password-field').style.display = tabletOnly ? 'none' : '';
-        document.getElementById('email-input').required         = !tabletOnly;
-        document.getElementById('password-input').required      = !tabletOnly;
-        document.getElementById('operator-pin').required        = tabletOnly;
-        document.getElementById('pin-optional').style.display   = tabletOnly ? 'none' : '';
-        document.getElementById('pin-required').style.display   = tabletOnly ? '' : 'none';
+        emailInput.required    = !tabletOnly;
+        emailInput.disabled    = tabletOnly;
+        if (tabletOnly) emailInput.value = '';
+        passwordInput.required = !tabletOnly;
+        passwordInput.disabled = tabletOnly;
+        document.getElementById('operator-pin').required      = tabletOnly;
+        document.getElementById('pin-optional').style.display = tabletOnly ? 'none' : '';
+        document.getElementById('pin-required').style.display = tabletOnly ? '' : 'none';
     }
-    // Apply on page load in case of validation error with tablet_only checked
     const tabletCb = document.getElementById('tablet-only');
     if (tabletCb.checked) toggleTabletOnly(true);
     </script>

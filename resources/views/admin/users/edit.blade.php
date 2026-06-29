@@ -138,13 +138,16 @@
         document.getElementById('staff-controls').style.display = role === 'master' ? 'none' : '';
     }
     function toggleTabletOnly(tabletOnly) {
+        const emailInput = document.getElementById('email-input');
         document.getElementById('email-field').style.display    = tabletOnly ? 'none' : '';
         document.getElementById('password-field').style.display = tabletOnly ? 'none' : '';
-        document.getElementById('email-input').required         = !tabletOnly;
-        document.getElementById('operator-pin').required        = tabletOnly;
-        document.getElementById('pin-optional').style.display   = tabletOnly ? 'none' : '';
-        document.getElementById('pin-required').style.display   = tabletOnly ? '' : 'none';
-        document.getElementById('clear-pin-row').style.display  = tabletOnly ? 'none' : 'flex';
+        emailInput.required  = !tabletOnly;
+        emailInput.disabled  = tabletOnly;
+        if (tabletOnly) emailInput.value = '';
+        document.getElementById('operator-pin').required      = tabletOnly;
+        document.getElementById('pin-optional').style.display = tabletOnly ? 'none' : '';
+        document.getElementById('pin-required').style.display = tabletOnly ? '' : 'none';
+        document.getElementById('clear-pin-row').style.display = tabletOnly ? 'none' : 'flex';
     }
     </script>
 </x-layout>
