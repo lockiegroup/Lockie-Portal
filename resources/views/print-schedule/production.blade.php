@@ -282,18 +282,32 @@
     padding-top: 0;
 }
 
-/* ── Fullscreen: compact header and smaller text ── */
+/* ── Fullscreen: compact header and tighter text ── */
 #prod-root.fullscreen-mode .prod-header {
     padding: 8px 14px;
     flex-shrink: 0;
 }
-#prod-root.fullscreen-mode .prod-job-number { font-size: 1.15rem; }
-#prod-root.fullscreen-mode .prod-metric-value { font-size: 0.95rem; }
-#prod-root.fullscreen-mode .prod-machine-name { font-size: 0.68rem; }
+#prod-root.fullscreen-mode .prod-card {
+    overflow: hidden; /* clip rather than push rows off-screen */
+}
+#prod-root.fullscreen-mode .prod-job-number  { font-size: 1.05rem; }
+#prod-root.fullscreen-mode .prod-metric-value { font-size: 0.88rem; }
+#prod-root.fullscreen-mode .prod-metric-label { font-size: 0.62rem; }
+#prod-root.fullscreen-mode .prod-machine-name { font-size: 0.65rem; }
 #prod-root.fullscreen-mode .prod-product,
-#prod-root.fullscreen-mode .prod-customer { font-size: 0.72rem; }
-#prod-root.fullscreen-mode .prod-footer { padding-top: 6px; }
-#prod-root.fullscreen-mode .prod-pause-reason { padding: 5px 10px; font-size: 0.75rem; }
+#prod-root.fullscreen-mode .prod-customer     { font-size: 0.7rem; margin-top: 0; }
+#prod-root.fullscreen-mode .prod-status-badge { font-size: 0.68rem; padding: 2px 8px; }
+#prod-root.fullscreen-mode .prod-footer       { padding-top: 4px; font-size: 0.7rem; }
+#prod-root.fullscreen-mode .prod-operator     { font-size: 0.7rem; }
+#prod-root.fullscreen-mode .prod-last-update  { font-size: 0.65rem; }
+#prod-root.fullscreen-mode .prod-on-track     { font-size: 0.62rem; padding: 1px 6px; }
+#prod-root.fullscreen-mode .prod-pause-reason { padding: 5px 10px; font-size: 0.72rem; }
+#prod-root.fullscreen-mode .prod-progress-label,
+#prod-root.fullscreen-mode .prod-progress-counts { font-size: 0.62rem; }
+#prod-root.fullscreen-mode .prod-progress-pct { font-size: 0.7rem; }
+#prod-root.fullscreen-mode .prod-progress-bar { height: 5px; }
+#prod-root.fullscreen-mode .prod-metrics      { gap: 14px; }
+#prod-root.fullscreen-mode .prod-progress-wrap { gap: 3px; }
 </style>
 
 <main class="max-w-screen-xl mx-auto px-4 sm:px-6 py-8" style="background:#0f172a;min-height:100vh;">
