@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Mail\PrintJobDateChangedMail;
 use App\Models\PrintJob;
+use App\Models\PrintJobRun;
 use App\Models\PrintJobDateChange;
 use App\Models\PrintJobNote;
 use App\Models\PrintScheduleSetting;
@@ -298,6 +299,101 @@ class PrintScheduleController extends Controller
         $lastSync       = PrintJob::active()->max('synced_at');
 
         return view('print-schedule.overview', compact('machineStats', 'dashboardNotes', 'lastSync'));
+    }
+
+    public function production(): View
+    {
+        $machines = PrintJob::BOARDS; // label map
+        return view('print-schedule.production', compact('machines'));
+    }
+
+    public function productionStatus(): JsonResponse
+    {
+        $machines = PrintJob::MACHINES;
+        $result   = [];
+
+        foreach ($machines as $machine) {
+            // Active run (machine is running)
+            $active = PrintJobRun::where('machine', $machine)
+                ->whereNull('ended_at')
+                ->with(['user', 'printJob'])
+                ->latest('started_at')
+                ->first();
+
+            if ($active) {
+                // Compute packs this run session: progress_packs minus previous runs' cumulative total
+                $baseline = PrintJobRun::where('machine', $machine)
+                    ->where('print_job_id', $active->print_job_id)
+                    ->whereNotNull('ended_at')
+                    ->whereNotNull('packs_produced')
+                    ->max('packs_produced') ?? 0;
+
+                $packsThisRun = $active->progress_packs !== null
+                    ? max(0, $active->progress_packs - $baseline)
+                    : null;
+
+                // Rate based on progress_at so it doesn't decay after last update
+                $rateStr = null;
+                if ($packsThisRun > 0 && $active->progress_at) {
+                    $secs  = max(1, abs((int) $active->progress_at->diffInSeconds($active->started_at)));
+                    $hours = $secs / 3600;
+                    if ($hours >= 0.05) {
+                        $rate    = (int) round($packsThisRun / $hours);
+                        $rateStr = $rate >= 1000
+                            ? number_format($rate / 1000, 1) . 'k/hr'
+                            : number_format($rate) . '/hr';
+                    }
+                }
+
+                $result[$machine] = [
+                    'state'          => 'running',
+                    'label'          => PrintJob::BOARDS[$machine],
+                    'operator'       => $active->user?->name,
+                    'job_number'     => $active->printJob?->order_number,
+                    'product_code'   => $active->printJob?->product_code,
+                    'customer'       => $active->printJob?->customer_name,
+                    'started_at'     => $active->started_at->toIso8601String(),
+                    'progress_packs' => $active->progress_packs,
+                    'packs_this_run' => $packsThisRun,
+                    'progress_at'    => $active->progress_at?->toIso8601String(),
+                    'rate_str'       => $rateStr,
+                ];
+                continue;
+            }
+
+            // Most recent paused run within last 16 hours
+            $paused = PrintJobRun::where('machine', $machine)
+                ->where('end_reason', 'pause')
+                ->where('ended_at', '>=', now()->subHours(16))
+                ->with(['user', 'printJob'])
+                ->latest('ended_at')
+                ->first();
+
+            if ($paused) {
+                $result[$machine] = [
+                    'state'        => 'paused',
+                    'label'        => PrintJob::BOARDS[$machine],
+                    'operator'     => $paused->user?->name,
+                    'job_number'   => $paused->printJob?->order_number,
+                    'product_code' => $paused->printJob?->product_code,
+                    'customer'     => $paused->printJob?->customer_name,
+                    'pause_reason' => $paused->pause_reason ?: 'No reason given',
+                    'paused_at'    => $paused->ended_at->toIso8601String(),
+                    'packs_at_pause' => $paused->packs_produced,
+                ];
+                continue;
+            }
+
+            $result[$machine] = [
+                'state' => 'idle',
+                'label' => PrintJob::BOARDS[$machine],
+            ];
+        }
+
+        return response()->json([
+            'machines'   => $result,
+            'updated_at' => now()->toIso8601String(),
+        ]);
     }
 
     public function sync(): JsonResponse

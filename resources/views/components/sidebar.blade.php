@@ -223,6 +223,7 @@
                 <svg id="print-chevron" class="sb-label" style="width:13px;height:13px;flex-shrink:0;transition:transform 0.2s;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
             <div id="print-sub" class="sb-label sb-sub-group" style="display:none;">
+                <a href="{{ route('print.production') }}" class="sb-sub-item{{ request()->routeIs('print.production*') ? ' sb-active' : '' }}">Dashboard</a>
                 <a href="{{ route('print.overview') }}" class="sb-sub-item{{ request()->routeIs('print.overview') ? ' sb-active' : '' }}">Overview</a>
                 <a href="{{ route('print.index') }}" class="sb-sub-item{{ request()->routeIs('print.index') ? ' sb-active' : '' }}">Schedule</a>
                 <a href="{{ route('print.archive') }}" class="sb-sub-item{{ request()->routeIs('print.archive') ? ' sb-active' : '' }}">Archive</a>
