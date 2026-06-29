@@ -52,6 +52,15 @@ class UserController extends Controller
             $modules = count($checked) === count(User::MODULES) ? null : $checked;
         }
 
+        if (!empty($data['operator_pin'])) {
+            $duplicate = User::whereNotNull('operator_pin')
+                ->get()
+                ->first(fn($u) => Hash::check($data['operator_pin'], $u->operator_pin));
+            if ($duplicate) {
+                return back()->withErrors(['operator_pin' => "That PIN is already used by {$duplicate->name}. Each operator must have a unique PIN."])->withInput();
+            }
+        }
+
         $createData = [
             'name'         => $data['name'],
             'email'        => isset($data['email']) ? strtolower($data['email']) : null,
@@ -119,6 +128,13 @@ class UserController extends Controller
         }
 
         if (!empty($data['operator_pin'])) {
+            $duplicate = User::whereNotNull('operator_pin')
+                ->where('id', '!=', $user->id)
+                ->get()
+                ->first(fn($u) => Hash::check($data['operator_pin'], $u->operator_pin));
+            if ($duplicate) {
+                return back()->withErrors(['operator_pin' => "That PIN is already used by {$duplicate->name}. Each operator must have a unique PIN."])->withInput();
+            }
             $user->operator_pin = $data['operator_pin'];
         } elseif ($request->boolean('clear_operator_pin')) {
             $user->operator_pin = null;
