@@ -341,14 +341,43 @@ class PrintScheduleController extends Controller
                     ? max(0, $active->progress_packs - $baseline)
                     : null;
 
-                // Rate based on progress_at so it doesn't decay after last update
+                // Average daily rate: all runs on this machine today
+                // Sum packs and running seconds across completed runs + current run
+                $dayStart    = now()->startOfDay();
+                $todayRuns   = PrintJobRun::where('machine', $machine)
+                    ->where('started_at', '>=', $dayStart)
+                    ->get();
+
+                $totalPacks = 0;
+                $totalSecs  = 0;
+                foreach ($todayRuns as $run) {
+                    if ($run->id === $active->id) {
+                        // Current run: use progress data up to progress_at
+                        if ($packsThisRun > 0 && $active->progress_at) {
+                            $totalPacks += $packsThisRun;
+                            $totalSecs  += max(1, abs((int) $active->progress_at->diffInSeconds($active->started_at)));
+                        }
+                    } elseif ($run->ended_at && $run->packs_produced > 0) {
+                        // Completed run: use packs delta from its own baseline
+                        $runBaseline = PrintJobRun::where('machine', $machine)
+                            ->where('print_job_id', $run->print_job_id)
+                            ->where('ended_at', '<', $run->ended_at)
+                            ->whereNotNull('packs_produced')
+                            ->max('packs_produced') ?? 0;
+                        $runPacks = max(0, $run->packs_produced - $runBaseline);
+                        if ($runPacks > 0) {
+                            $totalPacks += $runPacks;
+                            $totalSecs  += max(1, abs((int) $run->ended_at->diffInSeconds($run->started_at)));
+                        }
+                    }
+                }
+
                 $rateStr = null;
                 $ratePPH = null;
-                if ($packsThisRun > 0 && $active->progress_at) {
-                    $secs  = max(1, abs((int) $active->progress_at->diffInSeconds($active->started_at)));
-                    $hours = $secs / 3600;
-                    if ($hours >= 0.05) {
-                        $ratePPH = $packsThisRun / $hours;
+                if ($totalPacks > 0 && $totalSecs > 0) {
+                    $totalHours = $totalSecs / 3600;
+                    if ($totalHours >= 0.05) {
+                        $ratePPH = $totalPacks / $totalHours;
                         $rate    = (int) round($ratePPH);
                         $rateStr = $rate >= 1000
                             ? number_format($rate / 1000, 1) . 'k/hr'
