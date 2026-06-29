@@ -396,14 +396,13 @@ function renderMachines(machines) {
                     ${info.target_str ? `<div class="prod-metric"><span class="prod-metric-value" style="color:#475569;">${esc(info.target_str)}</span><span class="prod-metric-label">Target rate</span></div>` : ''}
                 </div>
                 <div class="prod-footer">
-                    <div class="prod-operator" style="min-width:0;flex:1;">
+                    <div class="prod-operator" style="min-width:0;flex:1;overflow:hidden;">
                         <svg style="width:12px;height:12px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-                        <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                            <strong>${esc(info.operator ?? 'Unknown')}</strong>
-                            &mdash; started ${timeAgo(info.started_at)}${info.progress_at ? ' (updated ' + timeAgo(info.progress_at) + ')' : ''}
-                        </span>
+                        <strong style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(info.operator ?? 'Unknown')}</strong>
                     </div>
-                    ${onTrackBadge(info.on_track)}
+                    <div class="prod-last-update" style="flex-shrink:0;white-space:nowrap;">
+                        ${timeAgo(info.started_at)}${info.progress_at ? ' &middot; upd ' + timeAgo(info.progress_at) : ''}
+                    </div>
                 </div>`;
 
         } else if (info.state === 'paused') {
