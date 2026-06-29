@@ -445,13 +445,14 @@ function fmt(n) {
 }
 
 function progressBar(info) {
-    if (info.pct_complete == null || info.order_qty == null) return '';
-    const pct       = info.pct_complete;
+    if (info.order_qty == null) return '';
+    const pct       = info.pct_complete ?? 0;
     const done      = info.progress_packs ?? 0;
     const total     = info.order_qty;
     const fillColor = info.on_track === 'behind'  ? '#ef4444'
                     : info.on_track === 'at_risk'  ? '#f59e0b'
                     : '#16a34a';
+    const countStr  = info.progress_packs != null ? `${fmt(done)} / ${fmt(total)} packs` : `0 / ${fmt(total)} packs`;
     return `
         <div class="prod-progress-wrap">
             <div class="prod-progress-row">
@@ -461,7 +462,7 @@ function progressBar(info) {
             <div class="prod-progress-bar">
                 <div class="prod-progress-fill" style="width:${pct}%;background:${fillColor};"></div>
             </div>
-            <div class="prod-progress-counts">${fmt(done)} / ${fmt(total)} packs</div>
+            <div class="prod-progress-counts">${countStr}</div>
         </div>`;
 }
 
