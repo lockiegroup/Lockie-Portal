@@ -1,3 +1,4 @@
+@php use App\Models\PrintJob; @endphp
 <x-layout title="Production Dashboard — Lockie Portal">
 
 <style>
