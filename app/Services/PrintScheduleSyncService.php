@@ -42,7 +42,6 @@ class PrintScheduleSyncService
             ->keyBy(fn($j) => $j->unleashed_guid . ':' . $j->line_number);
 
         $maxPosition = PrintJob::where('board', 'unplanned')->max('position') ?? 0;
-        $seenKeys    = []; // track guid:line combos seen in this sync
 
         foreach ($orders as $order) {
             $guid = $order['Guid'] ?? null;
@@ -81,7 +80,6 @@ class PrintScheduleSyncService
                     if (str_contains(strtolower($productCode), 'carriage')) continue;
                     if (str_starts_with(strtoupper($productCode), 'H-')) continue;
                     $lineNumber = (int) ($line['LineNumber'] ?? ($lineIndex + 1));
-                    $seenKeys[$guid . ':' . $lineNumber] = true;
                     // Close open runs before bulk-archiving (bulk update skips model events)
                     $jobsToArchive = PrintJob::active()
                         ->where('unleashed_guid', $guid)
@@ -109,7 +107,6 @@ class PrintScheduleSyncService
                 if (str_starts_with(strtoupper($productCode), 'H-')) continue;
 
                 $lineNumber  = (int) ($line['LineNumber'] ?? ($lineIndex + 1));
-                $seenKeys[$guid . ':' . $lineNumber] = true;
                 $existing    = $activeJobs->get($guid . ':' . $lineNumber);
                 $shipQty     = (float) ($line['ShipQuantity'] ?? 0);
                 $orderQty    = (float) ($line['OrderQuantity'] ?? 0);
@@ -202,14 +199,6 @@ class PrintScheduleSyncService
             }
         }
 
-        // Sweep: any active SO card whose guid:line wasn't returned by the API this run
-        // is archived with no reason (auto-swept), so it can be restored if the API returns
-        // it again. Cards deleted/cancelled in Unleashed won't come back, so they stay hidden.
-        foreach ($activeJobs as $key => $job) {
-            if (isset($seenKeys[$key])) continue;
-            $job->closeOpenRuns();
-            $job->update(['archived_at' => now(), 'archive_reason' => null]);
-        }
     }
 
     private function syncAssemblies(UnleashedService $unleashed, int &$created, int &$updated): void
