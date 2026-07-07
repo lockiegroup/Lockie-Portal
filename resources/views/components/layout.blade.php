@@ -14,7 +14,7 @@
         #sidebar {
             position: fixed; top: 0; left: 0; height: 100vh; width: 260px;
             background: #0f172a; display: flex; flex-direction: column;
-            z-index: 50; transition: width 0.2s ease; overflow: hidden;
+            z-index: 50; transition: width 0.2s ease; overflow-x: hidden; overflow-y: auto;
         }
         #page-content  { margin-left: 260px; min-height: 100vh; transition: margin-left 0.2s ease; }
         #sb-overlay    { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 49; }
