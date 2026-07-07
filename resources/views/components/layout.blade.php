@@ -63,6 +63,7 @@
 
         .sb-icon { width: 17px; height: 17px; flex-shrink: 0; }
         .sb-nav::-webkit-scrollbar { display: none; }
+        .sb-item:focus, .sb-sub-item:focus { outline: 2px solid #92aac8; outline-offset: -2px; }
 
         /* ── Mobile ────────────────────────────────────────────── */
         @media (max-width: 767px) {
@@ -106,6 +107,20 @@
         </div>
     @else
         {{ $slot }}
+    @endauth
+    @auth
+    <script>
+        // Scroll focused sidebar nav items into view (TV remote arrow-key navigation)
+        var sbNav = document.querySelector('.sb-nav');
+        if (sbNav) {
+            document.getElementById('sidebar').addEventListener('focusin', function(e) {
+                var el = e.target;
+                if (el && (el.classList.contains('sb-item') || el.classList.contains('sb-sub-item'))) {
+                    el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                }
+            });
+        }
+    </script>
     @endauth
 </body>
 </html>
