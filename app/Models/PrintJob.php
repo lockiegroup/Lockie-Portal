@@ -82,6 +82,17 @@ class PrintJob extends Model
         return $this->hasMany(PrintJobRun::class);
     }
 
+    /**
+     * Close any open (ended_at = null) runs for this job.
+     * Called whenever a job is archived/completed so stale runs don't persist.
+     */
+    public function closeOpenRuns(): void
+    {
+        $this->runs()
+            ->whereNull('ended_at')
+            ->update(['ended_at' => now(), 'end_reason' => 'auto_closed']);
+    }
+
     public function notes(): HasMany
     {
         return $this->hasMany(PrintJobNote::class);

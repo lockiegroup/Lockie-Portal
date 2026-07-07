@@ -80,6 +80,14 @@ class PrintScheduleSyncService
                     if (str_contains(strtolower($productCode), 'carriage')) continue;
                     if (str_starts_with(strtoupper($productCode), 'H-')) continue;
                     $lineNumber = (int) ($line['LineNumber'] ?? ($lineIndex + 1));
+                    // Close open runs before bulk-archiving (bulk update skips model events)
+                    $jobsToArchive = PrintJob::active()
+                        ->where('unleashed_guid', $guid)
+                        ->where('line_number', $lineNumber)
+                        ->get();
+                    foreach ($jobsToArchive as $jobToArchive) {
+                        $jobToArchive->closeOpenRuns();
+                    }
                     PrintJob::active()
                         ->where('unleashed_guid', $guid)
                         ->where('line_number', $lineNumber)
@@ -106,6 +114,7 @@ class PrintScheduleSyncService
 
                 // If Unleashed shows this line fully shipped and we have an active card, archive it
                 if ($lineShipped && $existing) {
+                    $existing->closeOpenRuns();
                     $existing->update(['archived_at' => now(), 'archive_reason' => 'completed']);
                     $activeJobs->forget($guid . ':' . $lineNumber);
                     $updated++;
@@ -368,6 +377,7 @@ class PrintScheduleSyncService
         // 'completed' for now; the daily fix-archive-labels cron will relabel deleted ones.
         foreach ($activeJobs as $jobGuid => $job) {
             if (isset($seenGuids[$jobGuid])) continue;
+            $job->closeOpenRuns();
             $job->update(['archived_at' => now(), 'archive_reason' => 'completed']);
         }
     }

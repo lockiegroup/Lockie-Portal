@@ -661,6 +661,7 @@ class PrintScheduleController extends Controller
     {
         abort_unless($job->is_manual, 403);
 
+        $job->closeOpenRuns();
         $job->update([
             'archived_at'    => now(),
             'archive_reason' => 'completed',
@@ -719,6 +720,7 @@ class PrintScheduleController extends Controller
     {
         abort_unless($job->is_manual, 403);
 
+        $job->closeOpenRuns();
         $job->update([
             'archived_at'    => now(),
             'archive_reason' => 'deleted',

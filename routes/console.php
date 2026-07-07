@@ -11,6 +11,9 @@ Artisan::command('inspire', function () {
 // Sync A1 print jobs from Unleashed every 30 minutes
 Schedule::command('print:sync')->everyThirtyMinutes();
 
+// Safety net: close any open runs whose job has already been archived
+Schedule::command('print:close-stale-runs')->hourly();
+
 // Nightly reconciliation: correct assembly archive labels (completed vs deleted)
 Schedule::command('print:fix-archive-labels', ['--include-completed'])->dailyAt('02:00');
 
