@@ -385,9 +385,16 @@ class PrintScheduleController extends Controller
                 $jobRuns = $todayRuns->where('print_job_id', $active->print_job_id);
                 [$rateJobPPH, $rateJobStr] = $calcRate($jobRuns);
 
-                // Progress %
-                $orderQty    = $active->printJob?->order_quantity;
-                $totalDone   = $active->progress_packs;
+                // Progress % — use current run's progress_packs (cumulative), or fall back
+                // to the last ended run's packs_produced if no update logged on this run yet
+                $orderQty  = $active->printJob?->order_quantity;
+                $totalDone = $active->progress_packs;
+                if ($totalDone === null) {
+                    $totalDone = $jobRuns->whereNotNull('ended_at')
+                        ->whereNotNull('packs_produced')
+                        ->sortByDesc(fn($r) => $r->ended_at?->timestamp)
+                        ->first()?->packs_produced;
+                }
                 $pctComplete = ($orderQty > 0 && $totalDone !== null)
                     ? min(100, (int) round($totalDone / $orderQty * 100))
                     : null;
