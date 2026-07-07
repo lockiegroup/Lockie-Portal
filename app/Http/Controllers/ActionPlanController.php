@@ -300,7 +300,7 @@ class ActionPlanController extends Controller
         $data = $request->validate([
             'item_ids'   => 'required|array',
             'item_ids.*' => 'integer|exists:action_plan_items,id',
-            'months'     => 'required|integer|min:1|max:12',
+            'months'     => 'required|integer|min:0|max:12',
         ]);
 
         $items = ActionPlanItem::whereIn('id', $data['item_ids'])
@@ -310,7 +310,10 @@ class ActionPlanController extends Controller
         $created = 0;
         $skipped = 0;
 
-        foreach (range(1, $data['months']) as $offset) {
+        // months=0 means copy into the same month (duplicate in place)
+        $offsets = $data['months'] === 0 ? [0] : range(1, $data['months']);
+
+        foreach ($offsets as $offset) {
             foreach ($items as $item) {
                 $newDate = $item->week_commencing
                     ? $item->week_commencing->copy()->addMonths($offset)

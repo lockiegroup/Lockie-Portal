@@ -297,6 +297,7 @@
                 <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">How many months ahead?</label>
                 <select name="months"
                     style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.8125rem;color:#334155;background:#fff;box-sizing:border-box;">
+                    <option value="0">Current month</option>
                     <option value="1">1 month</option>
                     <option value="2">2 months</option>
                     <option value="3" selected>3 months</option>
