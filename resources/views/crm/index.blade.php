@@ -37,7 +37,7 @@
     </form>
 
     {{-- Quick filter tabs --}}
-    <div style="display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap;">
+    <div style="display:flex;gap:8px;margin-bottom:{{ $filter === 'contacted' ? '0.5rem' : '1.5rem' }};flex-wrap:wrap;align-items:center;">
         <a href="{{ route('crm.index', array_filter(['warehouse' => $warehouse, 'search' => $search])) }}"
            style="padding:6px 14px;border-radius:999px;font-size:0.8125rem;font-weight:500;text-decoration:none;
                   {{ !$filter ? 'background:#1e293b;color:#fff;' : 'background:#f1f5f9;color:#64748b;' }}">
@@ -53,7 +53,26 @@
                   {{ $filter === 'overdue' ? 'background:#d97706;color:#fff;' : 'background:#fffbeb;color:#d97706;' }}">
             ⏱ Overdue for order
         </a>
+        <a href="{{ route('crm.index', array_filter(['filter' => 'contacted', 'contacted_days' => $contactedDays, 'warehouse' => $warehouse, 'search' => $search])) }}"
+           style="padding:6px 14px;border-radius:999px;font-size:0.8125rem;font-weight:500;text-decoration:none;
+                  {{ $filter === 'contacted' ? 'background:#0369a1;color:#fff;' : 'background:#eff6ff;color:#0369a1;' }}">
+            ✓ Recently contacted
+        </a>
     </div>
+
+    {{-- Period chips (only when "Recently contacted" is active) --}}
+    @if($filter === 'contacted')
+    <div style="display:flex;gap:6px;margin-bottom:1.5rem;align-items:center;">
+        <span style="font-size:0.75rem;color:#94a3b8;font-weight:500;">Period:</span>
+        @foreach([7 => '7 days', 30 => '30 days', 60 => '60 days', 90 => '90 days'] as $days => $label)
+            <a href="{{ route('crm.index', array_filter(['filter' => 'contacted', 'contacted_days' => $days, 'warehouse' => $warehouse, 'search' => $search])) }}"
+               style="padding:3px 10px;border-radius:999px;font-size:0.75rem;font-weight:500;text-decoration:none;
+                      {{ $contactedDays === $days ? 'background:#0369a1;color:#fff;' : 'background:#e0f2fe;color:#0369a1;' }}">
+                {{ $label }}
+            </a>
+        @endforeach
+    </div>
+    @endif
 
     {{-- Table --}}
     <div style="background:#fff;border:1px solid #e2e8f0;border-radius:0.875rem;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
@@ -172,7 +191,7 @@
                         <td style="padding:11px 16px;">
                             @php $lc = $c->key_account?->latestContact?->contacted_at ? \Carbon\Carbon::parse($c->key_account->latestContact->contacted_at) : null; @endphp
                             @if($lc)
-                                <span style="font-size:0.875rem;color:#334155;">{{ $lc->format('d M Y') }}</span>
+                                <span style="font-size:0.875rem;color:#334155;font-weight:{{ $filter === 'contacted' ? '600' : '400' }};">{{ $lc->format('d M Y') }}</span>
                                 <div style="font-size:0.75rem;color:#94a3b8;">{{ $lc->diffForHumans() }}</div>
                             @else
                                 <span style="color:#cbd5e1;font-size:0.875rem;">—</span>

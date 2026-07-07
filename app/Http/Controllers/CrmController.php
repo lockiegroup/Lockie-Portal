@@ -14,10 +14,12 @@ class CrmController extends Controller
 {
     public function index(Request $request): View
     {
-        $warehouse = $request->input('warehouse');
-        $search    = trim($request->input('search', ''));
-        $filter    = $request->input('filter');
-        $limit     = max(100, (int) $request->input('limit', 100));
+        $warehouse     = $request->input('warehouse');
+        $search        = trim($request->input('search', ''));
+        $filter        = $request->input('filter');
+        $contactedDays = in_array((int) $request->input('contacted_days'), [7, 30, 60, 90])
+            ? (int) $request->input('contacted_days') : 30;
+        $limit         = max(100, (int) $request->input('limit', 100));
 
         $warehouses = DB::table('sales_lines')
             ->where('sub_total', '>', 0)
@@ -121,6 +123,12 @@ class CrmController extends Controller
             $customers = $customers->filter(fn($c) => $c->is_dropoff)->values();
         } elseif ($filter === 'overdue') {
             $customers = $customers->filter(fn($c) => $c->is_overdue)->values();
+        } elseif ($filter === 'contacted') {
+            $contactedSince = now()->subDays($contactedDays)->startOfDay();
+            $customers = $customers->filter(function ($c) use ($contactedSince) {
+                $lc = $c->key_account?->latestContact?->contacted_at;
+                return $lc && Carbon::parse($lc)->gte($contactedSince);
+            })->values();
         }
 
         $totalCount = $customers->count();
@@ -132,7 +140,8 @@ class CrmController extends Controller
 
         return view('crm.index', compact(
             'customers', 'warehouses', 'warehouse', 'search', 'filter',
-            'salesFrom', 'salesTo', 'asOf', 'limit', 'totalCount', 'hasMore'
+            'salesFrom', 'salesTo', 'asOf', 'limit', 'totalCount', 'hasMore',
+            'contactedDays'
         ));
     }
 
