@@ -97,9 +97,10 @@
                         if ($run->ended_at) {
                             $totalRunSecs += abs((int) $run->ended_at->diffInSeconds($run->started_at));
                         } else {
-                            // Use progress_at so the rate reflects packs ÷ measured time, not packs ÷ elapsed-to-now
-                            $rateEnd = $run->progress_at ?? now();
-                            $totalRunSecs += abs((int) $rateEnd->diffInSeconds($run->started_at));
+                            // Use now() so the denominator grows with real elapsed time.
+                            // Using progress_at caused inflated rates when packs were logged
+                            // as a baseline right at the start of a run.
+                            $totalRunSecs += abs((int) now()->diffInSeconds($run->started_at));
                         }
                         $totalGapSecs += $entry['gap'] ?? 0;
                     }
