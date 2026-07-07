@@ -17,8 +17,9 @@ class CrmController extends Controller
         $warehouse     = $request->input('warehouse');
         $search        = trim($request->input('search', ''));
         $filter        = $request->input('filter');
-        $contactedDays = in_array((int) $request->input('contacted_days'), [7, 30, 60, 90])
-            ? (int) $request->input('contacted_days') : 30;
+        $contactedDays = $request->input('contacted_days') === 'all' ? 'all'
+            : (in_array((int) $request->input('contacted_days'), [7, 30, 60, 90])
+                ? (int) $request->input('contacted_days') : 30);
         $limit         = max(100, (int) $request->input('limit', 100));
 
         $warehouses = DB::table('sales_lines')
@@ -124,10 +125,11 @@ class CrmController extends Controller
         } elseif ($filter === 'overdue') {
             $customers = $customers->filter(fn($c) => $c->is_overdue)->values();
         } elseif ($filter === 'contacted') {
-            $contactedSince = now()->subDays($contactedDays)->startOfDay();
-            $customers = $customers->filter(function ($c) use ($contactedSince) {
+            $customers = $customers->filter(function ($c) use ($contactedDays) {
                 $lc = $c->key_account?->latestContact?->contacted_at;
-                return $lc && Carbon::parse($lc)->gte($contactedSince);
+                if (!$lc) return false;
+                if ($contactedDays === 'all') return true;
+                return Carbon::parse($lc)->gte(now()->subDays($contactedDays)->startOfDay());
             })->values();
         }
 

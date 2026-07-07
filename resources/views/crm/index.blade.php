@@ -64,7 +64,7 @@
     @if($filter === 'contacted')
     <div style="display:flex;gap:6px;margin-bottom:1.5rem;align-items:center;">
         <span style="font-size:0.75rem;color:#94a3b8;font-weight:500;">Period:</span>
-        @foreach([7 => '7 days', 30 => '30 days', 60 => '60 days', 90 => '90 days'] as $days => $label)
+        @foreach(['all' => 'All time', 7 => '7 days', 30 => '30 days', 60 => '60 days', 90 => '90 days'] as $days => $label)
             <a href="{{ route('crm.index', array_filter(['filter' => 'contacted', 'contacted_days' => $days, 'warehouse' => $warehouse, 'search' => $search])) }}"
                style="padding:3px 10px;border-radius:999px;font-size:0.75rem;font-weight:500;text-decoration:none;
                       {{ $contactedDays === $days ? 'background:#0369a1;color:#fff;' : 'background:#e0f2fe;color:#0369a1;' }}">
