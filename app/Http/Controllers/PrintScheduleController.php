@@ -139,6 +139,22 @@ class PrintScheduleController extends Controller
 
         $allRuns = $query->get();
 
+        // For jobs that started before this date range, find the packs baseline
+        // (the highest packs_produced from runs before the range) so per-period
+        // pack counts and rates are not inflated by carry-over from prior days.
+        $jobIds = $allRuns->pluck('print_job_id')->unique()->filter()->values();
+        $jobBaselines = [];
+        if ($jobIds->isNotEmpty()) {
+            $jobBaselines = \App\Models\PrintJobRun::whereIn('print_job_id', $jobIds)
+                ->whereDate('started_at', '<', $dateFrom)
+                ->whereNotNull('packs_produced')
+                ->selectRaw('print_job_id, MAX(packs_produced) as baseline')
+                ->groupBy('print_job_id')
+                ->pluck('baseline', 'print_job_id')
+                ->map(fn($v) => (int) $v)
+                ->toArray();
+        }
+
         // Group by machine, compute gaps
         $byMachine = [];
         foreach ($machines as $m) {
@@ -166,7 +182,7 @@ class PrintScheduleController extends Controller
             $q->whereDate('started_at', '>=', $dateFrom)->whereDate('started_at', '<=', $dateTo);
         })->orderBy('name')->get(['id', 'name']);
 
-        return compact('byMachine', 'machines', 'operators', 'dateFrom', 'dateTo', 'machine', 'operator');
+        return compact('byMachine', 'machines', 'operators', 'dateFrom', 'dateTo', 'machine', 'operator', 'jobBaselines');
     }
 
     public function machineLog(Request $request): View

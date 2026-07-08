@@ -105,17 +105,19 @@
                     }
                 }
 
-                // Group runs by job and use the last cumulative packs_produced per group (not a sum)
+                // Group runs by job and use the last cumulative packs_produced per group (not a sum).
+                // Subtract any prior-period baseline so the summary only counts packs done in this date range.
                 $summaryJobGroups = collect($allEntries)->groupBy(fn($e) => $e['run']->print_job_id ?? 'unknown');
-                foreach ($summaryJobGroups as $groupEntries) {
-                    $groupRuns = collect($groupEntries)->pluck('run');
+                foreach ($summaryJobGroups as $jobKey => $groupEntries) {
+                    $groupRuns   = collect($groupEntries)->pluck('run');
+                    $baseline    = is_numeric($jobKey) ? ($jobBaselines[(int)$jobKey] ?? 0) : 0;
                     $activePacks = $groupRuns->whereNull('ended_at')->whereNotNull('progress_packs')->max('progress_packs');
                     if ($activePacks !== null) {
-                        $totalPacks += $activePacks;
+                        $totalPacks += max(0, $activePacks - $baseline);
                     } else {
-                        // packs_produced is cumulative total at each pause/end, so use the most recent value
-                        $totalPacks += $groupRuns->filter(fn($r) => $r->packs_produced !== null && $r->ended_at !== null)
+                        $lastPacks = $groupRuns->filter(fn($r) => $r->packs_produced !== null && $r->ended_at !== null)
                             ->sortByDesc(fn($r) => $r->ended_at?->timestamp)->first()?->packs_produced ?? 0;
+                        $totalPacks += max(0, $lastPacks - $baseline);
                     }
                 }
 
@@ -222,10 +224,13 @@
                             $groupTotalSecs = $groupRunSecs + $activeRunSecs;
                             // packs_produced is the cumulative total at each pause/end — use the most recent value.
                             // An active run's progress_packs is always the current cumulative total.
+                            // Subtract any prior-period baseline so "Done this log" only counts packs in this date range.
+                            $jobId = $group['entries'][0]['run']->print_job_id ?? null;
+                            $priorBaseline = $jobId ? ($jobBaselines[$jobId] ?? 0) : 0;
                             $activePacks = $groupRuns->whereNull('ended_at')->whereNotNull('progress_packs')->max('progress_packs');
                             $lastEndedPacks = $groupRuns->filter(fn($r) => $r->packs_produced !== null && $r->ended_at !== null)
                                 ->sortByDesc(fn($r) => $r->ended_at?->timestamp)->first()?->packs_produced ?? 0;
-                            $groupPacks = $activePacks ?? $lastEndedPacks;
+                            $groupPacks = max(0, ($activePacks ?? $lastEndedPacks) - $priorBaseline);
                             $groupHours = $groupTotalSecs > 0 ? $groupTotalSecs / 3600 : 0;
                             $groupRate = ($groupPacks && $groupHours >= 0.1) ? (int) round($groupPacks / $groupHours) : null;
                             $groupRateStr = $groupRate
@@ -288,11 +293,13 @@
 
                                 // Both packs_produced and progress_packs are cumulative running totals.
                                 // The delta for this run = this run's value minus the previous run's cumulative total.
+                                // For the first run in this date range, fall back to the prior-period baseline
+                                // so packs from previous days are not double-counted in this log.
                                 $prevCumPacks = collect($group['entries'])
                                     ->take($ei)
                                     ->pluck('run')
                                     ->filter(fn($r) => $r->packs_produced !== null)
-                                    ->last()?->packs_produced ?? 0;
+                                    ->last()?->packs_produced ?? $priorBaseline;
 
                                 if ($run->packs_produced !== null) {
                                     $packsThisRun = max(0, $run->packs_produced - $prevCumPacks);
