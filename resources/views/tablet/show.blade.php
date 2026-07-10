@@ -647,17 +647,14 @@
                         </form>
                     @endif
 
+                    @php
+                        $cardTotal = $orderCardCounts[$job->order_number] ?? 1;
+                        $cardIndex = $jobCardIndex[$job->id] ?? 1;
+                    @endphp
+                    @if($cardTotal > 1)
+                        <span style="margin-left:auto;align-self:center;font-size:0.7rem;font-weight:700;background:#1e3a5f;color:#7dd3fc;padding:2px 8px;border-radius:9999px;text-transform:uppercase;letter-spacing:0.05em;">Card {{ $cardIndex }} of {{ $cardTotal }}</span>
+                    @endif
                 </div>
-
-                @php
-                    $cardTotal = $orderCardCounts[$job->order_number] ?? 1;
-                    $cardIndex = $jobCardIndex[$job->id] ?? 1;
-                @endphp
-                @if($cardTotal > 1)
-                    <div style="text-align:right;margin-top:10px;">
-                        <span style="font-size:0.7rem;font-weight:700;background:#1e3a5f;color:#7dd3fc;padding:2px 8px;border-radius:9999px;text-transform:uppercase;letter-spacing:0.05em;">Card {{ $cardIndex }} of {{ $cardTotal }}</span>
-                    </div>
-                @endif
             </div>
         @endforeach
     @endif
