@@ -1015,20 +1015,6 @@
             }
         };
 
-        window.archiveCancelledJob = async function (id, orderNumber) {
-            if (!confirm(`Hide ${orderNumber} from the schedule?\n\nOnly do this if the order has been cancelled in Unleashed.`)) return;
-            const res = await fetch(`/print-schedule/jobs/${id}/archive`, {
-                method : 'POST',
-                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
-            });
-            if (res.ok) {
-                const card = document.getElementById('job-card-' + id);
-                if (card) card.remove();
-            } else {
-                alert('Could not archive — you may not have permission.');
-            }
-        };
-
         window.deleteManualJob = async function (id, description) {
             if (!confirm(`Permanently delete "${description}"?\n\nThis cannot be undone.`)) return;
             const res = await fetch(`/print-schedule/jobs/${id}/manual-delete`, {

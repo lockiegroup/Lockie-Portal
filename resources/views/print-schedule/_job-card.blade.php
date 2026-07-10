@@ -377,20 +377,6 @@
         </div>
     </div>
 
-    {{-- Archive button for non-manual (cancelled) jobs — admin/master only --}}
-    @if(!$job->is_manual && (auth()->user()->isMaster() || auth()->user()->can('admin')))
-    <div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid #f1f5f9;">
-        <button onclick="archiveCancelledJob({{ $job->id }}, {{ json_encode($job->order_number) }})"
-            style="display:flex;align-items:center;gap:5px;padding:5px 10px;background:#fff;color:#94a3b8;font-size:0.72rem;font-weight:500;border-radius:6px;border:1px solid #e2e8f0;cursor:pointer;"
-            onmouseover="this.style.color='#dc2626';this.style.borderColor='#fca5a5'" onmouseout="this.style.color='#94a3b8';this.style.borderColor='#e2e8f0'">
-            <svg style="width:11px;height:11px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>
-            </svg>
-            Hide cancelled order
-        </button>
-    </div>
-    @endif
-
     {{-- Manual job actions --}}
     @if($job->is_manual)
     <div style="display:flex;gap:8px;margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid #f1f5f9;">
