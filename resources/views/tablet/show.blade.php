@@ -495,6 +495,17 @@
             No jobs currently assigned to {{ $machineName }}.
         </div>
     @else
+        @php
+            // Pre-compute per-order card counts and indices for "Card x of x" badge
+            $orderGroups    = $jobs->groupBy('order_number');
+            $orderCardCounts = $orderGroups->map->count();
+            $jobCardIndex   = [];
+            foreach ($orderGroups as $orderNum => $groupJobs) {
+                foreach ($groupJobs->values() as $idx => $gj) {
+                    $jobCardIndex[$gj->id] = $idx + 1;
+                }
+            }
+        @endphp
         @foreach($jobs as $job)
             @php
                 $activeRun    = $job->runs->first(fn($r) => $r->ended_at === null);
@@ -637,6 +648,16 @@
                     @endif
 
                 </div>
+
+                @php
+                    $cardTotal = $orderCardCounts[$job->order_number] ?? 1;
+                    $cardIndex = $jobCardIndex[$job->id] ?? 1;
+                @endphp
+                @if($cardTotal > 1)
+                    <div style="text-align:right;margin-top:10px;">
+                        <span style="font-size:0.7rem;font-weight:700;background:#1e3a5f;color:#7dd3fc;padding:2px 8px;border-radius:9999px;text-transform:uppercase;letter-spacing:0.05em;">Card {{ $cardIndex }} of {{ $cardTotal }}</span>
+                    </div>
+                @endif
             </div>
         @endforeach
     @endif
