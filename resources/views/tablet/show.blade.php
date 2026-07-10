@@ -217,10 +217,11 @@
             margin-top: 2px;
         }
         .job-card-info .job-comment {
-            font-size: 0.8rem;
-            color: #64748b;
+            font-size: 0.85rem;
+            color: #cbd5e1;
             margin-top: 4px;
             font-style: italic;
+            font-weight: 600;
         }
 
         .status-badge {
