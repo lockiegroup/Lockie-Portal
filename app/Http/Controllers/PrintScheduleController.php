@@ -754,6 +754,22 @@ class PrintScheduleController extends Controller
         return response()->json(['success' => true]);
     }
 
+    public function archiveJob(PrintJob $job): JsonResponse
+    {
+        abort_unless(auth()->user()->isMaster() || auth()->user()->can('admin'), 403);
+        abort_if($job->is_manual, 400); // manual jobs use archiveManual
+
+        $job->closeOpenRuns();
+        $job->update([
+            'archived_at'    => now(),
+            'archive_reason' => 'deleted',
+        ]);
+
+        \App\Models\ActivityLog::record('print.archive', "Manually archived job: {$job->order_number} — {$job->product_description}");
+
+        return response()->json(['success' => true]);
+    }
+
     // ── Label generation ─────────────────────────────────────────────────────────
 
     public function downloadLabels(Request $request, PrintJob $job): Response
