@@ -738,7 +738,7 @@
             <div class="modal-field">
                 <label>Reason for pausing</label>
                 <div class="reason-buttons">
-                    <div class="reason-btn" onclick="selectReason(this, 'Material issue')">Material issue</div>
+                    <div class="reason-btn" onclick="selectReason(this, 'Dinner')">Dinner</div>
                     <div class="reason-btn" onclick="selectReason(this, 'Machine breakdown')">Machine breakdown</div>
                     <div class="reason-btn" onclick="selectReason(this, 'End of shift')">End of shift</div>
                     <div class="reason-btn" onclick="selectReason(this, 'Other')">Other</div>
