@@ -42,12 +42,10 @@ class PrintScheduleSyncService
             ->keyBy(fn($j) => $j->unleashed_guid . ':' . $j->line_number);
 
         $maxPosition = PrintJob::where('board', 'unplanned')->max('position') ?? 0;
-        $seenGuids   = [];
 
         foreach ($orders as $order) {
             $guid = $order['Guid'] ?? null;
             if (!$guid) continue;
-            $seenGuids[$guid] = true;
 
             $orderNumber  = $order['OrderNumber'] ?? '';
             $orderDate    = $unleashed->parseDate($order['OrderDate'] ?? null);
@@ -198,18 +196,6 @@ class PrintScheduleSyncService
                     $created++;
                 }
                 // else: archived with a reason (e.g. line completed) — leave it archived, skip
-            }
-        }
-
-        // Safe sweep: archive active SO cards whose GUID was absent from this sync response.
-        // Guard: only run if the API returned at least as many distinct orders as we have active
-        // cards — a truncated/failed API response returns far fewer, which would false-archive real jobs.
-        $activeGuidCount = $activeJobs->pluck('unleashed_guid')->unique()->count();
-        if (count($seenGuids) >= $activeGuidCount) {
-            foreach ($activeJobs as $key => $job) {
-                if (isset($seenGuids[$job->unleashed_guid])) continue;
-                $job->closeOpenRuns();
-                $job->update(['archived_at' => now(), 'archive_reason' => null]);
             }
         }
     }
