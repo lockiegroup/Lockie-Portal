@@ -44,6 +44,9 @@ Route::prefix('tablet')->name('tablet.')->group(function () {
     Route::post('/{machine}/jobs/{job}/resume',       [TabletController::class, 'resumeJob'])->name('jobs.resume');
     Route::post('/{machine}/jobs/{job}/end',          [TabletController::class, 'endJob'])->name('jobs.end');
     Route::post('/{machine}/jobs/{job}/handover',     [TabletController::class, 'handoverJob'])->name('jobs.handover');
+    // Redirect stale GET requests (e.g. browser navigating directly to a POST action URL) back to the tablet
+    Route::get('/{machine}/jobs/{job}/{action}', fn(string $machine) => redirect()->route('tablet.show', $machine))
+        ->where('action', 'start|pause|resume|end|handover|progress');
 });
 
 // Guest routes
