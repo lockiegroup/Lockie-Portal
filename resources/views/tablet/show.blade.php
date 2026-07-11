@@ -545,6 +545,9 @@
                         @if($job->line_comment)
                             <div class="job-comment" style="white-space:pre-wrap;">{{ $job->line_comment }}</div>
                         @endif
+                        @if($job->delivery_name)
+                            <div style="font-size:0.8rem;color:#475569;margin-top:4px;">&#x1F4CD; {{ $job->delivery_name }}</div>
+                        @endif
                     </div>
 
                     <div>
