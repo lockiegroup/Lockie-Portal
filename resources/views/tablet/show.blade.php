@@ -787,17 +787,6 @@
                 <input type="number" id="end-packs-input" name="packs_produced" min="0" placeholder="0" inputmode="numeric" oninput="updateEndRemaining()">
                 <div id="end-remaining-info" style="margin-top:8px;font-size:0.85rem;display:none;"></div>
             </div>
-            <div class="modal-field">
-                <label>Is this job fully complete?</label>
-                <div class="reason-buttons">
-                    <div class="reason-btn" id="btn-job-complete-yes" onclick="setJobComplete(true)">
-                        ✓ Yes — all packs done
-                    </div>
-                    <div class="reason-btn active" id="btn-job-complete-no" onclick="setJobComplete(false)">
-                        ↻ No — more runs needed
-                    </div>
-                </div>
-            </div>
             <div class="modal-actions">
                 <button type="button" class="btn btn-ghost btn-md" onclick="closeModal('end-modal')">Cancel</button>
                 <button type="submit" class="btn btn-danger btn-md">End Job</button>
@@ -895,26 +884,27 @@ function openEndModal(action, currentPacks, maxPacks, progressAtMs) {
     const packsInput = document.getElementById('end-packs-input');
     packsInput.max = maxPacks || '';
     packsInput.value = (currentPacks > 0) ? currentPacks : '';
-    setJobComplete(false);
     updateEndRemaining();
     document.getElementById('end-modal').classList.add('open');
 }
 
 function updateEndRemaining() {
-    const info    = document.getElementById('end-remaining-info');
-    const input   = document.getElementById('end-packs-input');
+    const info     = document.getElementById('end-remaining-info');
+    const input    = document.getElementById('end-packs-input');
     const maxPacks = parseInt(document.getElementById('end-form').dataset.maxPacks || '0');
     if (!maxPacks) { info.style.display = 'none'; return; }
     const done      = parseInt(input.value) || 0;
     const remaining = maxPacks - done;
+    const fullyDone = done >= maxPacks;
+    document.getElementById('fully-complete-input').value = fullyDone ? '1' : '0';
     if (remaining > 0) {
         info.style.display = 'block';
         info.style.color   = '#fbbf24';
-        info.textContent   = `⚠ ${remaining.toLocaleString()} pack${remaining === 1 ? '' : 's'} still remaining from order of ${maxPacks.toLocaleString()}`;
+        info.textContent   = `⚠ ${remaining.toLocaleString()} pack${remaining === 1 ? '' : 's'} still remaining — job will be marked as part complete`;
     } else if (remaining === 0) {
         info.style.display = 'block';
         info.style.color   = '#4ade80';
-        info.textContent   = `✓ All ${maxPacks.toLocaleString()} packs complete`;
+        info.textContent   = `✓ All ${maxPacks.toLocaleString()} packs complete — job will be marked as fully done`;
     } else {
         info.style.display = 'block';
         info.style.color   = '#f87171';
@@ -944,11 +934,6 @@ function endModalSubmit(e) {
     }
 }
 
-function setJobComplete(val) {
-    document.getElementById('fully-complete-input').value = val ? '1' : '0';
-    document.getElementById('btn-job-complete-yes').classList.toggle('active', val);
-    document.getElementById('btn-job-complete-no').classList.toggle('active', !val);
-}
 
 // ── Handover modal ──
 let handoverPin = '';
