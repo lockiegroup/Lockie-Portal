@@ -511,7 +511,11 @@
                 $activeRun    = $job->runs->first(fn($r) => $r->ended_at === null);
                 $lastRun      = $job->runs->last();
                 $endedRuns    = $job->runs->filter(fn($r) => $r->ended_at !== null);
-                $prevPacks    = $endedRuns->sum('packs_produced'); // cumulative from all ended runs
+                // packs_produced is the cumulative job total — take the most recent non-null value, not the sum
+                $prevPacks    = $endedRuns
+                    ->filter(fn($r) => $r->packs_produced !== null)
+                    ->sortByDesc(fn($r) => $r->ended_at?->timestamp ?? 0)
+                    ->first()?->packs_produced ?? 0;
                 if ($activeRun) {
                     $state = 'running';
                 } elseif ($lastRun && $lastRun->end_reason === 'pause') {
