@@ -784,7 +784,8 @@
             <input type="hidden" name="fully_complete" id="fully-complete-input" value="0">
             <div class="modal-field">
                 <label>Total packs done so far</label>
-                <input type="number" id="end-packs-input" name="packs_produced" min="0" placeholder="0" inputmode="numeric">
+                <input type="number" id="end-packs-input" name="packs_produced" min="0" placeholder="0" inputmode="numeric" oninput="updateEndRemaining()">
+                <div id="end-remaining-info" style="margin-top:8px;font-size:0.85rem;display:none;"></div>
             </div>
             <div class="modal-field">
                 <label>Is this job fully complete?</label>
@@ -890,11 +891,35 @@ function selectReason(btn, reason) {
 function openEndModal(action, currentPacks, maxPacks, progressAtMs) {
     document.getElementById('end-form').action = action;
     document.getElementById('end-form').dataset.progressAt = progressAtMs ?? '';
+    document.getElementById('end-form').dataset.maxPacks = maxPacks || '0';
     const packsInput = document.getElementById('end-packs-input');
     packsInput.max = maxPacks || '';
     packsInput.value = (currentPacks > 0) ? currentPacks : '';
     setJobComplete(false);
+    updateEndRemaining();
     document.getElementById('end-modal').classList.add('open');
+}
+
+function updateEndRemaining() {
+    const info    = document.getElementById('end-remaining-info');
+    const input   = document.getElementById('end-packs-input');
+    const maxPacks = parseInt(document.getElementById('end-form').dataset.maxPacks || '0');
+    if (!maxPacks) { info.style.display = 'none'; return; }
+    const done      = parseInt(input.value) || 0;
+    const remaining = maxPacks - done;
+    if (remaining > 0) {
+        info.style.display = 'block';
+        info.style.color   = '#fbbf24';
+        info.textContent   = `⚠ ${remaining.toLocaleString()} pack${remaining === 1 ? '' : 's'} still remaining from order of ${maxPacks.toLocaleString()}`;
+    } else if (remaining === 0) {
+        info.style.display = 'block';
+        info.style.color   = '#4ade80';
+        info.textContent   = `✓ All ${maxPacks.toLocaleString()} packs complete`;
+    } else {
+        info.style.display = 'block';
+        info.style.color   = '#f87171';
+        info.textContent   = `Over by ${Math.abs(remaining).toLocaleString()} packs (order was ${maxPacks.toLocaleString()})`;
+    }
 }
 
 function endModalSubmit(e) {
