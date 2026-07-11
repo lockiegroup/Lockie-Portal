@@ -784,7 +784,10 @@
             <input type="hidden" name="fully_complete" id="fully-complete-input" value="0">
             <div class="modal-field">
                 <label>Total packs done so far</label>
-                <input type="number" id="end-packs-input" name="packs_produced" min="0" placeholder="0" inputmode="numeric" oninput="updateEndRemaining()">
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <input type="number" id="end-packs-input" name="packs_produced" min="0" placeholder="0" inputmode="numeric" oninput="updateEndRemaining()" style="flex:1;">
+                    <button type="button" class="btn btn-ghost btn-sm" onclick="endPacksAll()" style="white-space:nowrap;flex-shrink:0;">All done</button>
+                </div>
                 <div id="end-remaining-info" style="margin-top:8px;font-size:0.85rem;display:none;"></div>
             </div>
             <div class="modal-actions">
@@ -886,6 +889,14 @@ function openEndModal(action, currentPacks, maxPacks, progressAtMs) {
     packsInput.value = (currentPacks > 0) ? currentPacks : '';
     updateEndRemaining();
     document.getElementById('end-modal').classList.add('open');
+}
+
+function endPacksAll() {
+    const maxPacks = parseInt(document.getElementById('end-form').dataset.maxPacks || '0');
+    if (maxPacks) {
+        document.getElementById('end-packs-input').value = maxPacks;
+        updateEndRemaining();
+    }
 }
 
 function updateEndRemaining() {
