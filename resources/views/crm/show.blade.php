@@ -128,9 +128,9 @@
         @if($hasCredits)
         <div style="display:flex;background:#f1f5f9;border-radius:999px;padding:2px;gap:2px;font-size:0.75rem;font-weight:600;">
             <button id="spend-net-btn" onclick="setSpendView('net')"
-                style="padding:4px 12px;border:none;border-radius:999px;cursor:pointer;background:#1e293b;color:#fff;">Net</button>
+                style="padding:4px 12px;border:none;border-radius:999px;cursor:pointer;background:#1e293b;color:#fff;">Credits included</button>
             <button id="spend-gross-btn" onclick="setSpendView('gross')"
-                style="padding:4px 12px;border:none;border-radius:999px;cursor:pointer;background:transparent;color:#64748b;">Gross</button>
+                style="padding:4px 12px;border:none;border-radius:999px;cursor:pointer;background:transparent;color:#64748b;">Credits excluded</button>
         </div>
         @endif
     </div>
