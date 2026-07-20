@@ -254,9 +254,17 @@ class CrmController extends Controller
         }
         $creditsByYear = $creditsByYearQ->get()->keyBy('yr');
 
-        $byYear = [];
+        $byYear      = [];
+        $byYearGross = [];
         foreach ($qtrQ->get() as $row) {
             $cr = $creditsByYear->get($row->yr);
+            $byYearGross[(int) $row->yr] = [
+                'q1'    => (float) $row->q1,
+                'q2'    => (float) $row->q2,
+                'q3'    => (float) $row->q3,
+                'q4'    => (float) $row->q4,
+                'total' => (float) $row->total,
+            ];
             $byYear[(int) $row->yr] = [
                 'q1'    => (float) $row->q1    - (float) ($cr->q1    ?? 0),
                 'q2'    => (float) $row->q2    - (float) ($cr->q2    ?? 0),
@@ -330,7 +338,7 @@ class CrmController extends Controller
 
         return view('crm.show', compact(
             'customerCode', 'customer', 'customerType', 'keyAccount',
-            'byYear', 'topProducts', 'recentOrders',
+            'byYear', 'byYearGross', 'topProducts', 'recentOrders',
             'total12m', 'totalPrev12', 'lastOrder',
             'warehouses', 'warehouse', 'expectedNext', 'avgDays'
         ));

@@ -117,7 +117,23 @@
     </div>
 
     {{-- Yearly breakdown --}}
-    <h2 style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.875rem;">Annual Spend</h2>
+    @php
+        $byYearNet   = $byYear;
+        $hasCredits  = collect($byYearGross)->contains(fn($g, $yr) =>
+            isset($byYearNet[$yr]) && round($g['total'], 2) !== round($byYearNet[$yr]['total'], 2)
+        );
+    @endphp
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.875rem;flex-wrap:wrap;gap:8px;">
+        <h2 style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin:0;">Annual Spend</h2>
+        @if($hasCredits)
+        <div style="display:flex;background:#f1f5f9;border-radius:999px;padding:2px;gap:2px;font-size:0.75rem;font-weight:600;">
+            <button id="spend-net-btn" onclick="setSpendView('net')"
+                style="padding:4px 12px;border:none;border-radius:999px;cursor:pointer;background:#1e293b;color:#fff;">Net</button>
+            <button id="spend-gross-btn" onclick="setSpendView('gross')"
+                style="padding:4px 12px;border:none;border-radius:999px;cursor:pointer;background:transparent;color:#64748b;">Gross</button>
+        </div>
+        @endif
+    </div>
     <div style="background:#fff;border:1px solid #e2e8f0;border-radius:0.875rem;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04);margin-bottom:2.5rem;">
         <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
         <table style="width:100%;min-width:420px;border-collapse:collapse;font-size:0.875rem;">
@@ -131,7 +147,7 @@
                     <th style="padding:9px 16px;text-align:right;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Total</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="spend-tbody">
                 @foreach($byYear as $year => $qs)
                     <tr style="border-bottom:1px solid #f1f5f9;">
                         <td style="padding:10px 16px;font-weight:600;color:#1e293b;">{{ $year }}</td>
@@ -149,6 +165,37 @@
         </table>
         </div>
     </div>
+    @if($hasCredits)
+    <script>
+        var spendData = {
+            net:   @json($byYear),
+            gross: @json($byYearGross)
+        };
+        function fmt(v) { return v > 0 ? '£' + Math.round(v).toLocaleString('en-GB') : '—'; }
+        function fmtColour(v) { return v > 0 ? '#334155' : '#cbd5e1'; }
+        function setSpendView(mode) {
+            var data = spendData[mode];
+            var rows = '';
+            Object.keys(data).sort(function(a,b){return b-a;}).forEach(function(yr) {
+                var qs = data[yr];
+                rows += '<tr style="border-bottom:1px solid #f1f5f9;">';
+                rows += '<td style="padding:10px 16px;font-weight:600;color:#1e293b;">' + yr + '</td>';
+                ['q1','q2','q3','q4'].forEach(function(q) {
+                    var v = qs[q] || 0;
+                    rows += '<td style="padding:10px 16px;text-align:right;color:' + fmtColour(v) + ';">' + fmt(v) + '</td>';
+                });
+                var t = qs['total'] || 0;
+                rows += '<td style="padding:10px 16px;text-align:right;font-weight:600;color:#1e293b;">£' + Math.round(t).toLocaleString('en-GB') + '</td>';
+                rows += '</tr>';
+            });
+            document.getElementById('spend-tbody').innerHTML = rows;
+            document.getElementById('spend-net-btn').style.background   = mode === 'net'   ? '#1e293b' : 'transparent';
+            document.getElementById('spend-net-btn').style.color        = mode === 'net'   ? '#fff'    : '#64748b';
+            document.getElementById('spend-gross-btn').style.background = mode === 'gross' ? '#1e293b' : 'transparent';
+            document.getElementById('spend-gross-btn').style.color      = mode === 'gross' ? '#fff'    : '#64748b';
+        }
+    </script>
+    @endif
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:2.5rem;">
 
