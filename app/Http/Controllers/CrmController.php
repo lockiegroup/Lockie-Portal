@@ -336,6 +336,150 @@ class CrmController extends Controller
         ));
     }
 
+    public function export(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $warehouse     = $request->input('warehouse');
+        $search        = trim($request->input('search', ''));
+        $filter        = $request->input('filter');
+        $contactedDays = $request->input('contacted_days') === 'all' ? 'all'
+            : (in_array((int) $request->input('contacted_days'), [7, 30, 60, 90])
+                ? (int) $request->input('contacted_days') : 30);
+
+        $range    = DB::table('sales_lines')->selectRaw('MIN(order_date) as min_d, MAX(order_date) as max_d')->first();
+        $dataTo   = $range && $range->max_d ? Carbon::parse($range->max_d) : null;
+        $asOf     = $dataTo ?? now()->startOfDay();
+        $now      = $asOf->copy()->startOfDay();
+        $cutoff   = $now->copy()->subDays(90)->toDateString();
+        $curr1    = $now->copy()->subMonths(12)->toDateString();
+        $prev1    = $now->copy()->subMonths(24)->toDateString();
+
+        $query = DB::table('sales_lines')
+            ->where('sub_total', '>', 0)
+            ->selectRaw("
+                customer_code,
+                MAX(customer) as customer,
+                MAX(customer_type) as customer_type,
+                SUM(CASE WHEN order_date >= ? THEN sub_total ELSE 0 END) as current_total,
+                SUM(CASE WHEN order_date >= ? AND order_date < ? THEN sub_total ELSE 0 END) as prev_total,
+                MIN(order_date) as first_order_date,
+                MAX(order_date) as last_order_date,
+                COUNT(DISTINCT DATE(order_date)) as distinct_order_days
+            ", [$curr1, $prev1, $curr1])
+            ->groupBy('customer_code')
+            ->orderByRaw('SUM(CASE WHEN order_date >= ? THEN sub_total ELSE 0 END) DESC', [$curr1]);
+
+        if ($warehouse) {
+            $query->where('warehouse', $warehouse);
+        }
+
+        $customers = $query->get();
+
+        $creditQuery = DB::table('credits_lines')
+            ->selectRaw("
+                customer_code,
+                SUM(CASE WHEN credit_date >= ? THEN sub_total ELSE 0 END) as current_credit,
+                SUM(CASE WHEN credit_date >= ? AND credit_date < ? THEN sub_total ELSE 0 END) as prev_credit
+            ", [$curr1, $prev1, $curr1])
+            ->groupBy('customer_code');
+        if ($warehouse) {
+            $creditQuery->where(function ($q) use ($warehouse) {
+                $q->where('warehouse', $warehouse)->orWhereNull('warehouse');
+            });
+        }
+        $creditMap = $creditQuery->get()->keyBy('customer_code');
+
+        foreach ($customers as $c) {
+            $cr = $creditMap->get($c->customer_code);
+            if ($cr) {
+                $c->current_total = (float) $c->current_total - (float) $cr->current_credit;
+                $c->prev_total    = (float) $c->prev_total    - (float) $cr->prev_credit;
+            }
+        }
+
+        if ($search) {
+            $customers = $customers->filter(fn($c) =>
+                str_contains(strtolower($c->customer ?? ''), strtolower($search)) ||
+                str_contains(strtolower($c->customer_code ?? ''), strtolower($search))
+            )->values();
+        }
+
+        $keyAccounts = KeyAccount::with(['user', 'latestContact'])
+            ->whereIn('account_code', $customers->pluck('customer_code'))
+            ->get()
+            ->keyBy('account_code');
+
+        foreach ($customers as $c) {
+            $c->key_account  = $keyAccounts->get($c->customer_code);
+            $c->last_order   = $c->last_order_date  ? Carbon::parse($c->last_order_date)  : null;
+            $c->first_order  = $c->first_order_date ? Carbon::parse($c->first_order_date) : null;
+            $prevTotal       = (float) $c->prev_total;
+            $currTotal       = (float) $c->current_total;
+            $c->pct_change   = $prevTotal > 0 ? (($currTotal - $prevTotal) / $prevTotal) * 100 : null;
+            $c->is_dropoff   = $prevTotal > 500
+                && ($currTotal < $prevTotal * 0.6 || ($c->last_order && $c->last_order_date < $cutoff));
+            $c->avg_days     = null;
+            $c->expected_next = null;
+            if ($c->last_order && $c->first_order && (int) $c->distinct_order_days >= 2) {
+                $span             = $c->first_order->diffInDays($c->last_order);
+                $c->avg_days      = round($span / ((int) $c->distinct_order_days - 1));
+                $c->expected_next = $c->last_order->copy()->addDays($c->avg_days);
+            }
+            $c->is_overdue = $c->expected_next
+                && $c->expected_next->lt($asOf)
+                && $c->last_order_date < $asOf->toDateString();
+        }
+
+        if ($filter === 'dropoff') {
+            $customers = $customers->filter(fn($c) => $c->is_dropoff)->values();
+        } elseif ($filter === 'overdue') {
+            $customers = $customers->filter(fn($c) => $c->is_overdue)->values();
+        } elseif ($filter === 'contacted') {
+            $customers = $customers->filter(function ($c) use ($contactedDays) {
+                $lc = $c->key_account?->latestContact?->contacted_at;
+                if (!$lc) return false;
+                if ($contactedDays === 'all') return true;
+                return Carbon::parse($lc)->gte(now()->subDays($contactedDays)->startOfDay());
+            })->sortByDesc(function ($c) {
+                $lc = $c->key_account?->latestContact?->contacted_at;
+                return $lc ? Carbon::parse($lc)->timestamp : 0;
+            })->values();
+        }
+
+        $filename = 'customer-insights-' . now()->format('Y-m-d') . '.csv';
+
+        return response()->streamDownload(function () use ($customers, $asOf) {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, [
+                'Customer', 'Customer Code', 'Type',
+                'Last 12m (£)', 'Prev 12m (£)', 'Change (%)',
+                'Last Order', 'Avg Frequency (days)', 'Expected Next Order',
+                'Last Contact', 'Account Manager', 'Dropping Off', 'Overdue',
+            ]);
+            foreach ($customers as $c) {
+                $pct     = $c->pct_change !== null ? round($c->pct_change, 1) : '';
+                $lc      = $c->key_account?->latestContact?->contacted_at;
+                $lcDate  = $lc ? Carbon::parse($lc)->format('d/m/Y') : '';
+                $am      = $c->key_account?->user?->name ?? '';
+                fputcsv($out, [
+                    $c->customer ?: $c->customer_code,
+                    $c->customer_code,
+                    $c->customer_type ?? '',
+                    number_format((float) $c->current_total, 2, '.', ''),
+                    number_format((float) $c->prev_total,    2, '.', ''),
+                    $pct,
+                    $c->last_order ? $c->last_order->format('d/m/Y') : '',
+                    $c->avg_days ?? '',
+                    $c->expected_next ? $c->expected_next->format('d/m/Y') : '',
+                    $lcDate,
+                    $am,
+                    $c->is_dropoff ? 'Yes' : 'No',
+                    $c->is_overdue ? 'Yes' : 'No',
+                ]);
+            }
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv']);
+    }
+
     // ── CRM-owned Key Account stubs ───────────────────────────────────────────
 
     private function upsertKeyAccount(string $customerCode): KeyAccount

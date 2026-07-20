@@ -178,6 +178,7 @@ Route::middleware(['auth', 'otp'])->group(function () {
     // CRM
     Route::prefix('crm')->name('crm.')->middleware('module:crm')->group(function () {
         Route::get('/',                                          [CrmController::class, 'index'])->name('index');
+        Route::get('/export',                                    [CrmController::class, 'export'])->name('export');
         Route::get('/{customerCode}',                            [CrmController::class, 'show'])->name('show');
         Route::patch('/{customerCode}/notes',                    [CrmController::class, 'updateNotes'])->name('notes.update');
         Route::post('/{customerCode}/contacts',                  [CrmController::class, 'storeContact'])->name('contacts.store');

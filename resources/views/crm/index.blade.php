@@ -34,6 +34,11 @@
                 Clear
             </a>
         @endif
+
+        <a href="{{ route('crm.export', array_filter(['search' => $search, 'warehouse' => $warehouse, 'filter' => $filter, 'contacted_days' => $filter === 'contacted' ? $contactedDays : null])) }}"
+           style="padding:8px 14px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;border-radius:8px;font-size:0.875rem;font-weight:500;text-decoration:none;white-space:nowrap;">
+            ↓ Export CSV
+        </a>
     </form>
 
     {{-- Quick filter tabs --}}
