@@ -205,9 +205,9 @@
 
     {{-- Key / Growth Account sections --}}
     @php
-        // Use CRM-owned routes when no Key Account record exists yet
-        $notesAction   = $keyAccount ? route('key-accounts.notes.update', $keyAccount) : route('crm.notes.update', $customerCode);
-        $contactAction = $keyAccount ? route('key-accounts.contacts.store', $keyAccount) : route('crm.contacts.store', $customerCode);
+        // Always use CRM-owned routes so notes/contacts work regardless of key_accounts module access
+        $notesAction   = route('crm.notes.update', $customerCode);
+        $contactAction = route('crm.contacts.store', $customerCode);
     @endphp
 
     @if(session('crm_success'))
@@ -280,7 +280,7 @@
                             </span>
                             <span style="font-size:0.875rem;color:#334155;flex:1;white-space:pre-wrap;">{!! e($contact->note) !!}</span>
                             <span style="font-size:0.75rem;color:#94a3b8;white-space:nowrap;flex-shrink:0;">{{ $contact->user?->name ?? '—' }}</span>
-                            <form action="{{ $keyAccount ? route('key-accounts.contacts.destroy', [$keyAccount, $contact]) : route('crm.contacts.destroy', [$customerCode, $contact]) }}" method="POST"
+                            <form action="{{ route('crm.contacts.destroy', [$customerCode, $contact]) }}" method="POST"
                                 onsubmit="return confirm('Remove this contact entry?')" style="margin:0;">
                                 @csrf @method('DELETE')
                                 <button type="submit" style="background:none;border:none;color:#cbd5e1;font-size:1.125rem;cursor:pointer;line-height:1;padding:0;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#cbd5e1'">&times;</button>

@@ -130,6 +130,9 @@ class CrmController extends Controller
                 if (!$lc) return false;
                 if ($contactedDays === 'all') return true;
                 return Carbon::parse($lc)->gte(now()->subDays($contactedDays)->startOfDay());
+            })->sortByDesc(function ($c) {
+                $lc = $c->key_account?->latestContact?->contacted_at;
+                return $lc ? Carbon::parse($lc)->timestamp : 0;
             })->values();
         }
 
