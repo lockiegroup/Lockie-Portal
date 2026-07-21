@@ -346,60 +346,88 @@ class PrintScheduleController extends Controller
                 ->first();
 
             if ($active) {
-                // Compute packs this run session: progress_packs minus previous runs' cumulative total
-                $baseline = PrintJobRun::where('machine', $machine)
-                    ->where('print_job_id', $active->print_job_id)
-                    ->whereNotNull('ended_at')
-                    ->whereNotNull('packs_produced')
-                    ->max('packs_produced') ?? 0;
-
-                $packsThisRun = $active->progress_packs !== null
-                    ? max(0, $active->progress_packs - $baseline)
-                    : null;
-
-                // Helper: sum packs and seconds from a collection of runs (plus current active)
                 $dayStart  = now()->startOfDay();
                 $todayRuns = PrintJobRun::where('machine', $machine)
                     ->where('started_at', '>=', $dayStart)
                     ->get();
 
-                $calcRate = function (iterable $runs) use ($active, $packsThisRun, $machine): array {
-                    $totalPacks = 0;
-                    $totalSecs  = 0;
+                $jobRuns = $todayRuns->where('print_job_id', $active->print_job_id);
+
+                // Packs this run: progress_packs minus last-ended run's packs_produced.
+                // Use last-by-id (not MAX) so operator corrections to a lower value are respected.
+                $lastEndedPacks = PrintJobRun::where('machine', $machine)
+                    ->where('print_job_id', $active->print_job_id)
+                    ->whereNotNull('ended_at')
+                    ->whereNotNull('packs_produced')
+                    ->orderBy('id', 'desc')
+                    ->value('packs_produced') ?? 0;
+
+                $packsThisRun = $active->progress_packs !== null
+                    ? max(0, $active->progress_packs - $lastEndedPacks)
+                    : null;
+
+                // Rate helper: mirrors the machine-log approach — uses the operator's latest packs
+                // reading (progress_packs) minus a prior-day baseline, divided by total run time.
+                // This is robust against wrong packs entries because it never reconstructs per-run
+                // deltas; a corrected entry just moves the total forward from whatever it was.
+                $rateForRuns = function (\Illuminate\Support\Collection $runs, int $jobId) use ($machine, $active, $dayStart): array {
+                    $priorBase = PrintJobRun::where('machine', $machine)
+                        ->where('print_job_id', $jobId)
+                        ->whereNotNull('ended_at')
+                        ->whereNotNull('packs_produced')
+                        ->where('started_at', '<', $dayStart)
+                        ->max('packs_produced') ?? 0;
+
+                    $activeRun = $runs->firstWhere('ended_at', null);
+                    $currTotal = $activeRun?->progress_packs
+                        ?? $runs->filter(fn($r) => $r->packs_produced !== null && $r->ended_at !== null)
+                               ->sortByDesc(fn($r) => $r->id)->first()?->packs_produced;
+
+                    if ($currTotal === null) return [null, null, 0, 0];
+                    $packs = max(0, $currTotal - $priorBase);
+
+                    $secs = 0;
                     foreach ($runs as $run) {
-                        if ($run->id === $active->id) {
-                            if ($packsThisRun > 0 && $active->progress_at) {
-                                $totalPacks += $packsThisRun;
-                                $totalSecs  += max(1, abs((int) $active->progress_at->diffInSeconds($active->started_at)));
-                            }
-                        } elseif ($run->ended_at && $run->packs_produced > 0) {
-                            $runBaseline = PrintJobRun::where('machine', $machine)
-                                ->where('print_job_id', $run->print_job_id)
-                                ->where('id', '<', $run->id)
-                                ->whereNotNull('packs_produced')
-                                ->max('packs_produced') ?? 0;
-                            $runPacks = max(0, $run->packs_produced - $runBaseline);
-                            if ($runPacks > 0) {
-                                $totalPacks += $runPacks;
-                                $totalSecs  += max(1, abs((int) $run->ended_at->diffInSeconds($run->started_at)));
-                            }
+                        if ($run->ended_at) {
+                            $secs += abs((int) $run->ended_at->diffInSeconds($run->started_at));
+                        } elseif ($activeRun && $run->id === $activeRun->id) {
+                            $end   = $activeRun->progress_at ?? now();
+                            $secs += abs((int) $end->diffInSeconds($run->started_at));
                         }
                     }
-                    if ($totalPacks <= 0 || $totalSecs <= 0) return [null, null];
-                    $hours = $totalSecs / 3600;
-                    if ($hours < 0.05) return [null, null];
-                    $pph = $totalPacks / $hours;
+
+                    if ($packs <= 0 || $secs < 60) return [null, null, $packs, $secs];
+                    $pph = $packs / ($secs / 3600);
                     $n   = (int) round($pph);
                     $str = $n >= 1000 ? number_format($pph / 1000, 1) . 'k/hr' : number_format($n) . '/hr';
-                    return [$pph, $str];
+                    return [$pph, $str, $packs, $secs];
                 };
 
-                // Avg today: all jobs on this machine today
-                [$rateTodayPPH, $rateTodayStr] = $calcRate($todayRuns);
-
                 // Avg job: only runs for this specific job on this machine today
-                $jobRuns = $todayRuns->where('print_job_id', $active->print_job_id);
-                [$rateJobPPH, $rateJobStr] = $calcRate($jobRuns);
+                [$rateJobPPH, $rateJobStr] = $rateForRuns($jobRuns, $active->print_job_id);
+
+                // Avg today: aggregate across all jobs on this machine today
+                $todayJobIds = $todayRuns->pluck('print_job_id')->unique()->filter()->values();
+                if ($todayJobIds->count() === 1) {
+                    [$rateTodayPPH, $rateTodayStr] = [$rateJobPPH, $rateJobStr];
+                } else {
+                    $allPacks = 0;
+                    $allSecs  = 0;
+                    foreach ($todayJobIds as $jid) {
+                        [, , $p, $s] = $rateForRuns($todayRuns->where('print_job_id', $jid), $jid);
+                        $allPacks += $p;
+                        $allSecs  += $s;
+                    }
+                    if ($allPacks > 0 && $allSecs >= 60) {
+                        $pph           = $allPacks / ($allSecs / 3600);
+                        $n             = (int) round($pph);
+                        $rateTodayPPH  = $pph;
+                        $rateTodayStr  = $n >= 1000 ? number_format($pph / 1000, 1) . 'k/hr' : number_format($n) . '/hr';
+                    } else {
+                        $rateTodayPPH = null;
+                        $rateTodayStr = null;
+                    }
+                }
 
                 // Progress % — use current run's progress_packs (cumulative), or fall back
                 // to the last ended run's packs_produced if no update logged on this run yet
