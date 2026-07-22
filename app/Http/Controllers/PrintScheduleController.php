@@ -366,11 +366,14 @@ class PrintScheduleController extends Controller
                     ? max(0, $active->progress_packs - $lastEndedPacks)
                     : null;
 
-                // Rate helper: mirrors the machine-log approach — uses the operator's latest packs
-                // reading (progress_packs) minus a prior-day baseline, divided by total run time.
-                // This is robust against wrong packs entries because it never reconstructs per-run
-                // deltas; a corrected entry just moves the total forward from whatever it was.
-                $rateForRuns = function (\Illuminate\Support\Collection $runs, int $jobId) use ($machine, $active, $dayStart): array {
+                // Rate helper: uses the latest reliable cumulative packs reading minus a prior-day
+                // baseline, divided by total run time. Robust against two failure modes:
+                // (a) operator corrects a wrong high entry to a lower value — old MAX approach
+                //     locked at the wrong high baseline; now we use last-by-id packs_produced.
+                // (b) operator enters progress_packs as a per-run counter (less than the prior
+                //     ended-run cumulative) — treat it as stale, fall back to last ended run's
+                //     packs_produced and exclude the active run's time from the denominator.
+                $rateForRuns = function (\Illuminate\Support\Collection $runs, int $jobId) use ($machine, $dayStart): array {
                     $priorBase = PrintJobRun::where('machine', $machine)
                         ->where('print_job_id', $jobId)
                         ->whereNotNull('ended_at')
@@ -379,9 +382,14 @@ class PrintScheduleController extends Controller
                         ->max('packs_produced') ?? 0;
 
                     $activeRun = $runs->firstWhere('ended_at', null);
-                    $currTotal = $activeRun?->progress_packs
-                        ?? $runs->filter(fn($r) => $r->packs_produced !== null && $r->ended_at !== null)
-                               ->sortByDesc(fn($r) => $r->id)->first()?->packs_produced;
+                    $lastEndedPacks = $runs->filter(fn($r) => $r->packs_produced !== null && $r->ended_at !== null)
+                        ->sortByDesc(fn($r) => $r->id)->first()?->packs_produced ?? 0;
+
+                    $activePacks = $activeRun?->progress_packs;
+                    // Only trust progress_packs when it exceeds the last ended run's cumulative total.
+                    // If it's lower, the operator likely entered a per-run count rather than the job total.
+                    $includeActive = $activePacks !== null && $activePacks > $lastEndedPacks;
+                    $currTotal     = $includeActive ? $activePacks : ($lastEndedPacks ?: null);
 
                     if ($currTotal === null) return [null, null, 0, 0];
                     $packs = max(0, $currTotal - $priorBase);
@@ -390,7 +398,7 @@ class PrintScheduleController extends Controller
                     foreach ($runs as $run) {
                         if ($run->ended_at) {
                             $secs += abs((int) $run->ended_at->diffInSeconds($run->started_at));
-                        } elseif ($activeRun && $run->id === $activeRun->id) {
+                        } elseif ($includeActive && $activeRun && $run->id === $activeRun->id) {
                             $end   = $activeRun->progress_at ?? now();
                             $secs += abs((int) $end->diffInSeconds($run->started_at));
                         }
