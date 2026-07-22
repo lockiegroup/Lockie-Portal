@@ -287,7 +287,7 @@
                         </div>
                         <div id="modal-pdf-wrap">
                             <p style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 2px;">Certificate</p>
-                            <a id="modal-pdf-link" href="#" target="_blank" style="font-size:0.8125rem;color:#2563eb;font-weight:600;text-decoration:none;">Download PDF</a>
+                            <a id="modal-pdf-link" href="#" target="_blank" style="font-size:0.8125rem;color:#2563eb;font-weight:600;text-decoration:none;">View Certificate</a>
                         </div>
                     </div>
                     <div id="modal-notes-wrap" style="margin-bottom:0.75rem;">
@@ -332,8 +332,8 @@
                                     style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;background:#fff;box-sizing:border-box;">
                             </div>
                             <div style="margin-bottom:0.75rem;">
-                                <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Upload PDF Certificate</label>
-                                <input type="file" name="file" accept=".pdf"
+                                <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Upload Certificate (PDF or image)</label>
+                                <input type="file" name="file" accept=".pdf,.png,.jpg,.jpeg,.gif,.webp"
                                     style="width:100%;font-size:0.8125rem;color:#334155;">
                             </div>
                             <div style="margin-bottom:0.875rem;">
@@ -855,7 +855,7 @@ window.openCell = function(operatorId, machineId) {
         cell.history.forEach(function(r) {
             var row = document.createElement('div');
             row.style.cssText = 'display:flex;align-items:center;gap:0.5rem;padding:0.5rem 0.75rem;background:#f8fafc;border-radius:8px;margin-bottom:0.375rem;border:1px solid #e2e8f0;';
-            var pdfBtn = r.has_pdf ? '<a href="' + r.pdf_url + '" target="_blank" style="font-size:0.75rem;color:#2563eb;font-weight:600;text-decoration:none;">PDF</a>' : '';
+            var pdfBtn = r.has_pdf ? '<a href="' + r.pdf_url + '" target="_blank" style="font-size:0.75rem;color:#2563eb;font-weight:600;text-decoration:none;">Cert</a>' : '';
             var byTxt  = r.added_by ? '<span style="font-size:0.72rem;color:#94a3b8;">' + escHtml(r.added_by) + '</span>' : '';
             row.innerHTML =
                 '<span style="font-size:0.8125rem;font-weight:600;color:#475569;flex:1;">' + r.trained_date + '</span>' +

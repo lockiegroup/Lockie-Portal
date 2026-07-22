@@ -153,7 +153,7 @@ class TrainingController extends Controller
             'operator_id'  => 'required|exists:training_operators,id',
             'trained_date' => 'required|date',
             'notes'        => 'nullable|string',
-            'file'         => 'nullable|file|mimes:pdf|max:10240',
+            'file'         => 'nullable|file|mimes:pdf,jpg,jpeg,png,gif,webp|max:10240',
         ]);
 
         $pdfPath         = null;
@@ -162,7 +162,7 @@ class TrainingController extends Controller
         if ($request->hasFile('file')) {
             $file            = $request->file('file');
             $pdfOriginalName = $file->getClientOriginalName();
-            $filename        = Str::uuid() . '.pdf';
+            $filename        = Str::uuid() . '.' . $file->getClientOriginalExtension();
             $file->storeAs('training-pdfs', $filename, 'local');
             $pdfPath = 'training-pdfs/' . $filename;
         }
@@ -196,8 +196,15 @@ class TrainingController extends Controller
         abort_unless($record->pdf_path, 404);
 
         $filename = $record->pdf_original_name ?: basename($record->pdf_path);
+        $ext      = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+        $mimeMap  = ['pdf' => 'application/pdf', 'png' => 'image/png', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'gif' => 'image/gif', 'webp' => 'image/webp'];
+        $mime     = $mimeMap[$ext] ?? 'application/octet-stream';
+        $inline   = in_array($ext, ['pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp']);
 
-        return Storage::disk('local')->download($record->pdf_path, $filename);
+        return response()->file(Storage::disk('local')->path($record->pdf_path), [
+            'Content-Type'        => $mime,
+            'Content-Disposition' => ($inline ? 'inline' : 'attachment') . '; filename="' . $filename . '"',
+        ]);
     }
 
     public function storePlanned(Request $request): RedirectResponse
