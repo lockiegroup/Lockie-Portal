@@ -874,9 +874,9 @@ class PrintScheduleController extends Controller
             $cols = 4;
             $rows = 20;
             $lw   = 50.0;
-            $lh   = 13.65;
+            $lh   = 14.85; // 297mm / 20 rows = 14.85mm — labels butt top & bottom of sheet
             $ml   = 2.0;   // (210 - 4×50 - 3×2) / 2 = 4/2 = 2mm side margins
-            $mt   = 12.0;  // increase if row 1 still prints too high
+            $mt   = 0.0;   // no top margin — first label starts at paper edge
             $cg   = 2.0;
         } else {
             // Avery L7651 – 5 columns × 13 rows = 65 per page
