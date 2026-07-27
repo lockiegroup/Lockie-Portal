@@ -874,9 +874,9 @@ class PrintScheduleController extends Controller
             $cols = 4;
             $rows = 20;
             $lw   = 50.0;
-            $lh   = 14.0;
+            $lh   = 13.65;
             $ml   = 2.0;   // (210 - 4×50 - 3×2) / 2 = 4/2 = 2mm side margins
-            $mt   = 8.5;
+            $mt   = 12.0;  // increase if row 1 still prints too high
             $cg   = 2.0;
         } else {
             // Avery L7651 – 5 columns × 13 rows = 65 per page
