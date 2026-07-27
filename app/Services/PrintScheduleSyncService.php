@@ -121,8 +121,17 @@ class PrintScheduleSyncService
                     continue;
                 }
 
-                // If fully shipped and no active card, leave it archived — nothing to do
+                // If fully shipped but not found in pre-fetch (e.g. is_manual=true or line_number
+                // mismatch), do a direct query to catch and archive any active card for this line
                 if ($lineShipped) {
+                    PrintJob::active()
+                        ->where('unleashed_guid', $guid)
+                        ->where('line_number', $lineNumber)
+                        ->each(function ($job) use (&$updated) {
+                            $job->closeOpenRuns();
+                            $job->update(['archived_at' => now(), 'archive_reason' => 'completed']);
+                            $updated++;
+                        });
                     continue;
                 }
 
