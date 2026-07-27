@@ -869,12 +869,14 @@ class PrintScheduleController extends Controller
         if ($isUniverseal) {
             // Universeal sheet: 4 columns × 20 rows = 80 per page
             // Each unique label is repeated ×4 so every row of 4 cells shows the same number.
+            // Physical sheet: label width = 50mm (measured), 4 cols fills 210mm A4 width.
+            // Height: 20 rows × 14mm = 280mm + 8.5mm top + 8.5mm bottom = 297mm A4.
             $cols = 4;
             $rows = 20;
-            $lw   = 47.0;
-            $lh   = 14.05;
-            $ml   = 7.0;
-            $mt   = 7.5;
+            $lw   = 50.0;
+            $lh   = 14.0;
+            $ml   = 2.0;   // (210 - 4×50 - 3×2) / 2 = 4/2 = 2mm side margins
+            $mt   = 8.5;
             $cg   = 2.0;
         } else {
             // Avery L7651 – 5 columns × 13 rows = 65 per page
