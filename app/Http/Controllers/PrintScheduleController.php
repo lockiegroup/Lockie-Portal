@@ -867,17 +867,18 @@ class PrintScheduleController extends Controller
     private function buildLabelPdf(array $labels, ?string $printed, bool $branded, bool $isUniverseal = false, string $customerName = ''): string
     {
         if ($isUniverseal) {
-            // Universeal sheet: 4 columns × 20 rows = 80 per page
-            // Each unique label is repeated ×4 so every row of 4 cells shows the same number.
-            // Physical sheet: label width = 50mm (measured), 4 cols fills 210mm A4 width.
-            // Height: 20 rows × 14mm = 280mm + 8.5mm top + 8.5mm bottom = 297mm A4.
+            // Universeal "40 Set Special with Perf" sheet: 4 cols × 20 rows = 80 per page.
+            // Spec: column pitch = 50mm, label face = 47.5mm, gap/perf = 2.5mm.
+            // Row height = 14.76375mm (no row gap). Left margin = (210 - 4×50) / 2 = 5mm.
+            // No top margin — labels butt to paper edge top and bottom.
+            // Each unique label is repeated ×4 so one full row of 4 shows the same number.
             $cols = 4;
             $rows = 20;
-            $lw   = 50.0;
-            $lh   = 14.85; // 297mm / 20 rows = 14.85mm — labels butt top & bottom of sheet
-            $ml   = 2.0;   // (210 - 4×50 - 3×2) / 2 = 4/2 = 2mm side margins
-            $mt   = 0.0;   // no top margin — first label starts at paper edge
-            $cg   = 2.0;
+            $lw   = 47.5;
+            $lh   = 14.76375;
+            $ml   = 5.0;
+            $mt   = 0.0;
+            $cg   = 2.5;
         } else {
             // Avery L7651 – 5 columns × 13 rows = 65 per page
             $cols = 5;
