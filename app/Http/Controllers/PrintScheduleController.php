@@ -875,7 +875,7 @@ class PrintScheduleController extends Controller
             $cols = 4;
             $rows = 20;
             $lw   = 47.5;
-            $lh   = 14.76375;
+            $lh   = 14.85; // 297mm / 20 rows — face is 14.76375mm but pitch fills sheet exactly
             $ml   = 5.0;
             $mt   = 0.0;
             $cg   = 2.5;
