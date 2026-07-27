@@ -822,12 +822,10 @@ class PrintScheduleController extends Controller
             $uniqueLabels = array_fill(0, $count, null);
         }
 
-        // Universeal: 4 copies per unique label so each row of 4 cells shows the same number
+        // Universeal: 2 copies per unique label
         if ($isUniverseal) {
             $labels = [];
             foreach ($uniqueLabels as $lbl) {
-                $labels[] = $lbl;
-                $labels[] = $lbl;
                 $labels[] = $lbl;
                 $labels[] = $lbl;
             }
