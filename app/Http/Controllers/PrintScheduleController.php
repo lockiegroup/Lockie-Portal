@@ -822,10 +822,12 @@ class PrintScheduleController extends Controller
             $uniqueLabels = array_fill(0, $count, null);
         }
 
-        // Universeal: duplicate each label (×2)
+        // Universeal: 4 copies per unique label so each row of 4 cells shows the same number
         if ($isUniverseal) {
             $labels = [];
             foreach ($uniqueLabels as $lbl) {
+                $labels[] = $lbl;
+                $labels[] = $lbl;
                 $labels[] = $lbl;
                 $labels[] = $lbl;
             }
@@ -864,14 +866,27 @@ class PrintScheduleController extends Controller
 
     private function buildLabelPdf(array $labels, ?string $printed, bool $branded, bool $isUniverseal = false, string $customerName = ''): string
     {
-        // Avery L7651 – 5 columns × 13 rows = 65 per page (standard sheet for all label types)
-        $cols = 5;
-        $lw   = 38.1;
-        $lh  = 21.2;
-        $ml  = 4.65;
-        $mt  = 10.65;
-        $cg  = 2.5;
-        $per = $cols * 13;
+        if ($isUniverseal) {
+            // Universeal sheet: 4 columns × 20 rows = 80 per page
+            // Each unique label is repeated ×4 so every row of 4 cells shows the same number.
+            $cols = 4;
+            $rows = 20;
+            $lw   = 47.0;
+            $lh   = 14.05;
+            $ml   = 7.0;
+            $mt   = 7.5;
+            $cg   = 2.0;
+        } else {
+            // Avery L7651 – 5 columns × 13 rows = 65 per page
+            $cols = 5;
+            $rows = 13;
+            $lw   = 38.1;
+            $lh   = 21.2;
+            $ml   = 4.65;
+            $mt   = 10.65;
+            $cg   = 2.5;
+        }
+        $per = $cols * $rows;
 
         $pdf = new \FPDF('P', 'mm', 'A4');
         $pdf->SetMargins(0, 0, 0);
@@ -905,11 +920,12 @@ class PrintScheduleController extends Controller
         $pdf->SetTextColor(0, 0, 0);
 
         // Three lines: customer name (top) / range (middle, large bold) / printed (bottom)
+        // Sized to fit the shorter 14mm Universeal label cell
         $nameText  = strtoupper(explode(' ', trim($customerName))[0]); // first word e.g. "UNIVERSEAL"
         $lines = array_filter([
-            ['text' => $nameText,    'style' => 'B', 'size' => 9.0,  'cellH' => 3.8],
-            $range   ? ['text' => $range,   'style' => 'B', 'size' => 10.5, 'cellH' => 4.8] : null,
-            $printed ? ['text' => $printed, 'style' => '',  'size' => 8.0,  'cellH' => 3.4] : null,
+            ['text' => $nameText,    'style' => 'B', 'size' => 7.0,  'cellH' => 3.0],
+            $range   ? ['text' => $range,   'style' => 'B', 'size' => 8.5,  'cellH' => 3.8] : null,
+            $printed ? ['text' => $printed, 'style' => '',  'size' => 6.5,  'cellH' => 2.8] : null,
         ]);
         $lines  = array_values($lines);
         $totalH = array_sum(array_column($lines, 'cellH'));
