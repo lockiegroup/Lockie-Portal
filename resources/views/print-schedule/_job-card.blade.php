@@ -377,20 +377,6 @@
         </div>
     </div>
 
-    {{-- Force despatch (awaiting_despatch board, non-manual, admin only) --}}
-    @if(!$job->is_manual && $job->board === 'awaiting_despatch' && auth()->user()->hasPermission('print_schedule'))
-    <div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid #f1f5f9;">
-        <button onclick="forceDespatchJob({{ $job->id }})"
-            style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;padding:6px 10px;background:#f0fdf4;color:#16a34a;font-size:0.75rem;font-weight:600;border-radius:8px;border:1px solid #bbf7d0;cursor:pointer;"
-            onmouseover="this.style.background='#dcfce7'" onmouseout="this.style.background='#f0fdf4'">
-            <svg style="width:12px;height:12px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="20 6 9 17 4 12"/>
-            </svg>
-            Mark as Despatched
-        </button>
-    </div>
-    @endif
-
     {{-- Manual job actions --}}
     @if($job->is_manual)
     <div style="display:flex;gap:8px;margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid #f1f5f9;">

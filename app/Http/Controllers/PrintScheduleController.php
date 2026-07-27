@@ -790,22 +790,6 @@ class PrintScheduleController extends Controller
         return response()->json(['success' => true]);
     }
 
-    public function forceDespatch(PrintJob $job): JsonResponse
-    {
-        abort_unless(auth()->user()->hasPermission('print_schedule'), 403);
-
-        $job->closeOpenRuns();
-        $job->update([
-            'archived_at'    => now(),
-            'archive_reason' => 'completed',
-            'despatched_at'  => now()->toDateString(),
-        ]);
-
-        \App\Models\ActivityLog::record('print.force_despatch', "Force-marked as despatched: {$job->order_number} / {$job->product_description}");
-
-        return response()->json(['success' => true]);
-    }
-
     // ── Label generation ─────────────────────────────────────────────────────────
 
     public function downloadLabels(Request $request, PrintJob $job): Response

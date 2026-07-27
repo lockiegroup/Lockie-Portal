@@ -1003,20 +1003,6 @@
             }
         });
 
-        window.forceDespatchJob = async function (id) {
-            if (!confirm('Mark this job as despatched and remove it from the board?\n\nUse this only if the Unleashed sync has not automatically archived a fully-shipped line.')) return;
-            const res = await fetch(`/print-schedule/jobs/${id}/force-despatch`, {
-                method : 'POST',
-                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
-            });
-            if (res.ok) {
-                const card = document.getElementById('job-card-' + id);
-                if (card) card.remove();
-            } else {
-                alert('Failed to mark as despatched. Please refresh and try again.');
-            }
-        };
-
         window.archiveManualJob = async function (id) {
             if (!confirm('Archive and remove this manual job?')) return;
             const res = await fetch(`/print-schedule/jobs/${id}/manual-archive`, {
