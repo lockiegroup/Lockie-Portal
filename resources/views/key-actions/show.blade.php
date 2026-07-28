@@ -437,13 +437,33 @@ async function patchTask(data) {
     if (json.ok) { activeTask = json.task; return json.task; }
 }
 
+function playCompleteDing() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.4, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.5);
+    } catch (e) {}
+}
+
 async function toggleComplete() {
     const res  = await fetch(`${baseUrl}/tasks/${activeTaskId}/complete`, {
         method: 'PATCH',
         headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
     });
     const json = await res.json();
-    if (json.ok) location.reload();
+    if (json.ok) {
+        if (!activeTask?.completed) playCompleteDing();
+        location.reload();
+    }
 }
 
 async function deleteTask() {
@@ -680,12 +700,17 @@ async function renameGroup() {
 
 async function quickComplete(taskId, event) {
     event.stopPropagation();
+    const circle = event.currentTarget;
+    const alreadyDone = circle.title === 'Reopen';
     const res  = await fetch(`${baseUrl}/tasks/${taskId}/complete`, {
         method: 'PATCH',
         headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
     });
     const json = await res.json();
-    if (json.ok) location.reload();
+    if (json.ok) {
+        if (!alreadyDone) playCompleteDing();
+        location.reload();
+    }
 }
 
 // ── Buckets ───────────────────────────────────────────────────────────────────
