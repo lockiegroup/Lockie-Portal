@@ -123,7 +123,7 @@ class PrintScheduleController extends Controller
         // Clamp so date_to is never before date_from
         if ($dateTo < $dateFrom) $dateTo = $dateFrom;
 
-        $query = \App\Models\PrintJobRun::with(['user', 'printJob:id,customer_name,product_code,order_number,order_quantity'])
+        $query = \App\Models\PrintJobRun::with(['user', 'printJob:id,customer_name,product_code,order_number,order_quantity', 'progressLogs'])
             ->whereIn('machine', $machines)
             ->whereDate('started_at', '>=', $dateFrom)
             ->whereDate('started_at', '<=', $dateTo)

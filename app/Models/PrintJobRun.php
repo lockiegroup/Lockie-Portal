@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PrintJobRun extends Model
 {
@@ -38,5 +39,10 @@ class PrintJobRun extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function progressLogs(): HasMany
+    {
+        return $this->hasMany(PrintJobRunProgress::class)->orderBy('logged_at');
     }
 }

@@ -296,42 +296,58 @@
                         @foreach($group['entries'] as $ei => $entry)
                             @php
                                 $run = $entry['run'];
-                                $dur = $run->ended_at
-                                    ? abs((int) $run->ended_at->diffInSeconds($run->started_at))
-                                    : abs((int) now()->diffInSeconds($run->started_at));
-                                $durStr = fmtDur($dur);
 
-                                // Both packs_produced and progress_packs are cumulative running totals.
-                                // The delta for this run = this run's value minus the previous run's cumulative total.
-                                // For the first run in this date range, fall back to the prior-period baseline
-                                // so packs from previous days are not double-counted in this log.
+                                // Baseline packs before this run (from prior runs in this date range, or prior-period baseline)
                                 $prevCumPacks = collect($group['entries'])
                                     ->take($ei)
                                     ->pluck('run')
                                     ->filter(fn($r) => $r->packs_produced !== null)
                                     ->last()?->packs_produced ?? $priorBaseline;
 
-                                if ($run->packs_produced !== null) {
-                                    $packsThisRun = max(0, $run->packs_produced - $prevCumPacks);
-                                } elseif ($run->progress_packs !== null) {
-                                    $packsThisRun = max(0, $run->progress_packs - $prevCumPacks);
-                                } else {
-                                    $packsThisRun = null;
+                                // Build segments: one per progress log entry, plus a final open/closed segment
+                                $segments      = [];
+                                $segStart      = $run->started_at;
+                                $segBasePacks  = $prevCumPacks;
+
+                                foreach ($run->progressLogs as $log) {
+                                    $segSecs  = abs((int) $log->logged_at->diffInSeconds($segStart));
+                                    $segPacks = max(0, $log->packs_cumulative - $segBasePacks);
+                                    $segHours = $segSecs > 0 ? $segSecs / 3600 : 0;
+                                    $segments[] = [
+                                        'start'  => $segStart,
+                                        'end'    => $log->logged_at,
+                                        'secs'   => $segSecs,
+                                        'packs'  => $segPacks,
+                                        'rate'   => ($segPacks > 0 && $segHours >= 0.1) ? (int) round($segPacks / $segHours) : null,
+                                        'type'   => 'logged',
+                                    ];
+                                    $segStart     = $log->logged_at;
+                                    $segBasePacks = $log->packs_cumulative;
                                 }
 
-                                // Rate uses progress_at as endpoint so it stays stable after last update
-                                $rateEndTime = $run->ended_at ?? $run->progress_at;
-                                $rateSecs = $rateEndTime
-                                    ? abs((int) $rateEndTime->diffInSeconds($run->started_at))
-                                    : $dur;
-                                $hours = $rateSecs > 0 ? $rateSecs / 3600 : 0;
-                                $ratePerHr = ($packsThisRun && $hours >= 0.1) ? (int) round($packsThisRun / $hours) : null;
-                                $rateStr = null;
-                                if ($ratePerHr !== null) {
-                                    $rateStr = $ratePerHr >= 1000
-                                        ? number_format($ratePerHr / 1000, 1) . 'k/hr'
-                                        : number_format($ratePerHr) . '/hr';
+                                // Final segment (running or ended)
+                                $finalEnd  = $run->ended_at;
+                                $finalSecs = $finalEnd
+                                    ? abs((int) $finalEnd->diffInSeconds($segStart))
+                                    : abs((int) now()->diffInSeconds($segStart));
+                                if ($run->packs_produced !== null) {
+                                    $finalPacks = max(0, $run->packs_produced - $segBasePacks);
+                                } elseif ($run->progress_packs !== null && $run->progress_packs > $segBasePacks) {
+                                    $finalPacks = max(0, $run->progress_packs - $segBasePacks);
+                                } else {
+                                    $finalPacks = null;
                                 }
+                                $finalHours = $finalSecs > 0 ? $finalSecs / 3600 : 0;
+                                $segments[] = [
+                                    'start'          => $segStart,
+                                    'end'            => $finalEnd,
+                                    'secs'           => $finalSecs,
+                                    'packs'          => $finalPacks,
+                                    'rate'           => ($finalPacks && $finalHours >= 0.1) ? (int) round($finalPacks / $finalHours) : null,
+                                    'type'           => $run->ended_at ? ($run->end_reason ?? 'complete') : 'running',
+                                    'pause_reason'   => $run->pause_reason,
+                                    'fully_complete' => $run->fully_complete,
+                                ];
                             @endphp
 
                             {{-- Idle gap between runs of the same job --}}
@@ -347,85 +363,103 @@
                                 </div>
                             @endif
 
-                            <div style="display:grid;grid-template-columns:150px 120px 1fr 120px 100px 130px;align-items:center;gap:8px;padding:9px 20px 9px 36px;border-top:1px solid #f1f5f9;background:{{ $gi % 2 === 0 ? '#fff' : '#fafafa' }};min-width:680px;">
+                            @foreach($segments as $si => $seg)
+                                @php
+                                    $durStr  = fmtDur($seg['secs']);
+                                    $rateStr = null;
+                                    if ($seg['rate'] !== null) {
+                                        $rateStr = $seg['rate'] >= 1000
+                                            ? number_format($seg['rate'] / 1000, 1) . 'k/hr'
+                                            : number_format($seg['rate']) . '/hr';
+                                    }
+                                    $isFirst = $si === 0;
+                                @endphp
 
-                                {{-- Time --}}
-                                <div>
-                                    <div style="font-size:0.82rem;font-weight:600;color:#334155;font-family:monospace;">
-                                        {{ $run->started_at->format('H:i') }}
-                                        →
-                                        @if($run->ended_at)
-                                            {{ $run->ended_at->format('H:i') }}
-                                        @else
-                                            <span style="color:#16a34a;">now</span>
+                                {{-- Thin divider between segments of the same run --}}
+                                @if($si > 0)
+                                    <div style="height:1px;background:#f1f5f9;margin-left:36px;"></div>
+                                @endif
+
+                                <div style="display:grid;grid-template-columns:150px 120px 1fr 120px 100px 130px;align-items:center;gap:8px;padding:9px 20px 9px 36px;border-top:{{ $si === 0 ? '1px solid #f1f5f9' : 'none' }};background:{{ $gi % 2 === 0 ? '#fff' : '#fafafa' }};min-width:680px;">
+
+                                    {{-- Time --}}
+                                    <div>
+                                        <div style="font-size:0.82rem;font-weight:600;color:#334155;font-family:monospace;">
+                                            {{ $seg['start']->format('H:i') }}
+                                            →
+                                            @if($seg['end'])
+                                                {{ $seg['end']->format('H:i') }}
+                                            @else
+                                                <span style="color:#16a34a;">now</span>
+                                            @endif
+                                        </div>
+                                        <div style="font-size:0.72rem;color:#94a3b8;margin-top:1px;">{{ $durStr }}</div>
+                                    </div>
+
+                                    {{-- Operator (first segment of each run only) --}}
+                                    <div style="font-size:0.82rem;color:#475569;">
+                                        @if($isFirst) {{ $run->user?->name ?? '—' }} @endif
+                                    </div>
+
+                                    {{-- Middle info --}}
+                                    <div>
+                                        @if($seg['type'] === 'running' && $run->progress_packs !== null && $run->progress_at !== null && count($run->progressLogs) === 0)
+                                            {{-- Legacy: run has progress_packs but no history entries (pre-feature data) --}}
+                                            <div style="font-size:0.75rem;color:#475569;">
+                                                Last update <span style="font-family:monospace;color:#334155;">{{ $run->progress_at->format('H:i') }}</span>
+                                            </div>
+                                            <div style="font-size:0.72rem;color:#64748b;margin-top:1px;">
+                                                {{ number_format($run->progress_packs) }} packs logged
+                                            </div>
+                                        @elseif($seg['type'] === 'running')
+                                            <span style="font-size:0.72rem;color:#cbd5e1;">No updates logged</span>
                                         @endif
                                     </div>
-                                    <div style="font-size:0.72rem;color:#94a3b8;margin-top:1px;">{{ $durStr }}</div>
-                                </div>
 
-                                {{-- Operator --}}
-                                <div style="font-size:0.82rem;color:#475569;">
-                                    {{ $run->user?->name ?? '—' }}
-                                </div>
-
-                                {{-- Last qty update --}}
-                                <div>
-                                    @if($run->progress_packs !== null && $run->progress_at !== null)
-                                        <div style="font-size:0.75rem;color:#475569;">
-                                            Last update <span style="font-family:monospace;color:#334155;">{{ $run->progress_at->format('H:i') }}</span>
-                                        </div>
-                                        <div style="font-size:0.72rem;color:#64748b;margin-top:1px;">
-                                            {{ number_format($run->progress_packs) }} packs logged
-                                        </div>
-                                    @elseif($run->ended_at === null)
-                                        <span style="font-size:0.72rem;color:#cbd5e1;">No updates logged</span>
-                                    @endif
-                                </div>
-
-                                {{-- Rate --}}
-                                <div style="text-align:right;">
-                                    @if($rateStr)
-                                        <span style="font-size:0.78rem;font-weight:700;color:#0284c7;background:#eff6ff;padding:3px 8px;border-radius:6px;white-space:nowrap;">
-                                            ~{{ $rateStr }}
-                                        </span>
-                                    @endif
-                                </div>
-
-                                {{-- Packs --}}
-                                <div style="text-align:right;">
-                                    @if($run->packs_produced !== null)
-                                        <span style="font-size:0.95rem;font-weight:700;color:#334155;">{{ number_format($run->packs_produced) }}</span>
-                                        <span style="font-size:0.7rem;color:#94a3b8;"> packs</span>
-                                    @elseif($run->progress_packs !== null)
-                                        <span style="font-size:0.85rem;font-weight:600;color:#64748b;">~{{ number_format($run->progress_packs) }}</span>
-                                        <span style="font-size:0.7rem;color:#94a3b8;"> so far</span>
-                                    @else
-                                        <span style="color:#cbd5e1;font-size:0.8rem;">—</span>
-                                    @endif
-                                </div>
-
-                                {{-- Status --}}
-                                <div style="text-align:right;">
-                                    @if($run->end_reason === 'complete')
-                                        <span style="font-size:0.72rem;font-weight:700;background:#dcfce7;color:#15803d;padding:3px 9px;border-radius:9999px;">
-                                            @if($run->fully_complete) ✓ Complete @else Ended @endif
-                                        </span>
-                                    @elseif($run->end_reason === 'pause')
-                                        <span style="font-size:0.72rem;font-weight:700;background:#fef3c7;color:#92400e;padding:3px 9px;border-radius:9999px;">Paused</span>
-                                        @if($run->pause_reason)
-                                            <div style="font-size:0.7rem;color:#b45309;margin-top:3px;text-align:right;">{{ $run->pause_reason }}</div>
+                                    {{-- Rate --}}
+                                    <div style="text-align:right;">
+                                        @if($rateStr)
+                                            <span style="font-size:0.78rem;font-weight:700;color:#0284c7;background:#eff6ff;padding:3px 8px;border-radius:6px;white-space:nowrap;">
+                                                ~{{ $rateStr }}
+                                            </span>
                                         @endif
-                                    @elseif($run->end_reason === 'handover')
-                                        <span style="font-size:0.72rem;font-weight:700;background:#ede9fe;color:#5b21b6;padding:3px 9px;border-radius:9999px;">Handover</span>
-                                    @elseif($run->ended_at === null)
-                                        <span style="font-size:0.72rem;font-weight:700;background:#dcfce7;color:#15803d;padding:3px 9px;border-radius:9999px;display:inline-flex;align-items:center;gap:5px;">
-                                            <span style="width:6px;height:6px;border-radius:50%;background:#16a34a;animation:psRun 1.5s infinite;display:inline-block;"></span>
-                                            Running
-                                        </span>
-                                    @endif
-                                </div>
+                                    </div>
 
-                            </div>
+                                    {{-- Packs --}}
+                                    <div style="text-align:right;">
+                                        @if($seg['packs'] !== null)
+                                            <span style="font-size:0.95rem;font-weight:700;color:#334155;">{{ number_format($seg['packs']) }}</span>
+                                            <span style="font-size:0.7rem;color:#94a3b8;"> packs</span>
+                                        @else
+                                            <span style="color:#cbd5e1;font-size:0.8rem;">—</span>
+                                        @endif
+                                    </div>
+
+                                    {{-- Status --}}
+                                    <div style="text-align:right;">
+                                        @if($seg['type'] === 'logged')
+                                            <span style="font-size:0.72rem;font-weight:700;background:#f0fdf4;color:#15803d;padding:3px 9px;border-radius:9999px;">✓ Logged</span>
+                                        @elseif($seg['type'] === 'complete')
+                                            <span style="font-size:0.72rem;font-weight:700;background:#dcfce7;color:#15803d;padding:3px 9px;border-radius:9999px;">
+                                                @if($seg['fully_complete']) ✓ Complete @else Ended @endif
+                                            </span>
+                                        @elseif($seg['type'] === 'pause')
+                                            <span style="font-size:0.72rem;font-weight:700;background:#fef3c7;color:#92400e;padding:3px 9px;border-radius:9999px;">Paused</span>
+                                            @if($seg['pause_reason'])
+                                                <div style="font-size:0.7rem;color:#b45309;margin-top:3px;text-align:right;">{{ $seg['pause_reason'] }}</div>
+                                            @endif
+                                        @elseif($seg['type'] === 'handover')
+                                            <span style="font-size:0.72rem;font-weight:700;background:#ede9fe;color:#5b21b6;padding:3px 9px;border-radius:9999px;">Handover</span>
+                                        @elseif($seg['type'] === 'running')
+                                            <span style="font-size:0.72rem;font-weight:700;background:#dcfce7;color:#15803d;padding:3px 9px;border-radius:9999px;display:inline-flex;align-items:center;gap:5px;">
+                                                <span style="width:6px;height:6px;border-radius:50%;background:#16a34a;animation:psRun 1.5s infinite;display:inline-block;"></span>
+                                                Running
+                                            </span>
+                                        @endif
+                                    </div>
+
+                                </div>
+                            @endforeach
                         @endforeach
 
                     @endforeach

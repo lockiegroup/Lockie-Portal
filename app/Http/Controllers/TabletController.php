@@ -269,9 +269,15 @@ class TabletController extends Controller
 
         $run = $job->runs()->where('machine', $machine)->whereNull('ended_at')->first();
         if ($run) {
+            $now = now();
             $run->update([
                 'progress_packs' => $data['progress_packs'],
-                'progress_at'    => now(),
+                'progress_at'    => $now,
+            ]);
+            \App\Models\PrintJobRunProgress::create([
+                'print_job_run_id' => $run->id,
+                'packs_cumulative' => $data['progress_packs'],
+                'logged_at'        => $now,
             ]);
         }
 
