@@ -144,6 +144,7 @@ class PrintScheduleController extends Controller
         // pack counts and rates are not inflated by carry-over from prior days.
         $jobIds = $allRuns->pluck('print_job_id')->unique()->filter()->values();
         $jobBaselines = [];
+        $jobPriorSecs = []; // total machine-time (seconds) on each job before the date range
         if ($jobIds->isNotEmpty()) {
             $jobBaselines = \App\Models\PrintJobRun::whereIn('print_job_id', $jobIds)
                 ->whereDate('started_at', '<', $dateFrom)
@@ -151,6 +152,15 @@ class PrintScheduleController extends Controller
                 ->selectRaw('print_job_id, MAX(packs_produced) as baseline')
                 ->groupBy('print_job_id')
                 ->pluck('baseline', 'print_job_id')
+                ->map(fn($v) => (int) $v)
+                ->toArray();
+
+            $jobPriorSecs = \App\Models\PrintJobRun::whereIn('print_job_id', $jobIds)
+                ->whereDate('started_at', '<', $dateFrom)
+                ->whereNotNull('ended_at')
+                ->selectRaw('print_job_id, SUM(TIMESTAMPDIFF(SECOND, started_at, ended_at)) as prior_secs')
+                ->groupBy('print_job_id')
+                ->pluck('prior_secs', 'print_job_id')
                 ->map(fn($v) => (int) $v)
                 ->toArray();
         }
@@ -182,7 +192,7 @@ class PrintScheduleController extends Controller
             $q->whereDate('started_at', '>=', $dateFrom)->whereDate('started_at', '<=', $dateTo);
         })->orderBy('name')->get(['id', 'name']);
 
-        return compact('byMachine', 'machines', 'operators', 'dateFrom', 'dateTo', 'machine', 'operator', 'jobBaselines');
+        return compact('byMachine', 'machines', 'operators', 'dateFrom', 'dateTo', 'machine', 'operator', 'jobBaselines', 'jobPriorSecs');
     }
 
     public function machineLog(Request $request): View

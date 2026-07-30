@@ -227,6 +227,7 @@
                             // Subtract any prior-period baseline so "Done this log" only counts packs in this date range.
                             $jobId = $group['entries'][0]['run']->print_job_id ?? null;
                             $priorBaseline = $jobId ? ($jobBaselines[$jobId] ?? 0) : 0;
+                            $priorSecs     = $jobId ? ($jobPriorSecs[$jobId] ?? 0) : 0;
                             $activePacks = $groupRuns->whereNull('ended_at')->whereNotNull('progress_packs')->max('progress_packs');
                             $lastEndedPacks = $groupRuns->filter(fn($r) => $r->packs_produced !== null && $r->ended_at !== null)
                                 ->sortByDesc(fn($r) => $r->ended_at?->timestamp)->first()?->packs_produced ?? 0;
@@ -236,6 +237,9 @@
                             $groupRateStr = $groupRate
                                 ? ($groupRate >= 1000 ? number_format($groupRate / 1000, 1) . 'k/hr' : number_format($groupRate) . '/hr')
                                 : null;
+                            // Running totals across all days (prior + this period)
+                            $totalPacksAllDays = $priorBaseline + $groupPacks;
+                            $totalSecsAllDays  = $priorSecs + $groupTotalSecs;
                         @endphp
 
                         {{-- Gap before this job group (gap from previous group's last run) --}}
@@ -269,7 +273,7 @@
                                     <span style="font-size:0.75rem;color:#94a3b8;margin-left:6px;">· {{ $job->order_number }}</span>
                                 @endif
                             </div>
-                            <div style="display:flex;align-items:center;gap:16px;font-size:0.8rem;color:#64748b;">
+                            <div style="display:flex;align-items:center;gap:16px;font-size:0.8rem;color:#64748b;flex-wrap:wrap;">
                                 @if($job?->order_quantity)
                                     <span>Order: <strong style="color:#334155;">{{ number_format($job->order_quantity) }} packs</strong></span>
                                 @endif
@@ -279,6 +283,13 @@
                                 <span>Time: <strong style="color:#334155;">{{ fmtDur($groupRunSecs) }}</strong></span>
                                 @if($groupRateStr)
                                     <span style="font-weight:700;color:#0284c7;background:#eff6ff;padding:2px 8px;border-radius:6px;font-size:0.78rem;">~{{ $groupRateStr }}</span>
+                                @endif
+                                @if($priorBaseline > 0)
+                                    <span style="border-left:1px solid #e2e8f0;padding-left:16px;color:#94a3b8;">
+                                        Job total: <strong style="color:#64748b;">{{ number_format($totalPacksAllDays) }} packs</strong>
+                                        / <strong style="color:#64748b;">{{ fmtDur($totalSecsAllDays) }}</strong>
+                                        <span style="font-size:0.72rem;"> (inc. prior days)</span>
+                                    </span>
                                 @endif
                             </div>
                         </div>
