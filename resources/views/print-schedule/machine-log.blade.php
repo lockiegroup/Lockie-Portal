@@ -350,39 +350,30 @@
                                 ];
                             @endphp
 
-                            {{-- Gap between runs of the same job --}}
-                            @if($ei > 0 && ($entry['gap'] ?? null) > 60)
-                                @php
-                                    $prevRun     = $group['entries'][$ei - 1]['run'];
-                                    $breakReason = $prevRun->pause_reason ?: null;
-                                    $breakStart  = $prevRun->ended_at;
-                                    $breakEnd    = $run->started_at;
-                                    $gapAlert    = !$breakReason && $entry['gap'] >= 1800;
-                                @endphp
-                                @if($breakReason)
-                                    {{-- Named break (Dinner, etc.) — show as a prominent row --}}
-                                    <div style="display:grid;grid-template-columns:150px 1fr;align-items:center;gap:8px;padding:7px 20px 7px 36px;background:#fafaf7;border-top:1px dashed #e2e8f0;border-bottom:1px dashed #e2e8f0;min-width:680px;">
-                                        <div>
-                                            <div style="font-size:0.82rem;font-weight:600;color:#92400e;font-family:monospace;">
-                                                {{ $breakStart->format('H:i') }} → {{ $breakEnd->format('H:i') }}
-                                            </div>
-                                            <div style="font-size:0.72rem;color:#b45309;margin-top:1px;">{{ fmtDur($entry['gap']) }}</div>
+                            {{-- Named break between same-job runs (e.g. Dinner) --}}
+                            @if($entry['break_reason'])
+                                <div style="display:grid;grid-template-columns:150px 1fr;align-items:center;gap:8px;padding:7px 20px 7px 36px;background:#fafaf7;border-top:1px dashed #e2e8f0;border-bottom:1px dashed #e2e8f0;min-width:680px;">
+                                    <div>
+                                        <div style="font-size:0.82rem;font-weight:600;color:#92400e;font-family:monospace;">
+                                            {{ $entry['break_start']->format('H:i') }} → {{ $entry['break_end']->format('H:i') }}
                                         </div>
-                                        <div style="display:flex;align-items:center;gap:7px;">
-                                            <span style="font-size:0.72rem;font-weight:700;background:#fef3c7;color:#92400e;padding:3px 9px;border-radius:9999px;">{{ $breakReason }}</span>
-                                        </div>
+                                        <div style="font-size:0.72rem;color:#b45309;margin-top:1px;">{{ fmtDur($entry['gap']) }}</div>
                                     </div>
-                                @else
-                                    {{-- Unnamed idle gap --}}
-                                    <div style="display:flex;align-items:center;gap:8px;padding:4px 40px;background:{{ $gapAlert ? '#fef2f2' : '#fafafa' }};border-top:1px dashed {{ $gapAlert ? '#fca5a5' : '#e2e8f0' }};">
-                                        <svg style="width:11px;height:11px;color:{{ $gapAlert ? '#ef4444' : '#94a3b8' }};flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-                                        </svg>
-                                        <span style="font-size:0.72rem;color:{{ $gapAlert ? '#b91c1c' : '#94a3b8' }};font-weight:{{ $gapAlert ? '600' : '400' }};">
-                                            {{ fmtDur($entry['gap']) }} idle
-                                        </span>
+                                    <div style="display:flex;align-items:center;gap:7px;">
+                                        <span style="font-size:0.72rem;font-weight:700;background:#fef3c7;color:#92400e;padding:3px 9px;border-radius:9999px;">{{ $entry['break_reason'] }}</span>
                                     </div>
-                                @endif
+                                </div>
+                            @elseif($ei > 0 && ($entry['gap'] ?? 0) > 60)
+                                {{-- Unnamed idle gap between same-job runs --}}
+                                @php $gapAlert = $entry['gap'] >= 1800; @endphp
+                                <div style="display:flex;align-items:center;gap:8px;padding:4px 40px;background:{{ $gapAlert ? '#fef2f2' : '#fafafa' }};border-top:1px dashed {{ $gapAlert ? '#fca5a5' : '#e2e8f0' }};">
+                                    <svg style="width:11px;height:11px;color:{{ $gapAlert ? '#ef4444' : '#94a3b8' }};flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                                    </svg>
+                                    <span style="font-size:0.72rem;color:{{ $gapAlert ? '#b91c1c' : '#94a3b8' }};font-weight:{{ $gapAlert ? '600' : '400' }};">
+                                        {{ fmtDur($entry['gap']) }} idle
+                                    </span>
+                                </div>
                             @endif
 
                             @foreach($segments as $si => $seg)

@@ -174,15 +174,32 @@ class PrintScheduleController extends Controller
 
             $entries = [];
             foreach ($machineRuns as $i => $run) {
-                $gapSeconds = null;
+                $gapSeconds  = null;
+                $breakReason = null;
+                $breakStart  = null;
+                $breakEnd    = null;
                 if ($i > 0) {
                     $prev = $machineRuns[$i - 1];
                     if ($prev->ended_at !== null) {
                         $gap = $run->started_at->diffInSeconds($prev->ended_at);
-                        if ($gap > 60) $gapSeconds = $gap;
+                        if ($gap > 60) {
+                            $gapSeconds = $gap;
+                            // Same job, named pause (e.g. Dinner) — capture break info here
+                            if ($run->print_job_id === $prev->print_job_id && $prev->pause_reason) {
+                                $breakReason = $prev->pause_reason;
+                                $breakStart  = $prev->ended_at;
+                                $breakEnd    = $run->started_at;
+                            }
+                        }
                     }
                 }
-                $entries[] = ['run' => $run, 'gap' => $gapSeconds];
+                $entries[] = [
+                    'run'          => $run,
+                    'gap'          => $gapSeconds,
+                    'break_reason' => $breakReason,
+                    'break_start'  => $breakStart,
+                    'break_end'    => $breakEnd,
+                ];
             }
             $byMachine[$m] = $entries;
         }
