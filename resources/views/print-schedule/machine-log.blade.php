@@ -82,6 +82,40 @@
         @else
 
             @php
+                // Recompute gaps and named-break info from run timestamps directly in Blade.
+                // This runs inside the freshly-compiled template, bypassing any server-side
+                // PHP OPcache that may be serving a stale version of the controller.
+                $byMachine = collect($byMachine)->map(function ($machineEntries) {
+                    $fresh = [];
+                    foreach ($machineEntries as $fi => $fe) {
+                        $gap = null; $breakReason = null; $breakStart = null; $breakEnd = null;
+                        if ($fi > 0) {
+                            $pr = $machineEntries[$fi - 1]['run'];
+                            if ($pr->ended_at) {
+                                $g = abs((int) $fe['run']->started_at->diffInSeconds($pr->ended_at));
+                                if ($g > 60) {
+                                    $gap = $g;
+                                    if ($fe['run']->print_job_id === $pr->print_job_id && $pr->pause_reason) {
+                                        $breakReason = $pr->pause_reason;
+                                        $breakStart  = $pr->ended_at;
+                                        $breakEnd    = $fe['run']->started_at;
+                                    }
+                                }
+                            }
+                        }
+                        $fresh[] = [
+                            'run'          => $fe['run'],
+                            'gap'          => $gap,
+                            'break_reason' => $breakReason,
+                            'break_start'  => $breakStart,
+                            'break_end'    => $breakEnd,
+                        ];
+                    }
+                    return $fresh;
+                })->all();
+            @endphp
+
+            @php
                 $totalRuns = 0;
                 $totalPacks = 0;
                 $totalRunSecs = 0;
