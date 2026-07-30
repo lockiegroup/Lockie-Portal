@@ -282,7 +282,7 @@
                                 $firstEntryGap = $group['entries'][0]['gap'] ?? null;
                             @endphp
                             @if($firstEntryGap !== null && $firstEntryGap > 60)
-                                @php $gapAlert = $firstEntryGap >= 1800; @endphp
+                                @php $gapAlert = $firstEntryGap >= 300; @endphp
                                 <div style="display:flex;align-items:center;gap:8px;padding:5px 20px;background:{{ $gapAlert ? '#fef2f2' : '#fafafa' }};border-top:1px dashed {{ $gapAlert ? '#fca5a5' : '#e2e8f0' }};">
                                     <svg style="width:12px;height:12px;color:{{ $gapAlert ? '#ef4444' : '#94a3b8' }};flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
@@ -399,7 +399,7 @@
                                 </div>
                             @elseif($ei > 0 && ($entry['gap'] ?? 0) > 60)
                                 {{-- Unnamed idle gap between same-job runs --}}
-                                @php $gapAlert = $entry['gap'] >= 1800; @endphp
+                                @php $gapAlert = $entry['gap'] >= 300; @endphp
                                 <div style="display:flex;align-items:center;gap:8px;padding:4px 40px;background:{{ $gapAlert ? '#fef2f2' : '#fafafa' }};border-top:1px dashed {{ $gapAlert ? '#fca5a5' : '#e2e8f0' }};">
                                     <svg style="width:11px;height:11px;color:{{ $gapAlert ? '#ef4444' : '#94a3b8' }};flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
@@ -492,7 +492,8 @@
                                             </span>
                                         @elseif($seg['type'] === 'pause')
                                             <span style="font-size:0.72rem;font-weight:700;background:#fef3c7;color:#92400e;padding:3px 9px;border-radius:9999px;">Paused</span>
-                                            @if($seg['pause_reason'])
+                                            @php $nextBreak = $group['entries'][$ei + 1]['break_reason'] ?? null; @endphp
+                                            @if($seg['pause_reason'] && !$nextBreak)
                                                 <div style="font-size:0.7rem;color:#b45309;margin-top:3px;text-align:right;">{{ $seg['pause_reason'] }}</div>
                                             @endif
                                         @elseif($seg['type'] === 'handover')
