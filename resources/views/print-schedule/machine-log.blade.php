@@ -284,10 +284,13 @@
                                 @if($groupRateStr)
                                     <span style="font-weight:700;color:#0284c7;background:#eff6ff;padding:2px 8px;border-radius:6px;font-size:0.78rem;">~{{ $groupRateStr }}</span>
                                 @endif
-                                @if($priorBaseline > 0)
+                                @if($priorBaseline > 0 || $priorSecs > 0)
                                     <span style="border-left:1px solid #e2e8f0;padding-left:16px;color:#94a3b8;">
-                                        Job total: <strong style="color:#64748b;">{{ number_format($totalPacksAllDays) }} packs</strong>
-                                        / <strong style="color:#64748b;">{{ fmtDur($totalSecsAllDays) }}</strong>
+                                        Job total:
+                                        @if($totalPacksAllDays > 0)
+                                            <strong style="color:#64748b;">{{ number_format($totalPacksAllDays) }} packs</strong> /
+                                        @endif
+                                        <strong style="color:#64748b;">{{ fmtDur($totalSecsAllDays) }}</strong>
                                         <span style="font-size:0.72rem;"> (inc. prior days)</span>
                                     </span>
                                 @endif
