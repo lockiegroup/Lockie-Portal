@@ -762,7 +762,7 @@
                 <input type="number" id="pause-packs-input" name="packs_produced" min="0" placeholder="0" inputmode="numeric">
             </div>
             <div class="modal-field">
-                <label>Reason for pausing</label>
+                <label>Reason for pausing <span style="color:#f59e0b;">*</span></label>
                 <div class="reason-buttons">
                     <div class="reason-btn" onclick="selectReason(this, 'Dinner')">Dinner</div>
                     <div class="reason-btn" onclick="selectReason(this, 'Machine breakdown')">Machine breakdown</div>
@@ -771,10 +771,11 @@
                 </div>
                 <input type="text" name="pause_reason" id="pause-reason-input" placeholder="Or type a reason…"
                     style="width:100%;background:#0f172a;border:2px solid #334155;border-radius:10px;padding:10px 14px;color:#f1f5f9;font-size:0.9rem;outline:none;margin-top:4px;">
+                <div id="pause-reason-error" style="display:none;color:#f87171;font-size:0.82rem;margin-top:6px;">Please select or enter a reason before pausing.</div>
             </div>
             <div class="modal-actions">
                 <button type="button" class="btn btn-ghost btn-md" onclick="closeModal('pause-modal')">Cancel</button>
-                <button type="submit" class="btn btn-warning btn-md">Pause Job</button>
+                <button type="button" class="btn btn-warning btn-md" onclick="submitPauseForm()">Pause Job</button>
             </div>
         </form>
     </div>
@@ -868,6 +869,8 @@ let pauseSelectedReason = '';
 function openPauseModal(action, currentPacks, maxPacks) {
     document.getElementById('pause-form').action = action;
     pauseSelectedReason = '';
+    document.getElementById('pause-reason-error').style.display = 'none';
+    document.getElementById('pause-reason-input').style.borderColor = '#334155';
     // Reset reason buttons (only pause reason buttons, not end modal buttons)
     document.querySelectorAll('#pause-modal .reason-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('pause-reason-input').value = '';
@@ -884,6 +887,20 @@ function selectReason(btn, reason) {
     btn.classList.add('active');
     document.getElementById('pause-reason-input').value = reason !== 'Other' ? reason : '';
     if (reason === 'Other') document.getElementById('pause-reason-input').focus();
+    document.getElementById('pause-reason-error').style.display = 'none';
+    document.getElementById('pause-reason-input').style.borderColor = '#334155';
+}
+
+function submitPauseForm() {
+    const input = document.getElementById('pause-reason-input');
+    const reason = input.value.trim();
+    if (!reason) {
+        document.getElementById('pause-reason-error').style.display = 'block';
+        input.style.borderColor = '#ef4444';
+        input.focus();
+        return;
+    }
+    document.getElementById('pause-form').submit();
 }
 
 // ── End modal ──

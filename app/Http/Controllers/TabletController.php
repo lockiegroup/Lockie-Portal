@@ -157,7 +157,7 @@ class TabletController extends Controller
 
         $data = $request->validate([
             'packs_produced' => 'nullable|integer|min:0',
-            'pause_reason'   => 'nullable|string|max:255',
+            'pause_reason'   => 'required|string|min:1|max:255',
         ]);
 
         $run = $job->runs()->where('machine', $machine)->whereNull('ended_at')->first();
