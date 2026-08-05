@@ -869,7 +869,9 @@ function pinSubmit() {
 let pauseSelectedReason = '';
 
 function openPauseModal(action, currentPacks, maxPacks) {
-    document.getElementById('pause-form').action = action;
+    const form = document.getElementById('pause-form');
+    form.action = action;
+    form.dataset.currentPacks = currentPacks || '0';
     pauseSelectedReason = '';
     document.getElementById('pause-reason-error').style.display = 'none';
     document.getElementById('pause-reason-input').style.borderColor = '#334155';
@@ -915,14 +917,24 @@ function submitPauseForm() {
         input.focus();
         return;
     }
-    document.getElementById('pause-form').submit();
+    const form    = document.getElementById('pause-form');
+    const current = parseInt(form.dataset.currentPacks || '0', 10);
+    const entered = parseInt(document.getElementById('pause-packs-input').value, 10);
+    if (!isNaN(entered) && current > 0 && entered < current) {
+        if (!confirm('You entered ' + entered + ' packs, but ' + current + ' packs were previously recorded.\n\nAre you sure you want to go backwards?')) {
+            return;
+        }
+    }
+    form.submit();
 }
 
 // ── End modal ──
 function openEndModal(action, currentPacks, maxPacks, progressAtMs) {
-    document.getElementById('end-form').action = action;
-    document.getElementById('end-form').dataset.progressAt = progressAtMs ?? '';
-    document.getElementById('end-form').dataset.maxPacks = maxPacks || '0';
+    const form = document.getElementById('end-form');
+    form.action = action;
+    form.dataset.progressAt   = progressAtMs ?? '';
+    form.dataset.maxPacks     = maxPacks || '0';
+    form.dataset.currentPacks = currentPacks || '0';
     const packsInput = document.getElementById('end-packs-input');
     packsInput.max = maxPacks || '';
     packsInput.value = (currentPacks > 0) ? currentPacks : '';
@@ -966,6 +978,16 @@ function endModalSubmit(e) {
     const form        = document.getElementById('end-form');
     const progressAt  = form.dataset.progressAt ? parseInt(form.dataset.progressAt) : null;
     const fullyDone   = document.getElementById('fully-complete-input').value === '1';
+    const current     = parseInt(form.dataset.currentPacks || '0', 10);
+    const entered     = parseInt(document.getElementById('end-packs-input').value, 10);
+
+    if (!isNaN(entered) && current > 0 && entered < current) {
+        const ok = confirm(
+            'You entered ' + entered + ' packs, but ' + current + ' packs were previously recorded.\n\n' +
+            'Are you sure you want to go backwards?'
+        );
+        if (!ok) { e.preventDefault(); return; }
+    }
 
     if (!fullyDone && progressAt) {
         const diffMs   = Date.now() - progressAt;
