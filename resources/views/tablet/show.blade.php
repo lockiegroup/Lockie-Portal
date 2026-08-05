@@ -612,6 +612,8 @@
                         @php $currentPacks = $activeRun->progress_packs !== null ? $activeRun->progress_packs : $prevPacks; @endphp
                         {{-- Progress update --}}
                         <form method="POST" action="{{ route('tablet.jobs.progress', [$machine, $job]) }}"
+                            data-current-packs="{{ (int)$currentPacks }}"
+                            onsubmit="return confirmProgressUpdate(this)"
                             style="display:flex;align-items:center;gap:10px;flex:1;min-width:220px;background:#0f172a;border:2px solid #334155;border-radius:10px;padding:8px 12px;">
                             @csrf
                             <label style="font-size:0.85rem;color:#64748b;white-space:nowrap;font-weight:600;">Packs done:</label>
@@ -889,6 +891,19 @@ function selectReason(btn, reason) {
     if (reason === 'Other') document.getElementById('pause-reason-input').focus();
     document.getElementById('pause-reason-error').style.display = 'none';
     document.getElementById('pause-reason-input').style.borderColor = '#334155';
+}
+
+function confirmProgressUpdate(form) {
+    const current = parseInt(form.dataset.currentPacks || '0', 10);
+    const input   = form.querySelector('input[name="progress_packs"]');
+    const entered = parseInt(input.value, 10);
+    if (!isNaN(entered) && current > 0 && entered < current) {
+        return confirm(
+            'You entered ' + entered + ' packs, but ' + current + ' packs were previously recorded.\n\n' +
+            'Are you sure you want to go backwards?'
+        );
+    }
+    return true;
 }
 
 function submitPauseForm() {
