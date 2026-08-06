@@ -1,11 +1,4 @@
 @php
-function kaInitials(string $name): string {
-    $parts = preg_split('/\s+/', trim($name));
-    if (count($parts) >= 2) {
-        return strtoupper(substr($parts[0], 0, 1) . substr(end($parts), 0, 1));
-    }
-    return strtoupper(substr($name, 0, 2));
-}
 $taskMembers = $task->relationLoaded('members') ? $task->members : collect();
 @endphp
 <div id="task-{{ $task->id }}"
@@ -28,8 +21,12 @@ $taskMembers = $task->relationLoaded('members') ? $task->members : collect();
         <span class="badge due-ok comment-badge" data-count="{{ $task->comments->count() }}">💬 {{ $task->comments->count() }}</span>
         @endif
         @foreach($taskMembers as $member)
+        @php
+            $parts = preg_split('/\s+/', trim($member->name));
+            $initials = strtoupper(substr($parts[0], 0, 1) . substr(end($parts), 0, 1));
+        @endphp
         <span title="{{ $member->name }}"
-              style="background:#dbeafe;color:#1d4ed8;border-radius:9999px;padding:1px 6px;font-size:0.65rem;font-weight:700;line-height:1.4;">{{ kaInitials($member->name) }}</span>
+              style="background:#dbeafe;color:#1d4ed8;border-radius:9999px;padding:1px 6px;font-size:0.65rem;font-weight:700;line-height:1.4;">{{ $initials }}</span>
         @endforeach
     </div>
     @endif
