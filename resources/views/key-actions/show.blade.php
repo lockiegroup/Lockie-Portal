@@ -72,18 +72,18 @@
             @endforeach
         </div>
         <button class="add-task-btn" onclick="openAddTask({{ $col['user']->id }}, null)">+ Add task</button>
-        @if($col['done']->count())
-        <div class="done-toggle" onclick="toggleDone('u{{ $col['user']->id }}')">▸ Completed ({{ $col['done']->count() }})</div>
-        <div id="done-u{{ $col['user']->id }}" style="display:none;">
-            @foreach($col['done'] as $task)
-                @include('key-actions._task', ['task' => $task])
-            @endforeach
-        </div>
-        @endif
         @if(isset($col['shared']) && $col['shared']->count())
         <div style="margin-top:0.5rem;border-top:1px dashed #e2e8f0;padding-top:0.5rem;">
             <div style="font-size:0.65rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.35rem;">Shared</div>
             @foreach($col['shared'] as $task)
+                @include('key-actions._task', ['task' => $task])
+            @endforeach
+        </div>
+        @endif
+        @if($col['done']->count())
+        <div class="done-toggle" onclick="toggleDone('u{{ $col['user']->id }}')">▸ Completed ({{ $col['done']->count() }})</div>
+        <div id="done-u{{ $col['user']->id }}" style="display:none;">
+            @foreach($col['done'] as $task)
                 @include('key-actions._task', ['task' => $task])
             @endforeach
         </div>
