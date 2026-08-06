@@ -344,10 +344,12 @@ class KeyActionController extends Controller
         abort_unless($this->isSiteAdmin() || $group->hasMember($user), 403);
 
         $data = $request->validate([
-            'title'       => 'required|string|max:255',
-            'assigned_to' => 'nullable|exists:users,id',
-            'bucket_id'   => 'nullable|exists:key_action_buckets,id',
-            'label'       => 'in:none,yellow,red,green',
+            'title'        => 'required|string|max:255',
+            'assigned_to'  => 'nullable|exists:users,id',
+            'bucket_id'    => 'nullable|exists:key_action_buckets,id',
+            'label'        => 'in:none,yellow,red,green',
+            'member_ids'   => 'sometimes|array',
+            'member_ids.*' => 'integer|exists:users,id',
         ]);
 
         $maxOrder = $group->tasks()->max('sort_order') ?? 0;
@@ -361,7 +363,11 @@ class KeyActionController extends Controller
             'sort_order'  => $maxOrder + 1,
         ]);
 
-        $task->load(['assignee', 'comments']);
+        if (!empty($data['member_ids'])) {
+            $task->members()->sync($data['member_ids']);
+        }
+
+        $task->load(['assignee', 'comments', 'members']);
 
         ActivityLog::record('key_actions.task_create', "Created task '{$task->title}' in group '{$group->name}'");
 

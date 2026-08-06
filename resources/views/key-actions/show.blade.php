@@ -237,6 +237,20 @@
                     </select>
                 </div>
             </div>
+            <div>
+                <label style="font-size:0.8rem;font-weight:600;color:#374151;display:block;margin-bottom:5px;">Also Involves</label>
+                <div id="new-task-members" style="display:flex;flex-wrap:wrap;gap:6px;">
+                    @foreach($group->members as $m)
+                    <label id="new-member-chip-{{ $m->id }}" style="display:inline-flex;align-items:center;gap:4px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:9999px;padding:3px 10px 3px 6px;cursor:pointer;font-size:0.75rem;font-weight:600;color:#475569;user-select:none;transition:background 0.1s,border-color 0.1s;" onclick="toggleNewMemberChip({{ $m->id }}, this)">
+                        <input type="checkbox" data-member-id="{{ $m->id }}" style="display:none;">
+                        <span style="background:#dbeafe;color:#1d4ed8;border-radius:9999px;padding:0 5px;font-size:0.65rem;font-weight:700;">
+                            @php $np=preg_split('/\s+/',trim($m->name));echo strtoupper(substr($np[0],0,1).substr(end($np),0,1)); @endphp
+                        </span>
+                        {{ $m->name }}
+                    </label>
+                    @endforeach
+                </div>
+            </div>
 
         </div>
         <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:1rem;">
@@ -698,8 +712,22 @@ function openAddTask(userId, bucketId) {
     document.getElementById('new-task-title').value    = '';
     document.getElementById('new-task-assignee').value = userId ?? '';
     document.getElementById('new-task-label').value    = 'none';
+    // Reset all member chips
+    document.querySelectorAll('#new-task-members input[type=checkbox]').forEach(cb => {
+        cb.checked = false;
+        const chip = cb.closest('label');
+        if (chip) { chip.style.background = '#f1f5f9'; chip.style.borderColor = '#e2e8f0'; chip.style.color = '#475569'; }
+    });
     document.getElementById('add-task-modal').style.display = 'flex';
     setTimeout(() => document.getElementById('new-task-title').focus(), 50);
+}
+
+function toggleNewMemberChip(memberId, chip) {
+    const cb = chip.querySelector('input[type=checkbox]');
+    cb.checked = !cb.checked;
+    chip.style.background  = cb.checked ? '#dbeafe' : '#f1f5f9';
+    chip.style.borderColor = cb.checked ? '#93c5fd' : '#e2e8f0';
+    chip.style.color       = cb.checked ? '#1d4ed8' : '#475569';
 }
 
 function closeAddTask() {
@@ -710,11 +738,15 @@ async function submitNewTask() {
     const title = document.getElementById('new-task-title').value.trim();
     if (!title) return;
 
+    const memberIds = Array.from(document.querySelectorAll('#new-task-members input[type=checkbox]:checked'))
+        .map(c => parseInt(c.dataset.memberId));
+
     const payload = {
         title,
         assigned_to: addTaskBucketId ? null : (document.getElementById('new-task-assignee').value || null),
         bucket_id:   addTaskBucketId ?? null,
         label:       document.getElementById('new-task-label').value,
+        member_ids:  memberIds,
     };
 
     const res  = await fetch(`${baseUrl}/tasks`, {
