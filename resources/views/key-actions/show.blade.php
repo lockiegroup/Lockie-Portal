@@ -80,6 +80,14 @@
             @endforeach
         </div>
         @endif
+        @if(isset($col['shared']) && $col['shared']->count())
+        <div style="margin-top:0.5rem;border-top:1px dashed #e2e8f0;padding-top:0.5rem;">
+            <div style="font-size:0.65rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.35rem;">Shared</div>
+            @foreach($col['shared'] as $task)
+                @include('key-actions._task', ['task' => $task])
+            @endforeach
+        </div>
+        @endif
     </div>
     @else
     <div class="col" data-col-type="bucket" data-col-id="{{ $col['bucket']->id }}">
@@ -154,6 +162,20 @@
                 <option value="red">🔴 Red</option>
                 <option value="green">🟢 Green</option>
             </select>
+        </div>
+        <div>
+            <label style="font-size:0.75rem;font-weight:600;color:#64748b;display:block;margin-bottom:5px;">Also Involves</label>
+            <div id="panel-members" style="display:flex;flex-wrap:wrap;gap:6px;">
+                @foreach($group->members as $m)
+                <label id="member-chip-{{ $m->id }}" style="display:inline-flex;align-items:center;gap:4px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:9999px;padding:3px 10px 3px 6px;cursor:pointer;font-size:0.75rem;font-weight:600;color:#475569;user-select:none;transition:background 0.1s,border-color 0.1s;">
+                    <input type="checkbox" data-member-id="{{ $m->id }}" onchange="toggleMember({{ $m->id }})" style="display:none;">
+                    <span style="background:#dbeafe;color:#1d4ed8;border-radius:9999px;padding:0 5px;font-size:0.65rem;font-weight:700;">
+                        @php $np=preg_split('/\s+/',trim($m->name));echo strtoupper(substr($np[0],0,1).substr(end($np),0,1)); @endphp
+                    </span>
+                    {{ $m->name }}
+                </label>
+                @endforeach
+            </div>
         </div>
 
     </div>
@@ -378,6 +400,19 @@ function populatePanel(task, comments) {
     document.getElementById('panel-assignee').value            = task.assigned_to ?? '';
     document.getElementById('panel-label').value               = task.label;
 
+    const memberIds = (task.members ?? []).map(m => m.id);
+    document.querySelectorAll('#panel-members input[type=checkbox]').forEach(cb => {
+        const mid   = parseInt(cb.dataset.memberId);
+        const chip  = document.getElementById('member-chip-' + mid);
+        const on    = memberIds.includes(mid);
+        cb.checked  = on;
+        if (chip) {
+            chip.style.background   = on ? '#dbeafe' : '#f1f5f9';
+            chip.style.borderColor  = on ? '#93c5fd' : '#e2e8f0';
+            chip.style.color        = on ? '#1d4ed8' : '#475569';
+        }
+    });
+
     const btn = document.getElementById('panel-complete-btn');
     if (task.completed) {
         btn.textContent = '↩ Reopen Task';
@@ -425,6 +460,43 @@ function saveTitle() {
 
 function saveField(field, value) {
     patchTask({ [field]: value }).then(task => updateCardDOM(task));
+}
+
+function toggleMember(memberId) {
+    const chip = document.getElementById('member-chip-' + memberId);
+    const cb   = chip?.querySelector('input[type=checkbox]');
+    const on   = cb?.checked ?? false;
+    if (chip) {
+        chip.style.background  = on ? '#dbeafe' : '#f1f5f9';
+        chip.style.borderColor = on ? '#93c5fd' : '#e2e8f0';
+        chip.style.color       = on ? '#1d4ed8' : '#475569';
+    }
+    const memberIds = Array.from(document.querySelectorAll('#panel-members input[type=checkbox]:checked'))
+        .map(c => parseInt(c.dataset.memberId));
+    patchTask({ member_ids: memberIds }).then(task => { if (task) { activeTask = task; updateCardMembers(task); } });
+}
+
+function updateCardMembers(task) {
+    const members = task.members ?? [];
+    document.querySelectorAll(`#task-${task.id} .member-badges`).forEach(el => el.remove());
+    const card = document.getElementById('task-' + task.id);
+    if (!card) return;
+    let meta = card.querySelector('.task-meta');
+    if (!meta) {
+        meta = document.createElement('div');
+        meta.className = 'task-meta';
+        meta.style.cssText = 'margin-top:0.4rem;padding-left:1.25rem;display:flex;align-items:center;gap:5px;flex-wrap:wrap;';
+        card.appendChild(meta);
+    }
+    meta.querySelectorAll('.member-badge').forEach(el => el.remove());
+    members.forEach(m => {
+        const span = document.createElement('span');
+        span.className = 'member-badge';
+        span.title = m.initials;
+        span.style.cssText = 'background:#dbeafe;color:#1d4ed8;border-radius:9999px;padding:1px 6px;font-size:0.65rem;font-weight:700;line-height:1.4;';
+        span.textContent = m.initials;
+        meta.appendChild(span);
+    });
 }
 
 async function patchTask(data) {

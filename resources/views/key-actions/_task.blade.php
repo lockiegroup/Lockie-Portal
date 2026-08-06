@@ -1,3 +1,13 @@
+@php
+function kaInitials(string $name): string {
+    $parts = preg_split('/\s+/', trim($name));
+    if (count($parts) >= 2) {
+        return strtoupper(substr($parts[0], 0, 1) . substr(end($parts), 0, 1));
+    }
+    return strtoupper(substr($name, 0, 2));
+}
+$taskMembers = $task->relationLoaded('members') ? $task->members : collect();
+@endphp
 <div id="task-{{ $task->id }}"
      class="task-card{{ $task->label !== 'none' ? ' label-'.$task->label : '' }}{{ $task->completed ? ' opacity-60' : '' }}"
      onclick="openPanel({{ $task->id }})"
@@ -12,9 +22,15 @@
         </button>
         <p class="task-title" style="margin:0;flex:1;{{ $task->completed ? 'text-decoration:line-through;' : '' }}">{{ $task->title }}</p>
     </div>
-    @if($task->comments->count() > 0)
-    <div class="task-meta" style="margin-top:0.35rem;padding-left:1.25rem;">
+    @if($taskMembers->count() > 0 || $task->comments->count() > 0)
+    <div class="task-meta" style="margin-top:0.4rem;padding-left:1.25rem;display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+        @if($task->comments->count() > 0)
         <span class="badge due-ok comment-badge" data-count="{{ $task->comments->count() }}">💬 {{ $task->comments->count() }}</span>
+        @endif
+        @foreach($taskMembers as $member)
+        <span title="{{ $member->name }}"
+              style="background:#dbeafe;color:#1d4ed8;border-radius:9999px;padding:1px 6px;font-size:0.65rem;font-weight:700;line-height:1.4;">{{ kaInitials($member->name) }}</span>
+        @endforeach
     </div>
     @endif
 </div>

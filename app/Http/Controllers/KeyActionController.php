@@ -67,7 +67,7 @@ class KeyActionController extends Controller
         $group->load(['members' => fn($q) => $q->orderBy('name')]);
 
         $tasks = $group->tasks()
-            ->with(['assignee', 'comments'])
+            ->with(['assignee', 'comments', 'members'])
             ->orderBy('sort_order')
             ->orderBy('created_at')
             ->get();
@@ -80,6 +80,7 @@ class KeyActionController extends Controller
             'user'   => $member,
             'tasks'  => $tasks->where('assigned_to', $member->id)->whereNull('bucket_id')->where('completed', false)->values(),
             'done'   => $tasks->where('assigned_to', $member->id)->whereNull('bucket_id')->where('completed', true)->sortByDesc('completed_at')->values(),
+            'shared' => $tasks->filter(fn($t) => $t->assigned_to != $member->id && !$t->completed && $t->members->contains('id', $member->id))->values(),
         ]);
 
         $bucketCols = $buckets->map(fn($bucket) => [
@@ -324,7 +325,7 @@ class KeyActionController extends Controller
         abort_unless($this->isSiteAdmin() || $group->hasMember($user), 403);
         abort_unless($task->group_id === $group->id, 404);
 
-        $task->load(['assignee', 'comments.user']);
+        $task->load(['assignee', 'comments.user', 'members']);
 
         return response()->json([
             'task'     => $this->taskJson($task),
@@ -379,10 +380,17 @@ class KeyActionController extends Controller
             'label'       => 'sometimes|in:none,yellow,red,green',
             'due_date'    => 'sometimes|nullable|date',
             'description' => 'sometimes|nullable|string',
+            'member_ids'  => 'sometimes|array',
+            'member_ids.*'=> 'integer|exists:users,id',
         ]);
 
-        $task->update($data);
-        $task->load(['assignee', 'comments']);
+        if (array_key_exists('member_ids', $data)) {
+            $task->members()->sync($data['member_ids']);
+            unset($data['member_ids']);
+        }
+
+        if ($data) $task->update($data);
+        $task->load(['assignee', 'comments', 'members']);
 
         return response()->json(['ok' => true, 'task' => $this->taskJson($task)]);
     }
@@ -509,6 +517,15 @@ class KeyActionController extends Controller
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
+    private function initials(string $name): string
+    {
+        $parts = preg_split('/\s+/', trim($name));
+        if (count($parts) >= 2) {
+            return strtoupper(substr($parts[0], 0, 1) . substr($parts[count($parts) - 1], 0, 1));
+        }
+        return strtoupper(substr($name, 0, 2));
+    }
+
     private function taskJson(KeyActionTask $task): array
     {
         return [
@@ -521,6 +538,10 @@ class KeyActionController extends Controller
             'bucket_id'     => $task->bucket_id,
             'assignee_name' => $task->assignee?->name,
             'comment_count' => $task->comments->count(),
+            'members'       => ($task->relationLoaded('members') ? $task->members : collect())->map(fn($u) => [
+                'id'       => $u->id,
+                'initials' => $this->initials($u->name),
+            ])->values(),
         ];
     }
 }
