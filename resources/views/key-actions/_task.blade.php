@@ -2,6 +2,7 @@
 $taskMembers = $task->relationLoaded('members') ? $task->members : collect();
 @endphp
 <div id="task-{{ $task->id }}"
+     data-task-id="{{ $task->id }}"
      class="task-card{{ $task->label !== 'none' ? ' label-'.$task->label : '' }}{{ $task->completed ? ' opacity-60' : '' }}"
      onclick="openPanel({{ $task->id }})"
      style="{{ $task->completed ? 'opacity:0.55;' : '' }}">

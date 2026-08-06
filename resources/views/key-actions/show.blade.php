@@ -73,7 +73,7 @@
         </div>
         <button class="add-task-btn" onclick="openAddTask({{ $col['user']->id }}, null)">+ Add task</button>
         @if(isset($col['shared']) && $col['shared']->count())
-        <div style="margin-top:0.5rem;border-top:1px dashed #e2e8f0;padding-top:0.5rem;">
+        <div class="shared-section" style="margin-top:0.5rem;border-top:1px dashed #e2e8f0;padding-top:0.5rem;">
             <div style="font-size:0.65rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.35rem;">Shared</div>
             @foreach($col['shared'] as $task)
                 @include('key-actions._task', ['task' => $task])
@@ -81,7 +81,7 @@
         </div>
         @endif
         @if($col['done']->count())
-        <div class="done-toggle" onclick="toggleDone('u{{ $col['user']->id }}')">▸ Completed ({{ $col['done']->count() }})</div>
+        <div class="done-toggle done-section-start" onclick="toggleDone('u{{ $col['user']->id }}')">▸ Completed ({{ $col['done']->count() }})</div>
         <div id="done-u{{ $col['user']->id }}" style="display:none;">
             @foreach($col['done'] as $task)
                 @include('key-actions._task', ['task' => $task])
@@ -473,30 +473,82 @@ function toggleMember(memberId) {
     }
     const memberIds = Array.from(document.querySelectorAll('#panel-members input[type=checkbox]:checked'))
         .map(c => parseInt(c.dataset.memberId));
-    patchTask({ member_ids: memberIds }).then(task => { if (task) { activeTask = task; updateCardMembers(task); } });
+    patchTask({ member_ids: memberIds }).then(task => {
+        if (!task) return;
+        activeTask = task;
+        updateAllCardBadges(task);
+        if (on) {
+            injectSharedCard(task, memberId);
+        } else {
+            removeSharedCard(task.id, memberId);
+        }
+    });
 }
 
-function updateCardMembers(task) {
+function updateAllCardBadges(task) {
     const members = task.members ?? [];
-    document.querySelectorAll(`#task-${task.id} .member-badges`).forEach(el => el.remove());
-    const card = document.getElementById('task-' + task.id);
-    if (!card) return;
-    let meta = card.querySelector('.task-meta');
-    if (!meta) {
-        meta = document.createElement('div');
-        meta.className = 'task-meta';
-        meta.style.cssText = 'margin-top:0.4rem;padding-left:1.25rem;display:flex;align-items:center;gap:5px;flex-wrap:wrap;';
-        card.appendChild(meta);
-    }
-    meta.querySelectorAll('.member-badge').forEach(el => el.remove());
-    members.forEach(m => {
-        const span = document.createElement('span');
-        span.className = 'member-badge';
-        span.title = m.initials;
-        span.style.cssText = 'background:#dbeafe;color:#1d4ed8;border-radius:9999px;padding:1px 6px;font-size:0.65rem;font-weight:700;line-height:1.4;';
-        span.textContent = m.initials;
-        meta.appendChild(span);
+    document.querySelectorAll(`[data-task-id="${task.id}"]`).forEach(card => {
+        let meta = card.querySelector('.task-meta');
+        if (!meta && members.length === 0) return;
+        if (!meta) {
+            meta = document.createElement('div');
+            meta.className = 'task-meta';
+            meta.style.cssText = 'margin-top:0.4rem;padding-left:1.25rem;display:flex;align-items:center;gap:5px;flex-wrap:wrap;';
+            card.appendChild(meta);
+        }
+        meta.querySelectorAll('.member-badge').forEach(el => el.remove());
+        members.forEach(m => {
+            const span = document.createElement('span');
+            span.className = 'member-badge';
+            span.title = m.initials;
+            span.style.cssText = 'background:#dbeafe;color:#1d4ed8;border-radius:9999px;padding:1px 6px;font-size:0.65rem;font-weight:700;line-height:1.4;';
+            span.textContent = m.initials;
+            meta.appendChild(span);
+        });
     });
+}
+
+function buildSharedCard(task) {
+    const members  = task.members ?? [];
+    const badges   = members.map(m =>
+        `<span class="member-badge" title="${m.initials}" style="background:#dbeafe;color:#1d4ed8;border-radius:9999px;padding:1px 6px;font-size:0.65rem;font-weight:700;line-height:1.4;">${m.initials}</span>`
+    ).join('');
+    const labelCls = task.label && task.label !== 'none' ? ` label-${task.label}` : '';
+    return `<div data-task-id="${task.id}" class="task-card${labelCls}" onclick="openPanel(${task.id})" style="">
+        <div style="display:flex;align-items:flex-start;gap:0.5rem;">
+            <button onclick="quickComplete(${task.id},event)" title="Mark complete"
+                style="flex-shrink:0;margin-top:1px;width:16px;height:16px;border-radius:50%;border:2px solid #cbd5e1;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;"></button>
+            <p class="task-title" style="margin:0;flex:1;">${task.title}</p>
+        </div>
+        ${badges ? `<div class="task-meta" style="margin-top:0.4rem;padding-left:1.25rem;display:flex;align-items:center;gap:5px;flex-wrap:wrap;">${badges}</div>` : ''}
+    </div>`;
+}
+
+function injectSharedCard(task, memberId) {
+    if (task.assigned_to == memberId) return;
+    const col = document.querySelector(`.col[data-col-type="user"][data-col-id="${memberId}"]`);
+    if (!col) return;
+    if (col.querySelector(`[data-task-id="${task.id}"]`)) return;
+
+    let section = col.querySelector('.shared-section');
+    if (!section) {
+        section = document.createElement('div');
+        section.className = 'shared-section';
+        section.style.cssText = 'margin-top:0.5rem;border-top:1px dashed #e2e8f0;padding-top:0.5rem;';
+        section.innerHTML = '<div style="font-size:0.65rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.35rem;">Shared</div>';
+        const doneStart = col.querySelector('.done-section-start');
+        doneStart ? col.insertBefore(section, doneStart) : col.appendChild(section);
+    }
+    section.insertAdjacentHTML('beforeend', buildSharedCard(task));
+}
+
+function removeSharedCard(taskId, memberId) {
+    const col = document.querySelector(`.col[data-col-type="user"][data-col-id="${memberId}"]`);
+    if (!col) return;
+    const section = col.querySelector('.shared-section');
+    if (!section) return;
+    section.querySelector(`[data-task-id="${taskId}"]`)?.remove();
+    if (!section.querySelector('[data-task-id]')) section.remove();
 }
 
 async function patchTask(data) {
