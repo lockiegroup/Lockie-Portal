@@ -119,6 +119,22 @@ class KeyActionController extends Controller
         ));
     }
 
+    public function hash(KeyActionGroup $group): JsonResponse
+    {
+        $user = auth()->user();
+        abort_unless($this->isSiteAdmin() || $group->hasMember($user), 403);
+
+        $hash = md5(
+            $group->tasks()
+                ->orderBy('id')
+                ->get(['id', 'completed', 'sort_order', 'bucket_id', 'assigned_to', 'updated_at'])
+                ->map(fn($t) => implode(':', [$t->id, (int)$t->completed, $t->sort_order, $t->bucket_id, $t->assigned_to, $t->updated_at]))
+                ->implode(',')
+        );
+
+        return response()->json(['hash' => $hash]);
+    }
+
     public function update(Request $request, KeyActionGroup $group): JsonResponse
     {
         $user = auth()->user();

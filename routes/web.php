@@ -241,6 +241,7 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::get('/',                                                      [KeyActionController::class, 'index'])->name('index');
         Route::post('/',                                                     [KeyActionController::class, 'store'])->name('store');
         Route::get('/{group}',                                               [KeyActionController::class, 'show'])->name('show');
+        Route::get('/{group}/hash',                                          [KeyActionController::class, 'hash'])->name('hash');
         Route::patch('/{group}',                                             [KeyActionController::class, 'update'])->name('update');
         Route::delete('/{group}',                                            [KeyActionController::class, 'destroy'])->name('destroy');
         Route::get('/{group}/agenda',                                        [KeyActionController::class, 'downloadAgenda'])->name('agenda.download');

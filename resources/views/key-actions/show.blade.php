@@ -855,6 +855,29 @@ document.querySelectorAll('.task-list').forEach(list => {
         if (window._dragging) e.stopImmediatePropagation();
     }, true);
 });
+
+// ── Real-time polling ─────────────────────────────────────────────────────────
+let _pollHash = null;
+
+async function pollForChanges() {
+    // Don't reload while the user has the panel open or is dragging
+    if (window._dragging) return;
+    const panel = document.getElementById('task-panel');
+    if (panel && panel.style.display !== 'none') return;
+
+    try {
+        const res  = await fetch(`${baseUrl}/hash`, { headers: { 'Accept': 'application/json' } });
+        if (!res.ok) return;
+        const json = await res.json();
+        if (_pollHash === null) {
+            _pollHash = json.hash;
+        } else if (json.hash !== _pollHash) {
+            location.reload();
+        }
+    } catch (_) {}
+}
+
+setInterval(pollForChanges, 8000);
 </script>
 
 </x-layout>
