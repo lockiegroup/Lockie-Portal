@@ -613,6 +613,8 @@
                         {{-- Progress update --}}
                         <form method="POST" action="{{ route('tablet.jobs.progress', [$machine, $job]) }}"
                             data-current-packs="{{ (int)$currentPacks }}"
+                            data-started-at="{{ $activeRun->started_at->timestamp * 1000 }}"
+                            data-progress-at="{{ $activeRun->progress_at ? $activeRun->progress_at->timestamp * 1000 : '' }}"
                             onsubmit="return confirmProgressUpdate(this)"
                             style="display:flex;align-items:center;gap:10px;flex:1;min-width:220px;background:#0f172a;border:2px solid #334155;border-radius:10px;padding:8px 12px;">
                             @csrf
@@ -626,7 +628,7 @@
                         </form>
 
                         <button class="btn btn-warning btn-lg"
-                            onclick="openPauseModal('{{ route('tablet.jobs.pause', [$machine, $job]) }}', {{ (int)$currentPacks }}, {{ (int)$job->order_quantity }})">
+                            onclick="openPauseModal('{{ route('tablet.jobs.pause', [$machine, $job]) }}', {{ (int)$currentPacks }}, {{ (int)$job->order_quantity }}, {{ $activeRun->started_at->timestamp * 1000 }})">
                             ⏸ Pause
                         </button>
                         <button class="btn btn-danger btn-lg"
@@ -899,11 +901,12 @@ function pinSubmit() {
 // ── Pause modal ──
 let pauseSelectedReason = '';
 
-function openPauseModal(action, currentPacks, maxPacks) {
+function openPauseModal(action, currentPacks, maxPacks, startedAtMs) {
     const form = document.getElementById('pause-form');
     form.action = action;
     form.dataset.currentPacks = currentPacks || '0';
     form.dataset.maxPacks     = maxPacks || '0';
+    form.dataset.startedAt    = startedAtMs || '0';
     pauseSelectedReason = '';
     document.getElementById('pause-reason-error').style.display = 'none';
     document.getElementById('pause-reason-input').style.borderColor = '#334155';
@@ -927,20 +930,41 @@ function selectReason(btn, reason) {
     document.getElementById('pause-reason-input').style.borderColor = '#334155';
 }
 
+const RATE_WARN_PPH = 1000; // warn if implied rate exceeds this packs/hr
+
+function impliedRate(delta, referenceMs) {
+    if (delta <= 0 || !referenceMs) return 0;
+    const elapsedHrs = (Date.now() - referenceMs) / 3_600_000;
+    return elapsedHrs > 0.003 ? delta / elapsedHrs : Infinity; // ignore sub-10-second windows
+}
+
 function confirmProgressUpdate(form) {
-    const current  = parseInt(form.dataset.currentPacks || '0', 10);
-    const maxPacks = parseInt(form.querySelector('input[name="progress_packs"]').max || '0', 10);
-    const input    = form.querySelector('input[name="progress_packs"]');
-    const entered  = parseInt(input.value, 10);
-    if (!isNaN(entered) && maxPacks > 0 && entered > maxPacks) {
+    const current     = parseInt(form.dataset.currentPacks || '0', 10);
+    const startedAt   = parseInt(form.dataset.startedAt || '0', 10);
+    const progressAt  = parseInt(form.dataset.progressAt || '0', 10);
+    const maxPacks    = parseInt(form.querySelector('input[name="progress_packs"]').max || '0', 10);
+    const input       = form.querySelector('input[name="progress_packs"]');
+    const entered     = parseInt(input.value, 10);
+    if (isNaN(entered)) return true;
+
+    if (maxPacks > 0 && entered > maxPacks) {
         return confirm(
             'You entered ' + entered.toLocaleString() + ' packs, but the total order is only ' + maxPacks.toLocaleString() + ' packs.\n\n' +
             'Did you add extra zeros by mistake?'
         );
     }
-    if (!isNaN(entered) && current > 0 && entered < current) {
+    if (current > 0 && entered < current) {
         return confirm(
             'You entered ' + entered + ' packs, but ' + current + ' packs were previously recorded.\n\nAre you sure you want to go backwards?'
+        );
+    }
+    const delta     = entered - current;
+    const refMs     = progressAt || startedAt;
+    const rate      = impliedRate(delta, refMs);
+    if (rate > RATE_WARN_PPH) {
+        const rateStr = Math.round(rate).toLocaleString();
+        return confirm(
+            'That\'s roughly ' + rateStr + ' packs/hr — unusually high.\n\nDid you add extra zeros by mistake?'
         );
     }
     return true;
@@ -955,18 +979,23 @@ function submitPauseForm() {
         input.focus();
         return;
     }
-    const form     = document.getElementById('pause-form');
-    const current  = parseInt(form.dataset.currentPacks || '0', 10);
-    const maxPacks = parseInt(form.dataset.maxPacks || '0', 10);
-    const entered  = parseInt(document.getElementById('pause-packs-input').value, 10);
-    if (!isNaN(entered) && maxPacks > 0 && entered > maxPacks) {
-        if (!confirm('You entered ' + entered.toLocaleString() + ' packs, but the total order is only ' + maxPacks.toLocaleString() + ' packs.\n\nDid you add extra zeros by mistake?')) {
-            return;
+    const form      = document.getElementById('pause-form');
+    const current   = parseInt(form.dataset.currentPacks || '0', 10);
+    const maxPacks  = parseInt(form.dataset.maxPacks || '0', 10);
+    const startedAt = parseInt(form.dataset.startedAt || '0', 10);
+    const entered   = parseInt(document.getElementById('pause-packs-input').value, 10);
+    if (!isNaN(entered)) {
+        if (maxPacks > 0 && entered > maxPacks) {
+            if (!confirm('You entered ' + entered.toLocaleString() + ' packs, but the total order is only ' + maxPacks.toLocaleString() + ' packs.\n\nDid you add extra zeros by mistake?')) return;
         }
-    }
-    if (!isNaN(entered) && current > 0 && entered < current) {
-        if (!confirm('You entered ' + entered + ' packs, but ' + current + ' packs were previously recorded.\n\nAre you sure you want to go backwards?')) {
-            return;
+        if (current > 0 && entered < current) {
+            if (!confirm('You entered ' + entered + ' packs, but ' + current + ' packs were previously recorded.\n\nAre you sure you want to go backwards?')) return;
+        }
+        const delta = entered - current;
+        const rate  = impliedRate(delta, startedAt);
+        if (rate > RATE_WARN_PPH) {
+            const rateStr = Math.round(rate).toLocaleString();
+            if (!confirm('That\'s roughly ' + rateStr + ' packs/hr — unusually high.\n\nDid you add extra zeros by mistake?')) return;
         }
     }
     form.submit();
