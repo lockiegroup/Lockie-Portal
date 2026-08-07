@@ -301,7 +301,11 @@ class TabletController extends Controller
             ->first();
 
         if ($lastPausedRun) {
-            $lastPausedRun->update(['packs_produced' => $data['packs_produced']]);
+            $original = $lastPausedRun->packs_produced;
+            $lastPausedRun->update([
+                'packs_produced'       => $data['packs_produced'],
+                'packs_corrected_from' => $original,
+            ]);
         }
 
         return redirect()->route('tablet.show', $machine);

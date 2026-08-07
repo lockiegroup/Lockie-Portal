@@ -265,14 +265,16 @@
                             $activePacks = $groupRuns->whereNull('ended_at')->whereNotNull('progress_packs')->max('progress_packs');
                             $lastEndedPacks = $groupRuns->filter(fn($r) => $r->packs_produced !== null && $r->ended_at !== null)
                                 ->sortByDesc(fn($r) => $r->id)->first()?->packs_produced ?? 0;
+                            $currentBestPacks = $activePacks ?? ($lastEndedPacks > 0 ? $lastEndedPacks : null);
                             $groupPacks = max(0, ($activePacks ?? $lastEndedPacks) - $priorBaseline);
                             $groupHours = $groupTotalSecs > 0 ? $groupTotalSecs / 3600 : 0;
                             $groupRate = ($groupPacks && $groupHours >= 0.1) ? (int) round($groupPacks / $groupHours) : null;
                             $groupRateStr = $groupRate
                                 ? ($groupRate >= 1000 ? number_format($groupRate / 1000, 1) . 'k/hr' : number_format($groupRate) . '/hr')
                                 : null;
-                            // Running totals across all days (prior + this period)
-                            $totalPacksAllDays = $priorBaseline + $groupPacks;
+                            // packs_produced is cumulative (includes all prior days), so the job total
+                            // IS the current best reading — not baseline+delta, which breaks after corrections.
+                            $totalPacksAllDays = $currentBestPacks ?? $priorBaseline;
                             $totalSecsAllDays  = $priorSecs + $groupTotalSecs;
                         @endphp
 
@@ -503,6 +505,11 @@
                                                 <span style="width:6px;height:6px;border-radius:50%;background:#16a34a;animation:psRun 1.5s infinite;display:inline-block;"></span>
                                                 Running
                                             </span>
+                                        @endif
+                                        @if($seg['type'] !== 'logged' && $run->packs_corrected_from !== null)
+                                            <div style="font-size:0.68rem;color:#b45309;background:#fef3c7;padding:2px 7px;border-radius:9999px;margin-top:4px;white-space:nowrap;">
+                                                ✎ Corrected: {{ $run->packs_corrected_from }} → {{ $run->packs_produced }}
+                                            </div>
                                         @endif
                                     </div>
 
