@@ -935,7 +935,15 @@ const RATE_WARN_PPH = 1000; // warn if implied rate exceeds this packs/hr
 function impliedRate(delta, referenceMs) {
     if (delta <= 0 || !referenceMs) return 0;
     const elapsedHrs = (Date.now() - referenceMs) / 3_600_000;
-    return elapsedHrs > 0.003 ? delta / elapsedHrs : Infinity; // ignore sub-10-second windows
+    if (elapsedHrs < 0.003) return delta > 0 ? Infinity : 0; // run just started
+    return delta / elapsedHrs;
+}
+
+function rateWarningMsg(rate, delta) {
+    if (!isFinite(rate)) {
+        return delta.toLocaleString() + ' packs entered within seconds of starting — unusually high.\n\nDid you add extra zeros by mistake?';
+    }
+    return 'That\'s roughly ' + Math.round(rate).toLocaleString() + ' packs/hr — unusually high.\n\nDid you add extra zeros by mistake?';
 }
 
 function confirmProgressUpdate(form) {
@@ -958,14 +966,11 @@ function confirmProgressUpdate(form) {
             'You entered ' + entered + ' packs, but ' + current + ' packs were previously recorded.\n\nAre you sure you want to go backwards?'
         );
     }
-    const delta     = entered - current;
-    const refMs     = progressAt || startedAt;
-    const rate      = impliedRate(delta, refMs);
+    const delta = entered - current;
+    const refMs = progressAt || startedAt;
+    const rate  = impliedRate(delta, refMs);
     if (rate > RATE_WARN_PPH) {
-        const rateStr = Math.round(rate).toLocaleString();
-        return confirm(
-            'That\'s roughly ' + rateStr + ' packs/hr — unusually high.\n\nDid you add extra zeros by mistake?'
-        );
+        return confirm(rateWarningMsg(rate, delta));
     }
     return true;
 }
@@ -994,8 +999,7 @@ function submitPauseForm() {
         const delta = entered - current;
         const rate  = impliedRate(delta, startedAt);
         if (rate > RATE_WARN_PPH) {
-            const rateStr = Math.round(rate).toLocaleString();
-            if (!confirm('That\'s roughly ' + rateStr + ' packs/hr — unusually high.\n\nDid you add extra zeros by mistake?')) return;
+            if (!confirm(rateWarningMsg(rate, delta))) return;
         }
     }
     form.submit();
