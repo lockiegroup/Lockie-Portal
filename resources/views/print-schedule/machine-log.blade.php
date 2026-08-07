@@ -264,7 +264,7 @@
                             $priorSecs     = $jobId ? ($jobPriorSecs[$jobId] ?? 0) : 0;
                             $activePacks = $groupRuns->whereNull('ended_at')->whereNotNull('progress_packs')->max('progress_packs');
                             $lastEndedPacks = $groupRuns->filter(fn($r) => $r->packs_produced !== null && $r->ended_at !== null)
-                                ->sortByDesc(fn($r) => $r->ended_at?->timestamp)->first()?->packs_produced ?? 0;
+                                ->sortByDesc(fn($r) => $r->id)->first()?->packs_produced ?? 0;
                             $groupPacks = max(0, ($activePacks ?? $lastEndedPacks) - $priorBaseline);
                             $groupHours = $groupTotalSecs > 0 ? $groupTotalSecs / 3600 : 0;
                             $groupRate = ($groupPacks && $groupHours >= 0.1) ? (int) round($groupPacks / $groupHours) : null;

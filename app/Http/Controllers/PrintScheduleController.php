@@ -146,14 +146,21 @@ class PrintScheduleController extends Controller
         $jobBaselines = [];
         $jobPriorSecs = []; // total machine-time (seconds) on each job before the date range
         if ($jobIds->isNotEmpty()) {
-            $jobBaselines = \App\Models\PrintJobRun::whereIn('print_job_id', $jobIds)
+            // Use last-by-id run's packs_produced as baseline, not MAX.
+            // MAX breaks when an operator corrects a wrong high value to a lower one.
+            $lastRunIds = \App\Models\PrintJobRun::whereIn('print_job_id', $jobIds)
                 ->whereDate('started_at', '<', $dateFrom)
                 ->whereNotNull('packs_produced')
-                ->selectRaw('print_job_id, MAX(packs_produced) as baseline')
+                ->selectRaw('print_job_id, MAX(id) as max_id')
                 ->groupBy('print_job_id')
-                ->pluck('baseline', 'print_job_id')
-                ->map(fn($v) => (int) $v)
-                ->toArray();
+                ->pluck('max_id');
+
+            $jobBaselines = $lastRunIds->isNotEmpty()
+                ? \App\Models\PrintJobRun::whereIn('id', $lastRunIds)
+                    ->pluck('packs_produced', 'print_job_id')
+                    ->map(fn($v) => (int) $v)
+                    ->toArray()
+                : [];
 
             $jobPriorSecs = \App\Models\PrintJobRun::whereIn('print_job_id', $jobIds)
                 ->whereDate('started_at', '<', $dateFrom)
