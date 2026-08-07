@@ -473,31 +473,10 @@
                                     </div>
 
                                     {{-- Packs --}}
-                                    @php
-                                        $isLastSeg     = $si === count($segments) - 1;
-                                        $canEditPacks  = $isLastSeg && $run->ended_at && $run->packs_produced !== null && auth()->user()->hasPermission('print_settings');
-                                    @endphp
                                     <div style="text-align:right;">
                                         @if($seg['packs'] !== null)
-                                            <div id="packs-display-{{ $run->id }}" style="display:flex;align-items:center;justify-content:flex-end;gap:5px;">
-                                                <span style="font-size:0.95rem;font-weight:700;color:#334155;">{{ number_format($seg['packs']) }}</span>
-                                                <span style="font-size:0.7rem;color:#94a3b8;">packs</span>
-                                                @if($canEditPacks)
-                                                <button onclick="editRunPacks({{ $run->id }}, {{ $run->packs_produced }})"
-                                                        title="Correct packs value"
-                                                        style="background:none;border:none;cursor:pointer;color:#cbd5e1;padding:0;font-size:0.75rem;line-height:1;flex-shrink:0;"
-                                                        onmouseover="this.style.color='#64748b'" onmouseout="this.style.color='#cbd5e1'">✎</button>
-                                                @endif
-                                            </div>
-                                            @if($canEditPacks)
-                                            <div id="packs-edit-{{ $run->id }}" style="display:none;justify-content:flex-end;align-items:center;gap:4px;">
-                                                <input id="packs-input-{{ $run->id }}" type="number" min="0" value="{{ $run->packs_produced }}"
-                                                       style="width:80px;border:1px solid #6366f1;border-radius:0.375rem;padding:2px 6px;font-size:0.8rem;text-align:right;"
-                                                       onkeydown="if(event.key==='Enter')saveRunPacks({{ $run->id }});if(event.key==='Escape')cancelEditPacks({{ $run->id }})">
-                                                <button onclick="saveRunPacks({{ $run->id }})" style="background:#1e293b;color:#fff;border:none;border-radius:4px;padding:2px 7px;font-size:0.75rem;cursor:pointer;">✓</button>
-                                                <button onclick="cancelEditPacks({{ $run->id }})" style="background:none;border:1px solid #e2e8f0;border-radius:4px;padding:2px 6px;font-size:0.75rem;cursor:pointer;color:#64748b;">✕</button>
-                                            </div>
-                                            @endif
+                                            <span style="font-size:0.95rem;font-weight:700;color:#334155;">{{ number_format($seg['packs']) }}</span>
+                                            <span style="font-size:0.7rem;color:#94a3b8;"> packs</span>
                                         @else
                                             <span style="color:#cbd5e1;font-size:0.8rem;">—</span>
                                         @endif
@@ -547,41 +526,5 @@
             50%       { opacity: 0.4; transform: scale(0.65); }
         }
     </style>
-
-    <script>
-    const _mlCsrf = '{{ csrf_token() }}';
-
-    function editRunPacks(runId, currentCumulative) {
-        document.getElementById('packs-display-' + runId).style.display = 'none';
-        const editRow = document.getElementById('packs-edit-' + runId);
-        editRow.style.display = 'flex';
-        const input = document.getElementById('packs-input-' + runId);
-        input.value = currentCumulative;
-        input.focus();
-        input.select();
-    }
-
-    function cancelEditPacks(runId) {
-        document.getElementById('packs-edit-' + runId).style.display = 'none';
-        document.getElementById('packs-display-' + runId).style.display = 'flex';
-    }
-
-    async function saveRunPacks(runId) {
-        const input = document.getElementById('packs-input-' + runId);
-        const value = parseInt(input.value, 10);
-        if (isNaN(value) || value < 0) return;
-
-        const res  = await fetch(`/print-schedule/runs/${runId}/packs`, {
-            method:  'PATCH',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': _mlCsrf },
-            body:    JSON.stringify({ packs_produced: value }),
-        });
-        if (res.ok) {
-            location.reload();
-        } else {
-            alert('Failed to save. Please try again.');
-        }
-    }
-    </script>
 
 </x-layout>
