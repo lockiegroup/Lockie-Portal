@@ -644,6 +644,10 @@
                             @csrf
                             <button type="submit" class="btn btn-success btn-lg">▶ Resume</button>
                         </form>
+                        <button class="btn btn-ghost btn-lg"
+                            onclick="openCorrectPacksModal('{{ route('tablet.jobs.correct-packs', [$machine, $job]) }}', {{ (int)($pausedCurrentPacks ?? 0) }}, {{ (int)$job->order_quantity }})">
+                            ✎ Correct Packs
+                        </button>
                         <button class="btn btn-danger btn-lg"
                             onclick="openEndModal('{{ route('tablet.jobs.end', [$machine, $job]) }}', {{ (int)($pausedCurrentPacks ?? 0) }}, {{ (int)$job->order_quantity }})">
                             ■ End Job
@@ -841,6 +845,33 @@
     </div>
 </div>
 
+{{-- ════════════════════════════════════════════
+     CORRECT PACKS MODAL
+     ════════════════════════════════════════════ --}}
+<div class="modal-backdrop" id="correct-packs-modal">
+    <div class="modal">
+        <h3>✎ Correct Packs</h3>
+        <form id="correct-packs-form" method="POST">
+            @csrf
+            <p style="color:#94a3b8;font-size:0.9rem;margin-bottom:1.25rem;line-height:1.5;">
+                Enter the correct cumulative packs total for this paused run. This replaces the previously recorded value.
+            </p>
+            <div class="modal-field">
+                <label>Correct packs total</label>
+                <input type="number" name="packs_produced" id="correct-packs-input" min="0" inputmode="numeric"
+                       placeholder="0"
+                       style="font-size:1.75rem;font-weight:700;text-align:center;"
+                       oninput="updateCorrectPacksWarning()">
+                <div id="correct-packs-warning" style="display:none;margin-top:8px;padding:10px 14px;background:#431407;border:1px solid #ea580c;border-radius:8px;color:#fed7aa;font-size:0.85rem;line-height:1.4;"></div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-ghost btn-md" onclick="closeModal('correct-packs-modal')">Cancel</button>
+                <button type="submit" class="btn btn-warning btn-md">Save Correction</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
 // ── Login PIN pad ──
 let loginPin = '';
@@ -872,6 +903,7 @@ function openPauseModal(action, currentPacks, maxPacks) {
     const form = document.getElementById('pause-form');
     form.action = action;
     form.dataset.currentPacks = currentPacks || '0';
+    form.dataset.maxPacks     = maxPacks || '0';
     pauseSelectedReason = '';
     document.getElementById('pause-reason-error').style.display = 'none';
     document.getElementById('pause-reason-input').style.borderColor = '#334155';
@@ -896,13 +928,19 @@ function selectReason(btn, reason) {
 }
 
 function confirmProgressUpdate(form) {
-    const current = parseInt(form.dataset.currentPacks || '0', 10);
-    const input   = form.querySelector('input[name="progress_packs"]');
-    const entered = parseInt(input.value, 10);
+    const current  = parseInt(form.dataset.currentPacks || '0', 10);
+    const maxPacks = parseInt(form.querySelector('input[name="progress_packs"]').max || '0', 10);
+    const input    = form.querySelector('input[name="progress_packs"]');
+    const entered  = parseInt(input.value, 10);
+    if (!isNaN(entered) && maxPacks > 0 && entered > maxPacks) {
+        return confirm(
+            'You entered ' + entered.toLocaleString() + ' packs, but the total order is only ' + maxPacks.toLocaleString() + ' packs.\n\n' +
+            'Did you add extra zeros by mistake?'
+        );
+    }
     if (!isNaN(entered) && current > 0 && entered < current) {
         return confirm(
-            'You entered ' + entered + ' packs, but ' + current + ' packs were previously recorded.\n\n' +
-            'Are you sure you want to go backwards?'
+            'You entered ' + entered + ' packs, but ' + current + ' packs were previously recorded.\n\nAre you sure you want to go backwards?'
         );
     }
     return true;
@@ -917,9 +955,15 @@ function submitPauseForm() {
         input.focus();
         return;
     }
-    const form    = document.getElementById('pause-form');
-    const current = parseInt(form.dataset.currentPacks || '0', 10);
-    const entered = parseInt(document.getElementById('pause-packs-input').value, 10);
+    const form     = document.getElementById('pause-form');
+    const current  = parseInt(form.dataset.currentPacks || '0', 10);
+    const maxPacks = parseInt(form.dataset.maxPacks || '0', 10);
+    const entered  = parseInt(document.getElementById('pause-packs-input').value, 10);
+    if (!isNaN(entered) && maxPacks > 0 && entered > maxPacks) {
+        if (!confirm('You entered ' + entered.toLocaleString() + ' packs, but the total order is only ' + maxPacks.toLocaleString() + ' packs.\n\nDid you add extra zeros by mistake?')) {
+            return;
+        }
+    }
     if (!isNaN(entered) && current > 0 && entered < current) {
         if (!confirm('You entered ' + entered + ' packs, but ' + current + ' packs were previously recorded.\n\nAre you sure you want to go backwards?')) {
             return;
@@ -979,7 +1023,15 @@ function endModalSubmit(e) {
     const progressAt  = form.dataset.progressAt ? parseInt(form.dataset.progressAt) : null;
     const fullyDone   = document.getElementById('fully-complete-input').value === '1';
     const current     = parseInt(form.dataset.currentPacks || '0', 10);
+    const maxPacks    = parseInt(form.dataset.maxPacks || '0', 10);
     const entered     = parseInt(document.getElementById('end-packs-input').value, 10);
+
+    if (!isNaN(entered) && maxPacks > 0 && entered > maxPacks) {
+        const ok = confirm(
+            'You entered ' + entered.toLocaleString() + ' packs, but the total order is only ' + maxPacks.toLocaleString() + ' packs.\n\nDid you add extra zeros by mistake?'
+        );
+        if (!ok) { e.preventDefault(); return; }
+    }
 
     if (!isNaN(entered) && current > 0 && entered < current) {
         const ok = confirm(
@@ -1050,6 +1102,32 @@ function openSwitchModal() {
         btn.style.cursor         = hasRunning ? 'not-allowed' : '';
     });
     document.getElementById('switch-modal').classList.add('open');
+}
+
+// ── Correct Packs modal ──
+let _correctPacksMax = 0;
+
+function openCorrectPacksModal(action, currentPacks, maxPacks) {
+    const form = document.getElementById('correct-packs-form');
+    form.action = action;
+    _correctPacksMax = maxPacks || 0;
+    const input = document.getElementById('correct-packs-input');
+    input.value = currentPacks > 0 ? currentPacks : '';
+    input.max   = maxPacks || '';
+    document.getElementById('correct-packs-warning').style.display = 'none';
+    document.getElementById('correct-packs-modal').classList.add('open');
+    setTimeout(() => { input.focus(); input.select(); }, 100);
+}
+
+function updateCorrectPacksWarning() {
+    const entered  = parseInt(document.getElementById('correct-packs-input').value, 10);
+    const warning  = document.getElementById('correct-packs-warning');
+    if (!isNaN(entered) && _correctPacksMax > 0 && entered > _correctPacksMax) {
+        warning.style.display = 'block';
+        warning.textContent   = '⚠ That\'s more than the total order (' + _correctPacksMax.toLocaleString() + ' packs). Double-check you haven\'t added extra zeros.';
+    } else {
+        warning.style.display = 'none';
+    }
 }
 
 // ── Close any modal ──

@@ -284,6 +284,29 @@ class TabletController extends Controller
         return redirect()->route('tablet.show', $machine);
     }
 
+    public function correctPacks(string $machine, Request $request, PrintJob $job): RedirectResponse
+    {
+        if (!$this->validMachine($machine)) abort(404);
+        $operator = $this->getOperator($machine);
+        if (!$operator) return redirect()->route('tablet.show', $machine);
+
+        $data = $request->validate([
+            'packs_produced' => 'required|integer|min:0',
+        ]);
+
+        $lastPausedRun = $job->runs()
+            ->where('machine', $machine)
+            ->where('end_reason', 'pause')
+            ->orderByDesc('ended_at')
+            ->first();
+
+        if ($lastPausedRun) {
+            $lastPausedRun->update(['packs_produced' => $data['packs_produced']]);
+        }
+
+        return redirect()->route('tablet.show', $machine);
+    }
+
     public function handoverJob(string $machine, Request $request, PrintJob $job): RedirectResponse
     {
         if (!$this->validMachine($machine)) abort(404);
