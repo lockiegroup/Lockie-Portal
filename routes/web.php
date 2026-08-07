@@ -85,6 +85,7 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::get('/production/status', [PrintScheduleController::class, 'productionStatus'])->name('production.status');
         Route::get('/machine-log', [PrintScheduleController::class, 'machineLog'])->name('machine-log');
         Route::get('/machine-log/export', [PrintScheduleController::class, 'machineLogExport'])->name('machine-log.export');
+        Route::patch('/runs/{run}/packs', [PrintScheduleController::class, 'updateRunPacks'])->name('runs.packs.update');
         Route::post('/sync', [PrintScheduleController::class, 'sync'])->name('sync');
         Route::get('/sync/status', [PrintScheduleController::class, 'syncStatus'])->name('sync.status');
         Route::post('/jobs/{job}/unarchive', [PrintScheduleController::class, 'unarchive'])->name('jobs.unarchive');

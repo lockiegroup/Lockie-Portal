@@ -1028,4 +1028,17 @@ class PrintScheduleController extends Controller
             }
         }
     }
+
+    public function updateRunPacks(Request $request, PrintJobRun $run): JsonResponse
+    {
+        abort_unless(auth()->user()->hasPermission('print_settings'), 403);
+
+        $data = $request->validate([
+            'packs_produced' => 'required|integer|min:0',
+        ]);
+
+        $run->update(['packs_produced' => $data['packs_produced']]);
+
+        return response()->json(['ok' => true, 'packs_produced' => $run->packs_produced]);
+    }
 }
