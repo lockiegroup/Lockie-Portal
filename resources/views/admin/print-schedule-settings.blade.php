@@ -32,22 +32,38 @@
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
                 <div>
                     <h2 class="font-semibold text-slate-800">Machine Throughput</h2>
-                    <p class="text-xs text-slate-400 mt-0.5">Packs completed per working day per machine. Used to estimate whether jobs will be on time.</p>
+                    <p class="text-xs text-slate-400 mt-0.5">Packs completed per working day, by machine group and product size. Product size is detected from the product code (200 / 300 / 370). Used to estimate whether jobs will be on time and to show live rate % on tablets.</p>
                 </div>
 
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                    @foreach(['auto_1' => 'Auto 1', 'auto_2' => 'Auto 2', 'auto_3' => 'Auto 3', 'baby' => 'Baby'] as $key => $label)
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1.5">{{ $label }}</label>
-                            <div style="display:flex;align-items:center;gap:8px;">
-                                <input type="number" name="throughput_{{ $key }}"
-                                    value="{{ $settings['throughput_' . $key] }}" min="1"
-                                    class="flex-1 px-4 py-2.5 rounded-lg border border-slate-300 text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent transition">
-                                <span class="text-xs text-slate-400 whitespace-nowrap">packs / day</span>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
+                <table style="width:100%;border-collapse:collapse;font-size:0.875rem;">
+                    <thead>
+                        <tr>
+                            <th style="text-align:left;padding:8px 12px 8px 0;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;"></th>
+                            <th style="text-align:center;padding:8px 12px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">200mm</th>
+                            <th style="text-align:center;padding:8px 12px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">300mm</th>
+                            <th style="text-align:center;padding:8px 12px;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">370mm</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach(['auto' => 'Auto (1, 2, 3)', 'baby' => 'Baby'] as $group => $label)
+                            <tr>
+                                <td style="padding:10px 12px 10px 0;font-weight:600;color:#1e293b;white-space:nowrap;">{{ $label }}</td>
+                                @foreach([200, 300, 370] as $size)
+                                    <td style="padding:10px 6px;text-align:center;">
+                                        <div style="display:flex;align-items:center;gap:6px;justify-content:center;">
+                                            <input type="number" name="throughput_{{ $group }}_{{ $size }}"
+                                                value="{{ $settings['throughput_' . $group . '_' . $size] }}" min="1"
+                                                style="width:90px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:0.875rem;color:#1e293b;text-align:center;outline:none;"
+                                                onfocus="this.style.borderColor='#e11d48';this.style.boxShadow='0 0 0 3px rgba(225,29,72,0.1)'"
+                                                onblur="this.style.borderColor='#cbd5e1';this.style.boxShadow='none'">
+                                            <span style="font-size:0.7rem;color:#94a3b8;white-space:nowrap;">/day</span>
+                                        </div>
+                                    </td>
+                                @endforeach
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
             </div>
 
             {{-- Dashboard Notes --}}

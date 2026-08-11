@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\PrintJob;
 use App\Models\PrintJobRun;
+use App\Models\PrintScheduleSetting;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Hash;
@@ -13,6 +15,14 @@ use Illuminate\Support\Facades\RateLimiter;
 class TabletController extends Controller
 {
     private const SESSION_TTL_HOURS = 12;
+
+    private const DAY_WEIGHTS = [
+        1 => 1.0,
+        2 => 1.0,
+        3 => 1.0,
+        4 => 1.0,
+        5 => 5.0 / 8.0,
+    ];
 
     private function sessionKey(string $machine): string
     {
@@ -241,6 +251,150 @@ class TabletController extends Controller
         }
 
         return redirect()->route('tablet.show', $machine);
+    }
+
+    private function productSize(string $code): int
+    {
+        if (preg_match('/(200|300|370)/', $code, $m)) {
+            return (int) $m[1];
+        }
+        return 200;
+    }
+
+    private function machineGroup(string $machine): string
+    {
+        return str_starts_with($machine, 'baby') ? 'baby' : 'auto';
+    }
+
+    private function loadSizeThroughputs(): array
+    {
+        return [
+            'auto' => [
+                200 => (int) PrintScheduleSetting::getValue('throughput_auto_200', '350'),
+                300 => (int) PrintScheduleSetting::getValue('throughput_auto_300', '350'),
+                370 => (int) PrintScheduleSetting::getValue('throughput_auto_370', '350'),
+            ],
+            'baby' => [
+                200 => (int) PrintScheduleSetting::getValue('throughput_baby_200', '180'),
+                300 => (int) PrintScheduleSetting::getValue('throughput_baby_300', '180'),
+                370 => (int) PrintScheduleSetting::getValue('throughput_baby_370', '180'),
+            ],
+        ];
+    }
+
+    private function getThroughputForMachineCode(string $machine, ?string $productCode, array $throughputs): int
+    {
+        $group = $this->machineGroup($machine);
+        $size  = $this->productSize($productCode ?? '');
+        return $throughputs[$group][$size] ?? 350;
+    }
+
+    private function packsOnMachineSince(string $machine, Carbon $since): int
+    {
+        $runs = PrintJobRun::where('machine', $machine)
+            ->where('started_at', '>=', $since)
+            ->get(['id', 'print_job_id', 'ended_at', 'packs_produced', 'progress_packs']);
+
+        if ($runs->isEmpty()) return 0;
+
+        $jobIds = $runs->pluck('print_job_id')->unique()->filter()->values();
+
+        $baselines = [];
+        if ($jobIds->isNotEmpty()) {
+            $lastRunIds = PrintJobRun::whereIn('print_job_id', $jobIds)
+                ->where('started_at', '<', $since)
+                ->whereNotNull('packs_produced')
+                ->selectRaw('print_job_id, MAX(id) as max_id')
+                ->groupBy('print_job_id')
+                ->pluck('max_id');
+
+            if ($lastRunIds->isNotEmpty()) {
+                $baselines = PrintJobRun::whereIn('id', $lastRunIds)
+                    ->pluck('packs_produced', 'print_job_id')
+                    ->map(fn($v) => (int) $v)
+                    ->toArray();
+            }
+        }
+
+        $total = 0;
+        foreach ($runs->groupBy('print_job_id') as $jobId => $jobRuns) {
+            $baseline       = $baselines[$jobId] ?? 0;
+            $activeRun      = $jobRuns->firstWhere('ended_at', null);
+            $lastEndedPacks = $jobRuns->filter(fn($r) => $r->packs_produced !== null && $r->ended_at !== null)
+                ->sortByDesc(fn($r) => $r->id)->first()?->packs_produced ?? 0;
+
+            $activePacks   = $activeRun?->progress_packs;
+            $includeActive = $activePacks !== null && $activePacks > $lastEndedPacks;
+            $currTotal     = $includeActive ? $activePacks : ($lastEndedPacks ?: null);
+
+            if ($currTotal !== null) {
+                $total += max(0, $currTotal - $baseline);
+            }
+        }
+
+        return $total;
+    }
+
+    public function stats(string $machine): \Illuminate\Http\JsonResponse
+    {
+        if (!$this->validMachine($machine)) abort(404);
+
+        $throughputs = $this->loadSizeThroughputs();
+
+        // Determine product code to use for the target (currently running or most recent today)
+        $productCode = PrintJobRun::where('machine', $machine)
+            ->whereNull('ended_at')
+            ->with('printJob:id,product_code')
+            ->latest('started_at')
+            ->first()?->printJob?->product_code;
+
+        if (!$productCode) {
+            $productCode = PrintJobRun::where('machine', $machine)
+                ->whereDate('started_at', today())
+                ->with('printJob:id,product_code')
+                ->latest('started_at')
+                ->first()?->printJob?->product_code;
+        }
+
+        $dailyTarget = $this->getThroughputForMachineCode($machine, $productCode, $throughputs);
+        $productSize = $this->productSize($productCode ?? '');
+
+        $todayStart = now()->startOfDay();
+        $monthStart = now()->startOfMonth();
+
+        $todayPacks = $this->packsOnMachineSince($machine, $todayStart);
+        $monthPacks = $this->packsOnMachineSince($machine, $monthStart);
+
+        // Count working day equivalents elapsed so far this month (inclusive of today)
+        $workDaysElapsed = 0.0;
+        $d = $monthStart->copy();
+        $endOfToday = now()->startOfDay();
+        while ($d->lte($endOfToday)) {
+            $workDaysElapsed += self::DAY_WEIGHTS[$d->dayOfWeek] ?? 0.0;
+            $d->addDay();
+        }
+
+        $monthTarget = (int) round($dailyTarget * $workDaysElapsed);
+
+        return response()->json([
+            'day' => [
+                'packs'  => $todayPacks,
+                'target' => $dailyTarget,
+                'pct'    => $dailyTarget > 0
+                    ? min(150, (int) round($todayPacks / $dailyTarget * 100))
+                    : null,
+            ],
+            'month' => [
+                'packs'        => $monthPacks,
+                'target'       => $monthTarget,
+                'pct'          => $monthTarget > 0
+                    ? min(150, (int) round($monthPacks / $monthTarget * 100))
+                    : null,
+                'working_days' => round($workDaysElapsed, 1),
+            ],
+            'product_size' => $productSize,
+            'daily_target' => $dailyTarget,
+        ]);
     }
 
     public function jobsHash(string $machine): \Illuminate\Http\JsonResponse

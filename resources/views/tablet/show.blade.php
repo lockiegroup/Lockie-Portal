@@ -173,6 +173,59 @@
             letter-spacing: 0.05em;
         }
 
+        /* ── Rate Display ── */
+        .rate-display {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 14px;
+            padding: 14px 18px;
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .rate-stat {
+            min-width: 0;
+        }
+        .rate-stat-label {
+            font-size: 0.7rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 4px;
+        }
+        .rate-stat-nums {
+            font-size: 0.82rem;
+            color: #94a3b8;
+            margin-bottom: 6px;
+        }
+        .rate-stat-nums strong {
+            color: #f1f5f9;
+            font-size: 1rem;
+        }
+        .rate-bar-track {
+            height: 8px;
+            border-radius: 99px;
+            background: #0f172a;
+            overflow: hidden;
+        }
+        .rate-bar-fill {
+            height: 100%;
+            border-radius: 99px;
+            transition: width 0.6s ease;
+        }
+        .rate-bar-fill.green  { background: #16a34a; }
+        .rate-bar-fill.amber  { background: #d97706; }
+        .rate-bar-fill.red    { background: #dc2626; }
+        .rate-pct {
+            font-size: 0.78rem;
+            font-weight: 700;
+            margin-top: 4px;
+        }
+        .rate-pct.green  { color: #4ade80; }
+        .rate-pct.amber  { color: #fbbf24; }
+        .rate-pct.red    { color: #f87171; }
+
         .no-jobs {
             background: #1e293b;
             border: 2px dashed #334155;
@@ -489,6 +542,22 @@
     @endif
 
     <h2>Jobs on this machine</h2>
+
+    {{-- Rate display (day + month) --}}
+    <div class="rate-display" id="rate-display" style="display:none;">
+        <div class="rate-stat">
+            <div class="rate-stat-label">Today</div>
+            <div class="rate-stat-nums"><strong id="rate-day-packs">—</strong> / <span id="rate-day-target">—</span> packs</div>
+            <div class="rate-bar-track"><div class="rate-bar-fill" id="rate-day-bar" style="width:0%;"></div></div>
+            <div class="rate-pct" id="rate-day-pct"></div>
+        </div>
+        <div class="rate-stat">
+            <div class="rate-stat-label">This month</div>
+            <div class="rate-stat-nums"><strong id="rate-month-packs">—</strong> / <span id="rate-month-target">—</span> packs</div>
+            <div class="rate-bar-track"><div class="rate-bar-fill" id="rate-month-bar" style="width:0%;"></div></div>
+            <div class="rate-pct" id="rate-month-pct"></div>
+        </div>
+    </div>
 
     @if($jobs->isEmpty())
         <div class="no-jobs">
@@ -1203,6 +1272,59 @@ function _pollJobs() {
         .catch(() => {});
 }
 setInterval(_pollJobs, 30000);
+
+// ── Rate display (day / month) ──
+const _statsUrl = '{{ route('tablet.stats', $machine) }}';
+
+function _rateColor(pct) {
+    if (pct === null) return 'amber';
+    if (pct >= 90) return 'green';
+    if (pct >= 70) return 'amber';
+    return 'red';
+}
+
+function _updateRateDisplay(data) {
+    const panel = document.getElementById('rate-display');
+    if (!panel) return;
+    panel.style.display = 'grid';
+
+    function _fill(prefix, info) {
+        const packs  = info.packs ?? 0;
+        const target = info.target ?? 0;
+        const pct    = info.pct;
+        const color  = _rateColor(pct);
+        const barW   = pct !== null ? Math.min(100, pct) : 0;
+
+        document.getElementById(prefix + '-packs').textContent  = packs.toLocaleString();
+        document.getElementById(prefix + '-target').textContent = target.toLocaleString();
+
+        const bar = document.getElementById(prefix + '-bar');
+        bar.style.width = barW + '%';
+        bar.className = 'rate-bar-fill ' + color;
+
+        const pctEl = document.getElementById(prefix + '-pct');
+        if (pct !== null) {
+            pctEl.textContent = pct + '%' + (pct >= 100 ? ' ✓' : ' of target');
+            pctEl.className = 'rate-pct ' + color;
+        } else {
+            pctEl.textContent = 'No data yet';
+            pctEl.className = 'rate-pct amber';
+        }
+    }
+
+    _fill('rate-day',   data.day);
+    _fill('rate-month', data.month);
+}
+
+function _pollStats() {
+    fetch(_statsUrl, { cache: 'no-store' })
+        .then(r => r.json())
+        .then(_updateRateDisplay)
+        .catch(() => {});
+}
+
+_pollStats();
+setInterval(_pollStats, 60000);
 
 // ── 2-hour progress reminder (localStorage-backed so page refresh preserves snooze) ──
 @php

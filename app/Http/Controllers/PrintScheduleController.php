@@ -39,23 +39,24 @@ class PrintScheduleController extends Controller
                 ->get();
         }
 
-        // Machine lead times using per-machine throughput
+        // Machine lead times using per-job throughput (based on product size)
         $machineLeadTimes = [];
         foreach ($machines as $machine) {
-            $total = $boardJobs[$machine]->sum(fn($job) => $job->remaining_quantity);
-            $tp    = $throughputs[$machine] ?? 350;
-            $machineLeadTimes[$machine] = $tp > 0 ? round($total / $tp, 1) : 0;
+            $machineLeadTimes[$machine] = round($boardJobs[$machine]->sum(function ($job) use ($machine, $throughputs) {
+                $tp = $this->jobThroughput($machine, $job->product_code, $throughputs);
+                return $tp > 0 ? $job->remaining_quantity / $tp : 0;
+            }), 1);
         }
 
         // Compute estimated completion and late flags for machine board jobs
         $today = now()->startOfDay();
         foreach ($machines as $machine) {
-            $throughput = $throughputs[$machine] ?? 350;
-            $cumulative = 0;
+            $cumulativeDays = 0.0;
             foreach ($boardJobs[$machine] as $job) {
-                $cumulative += $job->remaining_quantity;
-                if ($job->required_date && $throughput > 0 && $cumulative > 0) {
-                    $estimated           = $this->estimatedCompletion($today, $cumulative, $throughput);
+                $tp = $this->jobThroughput($machine, $job->product_code, $throughputs);
+                $cumulativeDays += $tp > 0 ? $job->remaining_quantity / $tp : 0;
+                if ($job->required_date && $cumulativeDays > 0) {
+                    $estimated           = $this->estimatedCompletionFromDays($today, $cumulativeDays);
                     $daysLate            = (int) $job->required_date->diffInDays($estimated, false);
                     $job->is_late        = $daysLate > 0;
                     $job->days_overdue   = max(0, $daysLate);
@@ -287,27 +288,57 @@ class PrintScheduleController extends Controller
     private function loadThroughputs(): array
     {
         return [
-            'auto_1' => (int) PrintScheduleSetting::getValue('throughput_auto_1', '350'),
-            'auto_2' => (int) PrintScheduleSetting::getValue('throughput_auto_2', '350'),
-            'auto_3' => (int) PrintScheduleSetting::getValue('throughput_auto_3', '350'),
-            'baby'   => (int) PrintScheduleSetting::getValue('throughput_baby',   '180'),
-            // laser and coditherm are not throughput-tracked machines — no lead time shown
+            'auto' => [
+                200 => (int) PrintScheduleSetting::getValue('throughput_auto_200', '350'),
+                300 => (int) PrintScheduleSetting::getValue('throughput_auto_300', '350'),
+                370 => (int) PrintScheduleSetting::getValue('throughput_auto_370', '350'),
+            ],
+            'baby' => [
+                200 => (int) PrintScheduleSetting::getValue('throughput_baby_200', '180'),
+                300 => (int) PrintScheduleSetting::getValue('throughput_baby_300', '180'),
+                370 => (int) PrintScheduleSetting::getValue('throughput_baby_370', '180'),
+            ],
         ];
     }
 
-    private function estimatedCompletion(Carbon $from, int $packsNeeded, int $throughput): Carbon
+    private function productSize(string $code): int
     {
-        $date      = $from->copy()->addDay()->startOfDay(); // work starts next working day
-        $remaining = (float) $packsNeeded;
+        if (preg_match('/(200|300|370)/', $code, $m)) {
+            return (int) $m[1];
+        }
+        return 200;
+    }
+
+    private function machineGroup(string $machine): string
+    {
+        return str_starts_with($machine, 'baby') ? 'baby' : 'auto';
+    }
+
+    private function jobThroughput(string $machine, ?string $productCode, array $throughputs): int
+    {
+        $group = $this->machineGroup($machine);
+        $size  = $this->productSize($productCode ?? '');
+        return $throughputs[$group][$size] ?? 350;
+    }
+
+    private function estimatedCompletionFromDays(Carbon $from, float $daysNeeded): Carbon
+    {
+        $date      = $from->copy()->addDay()->startOfDay();
+        $remaining = $daysNeeded;
         for ($i = 0; $i < 500; $i++) {
             $weight = self::DAY_WEIGHTS[$date->dayOfWeek] ?? 0.0;
             if ($weight > 0.0) {
-                $remaining -= $throughput * $weight;
+                $remaining -= $weight;
                 if ($remaining <= 0.0) return $date;
             }
             $date->addDay();
         }
         return $date;
+    }
+
+    private function estimatedCompletion(Carbon $from, int $packsNeeded, int $throughput): Carbon
+    {
+        return $this->estimatedCompletionFromDays($from, $throughput > 0 ? $packsNeeded / $throughput : 0.0);
     }
 
     public function overview(): View
@@ -320,27 +351,31 @@ class PrintScheduleController extends Controller
         foreach ($machines as $machine) {
             $jobs           = PrintJob::active()->where('board', $machine)->orderBy('position')->get();
             $totalRemaining = $jobs->sum(fn($j) => $j->remaining_quantity);
-            $tp             = $throughputs[$machine] ?? 350;
-            $leadDays       = $tp > 0 ? round($totalRemaining / $tp, 1) : 0;
+            $leadDays       = round($jobs->sum(function ($job) use ($machine, $throughputs) {
+                $tp = $this->jobThroughput($machine, $job->product_code, $throughputs);
+                return $tp > 0 ? $job->remaining_quantity / $tp : 0;
+            }), 1);
 
-            $lateCount  = 0;
-            $cumulative = 0;
+            $lateCount      = 0;
+            $cumulativeDays = 0.0;
             foreach ($jobs as $job) {
-                $cumulative += $job->remaining_quantity;
-                if ($job->required_date && $tp > 0 && $cumulative > 0) {
-                    $estimated = $this->estimatedCompletion($today, $cumulative, $tp);
+                $tp = $this->jobThroughput($machine, $job->product_code, $throughputs);
+                $cumulativeDays += $tp > 0 ? $job->remaining_quantity / $tp : 0;
+                if ($job->required_date && $cumulativeDays > 0) {
+                    $estimated = $this->estimatedCompletionFromDays($today, $cumulativeDays);
                     if ($estimated->gt($job->required_date)) {
                         $lateCount++;
                     }
                 }
             }
 
+            $repTp = $this->jobThroughput($machine, '200', $throughputs);
             $machineStats[$machine] = [
                 'label'      => PrintJob::BOARDS[$machine],
                 'job_count'  => $jobs->count(),
                 'remaining'  => $totalRemaining,
                 'lead_days'  => $leadDays,
-                'throughput' => $tp,
+                'throughput' => $repTp,
                 'late_count' => $lateCount,
             ];
         }
@@ -485,9 +520,10 @@ class PrintScheduleController extends Controller
                     ? min(100, (int) round($totalDone / $orderQty * 100))
                     : null;
 
-                // On-track: compare avg job rate vs machine target (job rate is more meaningful)
+                // On-track: compare avg job rate vs job-specific target (based on product size)
                 $onTrack   = null;
-                $targetPPH = isset($throughputs[$machine]) ? $throughputs[$machine] / $workHours : null;
+                $jobTp     = $this->jobThroughput($machine, $active->printJob?->product_code, $throughputs);
+                $targetPPH = $jobTp > 0 ? $jobTp / $workHours : null;
                 $targetStr = $targetPPH !== null
                     ? ((int) round($targetPPH) >= 1000
                         ? number_format($targetPPH / 1000, 1) . 'k/hr'

@@ -36,6 +36,7 @@ Route::get('/', fn() => redirect()->route('login'));
 Route::prefix('tablet')->name('tablet.')->group(function () {
     Route::get('/{machine}',                          [TabletController::class, 'show'])->name('show');
     Route::get('/{machine}/jobs-hash',                [TabletController::class, 'jobsHash'])->name('jobs.hash');
+    Route::get('/{machine}/stats',                    [TabletController::class, 'stats'])->name('stats');
     Route::post('/{machine}/login',                   [TabletController::class, 'pinLogin'])->name('login');
     Route::post('/{machine}/logout',                  [TabletController::class, 'logout'])->name('logout');
     Route::post('/{machine}/jobs/{job}/progress',     [TabletController::class, 'updateProgress'])->name('jobs.progress');
