@@ -365,26 +365,27 @@ class TabletController extends Controller
         $todayPacks = $this->packsOnMachineSince($machine, $todayStart);
         $monthPacks = $this->packsOnMachineSince($machine, $monthStart);
 
-        // Month target based on actual hours the machine was running this month.
-        // Counting distinct calendar days would over-credit a machine that only ran for 1 hour.
-        // Instead: target = (hours run ÷ 8) × daily_throughput.
-        $completedSecs = (int) PrintJobRun::where('machine', $machine)
+        // Month target: sum per-run contribution using each run's own product-size throughput.
+        // This correctly weights a mix of e.g. 10h on 200mm (400/day) + 6h on 300mm (344/day)
+        // rather than applying a single rate to the total hours.
+        $monthRuns = PrintJobRun::where('machine', $machine)
             ->where('started_at', '>=', $monthStart)
-            ->whereNotNull('ended_at')
-            ->selectRaw('SUM(TIMESTAMPDIFF(SECOND, started_at, ended_at)) as secs')
-            ->value('secs');
+            ->with('printJob:id,product_code')
+            ->get();
 
-        // Add the currently active run's elapsed time if it started this month
-        $activeMonthRun = PrintJobRun::where('machine', $machine)
-            ->whereNull('ended_at')
-            ->where('started_at', '>=', $monthStart)
-            ->first();
-        if ($activeMonthRun) {
-            $completedSecs += now()->diffInSeconds($activeMonthRun->started_at);
+        $monthTargetPacks = 0.0;
+        $totalSecsThisMonth = 0;
+        foreach ($monthRuns as $run) {
+            $secs = $run->ended_at
+                ? abs((int) $run->started_at->diffInSeconds($run->ended_at))
+                : (int) now()->diffInSeconds($run->started_at);
+            $totalSecsThisMonth += $secs;
+            $tp = $this->getThroughputForMachineCode($machine, $run->printJob?->product_code, $throughputs);
+            $monthTargetPacks += ($secs / 3600) * ($tp / 8.0);
         }
 
-        $hoursRunThisMonth = round($completedSecs / 3600, 1);
-        $monthTarget       = (int) round($dailyTarget * ($completedSecs / 3600 / 8));
+        $hoursRunThisMonth = round($totalSecsThisMonth / 3600, 1);
+        $monthTarget       = (int) round($monthTargetPacks);
 
         return response()->json([
             'day' => [
