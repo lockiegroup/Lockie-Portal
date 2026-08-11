@@ -565,7 +565,7 @@
         <div class="rate-row-label">Machine</div>
         <div class="rate-row">
             <div class="rate-stat">
-                <div class="rate-stat-label">Today</div>
+                <div class="rate-stat-label">Today — <span id="m-day-hours">—</span> hrs run</div>
                 <div class="rate-stat-nums"><strong id="m-day-packs">—</strong> / <span id="m-day-target">—</span> packs</div>
                 <div class="rate-bar-track"><div class="rate-bar-fill" id="m-day-bar" style="width:0%;"></div></div>
                 <div class="rate-pct" id="m-day-pct"></div>
@@ -583,7 +583,7 @@
         <div class="rate-row-label" id="op-row-label" style="display:none;"></div>
         <div class="rate-row" id="op-row" style="display:none;">
             <div class="rate-stat">
-                <div class="rate-stat-label">Today</div>
+                <div class="rate-stat-label">Today — <span id="op-day-hours">—</span> hrs run</div>
                 <div class="rate-stat-nums"><strong id="op-day-packs">—</strong> / <span id="op-day-target">—</span> packs</div>
                 <div class="rate-bar-track"><div class="rate-bar-fill" id="op-day-bar" style="width:0%;"></div></div>
                 <div class="rate-pct" id="op-day-pct"></div>
@@ -1359,8 +1359,12 @@ function _updateRateDisplay(data) {
     _fill('m-day',   machine.day);
     _fill('m-month', machine.month);
 
-    const mHours = document.getElementById('m-month-hours');
-    if (mHours && machine.month) mHours.textContent = machine.month.hours_run ?? '—';
+    function _setHours(id, info) {
+        const el = document.getElementById(id);
+        if (el && info) el.textContent = info.hours_run ?? '—';
+    }
+    _setHours('m-day-hours',   machine.day);
+    _setHours('m-month-hours', machine.month);
 
     // Operator row
     const op = data.operator;
@@ -1374,8 +1378,8 @@ function _updateRateDisplay(data) {
         rowLabel.textContent   = op.name;
         _fill('op-day',   op.day);
         _fill('op-month', op.month);
-        const opHours = document.getElementById('op-month-hours');
-        if (opHours && op.month) opHours.textContent = op.month.hours_run ?? '—';
+        _setHours('op-day-hours',   op.day);
+        _setHours('op-month-hours', op.month);
     } else if (divider) {
         divider.style.display  = 'none';
         rowLabel.style.display = 'none';

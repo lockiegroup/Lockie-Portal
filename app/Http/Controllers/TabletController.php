@@ -418,55 +418,49 @@ class TabletController extends Controller
 
         $throughputs = $this->loadSizeThroughputs();
 
-        // Determine product code to use for the target (currently running or most recent today)
-        $productCode = PrintJobRun::where('machine', $machine)
-            ->whereNull('ended_at')
-            ->with('printJob:id,product_code')
-            ->latest('started_at')
-            ->first()?->printJob?->product_code;
-
-        if (!$productCode) {
-            $productCode = PrintJobRun::where('machine', $machine)
-                ->whereDate('started_at', today())
-                ->with('printJob:id,product_code')
-                ->latest('started_at')
-                ->first()?->printJob?->product_code;
-        }
-
-        $dailyTarget = $this->getThroughputForMachineCode($machine, $productCode, $throughputs);
-        $productSize = $this->productSize($productCode ?? '');
-
         $todayStart = now()->startOfDay();
         $monthStart = now()->startOfMonth();
 
         $todayPacks = $this->packsOnMachineSince($machine, $todayStart);
         $monthPacks = $this->packsOnMachineSince($machine, $monthStart);
 
-        // Month target: sum per-run contribution using each run's own product-size throughput.
-        // This correctly weights a mix of e.g. 10h on 200mm (400/day) + 6h on 300mm (344/day)
-        // rather than applying a single rate to the total hours.
-        $monthRuns = PrintJobRun::where('machine', $machine)
+        // Compute targets using per-run weighted hours × job throughput for both periods.
+        // This correctly handles mixed product runs (e.g. 4h on 200mm + 4h on 300mm = 372,
+        // not a flat 400). The same logic applies to today and to the month.
+        $allPeriodRuns = PrintJobRun::where('machine', $machine)
             ->where('started_at', '>=', $monthStart)
             ->with('printJob:id,product_code')
             ->get();
 
+        $todayTargetPacks = 0.0;
         $monthTargetPacks = 0.0;
-        $totalSecsThisMonth = 0;
-        foreach ($monthRuns as $run) {
+        $todaySecs        = 0;
+        $monthSecs        = 0;
+
+        foreach ($allPeriodRuns as $run) {
             $secs = $run->ended_at
                 ? abs((int) $run->started_at->diffInSeconds($run->ended_at))
                 : (int) now()->diffInSeconds($run->started_at);
-            $totalSecsThisMonth += $secs;
             $tp = $this->getThroughputForMachineCode($machine, $run->printJob?->product_code, $throughputs);
-            $monthTargetPacks += ($secs / 3600) * ($tp / 8.0);
+            $contribution = ($secs / 3600) * ($tp / 8.0);
+
+            $monthTargetPacks += $contribution;
+            $monthSecs        += $secs;
+
+            if ($run->started_at->gte($todayStart)) {
+                $todayTargetPacks += $contribution;
+                $todaySecs        += $secs;
+            }
         }
 
-        $hoursRunThisMonth = round($totalSecsThisMonth / 3600, 1);
+        $todayTarget       = (int) round($todayTargetPacks);
         $monthTarget       = (int) round($monthTargetPacks);
+        $hoursRunToday     = round($todaySecs / 3600, 1);
+        $hoursRunThisMonth = round($monthSecs / 3600, 1);
 
         // Operator-specific stats (from tablet session)
-        $operator   = $this->getOperator($machine);
-        $opDayStats = null;
+        $operator     = $this->getOperator($machine);
+        $opDayStats   = null;
         $opMonthStats = null;
         if ($operator) {
             $opDayStats   = $this->operatorStatsForPeriod($machine, $operator->id, $todayStart, $throughputs);
@@ -476,11 +470,12 @@ class TabletController extends Controller
         return response()->json([
             'machine' => [
                 'day' => [
-                    'packs'  => $todayPacks,
-                    'target' => $dailyTarget,
-                    'pct'    => $dailyTarget > 0
-                        ? min(150, (int) round($todayPacks / $dailyTarget * 100))
+                    'packs'     => $todayPacks,
+                    'target'    => $todayTarget,
+                    'pct'       => $todayTarget > 0
+                        ? min(150, (int) round($todayPacks / $todayTarget * 100))
                         : null,
+                    'hours_run' => $hoursRunToday,
                 ],
                 'month' => [
                     'packs'     => $monthPacks,
@@ -496,8 +491,6 @@ class TabletController extends Controller
                 'day'   => $opDayStats,
                 'month' => $opMonthStats,
             ] : null,
-            'product_size' => $productSize,
-            'daily_target' => $dailyTarget,
         ]);
     }
 
