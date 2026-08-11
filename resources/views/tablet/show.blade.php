@@ -180,9 +180,24 @@
             border-radius: 14px;
             padding: 14px 18px;
             margin-bottom: 20px;
+        }
+        .rate-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 12px;
+        }
+        .rate-row-label {
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            margin-bottom: 8px;
+        }
+        .rate-divider {
+            border: none;
+            border-top: 1px solid #334155;
+            margin: 12px 0;
         }
         .rate-stat {
             min-width: 0;
@@ -543,20 +558,44 @@
 
     <h2>Jobs on this machine</h2>
 
-    {{-- Rate display (day + month) --}}
+    {{-- Rate display (machine + operator rows) --}}
     <div class="rate-display" id="rate-display" style="display:none;">
-        <div class="rate-stat">
-            <div class="rate-stat-label">Today</div>
-            <div class="rate-stat-nums"><strong id="rate-day-packs">—</strong> / <span id="rate-day-target">—</span> packs</div>
-            <div class="rate-bar-track"><div class="rate-bar-fill" id="rate-day-bar" style="width:0%;"></div></div>
-            <div class="rate-pct" id="rate-day-pct"></div>
+
+        {{-- Machine row --}}
+        <div class="rate-row-label">Machine</div>
+        <div class="rate-row">
+            <div class="rate-stat">
+                <div class="rate-stat-label">Today</div>
+                <div class="rate-stat-nums"><strong id="m-day-packs">—</strong> / <span id="m-day-target">—</span> packs</div>
+                <div class="rate-bar-track"><div class="rate-bar-fill" id="m-day-bar" style="width:0%;"></div></div>
+                <div class="rate-pct" id="m-day-pct"></div>
+            </div>
+            <div class="rate-stat">
+                <div class="rate-stat-label">Month to date — <span id="m-month-hours">—</span> hrs run</div>
+                <div class="rate-stat-nums"><strong id="m-month-packs">—</strong> / <span id="m-month-target">—</span> packs</div>
+                <div class="rate-bar-track"><div class="rate-bar-fill" id="m-month-bar" style="width:0%;"></div></div>
+                <div class="rate-pct" id="m-month-pct"></div>
+            </div>
         </div>
-        <div class="rate-stat">
-            <div class="rate-stat-label">Month to date — <span id="rate-month-hours">—</span> hrs run</div>
-            <div class="rate-stat-nums"><strong id="rate-month-packs">—</strong> / <span id="rate-month-target">—</span> packs</div>
-            <div class="rate-bar-track"><div class="rate-bar-fill" id="rate-month-bar" style="width:0%;"></div></div>
-            <div class="rate-pct" id="rate-month-pct"></div>
+
+        {{-- Operator row (hidden until stats load) --}}
+        <hr class="rate-divider" id="op-divider" style="display:none;">
+        <div class="rate-row-label" id="op-row-label" style="display:none;"></div>
+        <div class="rate-row" id="op-row" style="display:none;">
+            <div class="rate-stat">
+                <div class="rate-stat-label">Today</div>
+                <div class="rate-stat-nums"><strong id="op-day-packs">—</strong> / <span id="op-day-target">—</span> packs</div>
+                <div class="rate-bar-track"><div class="rate-bar-fill" id="op-day-bar" style="width:0%;"></div></div>
+                <div class="rate-pct" id="op-day-pct"></div>
+            </div>
+            <div class="rate-stat">
+                <div class="rate-stat-label">Month to date — <span id="op-month-hours">—</span> hrs run</div>
+                <div class="rate-stat-nums"><strong id="op-month-packs">—</strong> / <span id="op-month-target">—</span> packs</div>
+                <div class="rate-bar-track"><div class="rate-bar-fill" id="op-month-bar" style="width:0%;"></div></div>
+                <div class="rate-pct" id="op-month-pct"></div>
+            </div>
         </div>
+
     </div>
 
     @if($jobs->isEmpty())
@@ -1286,23 +1325,27 @@ function _rateColor(pct) {
 function _updateRateDisplay(data) {
     const panel = document.getElementById('rate-display');
     if (!panel) return;
-    panel.style.display = 'grid';
+    panel.style.display = 'block';
 
     function _fill(prefix, info) {
+        if (!info) return;
         const packs  = info.packs ?? 0;
         const target = info.target ?? 0;
         const pct    = info.pct;
         const color  = _rateColor(pct);
         const barW   = pct !== null ? Math.min(100, pct) : 0;
 
-        document.getElementById(prefix + '-packs').textContent  = packs.toLocaleString();
-        document.getElementById(prefix + '-target').textContent = target.toLocaleString();
-
+        const packsEl = document.getElementById(prefix + '-packs');
+        const targetEl = document.getElementById(prefix + '-target');
         const bar = document.getElementById(prefix + '-bar');
+        const pctEl = document.getElementById(prefix + '-pct');
+        if (!packsEl) return;
+
+        packsEl.textContent  = packs.toLocaleString();
+        targetEl.textContent = target.toLocaleString();
         bar.style.width = barW + '%';
         bar.className = 'rate-bar-fill ' + color;
 
-        const pctEl = document.getElementById(prefix + '-pct');
         if (pct !== null) {
             pctEl.textContent = pct + '%' + (pct >= 100 ? ' ✓' : ' of target');
             pctEl.className = 'rate-pct ' + color;
@@ -1312,12 +1355,31 @@ function _updateRateDisplay(data) {
         }
     }
 
-    _fill('rate-day',   data.day);
-    _fill('rate-month', data.month);
+    const machine = data.machine || {};
+    _fill('m-day',   machine.day);
+    _fill('m-month', machine.month);
 
-    const hoursEl = document.getElementById('rate-month-hours');
-    if (hoursEl && data.month) {
-        hoursEl.textContent = data.month.hours_run ?? '—';
+    const mHours = document.getElementById('m-month-hours');
+    if (mHours && machine.month) mHours.textContent = machine.month.hours_run ?? '—';
+
+    // Operator row
+    const op = data.operator;
+    const divider  = document.getElementById('op-divider');
+    const rowLabel = document.getElementById('op-row-label');
+    const opRow    = document.getElementById('op-row');
+    if (op && divider) {
+        divider.style.display  = '';
+        rowLabel.style.display = '';
+        opRow.style.display    = '';
+        rowLabel.textContent   = op.name;
+        _fill('op-day',   op.day);
+        _fill('op-month', op.month);
+        const opHours = document.getElementById('op-month-hours');
+        if (opHours && op.month) opHours.textContent = op.month.hours_run ?? '—';
+    } else if (divider) {
+        divider.style.display  = 'none';
+        rowLabel.style.display = 'none';
+        opRow.style.display    = 'none';
     }
 }
 

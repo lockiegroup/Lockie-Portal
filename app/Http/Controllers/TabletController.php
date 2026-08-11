@@ -335,6 +335,83 @@ class TabletController extends Controller
         return $total;
     }
 
+    private function operatorStatsForPeriod(string $machine, int $userId, Carbon $since, array $throughputs): array
+    {
+        // Fetch all runs on this machine in the period (all users) ordered by job then id,
+        // so we can compute per-run packs deltas and attribute them to each operator.
+        $allRuns = PrintJobRun::where('machine', $machine)
+            ->where('started_at', '>=', $since)
+            ->orderBy('print_job_id')
+            ->orderBy('id')
+            ->get(['id', 'print_job_id', 'user_id', 'ended_at', 'packs_produced', 'progress_packs',
+                   'started_at']);
+
+        $jobIds = $allRuns->pluck('print_job_id')->unique()->filter()->values();
+        $baselines = [];
+        if ($jobIds->isNotEmpty()) {
+            $lastRunIds = PrintJobRun::whereIn('print_job_id', $jobIds)
+                ->where('started_at', '<', $since)
+                ->whereNotNull('packs_produced')
+                ->selectRaw('print_job_id, MAX(id) as max_id')
+                ->groupBy('print_job_id')
+                ->pluck('max_id');
+            if ($lastRunIds->isNotEmpty()) {
+                $baselines = PrintJobRun::whereIn('id', $lastRunIds)
+                    ->pluck('packs_produced', 'print_job_id')
+                    ->map(fn($v) => (int) $v)
+                    ->toArray();
+            }
+        }
+
+        // Walk through each job's runs in order, tracking the cumulative baseline.
+        // Each run's packs contribution = packs_produced (or progress_packs) - previous total.
+        $opPacks = 0;
+        foreach ($allRuns->groupBy('print_job_id') as $jobId => $jobRuns) {
+            $prev = $baselines[$jobId] ?? 0;
+            foreach ($jobRuns->sortBy('id') as $run) {
+                $isActive = $run->ended_at === null;
+                $curr = $isActive
+                    ? ($run->progress_packs ?? $prev)
+                    : ($run->packs_produced ?? $prev);
+                $delta = max(0, $curr - $prev);
+                if ($run->user_id === $userId) {
+                    $opPacks += $delta;
+                }
+                if (!$isActive && $run->packs_produced !== null) {
+                    $prev = $run->packs_produced;
+                }
+            }
+        }
+
+        // Hours run and per-job-weighted target for this operator
+        $opRuns = $allRuns->where('user_id', $userId)->load('printJob:id,product_code');
+        // load() doesn't work on a collection slice — re-query just operator runs with relation
+        $opRunsFull = PrintJobRun::where('machine', $machine)
+            ->where('user_id', $userId)
+            ->where('started_at', '>=', $since)
+            ->with('printJob:id,product_code')
+            ->get();
+
+        $opSecs = 0;
+        $opTargetPacks = 0.0;
+        foreach ($opRunsFull as $run) {
+            $secs = $run->ended_at
+                ? abs((int) $run->started_at->diffInSeconds($run->ended_at))
+                : (int) now()->diffInSeconds($run->started_at);
+            $opSecs += $secs;
+            $tp = $this->getThroughputForMachineCode($machine, $run->printJob?->product_code, $throughputs);
+            $opTargetPacks += ($secs / 3600) * ($tp / 8.0);
+        }
+
+        $opTarget = (int) round($opTargetPacks);
+        return [
+            'packs'     => $opPacks,
+            'target'    => $opTarget,
+            'pct'       => $opTarget > 0 ? min(150, (int) round($opPacks / $opTarget * 100)) : null,
+            'hours_run' => round($opSecs / 3600, 1),
+        ];
+    }
+
     public function stats(string $machine): \Illuminate\Http\JsonResponse
     {
         if (!$this->validMachine($machine)) abort(404);
@@ -387,22 +464,38 @@ class TabletController extends Controller
         $hoursRunThisMonth = round($totalSecsThisMonth / 3600, 1);
         $monthTarget       = (int) round($monthTargetPacks);
 
+        // Operator-specific stats (from tablet session)
+        $operator   = $this->getOperator($machine);
+        $opDayStats = null;
+        $opMonthStats = null;
+        if ($operator) {
+            $opDayStats   = $this->operatorStatsForPeriod($machine, $operator->id, $todayStart, $throughputs);
+            $opMonthStats = $this->operatorStatsForPeriod($machine, $operator->id, $monthStart, $throughputs);
+        }
+
         return response()->json([
-            'day' => [
-                'packs'  => $todayPacks,
-                'target' => $dailyTarget,
-                'pct'    => $dailyTarget > 0
-                    ? min(150, (int) round($todayPacks / $dailyTarget * 100))
-                    : null,
+            'machine' => [
+                'day' => [
+                    'packs'  => $todayPacks,
+                    'target' => $dailyTarget,
+                    'pct'    => $dailyTarget > 0
+                        ? min(150, (int) round($todayPacks / $dailyTarget * 100))
+                        : null,
+                ],
+                'month' => [
+                    'packs'     => $monthPacks,
+                    'target'    => $monthTarget,
+                    'pct'       => $monthTarget > 0
+                        ? min(150, (int) round($monthPacks / $monthTarget * 100))
+                        : null,
+                    'hours_run' => $hoursRunThisMonth,
+                ],
             ],
-            'month' => [
-                'packs'     => $monthPacks,
-                'target'    => $monthTarget,
-                'pct'       => $monthTarget > 0
-                    ? min(150, (int) round($monthPacks / $monthTarget * 100))
-                    : null,
-                'hours_run' => $hoursRunThisMonth,
-            ],
+            'operator' => $operator ? [
+                'name'  => $operator->name,
+                'day'   => $opDayStats,
+                'month' => $opMonthStats,
+            ] : null,
             'product_size' => $productSize,
             'daily_target' => $dailyTarget,
         ]);
