@@ -408,42 +408,62 @@ class PrintScheduleController extends Controller
             $opData             = [];
 
             foreach ($machineRuns->groupBy('print_job_id') as $jobId => $jobRuns) {
-                $prev     = $baselines[$jobId] ?? 0;
-                $jobPacks = 0;
-                $jobSecs  = 0;
+                $baseline = $baselines[$jobId] ?? 0;
                 $firstRun = $jobRuns->first();
                 $tp       = $this->jobThroughput($machine, $firstRun->printJob?->product_code, $throughputs);
 
+                // Use the last-by-id ended run's packs_produced as the correct period total,
+                // exactly as the machine log view does. This is immune to wrong intermediate
+                // entries (e.g. operator typed 8,090 instead of 80) because those are
+                // overwritten by the final correct cumulative value in subsequent runs.
+                $lastEndedRun = $jobRuns->filter(fn($r) => $r->packs_produced !== null && $r->ended_at !== null)
+                    ->sortByDesc(fn($r) => $r->id)->first();
+                $activeRun    = $jobRuns->firstWhere('ended_at', null);
+
+                $jobCumulative = $activeRun?->progress_packs ?? $lastEndedRun?->packs_produced ?? $baseline;
+                $jobPacks      = max(0, $jobCumulative - $baseline);
+
+                // Per-run seconds (target and time are still run-by-run, which is fine)
+                $jobSecs       = 0;
+                $opSecsForJob  = []; // userId => seconds, for proportional packs attribution
+
                 foreach ($jobRuns->sortBy('id') as $run) {
-                    $curr  = $run->packs_produced ?? $prev;
-                    $delta = max(0, $curr - $prev);
-                    $secs  = $run->ended_at
+                    $secs = $run->ended_at
                         ? max(0, (int) $run->started_at->diffInSeconds($run->ended_at))
                         : 0;
 
-                    $jobPacks           += $delta;
                     $jobSecs            += $secs;
-                    $machinePacks       += $delta;
                     $machineSecs        += $secs;
                     $machineTargetPacks += ($secs / 3600) * ($tp / 8.0);
 
                     if ($run->user_id) {
+                        $opSecsForJob[$run->user_id] = ($opSecsForJob[$run->user_id] ?? 0) + $secs;
+
                         if (!isset($opData[$run->user_id])) {
                             $opData[$run->user_id] = ['name' => $run->user?->name ?? 'Unknown', 'packs' => 0, 'secs' => 0, 'target' => 0.0];
                         }
-                        $opData[$run->user_id]['packs']  += $delta;
                         $opData[$run->user_id]['secs']   += $secs;
                         $opData[$run->user_id]['target'] += ($secs / 3600) * ($tp / 8.0);
 
                         if (!isset($operatorTotals[$run->user_id])) {
                             $operatorTotals[$run->user_id] = ['name' => $run->user?->name ?? 'Unknown', 'packs' => 0, 'secs' => 0, 'target' => 0.0];
                         }
-                        $operatorTotals[$run->user_id]['packs']  += $delta;
                         $operatorTotals[$run->user_id]['secs']   += $secs;
                         $operatorTotals[$run->user_id]['target'] += ($secs / 3600) * ($tp / 8.0);
                     }
+                }
 
-                    if ($run->packs_produced !== null) $prev = $run->packs_produced;
+                $machinePacks += $jobPacks;
+
+                // Distribute the job's accurate packs to operators proportionally by their
+                // time on this job. This avoids wrong-entry inflation while still giving a
+                // fair split when multiple operators ran the same job.
+                if ($jobPacks > 0 && $jobSecs > 0) {
+                    foreach ($opSecsForJob as $userId => $opSecs) {
+                        $share = (int) round($jobPacks * $opSecs / $jobSecs);
+                        $opData[$userId]['packs']         += $share;
+                        $operatorTotals[$userId]['packs'] += $share;
+                    }
                 }
 
                 if ($jobPacks > 0 || $jobSecs > 0) {
