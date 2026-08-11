@@ -229,6 +229,7 @@
                 <a href="{{ route('print.archive') }}" class="sb-sub-item{{ request()->routeIs('print.archive') ? ' sb-active' : '' }}">Archive</a>
                 @can('print_settings')
                 <a href="{{ route('print.machine-log') }}" class="sb-sub-item{{ request()->routeIs('print.machine-log') ? ' sb-active' : '' }}">Machine Log</a>
+                <a href="{{ route('print.analytics') }}" class="sb-sub-item{{ request()->routeIs('print.analytics') ? ' sb-active' : '' }}">Analytics</a>
                 @endcan
             </div>
             @endif

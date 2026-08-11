@@ -348,6 +348,136 @@ class PrintScheduleController extends Controller
         return $this->estimatedCompletionFromDays($from, $throughput > 0 ? $packsNeeded / $throughput : 0.0);
     }
 
+    public function analytics(Request $request): View
+    {
+        $preset = $request->input('preset', 'this_month');
+
+        switch ($preset) {
+            case 'last_month':
+                $dateFrom = now()->subMonthNoOverflow()->startOfMonth()->format('Y-m-d');
+                $dateTo   = now()->subMonthNoOverflow()->endOfMonth()->format('Y-m-d');
+                break;
+            case 'custom':
+                $dateFrom = $request->input('date_from', now()->startOfMonth()->format('Y-m-d'));
+                $dateTo   = $request->input('date_to',   now()->format('Y-m-d'));
+                if ($dateTo < $dateFrom) $dateTo = $dateFrom;
+                break;
+            default:
+                $preset   = 'this_month';
+                $dateFrom = now()->startOfMonth()->format('Y-m-d');
+                $dateTo   = now()->format('Y-m-d');
+        }
+
+        $machines = PrintJob::MACHINES;
+
+        $allRuns = PrintJobRun::with(['user:id,name', 'printJob:id,customer_name,product_code,order_number'])
+            ->whereIn('machine', $machines)
+            ->whereDate('started_at', '>=', $dateFrom)
+            ->whereDate('started_at', '<=', $dateTo)
+            ->orderBy('machine')
+            ->orderBy('id')
+            ->get();
+
+        $jobIds = $allRuns->pluck('print_job_id')->unique()->filter()->values();
+        $baselines = [];
+        if ($jobIds->isNotEmpty()) {
+            $lastRunIds = PrintJobRun::whereIn('print_job_id', $jobIds)
+                ->whereDate('started_at', '<', $dateFrom)
+                ->whereNotNull('packs_produced')
+                ->selectRaw('print_job_id, MAX(id) as max_id')
+                ->groupBy('print_job_id')
+                ->pluck('max_id');
+            if ($lastRunIds->isNotEmpty()) {
+                $baselines = PrintJobRun::whereIn('id', $lastRunIds)
+                    ->pluck('packs_produced', 'print_job_id')
+                    ->map(fn($v) => (int) $v)
+                    ->toArray();
+            }
+        }
+
+        $machineStats   = [];
+        $operatorTotals = [];
+
+        foreach ($machines as $machine) {
+            $machineRuns  = $allRuns->where('machine', $machine);
+            $machinePacks = 0;
+            $machineSecs  = 0;
+            $jobData      = [];
+            $opData       = [];
+
+            foreach ($machineRuns->groupBy('print_job_id') as $jobId => $jobRuns) {
+                $prev     = $baselines[$jobId] ?? 0;
+                $jobPacks = 0;
+                $jobSecs  = 0;
+                $firstRun = $jobRuns->first();
+
+                foreach ($jobRuns->sortBy('id') as $run) {
+                    $curr  = $run->packs_produced ?? $prev;
+                    $delta = max(0, $curr - $prev);
+                    $secs  = $run->ended_at
+                        ? max(0, (int) $run->started_at->diffInSeconds($run->ended_at))
+                        : 0;
+
+                    $jobPacks     += $delta;
+                    $jobSecs      += $secs;
+                    $machinePacks += $delta;
+                    $machineSecs  += $secs;
+
+                    if ($run->user_id) {
+                        if (!isset($opData[$run->user_id])) {
+                            $opData[$run->user_id] = ['name' => $run->user?->name ?? 'Unknown', 'packs' => 0, 'secs' => 0];
+                        }
+                        $opData[$run->user_id]['packs'] += $delta;
+                        $opData[$run->user_id]['secs']  += $secs;
+
+                        if (!isset($operatorTotals[$run->user_id])) {
+                            $operatorTotals[$run->user_id] = ['name' => $run->user?->name ?? 'Unknown', 'packs' => 0, 'secs' => 0];
+                        }
+                        $operatorTotals[$run->user_id]['packs'] += $delta;
+                        $operatorTotals[$run->user_id]['secs']  += $secs;
+                    }
+
+                    if ($run->packs_produced !== null) $prev = $run->packs_produced;
+                }
+
+                if ($jobPacks > 0 || $jobSecs > 0) {
+                    $jobData[] = [
+                        'customer' => $firstRun->printJob?->customer_name ?? 'Unknown',
+                        'product'  => $firstRun->printJob?->product_code ?? '',
+                        'order'    => $firstRun->printJob?->order_number ?? '',
+                        'packs'    => $jobPacks,
+                        'hours'    => round($jobSecs / 3600, 1),
+                    ];
+                }
+            }
+
+            usort($jobData, fn($a, $b) => $b['packs'] <=> $a['packs']);
+            uasort($opData, fn($a, $b) => $b['packs'] <=> $a['packs']);
+
+            $machineStats[$machine] = [
+                'packs'     => $machinePacks,
+                'hours'     => round($machineSecs / 3600, 1),
+                'jobs'      => $jobData,
+                'operators' => array_values(array_map(fn($op) => [
+                    'name'  => $op['name'],
+                    'packs' => $op['packs'],
+                    'hours' => round($op['secs'] / 3600, 1),
+                ], $opData)),
+            ];
+        }
+
+        uasort($operatorTotals, fn($a, $b) => $b['packs'] <=> $a['packs']);
+        $operatorStats = array_values(array_map(fn($op) => [
+            'name'  => $op['name'],
+            'packs' => $op['packs'],
+            'hours' => round($op['secs'] / 3600, 1),
+        ], $operatorTotals));
+
+        return view('print-schedule.analytics', compact(
+            'preset', 'dateFrom', 'dateTo', 'machines', 'machineStats', 'operatorStats'
+        ));
+    }
+
     public function overview(): View
     {
         $machines    = PrintJob::MACHINES;
