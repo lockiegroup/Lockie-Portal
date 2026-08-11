@@ -24,51 +24,75 @@
     white-space: nowrap;
 }
 .an-preset-btn:hover { background: #f1f5f9; }
-.an-preset-btn.active {
-    background: #f43f5e;
-    border-color: #f43f5e;
-    color: #fff;
-}
+.an-preset-btn.active { background: #f43f5e; border-color: #f43f5e; color: #fff; }
 .an-charts-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
     margin-bottom: 20px;
 }
-@media (max-width: 900px) {
-    .an-charts-grid { grid-template-columns: 1fr; }
-}
-.an-chart-title {
-    font-size: 0.9rem;
-    font-weight: 700;
-    color: #0f172a;
-    margin-bottom: 4px;
-}
-.an-chart-sub {
-    font-size: 0.75rem;
-    color: #94a3b8;
-    margin-bottom: 16px;
-}
-.an-legend {
+@media (max-width: 900px) { .an-charts-grid { grid-template-columns: 1fr; } }
+.an-chart-title { font-size: 0.9rem; font-weight: 700; color: #0f172a; margin-bottom: 4px; }
+.an-chart-sub   { font-size: 0.75rem; color: #94a3b8; margin-bottom: 12px; }
+
+/* Filter chips */
+.an-chips {
     display: flex;
-    align-items: center;
-    gap: 14px;
-    margin-bottom: 14px;
     flex-wrap: wrap;
-}
-.an-legend-item {
-    display: flex;
-    align-items: center;
     gap: 5px;
-    font-size: 0.75rem;
+    margin-bottom: 12px;
+}
+.an-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1.5px solid #e2e8f0;
+    background: #f8fafc;
     color: #64748b;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.12s;
+    font-family: inherit;
+    white-space: nowrap;
+    user-select: none;
 }
-.an-legend-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 3px;
-    flex-shrink: 0;
+.an-chip.on  { background: #fff; border-color: #94a3b8; color: #334155; }
+.an-chip.off { background: #f1f5f9; border-color: #e2e8f0; color: #cbd5e1; text-decoration: line-through; }
+.an-chip-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+/* Legend */
+.an-legend { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; flex-wrap: wrap; }
+.an-legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.75rem; color: #64748b; }
+.an-legend-dot  { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+
+/* Summary rows below chart */
+.an-summary { margin-top: 16px; border-top: 1px solid #f1f5f9; padding-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+.an-sum-row {
+    display: grid;
+    grid-template-columns: 90px 1fr auto auto;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.78rem;
+    transition: opacity 0.15s;
 }
+.an-sum-row.hidden { display: none; }
+.an-sum-name { color: #475569; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.an-sum-bar-track { height: 6px; border-radius: 3px; background: #f1f5f9; overflow: hidden; }
+.an-sum-bar-fill  { height: 100%; border-radius: 3px; background: #f43f5e; transition: width 0.4s ease; }
+.an-sum-bar-fill.op { background: #6366f1; }
+.an-sum-nums { color: #94a3b8; font-size: 0.72rem; white-space: nowrap; }
+
+/* % badges */
+.an-pct-badge { display: inline-block; font-size: 0.7rem; font-weight: 700; padding: 2px 7px; border-radius: 20px; white-space: nowrap; }
+.an-pct-green { background: #dcfce7; color: #16a34a; }
+.an-pct-amber { background: #fef3c7; color: #d97706; }
+.an-pct-red   { background: #fee2e2; color: #dc2626; }
+.an-pct-none  { background: #f1f5f9; color: #94a3b8; }
+
+/* Drill-down */
 .an-drill-panel {
     background: #fff;
     border: 1px solid #e2e8f0;
@@ -78,73 +102,27 @@
     animation: fadeIn 0.18s ease;
 }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
-.an-drill-title {
-    font-size: 1rem;
-    font-weight: 700;
-    color: #0f172a;
-    margin-bottom: 4px;
-}
-.an-drill-sub {
-    font-size: 0.8rem;
-    color: #64748b;
-    margin-bottom: 20px;
-}
-.an-drill-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-}
-@media (max-width: 760px) {
-    .an-drill-grid { grid-template-columns: 1fr; }
-}
-.an-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.8125rem;
-}
+.an-drill-title { font-size: 1rem; font-weight: 700; color: #0f172a; margin-bottom: 4px; }
+.an-drill-sub   { font-size: 0.8rem; color: #64748b; margin-bottom: 20px; }
+.an-drill-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+@media (max-width: 760px) { .an-drill-grid { grid-template-columns: 1fr; } }
+
+/* Tables */
+.an-table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
 .an-table th {
-    text-align: left;
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: #94a3b8;
-    padding: 0 8px 8px 0;
-    border-bottom: 1px solid #f1f5f9;
+    text-align: left; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; color: #94a3b8; padding: 0 8px 8px 0; border-bottom: 1px solid #f1f5f9;
 }
-.an-table th:last-child, .an-table th.r { text-align: right; }
+.an-table th.r, .an-table td.r { text-align: right; }
 .an-table td {
-    padding: 8px 8px 8px 0;
-    border-bottom: 1px solid #f8fafc;
-    color: #334155;
-    vertical-align: top;
+    padding: 8px 8px 8px 0; border-bottom: 1px solid #f8fafc; color: #334155; vertical-align: top;
 }
-.an-table td.r { text-align: right; color: #64748b; }
+.an-table td.r { color: #64748b; }
 .an-table tr:last-child td { border-bottom: none; }
-.an-pct-badge {
-    display: inline-block;
-    font-size: 0.7rem;
-    font-weight: 700;
-    padding: 2px 6px;
-    border-radius: 20px;
-    white-space: nowrap;
-}
-.an-pct-green { background: #dcfce7; color: #16a34a; }
-.an-pct-amber { background: #fef3c7; color: #d97706; }
-.an-pct-red   { background: #fee2e2; color: #dc2626; }
-.an-empty {
-    text-align: center;
-    color: #94a3b8;
-    padding: 32px 0;
-    font-size: 0.875rem;
-}
+.an-empty { text-align: center; color: #94a3b8; padding: 32px 0; font-size: 0.875rem; }
 .an-section-label {
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: #94a3b8;
-    margin-bottom: 10px;
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: #94a3b8; margin-bottom: 10px;
 }
 </style>
 
@@ -154,7 +132,7 @@
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:1.5rem;flex-wrap:wrap;">
         <div>
             <h1 class="text-2xl font-bold text-slate-800">Production Analytics</h1>
-            <p class="text-slate-500 text-sm mt-1">Packs produced vs target by machine and operator for the chosen period.</p>
+            <p class="text-slate-500 text-sm mt-1">Packs produced vs target by machine and operator.</p>
         </div>
         <a href="{{ route('print.machine-log') }}"
             style="display:inline-flex;align-items:center;gap:6px;font-size:0.875rem;padding:8px 14px;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;color:#475569;text-decoration:none;transition:background 0.15s;"
@@ -170,20 +148,14 @@
     <div class="an-card" style="margin-bottom:20px;">
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
             <span style="font-size:0.8125rem;font-weight:600;color:#64748b;white-space:nowrap;">Period:</span>
-
-            {{-- Preset links — plain GET links, no form ambiguity --}}
             <a href="{{ route('print.analytics', ['preset' => 'this_month']) }}"
                class="an-preset-btn{{ $preset === 'this_month' ? ' active' : '' }}">This Month</a>
-
             <a href="{{ route('print.analytics', ['preset' => 'last_month']) }}"
                class="an-preset-btn{{ $preset === 'last_month' ? ' active' : '' }}">Last Month</a>
-
-            {{-- Custom: toggle a small inline form --}}
             <button type="button" onclick="toggleCustom()"
                 class="an-preset-btn{{ $preset === 'custom' ? ' active' : '' }}" id="custom-btn">
                 Custom range
             </button>
-
             <div id="custom-form-wrap" style="display:{{ $preset === 'custom' ? 'flex' : 'none' }};align-items:center;gap:8px;flex-wrap:wrap;">
                 <form method="GET" action="{{ route('print.analytics') }}" style="display:contents;">
                     <input type="hidden" name="preset" value="custom">
@@ -196,7 +168,6 @@
                         onchange="this.form.submit()">
                 </form>
             </div>
-
             <span style="margin-left:auto;font-size:0.8125rem;color:#94a3b8;white-space:nowrap;">
                 {{ \Carbon\Carbon::parse($dateFrom)->format('d M Y') }}
                 @if($dateFrom !== $dateTo) – {{ \Carbon\Carbon::parse($dateTo)->format('d M Y') }} @endif
@@ -206,26 +177,41 @@
 
     {{-- Charts --}}
     <div class="an-charts-grid">
-        {{-- Machine chart --}}
+
+        {{-- Machine card --}}
         <div class="an-card">
             <div class="an-chart-title">Packs by Machine</div>
-            <div class="an-chart-sub">Click a machine to see the full breakdown below</div>
+            <div class="an-chart-sub">Click a machine bar to see job and operator breakdown</div>
+
+            {{-- Machine filter chips --}}
+            <div class="an-chips" id="machine-chips"></div>
+
             <div class="an-legend">
                 <div class="an-legend-item"><div class="an-legend-dot" style="background:#f43f5e;"></div> Produced</div>
                 <div class="an-legend-item"><div class="an-legend-dot" style="background:#cbd5e1;"></div> Target</div>
             </div>
-            <canvas id="machineChart" style="max-height:260px;cursor:pointer;"></canvas>
+            <canvas id="machineChart" style="max-height:240px;cursor:pointer;"></canvas>
+
+            {{-- Machine summary --}}
+            <div class="an-summary" id="machine-summary"></div>
         </div>
 
-        {{-- Operator chart --}}
+        {{-- Operator card --}}
         <div class="an-card">
             <div class="an-chart-title">Packs by Operator</div>
             <div class="an-chart-sub">Total packs produced and target across all machines</div>
+
+            {{-- Operator filter chips --}}
+            <div class="an-chips" id="op-chips"></div>
+
             <div class="an-legend">
                 <div class="an-legend-item"><div class="an-legend-dot" style="background:#6366f1;"></div> Produced</div>
                 <div class="an-legend-item"><div class="an-legend-dot" style="background:#cbd5e1;"></div> Target</div>
             </div>
-            <canvas id="operatorChart" style="max-height:260px;"></canvas>
+            <canvas id="operatorChart" style="max-height:240px;"></canvas>
+
+            {{-- Operator summary --}}
+            <div class="an-summary" id="op-summary"></div>
         </div>
     </div>
 
@@ -242,36 +228,24 @@
                 </svg>
             </button>
         </div>
-
         <div class="an-drill-grid">
             <div>
                 <div class="an-section-label">Jobs run</div>
                 <table class="an-table">
-                    <thead>
-                        <tr>
-                            <th>Customer</th>
-                            <th>Product</th>
-                            <th class="r">Hrs</th>
-                            <th class="r">Produced</th>
-                            <th class="r">Target</th>
-                            <th class="r">%</th>
-                        </tr>
-                    </thead>
+                    <thead><tr>
+                        <th>Customer</th><th>Product</th>
+                        <th class="r">Hrs</th><th class="r">Produced</th><th class="r">Target</th><th class="r">%</th>
+                    </tr></thead>
                     <tbody id="drill-jobs-body"></tbody>
                 </table>
             </div>
             <div>
                 <div class="an-section-label">Operators on this machine</div>
                 <table class="an-table">
-                    <thead>
-                        <tr>
-                            <th>Operator</th>
-                            <th class="r">Hrs</th>
-                            <th class="r">Produced</th>
-                            <th class="r">Target</th>
-                            <th class="r">%</th>
-                        </tr>
-                    </thead>
+                    <thead><tr>
+                        <th>Operator</th>
+                        <th class="r">Hrs</th><th class="r">Produced</th><th class="r">Target</th><th class="r">%</th>
+                    </tr></thead>
                     <tbody id="drill-ops-body"></tbody>
                 </table>
             </div>
@@ -284,71 +258,80 @@
 <script>
 const machineStats  = @json($machineStats);
 const operatorStats = @json($operatorStats);
-const machines      = @json($machines);
+const allMachines   = @json($machines);
 
+// ── helpers ──────────────────────────────────────────────────────────────────
 function machineName(m) { return m.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()); }
 function fmt(n) { return Number(n).toLocaleString(); }
 function esc(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 function pctBadge(packs, target) {
-    if (!target) return '<span style="color:#94a3b8;font-size:0.75rem;">—</span>';
+    if (!target) return '<span class="an-pct-badge an-pct-none">—</span>';
     const pct = Math.round(packs / target * 100);
     const cls = pct >= 95 ? 'an-pct-green' : pct >= 75 ? 'an-pct-amber' : 'an-pct-red';
     return `<span class="an-pct-badge ${cls}">${pct}%</span>`;
 }
+function pctClass(packs, target) {
+    if (!target) return 'an-pct-none';
+    const p = packs / target * 100;
+    return p >= 95 ? 'an-pct-green' : p >= 75 ? 'an-pct-amber' : 'an-pct-red';
+}
 
-// --- Machine chart ---
-const machineLabels  = machines.map(machineName);
-const machinePacks   = machines.map(m => machineStats[m]?.packs  ?? 0);
-const machineTargets = machines.map(m => machineStats[m]?.target ?? 0);
+// ── machine filter state ──────────────────────────────────────────────────────
+const machineBaseColors   = ['#f43f5e','#fb7185','#e11d48','#be123c','#ff6b8a','#fda4af'];
+const machineSelectColors = ['#be123c','#9f1239','#881337','#881337','#be123c','#9f1239'];
+let hiddenMachines = new Set();
+let activeDrillMachine = null;
 
-const baseColors   = ['#f43f5e','#fb7185','#e11d48','#be123c','#ff6b8a','#fda4af'];
-const selectColors = ['#be123c','#9f1239','#881337','#881337','#be123c','#9f1239'];
-let activeIdx = null;
+// Only include machines that have any data
+const machines = allMachines.filter(m => (machineStats[m]?.packs ?? 0) > 0 || (machineStats[m]?.target ?? 0) > 0);
+
+// ── machine chips ─────────────────────────────────────────────────────────────
+const machineChipsEl = document.getElementById('machine-chips');
+machines.forEach((m, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'an-chip on';
+    btn.id = `mchip-${m}`;
+    btn.innerHTML = `<span class="an-chip-dot" style="background:${machineBaseColors[i % machineBaseColors.length]}"></span>${machineName(m)}`;
+    btn.onclick = () => toggleMachineFilter(m);
+    machineChipsEl.appendChild(btn);
+});
+
+function toggleMachineFilter(m) {
+    if (hiddenMachines.has(m)) hiddenMachines.delete(m);
+    else hiddenMachines.add(m);
+    document.getElementById(`mchip-${m}`).className = `an-chip ${hiddenMachines.has(m) ? 'off' : 'on'}`;
+    refreshMachineChart();
+    refreshMachineSummary();
+    if (activeDrillMachine && hiddenMachines.has(activeDrillMachine)) closeDrill();
+}
+
+// ── machine chart ─────────────────────────────────────────────────────────────
+function visibleMachines() { return machines.filter(m => !hiddenMachines.has(m)); }
 
 const machineCtx = document.getElementById('machineChart').getContext('2d');
 const machineChart = new Chart(machineCtx, {
     type: 'bar',
-    data: {
-        labels: machineLabels,
-        datasets: [
-            {
-                label: 'Produced',
-                data: machinePacks,
-                backgroundColor: machines.map((_, i) => baseColors[i % baseColors.length]),
-                borderRadius: 5,
-                borderSkipped: false,
-                order: 1,
-            },
-            {
-                label: 'Target',
-                data: machineTargets,
-                backgroundColor: 'rgba(203,213,225,0.55)',
-                borderRadius: 5,
-                borderSkipped: false,
-                order: 2,
-            }
-        ]
-    },
+    data: buildMachineData(),
     options: {
         responsive: true,
         maintainAspectRatio: true,
         onClick: (evt, elements) => {
-            if (elements.length) {
-                const idx = elements[0].index;
-                openDrill(machines[idx], idx);
-            }
+            if (!elements.length) return;
+            const vm = visibleMachines();
+            const m  = vm[elements[0].index];
+            if (m) openDrill(m);
         },
         plugins: {
             legend: { display: false },
             tooltip: {
                 callbacks: {
                     label: ctx => {
-                        const m = machines[ctx.dataIndex];
-                        const stat = machineStats[m] ?? {};
-                        if (ctx.datasetIndex === 0)
-                            return ` Produced: ${fmt(ctx.parsed.y)} packs`;
-                        return ` Target: ${fmt(ctx.parsed.y)} packs  (${stat.hours ?? 0} hrs run)`;
+                        const m = visibleMachines()[ctx.dataIndex];
+                        const s = machineStats[m] ?? {};
+                        return ctx.datasetIndex === 0
+                            ? ` Produced: ${fmt(ctx.parsed.y)} packs`
+                            : ` Target: ${fmt(ctx.parsed.y)} packs  (${s.hours ?? 0} hrs run)`;
                     }
                 }
             }
@@ -360,35 +343,96 @@ const machineChart = new Chart(machineCtx, {
     }
 });
 
-// --- Operator chart ---
-const opLabels  = operatorStats.map(op => op.name);
-const opPacks   = operatorStats.map(op => op.packs);
-const opTargets = operatorStats.map(op => op.target);
-const opColors  = ['#6366f1','#818cf8','#4f46e5','#4338ca','#7c3aed','#8b5cf6','#a78bfa'];
-
-new Chart(document.getElementById('operatorChart').getContext('2d'), {
-    type: 'bar',
-    data: {
-        labels: opLabels,
+function buildMachineData() {
+    const vm = visibleMachines();
+    return {
+        labels: vm.map(machineName),
         datasets: [
             {
                 label: 'Produced',
-                data: opPacks,
-                backgroundColor: operatorStats.map((_, i) => opColors[i % opColors.length]),
-                borderRadius: 5,
-                borderSkipped: false,
-                order: 1,
+                data: vm.map(m => machineStats[m]?.packs ?? 0),
+                backgroundColor: vm.map((m, i) =>
+                    m === activeDrillMachine ? machineSelectColors[i % machineSelectColors.length] : machineBaseColors[i % machineBaseColors.length]
+                ),
+                borderRadius: 5, borderSkipped: false, order: 1,
             },
             {
                 label: 'Target',
-                data: opTargets,
+                data: vm.map(m => machineStats[m]?.target ?? 0),
                 backgroundColor: 'rgba(203,213,225,0.55)',
-                borderRadius: 5,
-                borderSkipped: false,
-                order: 2,
+                borderRadius: 5, borderSkipped: false, order: 2,
             }
         ]
-    },
+    };
+}
+
+function refreshMachineChart() {
+    const d = buildMachineData();
+    machineChart.data.labels = d.labels;
+    machineChart.data.datasets[0].data = d.datasets[0].data;
+    machineChart.data.datasets[0].backgroundColor = d.datasets[0].backgroundColor;
+    machineChart.data.datasets[1].data = d.datasets[1].data;
+    machineChart.update();
+}
+
+// ── machine summary ───────────────────────────────────────────────────────────
+const machineSummaryEl = document.getElementById('machine-summary');
+
+function buildMachineSummaryRow(m) {
+    const s   = machineStats[m] ?? {};
+    const pct = s.target > 0 ? Math.round(s.packs / s.target * 100) : null;
+    const fill = pct !== null ? Math.min(100, pct) : 0;
+    const cls  = pctClass(s.packs, s.target);
+    const row  = document.createElement('div');
+    row.className = `an-sum-row${hiddenMachines.has(m) ? ' hidden' : ''}`;
+    row.id = `msum-${m}`;
+    row.innerHTML = `
+        <span class="an-sum-name" title="${machineName(m)}">${machineName(m)}</span>
+        <div class="an-sum-bar-track"><div class="an-sum-bar-fill" style="width:${fill}%"></div></div>
+        <span class="an-sum-nums">${fmt(s.packs)} / ${fmt(s.target ?? 0)}</span>
+        <span class="an-pct-badge ${cls}">${pct !== null ? pct + '%' : '—'}</span>`;
+    return row;
+}
+
+machines.forEach(m => machineSummaryEl.appendChild(buildMachineSummaryRow(m)));
+
+function refreshMachineSummary() {
+    machines.forEach(m => {
+        const row = document.getElementById(`msum-${m}`);
+        if (row) row.className = `an-sum-row${hiddenMachines.has(m) ? ' hidden' : ''}`;
+    });
+}
+
+// ── operator filter state ─────────────────────────────────────────────────────
+const opBaseColors = ['#6366f1','#818cf8','#4f46e5','#4338ca','#7c3aed','#8b5cf6','#a78bfa'];
+let hiddenOps = new Set(); // by index
+
+// ── operator chips ────────────────────────────────────────────────────────────
+const opChipsEl = document.getElementById('op-chips');
+operatorStats.forEach((op, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'an-chip on';
+    btn.id = `ochip-${i}`;
+    btn.innerHTML = `<span class="an-chip-dot" style="background:${opBaseColors[i % opBaseColors.length]}"></span>${esc(op.name)}`;
+    btn.onclick = () => toggleOpFilter(i);
+    opChipsEl.appendChild(btn);
+});
+
+function toggleOpFilter(i) {
+    if (hiddenOps.has(i)) hiddenOps.delete(i);
+    else hiddenOps.add(i);
+    document.getElementById(`ochip-${i}`).className = `an-chip ${hiddenOps.has(i) ? 'off' : 'on'}`;
+    refreshOpChart();
+    refreshOpSummary();
+}
+
+// ── operator chart ────────────────────────────────────────────────────────────
+function visibleOpIdxs() { return operatorStats.map((_, i) => i).filter(i => !hiddenOps.has(i)); }
+
+const opCtx = document.getElementById('operatorChart').getContext('2d');
+const opChart = new Chart(opCtx, {
+    type: 'bar',
+    data: buildOpData(),
     options: {
         responsive: true,
         maintainAspectRatio: true,
@@ -397,10 +441,11 @@ new Chart(document.getElementById('operatorChart').getContext('2d'), {
             tooltip: {
                 callbacks: {
                     label: ctx => {
-                        const op = operatorStats[ctx.dataIndex] ?? {};
-                        if (ctx.datasetIndex === 0)
-                            return ` Produced: ${fmt(ctx.parsed.y)} packs`;
-                        return ` Target: ${fmt(ctx.parsed.y)} packs  (${op.hours ?? 0} hrs run)`;
+                        const vi  = visibleOpIdxs();
+                        const op  = operatorStats[vi[ctx.dataIndex]] ?? {};
+                        return ctx.datasetIndex === 0
+                            ? ` Produced: ${fmt(ctx.parsed.y)} packs`
+                            : ` Target: ${fmt(ctx.parsed.y)} packs  (${op.hours ?? 0} hrs run)`;
                     }
                 }
             }
@@ -412,9 +457,66 @@ new Chart(document.getElementById('operatorChart').getContext('2d'), {
     }
 });
 
-// --- Drill-down ---
-function openDrill(machine, idx) {
-    activeIdx = idx;
+function buildOpData() {
+    const vi = visibleOpIdxs();
+    return {
+        labels: vi.map(i => operatorStats[i].name),
+        datasets: [
+            {
+                label: 'Produced',
+                data: vi.map(i => operatorStats[i].packs),
+                backgroundColor: vi.map(i => opBaseColors[i % opBaseColors.length]),
+                borderRadius: 5, borderSkipped: false, order: 1,
+            },
+            {
+                label: 'Target',
+                data: vi.map(i => operatorStats[i].target),
+                backgroundColor: 'rgba(203,213,225,0.55)',
+                borderRadius: 5, borderSkipped: false, order: 2,
+            }
+        ]
+    };
+}
+
+function refreshOpChart() {
+    const d = buildOpData();
+    opChart.data.labels = d.labels;
+    opChart.data.datasets[0].data = d.datasets[0].data;
+    opChart.data.datasets[0].backgroundColor = d.datasets[0].backgroundColor;
+    opChart.data.datasets[1].data = d.datasets[1].data;
+    opChart.update();
+}
+
+// ── operator summary ──────────────────────────────────────────────────────────
+const opSummaryEl = document.getElementById('op-summary');
+
+function buildOpSummaryRow(op, i) {
+    const pct  = op.target > 0 ? Math.round(op.packs / op.target * 100) : null;
+    const fill = pct !== null ? Math.min(100, pct) : 0;
+    const cls  = pctClass(op.packs, op.target);
+    const row  = document.createElement('div');
+    row.className = `an-sum-row${hiddenOps.has(i) ? ' hidden' : ''}`;
+    row.id = `osum-${i}`;
+    row.innerHTML = `
+        <span class="an-sum-name" title="${esc(op.name)}">${esc(op.name)}</span>
+        <div class="an-sum-bar-track"><div class="an-sum-bar-fill op" style="width:${fill}%"></div></div>
+        <span class="an-sum-nums">${fmt(op.packs)} / ${fmt(op.target)}</span>
+        <span class="an-pct-badge ${cls}">${pct !== null ? pct + '%' : '—'}</span>`;
+    return row;
+}
+
+operatorStats.forEach((op, i) => opSummaryEl.appendChild(buildOpSummaryRow(op, i)));
+
+function refreshOpSummary() {
+    operatorStats.forEach((_, i) => {
+        const row = document.getElementById(`osum-${i}`);
+        if (row) row.className = `an-sum-row${hiddenOps.has(i) ? ' hidden' : ''}`;
+    });
+}
+
+// ── drill-down ────────────────────────────────────────────────────────────────
+function openDrill(machine) {
+    activeDrillMachine = machine;
     const stats = machineStats[machine] ?? {};
     const pct   = stats.target > 0 ? Math.round(stats.packs / stats.target * 100) : null;
 
@@ -424,7 +526,6 @@ function openDrill(machine, idx) {
         (pct !== null ? ` · ${pct}% of target` : '') +
         `  (${stats.hours ?? 0} hrs run)`;
 
-    // Jobs table
     const jobsTbody = document.getElementById('drill-jobs-body');
     jobsTbody.innerHTML = '';
     const jobs = stats.jobs ?? [];
@@ -445,7 +546,6 @@ function openDrill(machine, idx) {
         });
     }
 
-    // Operators table
     const opsTbody = document.getElementById('drill-ops-body');
     opsTbody.innerHTML = '';
     const ops = stats.operators ?? [];
@@ -464,25 +564,19 @@ function openDrill(machine, idx) {
         });
     }
 
-    // Highlight selected bar
-    machineChart.data.datasets[0].backgroundColor = machines.map((_, i) =>
-        i === idx ? selectColors[i % selectColors.length] : baseColors[i % baseColors.length]
-    );
-    machineChart.update();
-
+    refreshMachineChart(); // re-highlight selected bar
     const panel = document.getElementById('drill-panel');
     panel.style.display = 'block';
     panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function closeDrill() {
-    activeIdx = null;
+    activeDrillMachine = null;
     document.getElementById('drill-panel').style.display = 'none';
-    machineChart.data.datasets[0].backgroundColor = machines.map((_, i) => baseColors[i % baseColors.length]);
-    machineChart.update();
+    refreshMachineChart();
 }
 
-// --- Custom range toggle ---
+// ── custom range toggle ───────────────────────────────────────────────────────
 function toggleCustom() {
     const wrap = document.getElementById('custom-form-wrap');
     const btn  = document.getElementById('custom-btn');
