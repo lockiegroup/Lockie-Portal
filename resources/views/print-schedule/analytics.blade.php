@@ -8,6 +8,8 @@
     padding: 24px;
 }
 .an-preset-btn {
+    display: inline-flex;
+    align-items: center;
     padding: 7px 16px;
     border-radius: 8px;
     border: 1px solid #e2e8f0;
@@ -16,8 +18,10 @@
     font-size: 0.875rem;
     font-weight: 500;
     cursor: pointer;
+    text-decoration: none;
     transition: background 0.15s, border-color 0.15s, color 0.15s;
     font-family: inherit;
+    white-space: nowrap;
 }
 .an-preset-btn:hover { background: #f1f5f9; }
 .an-preset-btn.active {
@@ -45,13 +49,33 @@
     color: #94a3b8;
     margin-bottom: 16px;
 }
+.an-legend {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+}
+.an-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.75rem;
+    color: #64748b;
+}
+.an-legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
 .an-drill-panel {
     background: #fff;
     border: 1px solid #e2e8f0;
     border-radius: 14px;
     padding: 24px;
     margin-bottom: 20px;
-    animation: fadeIn 0.2s ease;
+    animation: fadeIn 0.18s ease;
 }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
 .an-drill-title {
@@ -68,7 +92,7 @@
 .an-drill-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 20px;
+    gap: 24px;
 }
 @media (max-width: 760px) {
     .an-drill-grid { grid-template-columns: 1fr; }
@@ -88,21 +112,26 @@
     padding: 0 8px 8px 0;
     border-bottom: 1px solid #f1f5f9;
 }
-.an-table th:last-child { text-align: right; }
+.an-table th:last-child, .an-table th.r { text-align: right; }
 .an-table td {
     padding: 8px 8px 8px 0;
     border-bottom: 1px solid #f8fafc;
     color: #334155;
     vertical-align: top;
 }
-.an-table td:last-child { text-align: right; color: #64748b; }
+.an-table td.r { text-align: right; color: #64748b; }
 .an-table tr:last-child td { border-bottom: none; }
-.an-stat-pill {
+.an-pct-badge {
     display: inline-block;
+    font-size: 0.7rem;
     font-weight: 700;
-    font-size: 0.8125rem;
-    color: #0f172a;
+    padding: 2px 6px;
+    border-radius: 20px;
+    white-space: nowrap;
 }
+.an-pct-green { background: #dcfce7; color: #16a34a; }
+.an-pct-amber { background: #fef3c7; color: #d97706; }
+.an-pct-red   { background: #fee2e2; color: #dc2626; }
 .an-empty {
     text-align: center;
     color: #94a3b8;
@@ -125,7 +154,7 @@
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:1.5rem;flex-wrap:wrap;">
         <div>
             <h1 class="text-2xl font-bold text-slate-800">Production Analytics</h1>
-            <p class="text-slate-500 text-sm mt-1">Packs produced by machine and operator for a chosen period.</p>
+            <p class="text-slate-500 text-sm mt-1">Packs produced vs target by machine and operator for the chosen period.</p>
         </div>
         <a href="{{ route('print.machine-log') }}"
             style="display:inline-flex;align-items:center;gap:6px;font-size:0.875rem;padding:8px 14px;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;color:#475569;text-decoration:none;transition:background 0.15s;"
@@ -139,42 +168,40 @@
 
     {{-- Date range controls --}}
     <div class="an-card" style="margin-bottom:20px;">
-        <form method="GET" action="{{ route('print.analytics') }}" id="analytics-form">
-            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-                <span style="font-size:0.8125rem;font-weight:600;color:#64748b;white-space:nowrap;">Period:</span>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <span style="font-size:0.8125rem;font-weight:600;color:#64748b;white-space:nowrap;">Period:</span>
 
-                <button type="submit" name="preset" value="this_month"
-                    class="an-preset-btn{{ $preset === 'this_month' ? ' active' : '' }}">
-                    This Month
-                </button>
-                <button type="submit" name="preset" value="last_month"
-                    class="an-preset-btn{{ $preset === 'last_month' ? ' active' : '' }}">
-                    Last Month
-                </button>
-                <button type="button" onclick="toggleCustom()"
-                    class="an-preset-btn{{ $preset === 'custom' ? ' active' : '' }}" id="custom-btn">
-                    Custom
-                </button>
+            {{-- Preset links — plain GET links, no form ambiguity --}}
+            <a href="{{ route('print.analytics', ['preset' => 'this_month']) }}"
+               class="an-preset-btn{{ $preset === 'this_month' ? ' active' : '' }}">This Month</a>
 
-                <div id="custom-inputs" style="display:{{ $preset === 'custom' ? 'flex' : 'none' }};align-items:center;gap:8px;flex-wrap:wrap;">
-                    <input type="hidden" name="preset" value="custom" id="custom-preset-input">
-                    <input type="date" name="date_from" id="date_from" value="{{ $dateFrom }}"
+            <a href="{{ route('print.analytics', ['preset' => 'last_month']) }}"
+               class="an-preset-btn{{ $preset === 'last_month' ? ' active' : '' }}">Last Month</a>
+
+            {{-- Custom: toggle a small inline form --}}
+            <button type="button" onclick="toggleCustom()"
+                class="an-preset-btn{{ $preset === 'custom' ? ' active' : '' }}" id="custom-btn">
+                Custom range
+            </button>
+
+            <div id="custom-form-wrap" style="display:{{ $preset === 'custom' ? 'flex' : 'none' }};align-items:center;gap:8px;flex-wrap:wrap;">
+                <form method="GET" action="{{ route('print.analytics') }}" style="display:contents;">
+                    <input type="hidden" name="preset" value="custom">
+                    <input type="date" name="date_from" value="{{ $dateFrom }}"
                         class="text-sm border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-rose-500"
-                        onchange="document.getElementById('analytics-form').submit()">
+                        onchange="this.form.submit()">
                     <span style="color:#94a3b8;font-size:0.875rem;">→</span>
-                    <input type="date" name="date_to" id="date_to" value="{{ $dateTo }}"
+                    <input type="date" name="date_to" value="{{ $dateTo }}"
                         class="text-sm border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-rose-500"
-                        onchange="document.getElementById('analytics-form').submit()">
-                </div>
-
-                <span style="margin-left:auto;font-size:0.8125rem;color:#94a3b8;">
-                    {{ \Carbon\Carbon::parse($dateFrom)->format('d M Y') }}
-                    @if($dateFrom !== $dateTo)
-                        – {{ \Carbon\Carbon::parse($dateTo)->format('d M Y') }}
-                    @endif
-                </span>
+                        onchange="this.form.submit()">
+                </form>
             </div>
-        </form>
+
+            <span style="margin-left:auto;font-size:0.8125rem;color:#94a3b8;white-space:nowrap;">
+                {{ \Carbon\Carbon::parse($dateFrom)->format('d M Y') }}
+                @if($dateFrom !== $dateTo) – {{ \Carbon\Carbon::parse($dateTo)->format('d M Y') }} @endif
+            </span>
+        </div>
     </div>
 
     {{-- Charts --}}
@@ -182,19 +209,27 @@
         {{-- Machine chart --}}
         <div class="an-card">
             <div class="an-chart-title">Packs by Machine</div>
-            <div class="an-chart-sub">Click a bar to see the breakdown</div>
-            <canvas id="machineChart" style="max-height:280px;cursor:pointer;"></canvas>
+            <div class="an-chart-sub">Click a machine to see the full breakdown below</div>
+            <div class="an-legend">
+                <div class="an-legend-item"><div class="an-legend-dot" style="background:#f43f5e;"></div> Produced</div>
+                <div class="an-legend-item"><div class="an-legend-dot" style="background:#cbd5e1;"></div> Target</div>
+            </div>
+            <canvas id="machineChart" style="max-height:260px;cursor:pointer;"></canvas>
         </div>
 
         {{-- Operator chart --}}
         <div class="an-card">
             <div class="an-chart-title">Packs by Operator</div>
-            <div class="an-chart-sub">Total packs produced across all machines</div>
-            <canvas id="operatorChart" style="max-height:280px;"></canvas>
+            <div class="an-chart-sub">Total packs produced and target across all machines</div>
+            <div class="an-legend">
+                <div class="an-legend-item"><div class="an-legend-dot" style="background:#6366f1;"></div> Produced</div>
+                <div class="an-legend-item"><div class="an-legend-dot" style="background:#cbd5e1;"></div> Target</div>
+            </div>
+            <canvas id="operatorChart" style="max-height:260px;"></canvas>
         </div>
     </div>
 
-    {{-- Machine drill-down panel (hidden until a bar is clicked) --}}
+    {{-- Machine drill-down --}}
     <div id="drill-panel" class="an-drill-panel" style="display:none;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
             <div>
@@ -211,13 +246,15 @@
         <div class="an-drill-grid">
             <div>
                 <div class="an-section-label">Jobs run</div>
-                <table class="an-table" id="drill-jobs-table">
+                <table class="an-table">
                     <thead>
                         <tr>
                             <th>Customer</th>
                             <th>Product</th>
-                            <th style="text-align:right">Hrs</th>
-                            <th style="text-align:right">Packs</th>
+                            <th class="r">Hrs</th>
+                            <th class="r">Produced</th>
+                            <th class="r">Target</th>
+                            <th class="r">%</th>
                         </tr>
                     </thead>
                     <tbody id="drill-jobs-body"></tbody>
@@ -225,12 +262,14 @@
             </div>
             <div>
                 <div class="an-section-label">Operators on this machine</div>
-                <table class="an-table" id="drill-ops-table">
+                <table class="an-table">
                     <thead>
                         <tr>
                             <th>Operator</th>
-                            <th style="text-align:right">Hrs</th>
-                            <th style="text-align:right">Packs</th>
+                            <th class="r">Hrs</th>
+                            <th class="r">Produced</th>
+                            <th class="r">Target</th>
+                            <th class="r">%</th>
                         </tr>
                     </thead>
                     <tbody id="drill-ops-body"></tbody>
@@ -247,79 +286,108 @@ const machineStats  = @json($machineStats);
 const operatorStats = @json($operatorStats);
 const machines      = @json($machines);
 
-// --- helpers ---
-function machineName(m) {
-    return m.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-}
-function fmt(n) { return n.toLocaleString(); }
+function machineName(m) { return m.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()); }
+function fmt(n) { return Number(n).toLocaleString(); }
+function esc(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-// --- machine chart ---
-const machineLabels = machines.map(machineName);
-const machinePacks  = machines.map(m => machineStats[m]?.packs ?? 0);
-const machineColors = [
-    '#f43f5e','#fb7185','#e11d48','#be123c','#ff6b8a','#fda4af',
-];
+function pctBadge(packs, target) {
+    if (!target) return '<span style="color:#94a3b8;font-size:0.75rem;">—</span>';
+    const pct = Math.round(packs / target * 100);
+    const cls = pct >= 95 ? 'an-pct-green' : pct >= 75 ? 'an-pct-amber' : 'an-pct-red';
+    return `<span class="an-pct-badge ${cls}">${pct}%</span>`;
+}
+
+// --- Machine chart ---
+const machineLabels  = machines.map(machineName);
+const machinePacks   = machines.map(m => machineStats[m]?.packs  ?? 0);
+const machineTargets = machines.map(m => machineStats[m]?.target ?? 0);
+
+const baseColors   = ['#f43f5e','#fb7185','#e11d48','#be123c','#ff6b8a','#fda4af'];
+const selectColors = ['#be123c','#9f1239','#881337','#881337','#be123c','#9f1239'];
+let activeIdx = null;
 
 const machineCtx = document.getElementById('machineChart').getContext('2d');
 const machineChart = new Chart(machineCtx, {
     type: 'bar',
     data: {
         labels: machineLabels,
-        datasets: [{
-            label: 'Packs',
-            data: machinePacks,
-            backgroundColor: machines.map((_, i) => machineColors[i % machineColors.length]),
-            borderRadius: 6,
-            borderSkipped: false,
-        }]
+        datasets: [
+            {
+                label: 'Produced',
+                data: machinePacks,
+                backgroundColor: machines.map((_, i) => baseColors[i % baseColors.length]),
+                borderRadius: 5,
+                borderSkipped: false,
+                order: 1,
+            },
+            {
+                label: 'Target',
+                data: machineTargets,
+                backgroundColor: 'rgba(203,213,225,0.55)',
+                borderRadius: 5,
+                borderSkipped: false,
+                order: 2,
+            }
+        ]
     },
     options: {
         responsive: true,
         maintainAspectRatio: true,
         onClick: (evt, elements) => {
-            if (elements.length) openDrill(machines[elements[0].index]);
+            if (elements.length) {
+                const idx = elements[0].index;
+                openDrill(machines[idx], idx);
+            }
         },
         plugins: {
             legend: { display: false },
             tooltip: {
                 callbacks: {
-                    label: ctx => ` ${fmt(ctx.parsed.y)} packs  (${machineStats[machines[ctx.dataIndex]]?.hours ?? 0} hrs)`
+                    label: ctx => {
+                        const m = machines[ctx.dataIndex];
+                        const stat = machineStats[m] ?? {};
+                        if (ctx.datasetIndex === 0)
+                            return ` Produced: ${fmt(ctx.parsed.y)} packs`;
+                        return ` Target: ${fmt(ctx.parsed.y)} packs  (${stat.hours ?? 0} hrs run)`;
+                    }
                 }
             }
         },
         scales: {
-            y: {
-                beginAtZero: true,
-                grid: { color: '#f1f5f9' },
-                ticks: { color: '#94a3b8', font: { size: 11 } }
-            },
-            x: {
-                grid: { display: false },
-                ticks: { color: '#475569', font: { size: 11 } }
-            }
+            y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { color: '#94a3b8', font: { size: 11 } } },
+            x: { grid: { display: false }, ticks: { color: '#475569', font: { size: 11 } } }
         }
     }
 });
 
-// --- operator chart ---
-const opLabels = operatorStats.map(op => op.name);
-const opPacks  = operatorStats.map(op => op.packs);
-const opColors = [
-    '#6366f1','#818cf8','#4f46e5','#4338ca','#7c3aed','#8b5cf6','#a78bfa',
-];
+// --- Operator chart ---
+const opLabels  = operatorStats.map(op => op.name);
+const opPacks   = operatorStats.map(op => op.packs);
+const opTargets = operatorStats.map(op => op.target);
+const opColors  = ['#6366f1','#818cf8','#4f46e5','#4338ca','#7c3aed','#8b5cf6','#a78bfa'];
 
-const operatorCtx = document.getElementById('operatorChart').getContext('2d');
-new Chart(operatorCtx, {
+new Chart(document.getElementById('operatorChart').getContext('2d'), {
     type: 'bar',
     data: {
         labels: opLabels,
-        datasets: [{
-            label: 'Packs',
-            data: opPacks,
-            backgroundColor: operatorStats.map((_, i) => opColors[i % opColors.length]),
-            borderRadius: 6,
-            borderSkipped: false,
-        }]
+        datasets: [
+            {
+                label: 'Produced',
+                data: opPacks,
+                backgroundColor: operatorStats.map((_, i) => opColors[i % opColors.length]),
+                borderRadius: 5,
+                borderSkipped: false,
+                order: 1,
+            },
+            {
+                label: 'Target',
+                data: opTargets,
+                backgroundColor: 'rgba(203,213,225,0.55)',
+                borderRadius: 5,
+                borderSkipped: false,
+                order: 2,
+            }
+        ]
     },
     options: {
         responsive: true,
@@ -328,119 +396,100 @@ new Chart(operatorCtx, {
             legend: { display: false },
             tooltip: {
                 callbacks: {
-                    label: ctx => ` ${fmt(ctx.parsed.y)} packs  (${operatorStats[ctx.dataIndex]?.hours ?? 0} hrs)`
+                    label: ctx => {
+                        const op = operatorStats[ctx.dataIndex] ?? {};
+                        if (ctx.datasetIndex === 0)
+                            return ` Produced: ${fmt(ctx.parsed.y)} packs`;
+                        return ` Target: ${fmt(ctx.parsed.y)} packs  (${op.hours ?? 0} hrs run)`;
+                    }
                 }
             }
         },
         scales: {
-            y: {
-                beginAtZero: true,
-                grid: { color: '#f1f5f9' },
-                ticks: { color: '#94a3b8', font: { size: 11 } }
-            },
-            x: {
-                grid: { display: false },
-                ticks: { color: '#475569', font: { size: 11 }, maxRotation: 30 }
-            }
+            y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { color: '#94a3b8', font: { size: 11 } } },
+            x: { grid: { display: false }, ticks: { color: '#475569', font: { size: 11 }, maxRotation: 30 } }
         }
     }
 });
 
-// --- drill-down ---
-let activeMachine = null;
-
-function openDrill(machine) {
-    activeMachine = machine;
+// --- Drill-down ---
+function openDrill(machine, idx) {
+    activeIdx = idx;
     const stats = machineStats[machine] ?? {};
-    const panel = document.getElementById('drill-panel');
+    const pct   = stats.target > 0 ? Math.round(stats.packs / stats.target * 100) : null;
 
     document.getElementById('drill-title').textContent = machineName(machine);
     document.getElementById('drill-sub').textContent =
-        `${fmt(stats.packs ?? 0)} packs · ${stats.hours ?? 0} hrs run`;
+        `${fmt(stats.packs)} produced · ${fmt(stats.target)} target` +
+        (pct !== null ? ` · ${pct}% of target` : '') +
+        `  (${stats.hours ?? 0} hrs run)`;
 
-    // Jobs
+    // Jobs table
     const jobsTbody = document.getElementById('drill-jobs-body');
     jobsTbody.innerHTML = '';
     const jobs = stats.jobs ?? [];
     if (!jobs.length) {
-        jobsTbody.innerHTML = '<tr><td colspan="4" class="an-empty">No jobs recorded</td></tr>';
+        jobsTbody.innerHTML = '<tr><td colspan="6" class="an-empty">No jobs recorded</td></tr>';
     } else {
         jobs.forEach(j => {
             const tr = document.createElement('tr');
             tr.innerHTML =
                 `<td><span style="font-weight:600;color:#0f172a;">${esc(j.customer)}</span>
                      ${j.order ? `<br><span style="font-size:0.72rem;color:#94a3b8;">${esc(j.order)}</span>` : ''}</td>
-                 <td style="color:#64748b;">${esc(j.product) || '—'}</td>
-                 <td style="text-align:right;">${j.hours}</td>
-                 <td style="text-align:right;"><span class="an-stat-pill">${fmt(j.packs)}</span></td>`;
+                 <td class="r" style="color:#64748b;">${esc(j.product) || '—'}</td>
+                 <td class="r">${j.hours}</td>
+                 <td class="r"><strong>${fmt(j.packs)}</strong></td>
+                 <td class="r">${fmt(j.target)}</td>
+                 <td class="r">${pctBadge(j.packs, j.target)}</td>`;
             jobsTbody.appendChild(tr);
         });
     }
 
-    // Operators
+    // Operators table
     const opsTbody = document.getElementById('drill-ops-body');
     opsTbody.innerHTML = '';
     const ops = stats.operators ?? [];
     if (!ops.length) {
-        opsTbody.innerHTML = '<tr><td colspan="3" class="an-empty">No operator data</td></tr>';
+        opsTbody.innerHTML = '<tr><td colspan="5" class="an-empty">No operator data</td></tr>';
     } else {
         ops.forEach(op => {
             const tr = document.createElement('tr');
             tr.innerHTML =
                 `<td style="font-weight:600;color:#0f172a;">${esc(op.name)}</td>
-                 <td style="text-align:right;">${op.hours}</td>
-                 <td style="text-align:right;"><span class="an-stat-pill">${fmt(op.packs)}</span></td>`;
+                 <td class="r">${op.hours}</td>
+                 <td class="r"><strong>${fmt(op.packs)}</strong></td>
+                 <td class="r">${fmt(op.target)}</td>
+                 <td class="r">${pctBadge(op.packs, op.target)}</td>`;
             opsTbody.appendChild(tr);
         });
     }
 
-    // Highlight active bar
-    const idx = machines.indexOf(machine);
+    // Highlight selected bar
     machineChart.data.datasets[0].backgroundColor = machines.map((_, i) =>
-        i === idx ? '#be123c' : machineColors[i % machineColors.length]
+        i === idx ? selectColors[i % selectColors.length] : baseColors[i % baseColors.length]
     );
-    machineChart.data.datasets[0].borderWidth = machines.map((_, i) => i === idx ? 3 : 0);
-    machineChart.data.datasets[0].borderColor = machines.map((_, i) => i === idx ? '#0f172a' : 'transparent');
     machineChart.update();
 
+    const panel = document.getElementById('drill-panel');
     panel.style.display = 'block';
     panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function closeDrill() {
-    activeMachine = null;
+    activeIdx = null;
     document.getElementById('drill-panel').style.display = 'none';
-    machineChart.data.datasets[0].backgroundColor = machines.map((_, i) => machineColors[i % machineColors.length]);
-    machineChart.data.datasets[0].borderWidth = 0;
+    machineChart.data.datasets[0].backgroundColor = machines.map((_, i) => baseColors[i % baseColors.length]);
     machineChart.update();
 }
 
-function esc(s) {
-    return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-// --- custom date toggle ---
+// --- Custom range toggle ---
 function toggleCustom() {
-    const inputs = document.getElementById('custom-inputs');
-    const btn    = document.getElementById('custom-btn');
-    const hidden = document.getElementById('custom-preset-input');
-    const isOpen = inputs.style.display !== 'none';
-    if (isOpen) {
-        inputs.style.display = 'none';
-        btn.classList.remove('active');
-    } else {
-        inputs.style.display = 'flex';
-        btn.classList.add('active');
-        // Remove preset hidden inputs from the form so the custom preset is used
-        document.querySelectorAll('button[name="preset"]').forEach(b => b.removeAttribute('name'));
-        hidden.disabled = false;
-    }
+    const wrap = document.getElementById('custom-form-wrap');
+    const btn  = document.getElementById('custom-btn');
+    const open = wrap.style.display !== 'none';
+    wrap.style.display = open ? 'none' : 'flex';
+    btn.classList.toggle('active', !open);
 }
-
-// On load: if preset is custom, disable the preset buttons so they don't override
-@if($preset === 'custom')
-document.querySelectorAll('button[name="preset"]').forEach(b => b.setAttribute('name', '_disabled_preset'));
-@endif
 </script>
 
 </x-layout>

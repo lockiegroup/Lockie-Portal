@@ -368,7 +368,8 @@ class PrintScheduleController extends Controller
                 $dateTo   = now()->format('Y-m-d');
         }
 
-        $machines = PrintJob::MACHINES;
+        $machines    = PrintJob::MACHINES;
+        $throughputs = $this->loadThroughputs();
 
         $allRuns = PrintJobRun::with(['user:id,name', 'printJob:id,customer_name,product_code,order_number'])
             ->whereIn('machine', $machines)
@@ -399,17 +400,19 @@ class PrintScheduleController extends Controller
         $operatorTotals = [];
 
         foreach ($machines as $machine) {
-            $machineRuns  = $allRuns->where('machine', $machine);
-            $machinePacks = 0;
-            $machineSecs  = 0;
-            $jobData      = [];
-            $opData       = [];
+            $machineRuns        = $allRuns->where('machine', $machine);
+            $machinePacks       = 0;
+            $machineSecs        = 0;
+            $machineTargetPacks = 0.0;
+            $jobData            = [];
+            $opData             = [];
 
             foreach ($machineRuns->groupBy('print_job_id') as $jobId => $jobRuns) {
                 $prev     = $baselines[$jobId] ?? 0;
                 $jobPacks = 0;
                 $jobSecs  = 0;
                 $firstRun = $jobRuns->first();
+                $tp       = $this->jobThroughput($machine, $firstRun->printJob?->product_code, $throughputs);
 
                 foreach ($jobRuns->sortBy('id') as $run) {
                     $curr  = $run->packs_produced ?? $prev;
@@ -418,23 +421,26 @@ class PrintScheduleController extends Controller
                         ? max(0, (int) $run->started_at->diffInSeconds($run->ended_at))
                         : 0;
 
-                    $jobPacks     += $delta;
-                    $jobSecs      += $secs;
-                    $machinePacks += $delta;
-                    $machineSecs  += $secs;
+                    $jobPacks           += $delta;
+                    $jobSecs            += $secs;
+                    $machinePacks       += $delta;
+                    $machineSecs        += $secs;
+                    $machineTargetPacks += ($secs / 3600) * ($tp / 8.0);
 
                     if ($run->user_id) {
                         if (!isset($opData[$run->user_id])) {
-                            $opData[$run->user_id] = ['name' => $run->user?->name ?? 'Unknown', 'packs' => 0, 'secs' => 0];
+                            $opData[$run->user_id] = ['name' => $run->user?->name ?? 'Unknown', 'packs' => 0, 'secs' => 0, 'target' => 0.0];
                         }
-                        $opData[$run->user_id]['packs'] += $delta;
-                        $opData[$run->user_id]['secs']  += $secs;
+                        $opData[$run->user_id]['packs']  += $delta;
+                        $opData[$run->user_id]['secs']   += $secs;
+                        $opData[$run->user_id]['target'] += ($secs / 3600) * ($tp / 8.0);
 
                         if (!isset($operatorTotals[$run->user_id])) {
-                            $operatorTotals[$run->user_id] = ['name' => $run->user?->name ?? 'Unknown', 'packs' => 0, 'secs' => 0];
+                            $operatorTotals[$run->user_id] = ['name' => $run->user?->name ?? 'Unknown', 'packs' => 0, 'secs' => 0, 'target' => 0.0];
                         }
-                        $operatorTotals[$run->user_id]['packs'] += $delta;
-                        $operatorTotals[$run->user_id]['secs']  += $secs;
+                        $operatorTotals[$run->user_id]['packs']  += $delta;
+                        $operatorTotals[$run->user_id]['secs']   += $secs;
+                        $operatorTotals[$run->user_id]['target'] += ($secs / 3600) * ($tp / 8.0);
                     }
 
                     if ($run->packs_produced !== null) $prev = $run->packs_produced;
@@ -446,6 +452,7 @@ class PrintScheduleController extends Controller
                         'product'  => $firstRun->printJob?->product_code ?? '',
                         'order'    => $firstRun->printJob?->order_number ?? '',
                         'packs'    => $jobPacks,
+                        'target'   => (int) round(($jobSecs / 3600) * ($tp / 8.0)),
                         'hours'    => round($jobSecs / 3600, 1),
                     ];
                 }
@@ -456,21 +463,24 @@ class PrintScheduleController extends Controller
 
             $machineStats[$machine] = [
                 'packs'     => $machinePacks,
+                'target'    => (int) round($machineTargetPacks),
                 'hours'     => round($machineSecs / 3600, 1),
                 'jobs'      => $jobData,
                 'operators' => array_values(array_map(fn($op) => [
-                    'name'  => $op['name'],
-                    'packs' => $op['packs'],
-                    'hours' => round($op['secs'] / 3600, 1),
+                    'name'   => $op['name'],
+                    'packs'  => $op['packs'],
+                    'target' => (int) round($op['target']),
+                    'hours'  => round($op['secs'] / 3600, 1),
                 ], $opData)),
             ];
         }
 
         uasort($operatorTotals, fn($a, $b) => $b['packs'] <=> $a['packs']);
         $operatorStats = array_values(array_map(fn($op) => [
-            'name'  => $op['name'],
-            'packs' => $op['packs'],
-            'hours' => round($op['secs'] / 3600, 1),
+            'name'   => $op['name'],
+            'packs'  => $op['packs'],
+            'target' => (int) round($op['target']),
+            'hours'  => round($op['secs'] / 3600, 1),
         ], $operatorTotals));
 
         return view('print-schedule.analytics', compact(
