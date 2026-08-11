@@ -335,7 +335,7 @@ class TabletController extends Controller
         return $total;
     }
 
-    private function operatorStatsForPeriod(string $machine, int $userId, Carbon $since, array $throughputs): array
+    private function operatorStatsForPeriod(string $machine, int $userId, Carbon $since, array $throughputs, ?int $flatTarget = null): array
     {
         // Fetch all runs on this machine in the period (all users) ordered by job then id,
         // so we can compute per-run packs deltas and attribute them to each operator.
@@ -396,14 +396,14 @@ class TabletController extends Controller
         $opTargetPacks = 0.0;
         foreach ($opRunsFull as $run) {
             $secs = $run->ended_at
-                ? abs((int) $run->started_at->diffInSeconds($run->ended_at))
-                : (int) now()->diffInSeconds($run->started_at);
-            $opSecs += $secs;
+                ? (int) $run->started_at->diffInSeconds($run->ended_at)
+                : (int) $run->started_at->diffInSeconds(now());
+            $opSecs += max(0, $secs);
             $tp = $this->getThroughputForMachineCode($machine, $run->printJob?->product_code, $throughputs);
-            $opTargetPacks += ($secs / 3600) * ($tp / 8.0);
+            $opTargetPacks += (max(0, $secs) / 3600) * ($tp / 8.0);
         }
 
-        $opTarget = (int) round($opTargetPacks);
+        $opTarget = $flatTarget ?? (int) round($opTargetPacks);
         return [
             'packs'     => $opPacks,
             'target'    => $opTarget,
@@ -424,36 +424,41 @@ class TabletController extends Controller
         $todayPacks = $this->packsOnMachineSince($machine, $todayStart);
         $monthPacks = $this->packsOnMachineSince($machine, $monthStart);
 
-        // Compute targets using per-run weighted hours × job throughput for both periods.
-        // This correctly handles mixed product runs (e.g. 4h on 200mm + 4h on 300mm = 372,
-        // not a flat 400). The same logic applies to today and to the month.
+        // Fetch all runs this month to compute targets and hours-run stats.
         $allPeriodRuns = PrintJobRun::where('machine', $machine)
             ->where('started_at', '>=', $monthStart)
             ->with('printJob:id,product_code')
             ->get();
 
-        $todayTargetPacks = 0.0;
         $monthTargetPacks = 0.0;
         $todaySecs        = 0;
         $monthSecs        = 0;
+        $latestTodayRun   = null;
 
         foreach ($allPeriodRuns as $run) {
             $secs = $run->ended_at
-                ? abs((int) $run->started_at->diffInSeconds($run->ended_at))
-                : (int) now()->diffInSeconds($run->started_at);
+                ? (int) $run->started_at->diffInSeconds($run->ended_at)
+                : (int) $run->started_at->diffInSeconds(now());
+            $secs = max(0, $secs);
             $tp = $this->getThroughputForMachineCode($machine, $run->printJob?->product_code, $throughputs);
-            $contribution = ($secs / 3600) * ($tp / 8.0);
 
-            $monthTargetPacks += $contribution;
+            $monthTargetPacks += ($secs / 3600) * ($tp / 8.0);
             $monthSecs        += $secs;
 
             if ($run->started_at->gte($todayStart)) {
-                $todayTargetPacks += $contribution;
-                $todaySecs        += $secs;
+                $todaySecs += $secs;
+                if ($latestTodayRun === null || $run->id > $latestTodayRun->id) {
+                    $latestTodayRun = $run;
+                }
             }
         }
 
-        $todayTarget       = (int) round($todayTargetPacks);
+        // Today target = flat daily throughput for the current/latest job — a fixed goal to work towards.
+        // Month target = per-run weighted hours × job throughput (accurately reflects mixed product runs).
+        $dailyTarget       = $this->getThroughputForMachineCode(
+            $machine, $latestTodayRun?->printJob?->product_code, $throughputs
+        );
+        $todayTarget       = $dailyTarget;
         $monthTarget       = (int) round($monthTargetPacks);
         $hoursRunToday     = round($todaySecs / 3600, 1);
         $hoursRunThisMonth = round($monthSecs / 3600, 1);
@@ -463,7 +468,7 @@ class TabletController extends Controller
         $opDayStats   = null;
         $opMonthStats = null;
         if ($operator) {
-            $opDayStats   = $this->operatorStatsForPeriod($machine, $operator->id, $todayStart, $throughputs);
+            $opDayStats   = $this->operatorStatsForPeriod($machine, $operator->id, $todayStart, $throughputs, $dailyTarget);
             $opMonthStats = $this->operatorStatsForPeriod($machine, $operator->id, $monthStart, $throughputs);
         }
 
