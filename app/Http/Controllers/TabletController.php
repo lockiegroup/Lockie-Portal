@@ -365,16 +365,17 @@ class TabletController extends Controller
         $todayPacks = $this->packsOnMachineSince($machine, $todayStart);
         $monthPacks = $this->packsOnMachineSince($machine, $monthStart);
 
-        // Count working day equivalents elapsed so far this month (inclusive of today)
-        $workDaysElapsed = 0.0;
-        $d = $monthStart->copy();
-        $endOfToday = now()->startOfDay();
-        while ($d->lte($endOfToday)) {
-            $workDaysElapsed += self::DAY_WEIGHTS[$d->dayOfWeek] ?? 0.0;
-            $d->addDay();
-        }
+        // Month target = days this machine was actually run this month × daily throughput.
+        // Using distinct calendar days avoids over-counting machines that aren't used every day,
+        // and means the % reflects the operator's performance on the days they were on this machine.
+        $daysRunThisMonth = PrintJobRun::where('machine', $machine)
+            ->where('started_at', '>=', $monthStart)
+            ->selectRaw('DATE(started_at) as run_date')
+            ->distinct()
+            ->pluck('run_date')
+            ->count();
 
-        $monthTarget = (int) round($dailyTarget * $workDaysElapsed);
+        $monthTarget = $dailyTarget * $daysRunThisMonth;
 
         return response()->json([
             'day' => [
@@ -385,12 +386,12 @@ class TabletController extends Controller
                     : null,
             ],
             'month' => [
-                'packs'        => $monthPacks,
-                'target'       => $monthTarget,
-                'pct'          => $monthTarget > 0
+                'packs'     => $monthPacks,
+                'target'    => $monthTarget,
+                'pct'       => $monthTarget > 0
                     ? min(150, (int) round($monthPacks / $monthTarget * 100))
                     : null,
-                'working_days' => round($workDaysElapsed, 1),
+                'days_run'  => $daysRunThisMonth,
             ],
             'product_size' => $productSize,
             'daily_target' => $dailyTarget,

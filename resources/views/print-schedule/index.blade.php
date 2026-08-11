@@ -138,7 +138,7 @@
                         </span>
                         <span class="text-blue-600">
                             ~<span class="lead-time-{{ $boardKey }}">{{ $leadTime }}</span> days lead time
-                            <span class="text-blue-400 text-xs">({{ $displayThroughputs[$boardKey] ?? 0 }} packs/day)</span>
+                            <span class="text-blue-400 text-xs">(per-product rates)</span>
                         </span>
                     </div>
                 @endif
