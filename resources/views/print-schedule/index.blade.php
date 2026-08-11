@@ -123,7 +123,7 @@
                 </div>
 
                 {{-- Machine lead time banner (only for throughput-tracked machines) --}}
-                @if(in_array($boardKey, $machines) && array_key_exists($boardKey, $throughputs))
+                @if(in_array($boardKey, $machines) && array_key_exists($boardKey, $displayThroughputs))
                     @php
                         $machineJobs = $boardJobs[$boardKey];
                         $totalRemaining = $machineJobs->sum(fn($j) => $j->remaining_quantity);
@@ -138,7 +138,7 @@
                         </span>
                         <span class="text-blue-600">
                             ~<span class="lead-time-{{ $boardKey }}">{{ $leadTime }}</span> days lead time
-                            <span class="text-blue-400 text-xs">({{ $throughputs[$boardKey] ?? 0 }} packs/day)</span>
+                            <span class="text-blue-400 text-xs">({{ $displayThroughputs[$boardKey] ?? 0 }} packs/day)</span>
                         </span>
                     </div>
                 @endif
@@ -231,7 +231,7 @@
     <script>
     (function () {
         const csrfToken  = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-        const throughputs = @json($throughputs);
+        const throughputs = @json($displayThroughputs);
         const machines    = @json($machines);
 
         // ─── Last synced ticker ───────────────────────────────────────────

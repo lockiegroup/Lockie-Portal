@@ -100,6 +100,12 @@ class PrintScheduleController extends Controller
                 ->get();
         }
 
+        // Flat per-machine throughput for view display (200mm as representative rate)
+        $displayThroughputs = [];
+        foreach ($machines as $machine) {
+            $displayThroughputs[$machine] = $this->jobThroughput($machine, '200', $throughputs);
+        }
+
         return view('print-schedule.index', compact(
             'boardJobs',
             'boards',
@@ -107,6 +113,7 @@ class PrintScheduleController extends Controller
             'machines',
             'machineLeadTimes',
             'throughputs',
+            'displayThroughputs',
             'lastSync',
             'orderLineCounts',
             'machineHistory'

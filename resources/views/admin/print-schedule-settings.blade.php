@@ -29,10 +29,16 @@
             @csrf
 
             {{-- Machine Throughput --}}
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
-                <div>
-                    <h2 class="font-semibold text-slate-800">Machine Throughput</h2>
-                    <p class="text-xs text-slate-400 mt-0.5">Packs completed per working day, by machine group and product size. Product size is detected from the product code (200 / 300 / 370). Used to estimate whether jobs will be on time and to show live rate % on tablets.</p>
+            @php $isMaster = auth()->user()->isMaster(); @endphp
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4" style="{{ $isMaster ? '' : 'opacity:0.6;' }}">
+                <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+                    <div>
+                        <h2 class="font-semibold text-slate-800">Machine Throughput</h2>
+                        <p class="text-xs text-slate-400 mt-0.5">Packs completed per working day, by machine group and product size. Product size is detected from the product code (200 / 300 / 370). Used to estimate whether jobs will be on time and to show live rate % on tablets.</p>
+                    </div>
+                    @if(!$isMaster)
+                        <span style="flex-shrink:0;font-size:0.7rem;font-weight:600;background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;border-radius:9999px;padding:3px 10px;white-space:nowrap;">🔒 Master only</span>
+                    @endif
                 </div>
 
                 <table style="width:100%;border-collapse:collapse;font-size:0.875rem;">
@@ -53,9 +59,13 @@
                                         <div style="display:flex;align-items:center;gap:6px;justify-content:center;">
                                             <input type="number" name="throughput_{{ $group }}_{{ $size }}"
                                                 value="{{ $settings['throughput_' . $group . '_' . $size] }}" min="1"
-                                                style="width:90px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:0.875rem;color:#1e293b;text-align:center;outline:none;"
-                                                onfocus="this.style.borderColor='#e11d48';this.style.boxShadow='0 0 0 3px rgba(225,29,72,0.1)'"
-                                                onblur="this.style.borderColor='#cbd5e1';this.style.boxShadow='none'">
+                                                {{ $isMaster ? '' : 'disabled' }}
+                                                style="width:90px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:0.875rem;color:#1e293b;text-align:center;outline:none;{{ $isMaster ? '' : 'cursor:not-allowed;background:#f8fafc;' }}"
+                                                @if($isMaster)
+                                                    onfocus="this.style.borderColor='#e11d48';this.style.boxShadow='0 0 0 3px rgba(225,29,72,0.1)'"
+                                                    onblur="this.style.borderColor='#cbd5e1';this.style.boxShadow='none'"
+                                                @endif
+                                            >
                                             <span style="font-size:0.7rem;color:#94a3b8;white-space:nowrap;">/day</span>
                                         </div>
                                     </td>
