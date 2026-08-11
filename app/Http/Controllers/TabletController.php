@@ -365,17 +365,26 @@ class TabletController extends Controller
         $todayPacks = $this->packsOnMachineSince($machine, $todayStart);
         $monthPacks = $this->packsOnMachineSince($machine, $monthStart);
 
-        // Month target = days this machine was actually run this month × daily throughput.
-        // Using distinct calendar days avoids over-counting machines that aren't used every day,
-        // and means the % reflects the operator's performance on the days they were on this machine.
-        $daysRunThisMonth = PrintJobRun::where('machine', $machine)
+        // Month target based on actual hours the machine was running this month.
+        // Counting distinct calendar days would over-credit a machine that only ran for 1 hour.
+        // Instead: target = (hours run ÷ 8) × daily_throughput.
+        $completedSecs = (int) PrintJobRun::where('machine', $machine)
             ->where('started_at', '>=', $monthStart)
-            ->selectRaw('DATE(started_at) as run_date')
-            ->distinct()
-            ->pluck('run_date')
-            ->count();
+            ->whereNotNull('ended_at')
+            ->selectRaw('SUM(TIMESTAMPDIFF(SECOND, started_at, ended_at)) as secs')
+            ->value('secs');
 
-        $monthTarget = $dailyTarget * $daysRunThisMonth;
+        // Add the currently active run's elapsed time if it started this month
+        $activeMonthRun = PrintJobRun::where('machine', $machine)
+            ->whereNull('ended_at')
+            ->where('started_at', '>=', $monthStart)
+            ->first();
+        if ($activeMonthRun) {
+            $completedSecs += now()->diffInSeconds($activeMonthRun->started_at);
+        }
+
+        $hoursRunThisMonth = round($completedSecs / 3600, 1);
+        $monthTarget       = (int) round($dailyTarget * ($completedSecs / 3600 / 8));
 
         return response()->json([
             'day' => [
@@ -391,7 +400,7 @@ class TabletController extends Controller
                 'pct'       => $monthTarget > 0
                     ? min(150, (int) round($monthPacks / $monthTarget * 100))
                     : null,
-                'days_run'  => $daysRunThisMonth,
+                'hours_run' => $hoursRunThisMonth,
             ],
             'product_size' => $productSize,
             'daily_target' => $dailyTarget,

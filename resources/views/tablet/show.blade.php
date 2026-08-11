@@ -552,7 +552,7 @@
             <div class="rate-pct" id="rate-day-pct"></div>
         </div>
         <div class="rate-stat">
-            <div class="rate-stat-label">Month to date — <span id="rate-month-days">—</span> day(s) on this machine</div>
+            <div class="rate-stat-label">Month to date — <span id="rate-month-hours">—</span> hrs run</div>
             <div class="rate-stat-nums"><strong id="rate-month-packs">—</strong> / <span id="rate-month-target">—</span> packs</div>
             <div class="rate-bar-track"><div class="rate-bar-fill" id="rate-month-bar" style="width:0%;"></div></div>
             <div class="rate-pct" id="rate-month-pct"></div>
@@ -1315,9 +1315,9 @@ function _updateRateDisplay(data) {
     _fill('rate-day',   data.day);
     _fill('rate-month', data.month);
 
-    const daysEl = document.getElementById('rate-month-days');
-    if (daysEl && data.month) {
-        daysEl.textContent = data.month.days_run ?? '—';
+    const hoursEl = document.getElementById('rate-month-hours');
+    if (hoursEl && data.month) {
+        hoursEl.textContent = data.month.hours_run ?? '—';
     }
 }
 
