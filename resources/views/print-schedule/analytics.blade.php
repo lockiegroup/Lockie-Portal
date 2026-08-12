@@ -94,9 +94,26 @@
 
 /* Breakdown / idle tags */
 .an-sum-tags { display: flex; gap: 4px; flex-wrap: wrap; grid-column: 1 / -1; }
-.an-tag { display: inline-block; font-size: 0.67rem; font-weight: 600; padding: 1px 6px; border-radius: 20px; white-space: nowrap; }
+.an-tag { display: inline-block; font-size: 0.67rem; font-weight: 600; padding: 1px 6px; border-radius: 20px; white-space: nowrap; cursor: pointer; }
+.an-tag:hover { filter: brightness(0.92); }
 .an-tag-breakdown { background: #fee2e2; color: #b91c1c; }
 .an-tag-idle      { background: #fef3c7; color: #b45309; }
+
+/* Events popup */
+.an-events-popup {
+    position: fixed; z-index: 9999;
+    background: #fff; border: 1px solid #e2e8f0;
+    border-radius: 10px; box-shadow: 0 8px 30px rgba(0,0,0,0.13);
+    padding: 14px 18px; min-width: 320px; max-width: 480px;
+    font-size: 0.78rem; color: #334155;
+}
+.an-events-popup h4 { margin: 0 0 10px; font-size: 0.82rem; font-weight: 700; color: #1e293b; }
+.an-events-popup table { width: 100%; border-collapse: collapse; }
+.an-events-popup td { padding: 4px 6px; vertical-align: top; }
+.an-events-popup tr:not(:last-child) td { border-bottom: 1px solid #f1f5f9; }
+.an-events-popup .ev-dur { font-weight: 700; white-space: nowrap; }
+.an-events-popup .ev-close { float: right; cursor: pointer; color: #94a3b8; font-size: 1rem; line-height: 1; margin-top: -2px; }
+.an-events-popup .ev-close:hover { color: #475569; }
 
 /* Drill-down */
 .an-drill-panel {
@@ -393,14 +410,18 @@ function buildMachineSummaryRow(m) {
     row.className = `an-sum-row${hiddenMachines.has(m) ? ' hidden' : ''}`;
     row.id = `msum-${m}`;
     const extraBits = [];
-    if ((s.breakdown_hours ?? 0) > 0) extraBits.push(`<span class="an-tag an-tag-breakdown">${s.breakdown_hours}h breakdown</span>`);
-    if ((s.idle_hours ?? 0) > 0)      extraBits.push(`<span class="an-tag an-tag-idle">${s.idle_hours}h idle</span>`);
+    if ((s.breakdown_hours ?? 0) > 0) extraBits.push(`<span class="an-tag an-tag-breakdown" data-machine="${m}" data-type="breakdown">${s.breakdown_hours}h breakdown</span>`);
+    if ((s.idle_hours ?? 0) > 0)      extraBits.push(`<span class="an-tag an-tag-idle" data-machine="${m}" data-type="idle">${s.idle_hours}h idle</span>`);
     row.innerHTML = `
         <span class="an-sum-name" title="${machineName(m)}">${machineName(m)}</span>
         <div class="an-sum-bar-track"><div class="an-sum-bar-fill" style="width:${fill}%"></div></div>
         <span class="an-sum-nums">${fmt(s.packs)} / ${fmt(s.target ?? 0)}</span>
         <span class="an-pct-badge ${cls}">${pct !== null ? pct + '%' : '—'}</span>
         ${extraBits.length ? '<span class="an-sum-tags">' + extraBits.join('') + '</span>' : ''}`;
+    // Attach click handlers after innerHTML (can't use onclick= with CSP)
+    row.querySelectorAll('.an-tag[data-machine]').forEach(tag => {
+        tag.addEventListener('click', e => showEventsPopup(e, tag.dataset.machine, tag.dataset.type));
+    });
     return row;
 }
 
@@ -593,6 +614,66 @@ function toggleCustom() {
     const open = wrap.style.display !== 'none';
     wrap.style.display = open ? 'none' : 'flex';
     btn.classList.toggle('active', !open);
+}
+
+// ── Events popup (breakdown / idle tags) ─────────────────────────────────────
+const evPopup = document.createElement('div');
+evPopup.className = 'an-events-popup';
+evPopup.style.display = 'none';
+document.body.appendChild(evPopup);
+
+document.addEventListener('click', e => {
+    if (!evPopup.contains(e.target) && !e.target.closest('.an-tag')) {
+        evPopup.style.display = 'none';
+    }
+});
+
+function fmtMins(mins) {
+    if (mins < 60) return mins + 'm';
+    const h = Math.floor(mins / 60), m = mins % 60;
+    return h + 'h' + (m ? ' ' + m + 'm' : '');
+}
+
+function showEventsPopup(e, machine, type) {
+    e.stopPropagation();
+    const s = machineStats[machine] ?? {};
+    const events = type === 'breakdown' ? (s.breakdown_events ?? []) : (s.idle_events ?? []);
+    const title  = type === 'breakdown' ? 'Breakdown events' : 'Idle between jobs';
+
+    let rows = '';
+    if (type === 'breakdown') {
+        rows = events.map(ev => `
+            <tr>
+                <td class="ev-dur">${fmtMins(ev.mins)}</td>
+                <td>${ev.from} → ${ev.to}</td>
+                <td style="color:#64748b;">${ev.job}${ev.reason ? '<br><em>' + ev.reason + '</em>' : ''}</td>
+            </tr>`).join('');
+    } else {
+        rows = events.map(ev => `
+            <tr>
+                <td class="ev-dur">${fmtMins(ev.mins)}</td>
+                <td>${ev.from} → ${ev.to}</td>
+                <td style="color:#64748b;">${ev.from_job}<br>→ ${ev.to_job}</td>
+            </tr>`).join('');
+    }
+
+    evPopup.innerHTML = `
+        <h4><span class="ev-close" onclick="document.querySelector('.an-events-popup').style.display='none'">✕</span>${title} — ${machineName(machine)}</h4>
+        ${events.length === 0
+            ? '<p style="color:#94a3b8;margin:0;">No events recorded.</p>'
+            : '<table>' + rows + '</table>'}`;
+
+    // Position near the clicked tag
+    const rect = e.target.getBoundingClientRect();
+    evPopup.style.display = 'block';
+    const pw = evPopup.offsetWidth;
+    const ph = evPopup.offsetHeight;
+    let left = rect.left + window.scrollX;
+    let top  = rect.bottom + window.scrollY + 6;
+    if (left + pw > window.innerWidth - 16) left = window.innerWidth - pw - 16;
+    if (top + ph > window.scrollY + window.innerHeight - 16) top = rect.top + window.scrollY - ph - 6;
+    evPopup.style.left = left + 'px';
+    evPopup.style.top  = top + 'px';
 }
 </script>
 

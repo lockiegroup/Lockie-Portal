@@ -406,6 +406,8 @@ class PrintScheduleController extends Controller
             $machineSecs          = 0;
             $machineTargetPacks   = 0.0;
             $machineBreakdownSecs = 0;
+            $breakdownEvents      = [];
+            $idleEvents           = [];
             $jobData              = [];
             $opData               = [];
 
@@ -464,6 +466,13 @@ class PrintScheduleController extends Controller
                         $gapSecs      = max(0, (int) $run->ended_at->diffInSeconds($gapEnd));
                         $machineBreakdownSecs += $gapSecs;
                         $machineTargetPacks   += ($gapSecs / 3600) * ($tp / 8.0);
+                        $breakdownEvents[] = [
+                            'from'   => $run->ended_at->format('d M H:i'),
+                            'to'     => $nextRunInJob ? $nextRunInJob->started_at->format('d M H:i') : 'Ongoing',
+                            'mins'   => (int) round($gapSecs / 60),
+                            'reason' => $run->pause_reason ?? '',
+                            'job'    => ($firstRun->printJob?->customer_name ?? 'Unknown') . ($firstRun->printJob?->order_number ? ' #' . $firstRun->printJob->order_number : ''),
+                        ];
                     }
                 }
 
@@ -497,7 +506,15 @@ class PrintScheduleController extends Controller
             foreach ($sortedMachineRuns as $ri => $run) {
                 $nextRun = $sortedMachineRuns[$ri + 1] ?? null;
                 if ($nextRun && $run->print_job_id !== $nextRun->print_job_id && $run->ended_at) {
-                    $machineIdleSecs += max(0, (int) $run->ended_at->diffInSeconds($nextRun->started_at));
+                    $gapSecs = max(0, (int) $run->ended_at->diffInSeconds($nextRun->started_at));
+                    $machineIdleSecs += $gapSecs;
+                    $idleEvents[] = [
+                        'from'     => $run->ended_at->format('d M H:i'),
+                        'to'       => $nextRun->started_at->format('d M H:i'),
+                        'mins'     => (int) round($gapSecs / 60),
+                        'from_job' => ($run->printJob?->customer_name ?? 'Unknown') . ($run->printJob?->order_number ? ' #' . $run->printJob->order_number : ''),
+                        'to_job'   => ($nextRun->printJob?->customer_name ?? 'Unknown') . ($nextRun->printJob?->order_number ? ' #' . $nextRun->printJob->order_number : ''),
+                    ];
                 }
             }
 
@@ -509,7 +526,9 @@ class PrintScheduleController extends Controller
                 'target'           => (int) round($machineTargetPacks),
                 'hours'            => round($machineSecs / 3600, 1),
                 'breakdown_hours'  => round($machineBreakdownSecs / 3600, 2),
+                'breakdown_events' => $breakdownEvents,
                 'idle_hours'       => round($machineIdleSecs / 3600, 2),
+                'idle_events'      => $idleEvents,
                 'jobs'             => $jobData,
                 'operators'        => array_values(array_map(fn($op) => [
                     'name'   => $op['name'],
