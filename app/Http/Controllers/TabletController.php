@@ -167,7 +167,8 @@ class TabletController extends Controller
 
         $data = $request->validate([
             'packs_produced' => 'nullable|integer|min:0',
-            'pause_reason'   => 'required|string|min:1|max:255',
+            'pause_type'     => 'required|in:dinner,away,end_of_shift,breakdown',
+            'pause_reason'   => 'nullable|string|max:500',
         ]);
 
         $run = $job->runs()->where('machine', $machine)->whereNull('ended_at')->first();
@@ -176,7 +177,8 @@ class TabletController extends Controller
                 'ended_at'       => now(),
                 'end_reason'     => 'pause',
                 'packs_produced' => $data['packs_produced'] ?? null,
-                'pause_reason'   => $data['pause_reason'] ?? null,
+                'pause_type'     => $data['pause_type'],
+                'pause_reason'   => ($data['pause_type'] === 'breakdown') ? ($data['pause_reason'] ?? null) : null,
             ]);
         }
 
@@ -428,14 +430,16 @@ class TabletController extends Controller
         $allPeriodRuns = PrintJobRun::where('machine', $machine)
             ->where('started_at', '>=', $monthStart)
             ->with('printJob:id,product_code')
+            ->orderBy('started_at')
             ->get();
 
         $monthTargetPacks = 0.0;
         $todaySecs        = 0;
         $monthSecs        = 0;
         $latestTodayRun   = null;
+        $sortedRuns       = $allPeriodRuns->values();
 
-        foreach ($allPeriodRuns as $run) {
+        foreach ($sortedRuns as $i => $run) {
             $secs = $run->ended_at
                 ? (int) $run->started_at->diffInSeconds($run->ended_at)
                 : (int) $run->started_at->diffInSeconds(now());
@@ -449,6 +453,20 @@ class TabletController extends Controller
                 $todaySecs += $secs;
                 if ($latestTodayRun === null || $run->id > $latestTodayRun->id) {
                     $latestTodayRun = $run;
+                }
+            }
+
+            // Breakdown gaps count toward production target (machine should have been running).
+            if ($run->end_reason === 'pause' && $run->pause_type === 'breakdown' && $run->ended_at) {
+                $nextRun  = $sortedRuns[$i + 1] ?? null;
+                $gapEnd   = $nextRun ? $nextRun->started_at : now();
+                $gapSecs  = max(0, (int) $run->ended_at->diffInSeconds($gapEnd));
+                $monthTargetPacks += ($gapSecs / 3600) * ($tp / 8.0);
+                $monthSecs        += $gapSecs;
+                // Count toward today if the gap overlaps today
+                if ($gapEnd->gte($todayStart)) {
+                    $gapTodayStart = $run->ended_at->lt($todayStart) ? $todayStart : $run->ended_at;
+                    $todaySecs    += max(0, (int) $gapTodayStart->diffInSeconds($gapEnd));
                 }
             }
         }

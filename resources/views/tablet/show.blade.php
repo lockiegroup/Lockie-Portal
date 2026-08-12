@@ -408,6 +408,8 @@
             transition: all 0.15s;
         }
         .reason-btn.active, .reason-btn:hover { border-color: #0284c7; color: #38bdf8; background: #0f2a45; }
+        .reason-btn-fault { border-color: #7f1d1d; color: #fca5a5; }
+        .reason-btn-fault:hover, .reason-btn-fault.active { border-color: #dc2626; color: #fca5a5; background: #2d0a0a; }
 
         .modal-pin-display {
             background: #0f172a;
@@ -701,7 +703,15 @@
                         @if($pausedDisplayPacks !== null)
                             &nbsp;·&nbsp; <span>{{ number_format($pausedDisplayPacks) }} packs done</span>
                         @endif
-                        @if($lastRun->pause_reason)
+                        @if($lastRun->pause_type)
+                            &nbsp;·&nbsp; <span>{{ match($lastRun->pause_type) {
+                                'dinner'       => 'Dinner',
+                                'away'         => 'Away',
+                                'end_of_shift' => 'End of Shift',
+                                'breakdown'    => 'Breakdown' . ($lastRun->pause_reason ? ': ' . $lastRun->pause_reason : ''),
+                                default        => $lastRun->pause_reason ?? '',
+                            } }}</span>
+                        @elseif($lastRun->pause_reason)
                             &nbsp;·&nbsp; <span>{{ $lastRun->pause_reason }}</span>
                         @endif
                     </div>
@@ -873,21 +883,35 @@
         <h3>⏸ Pause Job</h3>
         <form id="pause-form" method="POST">
             @csrf
+            <input type="hidden" id="pause-type-input" name="pause_type">
             <div class="modal-field">
                 <label>Packs produced so far</label>
                 <input type="number" id="pause-packs-input" name="packs_produced" min="0" placeholder="0" inputmode="numeric">
             </div>
             <div class="modal-field">
                 <label>Reason for pausing <span style="color:#f59e0b;">*</span></label>
-                <div class="reason-buttons">
-                    <div class="reason-btn" onclick="selectReason(this, 'Dinner')">Dinner</div>
-                    <div class="reason-btn" onclick="selectReason(this, 'Machine breakdown')">Machine breakdown</div>
-                    <div class="reason-btn" onclick="selectReason(this, 'End of shift')">End of shift</div>
-                    <div class="reason-btn" onclick="selectReason(this, 'Other')">Other</div>
+
+                <div style="font-size:0.78rem;color:#64748b;margin-bottom:6px;margin-top:4px;text-transform:uppercase;letter-spacing:0.05em;">Planned stop — doesn't count toward target</div>
+                <div class="reason-buttons" style="margin-bottom:12px;">
+                    <div class="reason-btn" onclick="selectPauseType(this,'dinner')">Dinner</div>
+                    <div class="reason-btn" onclick="selectPauseType(this,'away')">Away</div>
+                    <div class="reason-btn" onclick="selectPauseType(this,'end_of_shift')">End of Shift</div>
                 </div>
-                <input type="text" name="pause_reason" id="pause-reason-input" placeholder="Or type a reason…"
-                    style="width:100%;background:#0f172a;border:2px solid #334155;border-radius:10px;padding:10px 14px;color:#f1f5f9;font-size:0.9rem;outline:none;margin-top:4px;">
-                <div id="pause-reason-error" style="display:none;color:#f87171;font-size:0.82rem;margin-top:6px;">Please select or enter a reason before pausing.</div>
+
+                <div style="font-size:0.78rem;color:#fca5a5;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em;">Machine fault — still counts toward target</div>
+                <div class="reason-buttons">
+                    <div class="reason-btn reason-btn-fault" onclick="selectPauseType(this,'breakdown')">Breakdown</div>
+                </div>
+
+                <div id="breakdown-reason-wrap" style="display:none;margin-top:10px;">
+                    <label style="display:block;font-size:0.82rem;color:#94a3b8;margin-bottom:4px;">Describe the breakdown <span style="color:#ef4444;">*</span></label>
+                    <textarea name="pause_reason" id="pause-breakdown-reason" rows="3"
+                        placeholder="What went wrong?"
+                        style="width:100%;background:#0f172a;border:2px solid #334155;border-radius:10px;padding:10px 14px;color:#f1f5f9;font-size:0.9rem;outline:none;resize:none;box-sizing:border-box;"></textarea>
+                    <div id="pause-breakdown-error" style="display:none;color:#f87171;font-size:0.82rem;margin-top:4px;">Please describe the breakdown.</div>
+                </div>
+
+                <div id="pause-reason-error" style="display:none;color:#f87171;font-size:0.82rem;margin-top:8px;">Please select a reason before pausing.</div>
             </div>
             <div class="modal-actions">
                 <button type="button" class="btn btn-ghost btn-md" onclick="closeModal('pause-modal')">Cancel</button>
@@ -1007,7 +1031,7 @@ function pinSubmit() {
 }
 
 // ── Pause modal ──
-let pauseSelectedReason = '';
+let pauseSelectedType = null;
 
 function openPauseModal(action, currentPacks, maxPacks, startedAtMs) {
     const form = document.getElementById('pause-form');
@@ -1015,27 +1039,34 @@ function openPauseModal(action, currentPacks, maxPacks, startedAtMs) {
     form.dataset.currentPacks = currentPacks || '0';
     form.dataset.maxPacks     = maxPacks || '0';
     form.dataset.startedAt    = startedAtMs || '0';
-    pauseSelectedReason = '';
+    pauseSelectedType = null;
+    document.getElementById('pause-type-input').value = '';
     document.getElementById('pause-reason-error').style.display = 'none';
-    document.getElementById('pause-reason-input').style.borderColor = '#334155';
-    // Reset reason buttons (only pause reason buttons, not end modal buttons)
+    document.getElementById('pause-breakdown-error').style.display = 'none';
+    document.getElementById('breakdown-reason-wrap').style.display = 'none';
+    document.getElementById('pause-breakdown-reason').value = '';
     document.querySelectorAll('#pause-modal .reason-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('pause-reason-input').value = '';
-    // Pre-fill packs with last known value
     const packsInput = document.getElementById('pause-packs-input');
     packsInput.max = maxPacks || '';
     packsInput.value = (currentPacks > 0) ? currentPacks : '';
     document.getElementById('pause-modal').classList.add('open');
 }
 
-function selectReason(btn, reason) {
-    pauseSelectedReason = reason;
+function selectPauseType(btn, type) {
+    pauseSelectedType = type;
+    document.getElementById('pause-type-input').value = type;
     document.querySelectorAll('#pause-modal .reason-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    document.getElementById('pause-reason-input').value = reason !== 'Other' ? reason : '';
-    if (reason === 'Other') document.getElementById('pause-reason-input').focus();
     document.getElementById('pause-reason-error').style.display = 'none';
-    document.getElementById('pause-reason-input').style.borderColor = '#334155';
+    document.getElementById('pause-breakdown-error').style.display = 'none';
+    const wrap = document.getElementById('breakdown-reason-wrap');
+    if (type === 'breakdown') {
+        wrap.style.display = 'block';
+        document.getElementById('pause-breakdown-reason').focus();
+    } else {
+        wrap.style.display = 'none';
+        document.getElementById('pause-breakdown-reason').value = '';
+    }
 }
 
 const RATE_WARN_PPH = 1000; // warn if implied rate exceeds this packs/hr
@@ -1084,13 +1115,17 @@ function confirmProgressUpdate(form) {
 }
 
 function submitPauseForm() {
-    const input = document.getElementById('pause-reason-input');
-    const reason = input.value.trim();
-    if (!reason) {
+    if (!pauseSelectedType) {
         document.getElementById('pause-reason-error').style.display = 'block';
-        input.style.borderColor = '#ef4444';
-        input.focus();
         return;
+    }
+    if (pauseSelectedType === 'breakdown') {
+        const reason = document.getElementById('pause-breakdown-reason').value.trim();
+        if (!reason) {
+            document.getElementById('pause-breakdown-error').style.display = 'block';
+            document.getElementById('pause-breakdown-reason').focus();
+            return;
+        }
     }
     const form      = document.getElementById('pause-form');
     const current   = parseInt(form.dataset.currentPacks || '0', 10);

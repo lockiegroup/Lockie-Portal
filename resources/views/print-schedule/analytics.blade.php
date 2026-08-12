@@ -92,6 +92,12 @@
 .an-pct-red   { background: #fee2e2; color: #dc2626; }
 .an-pct-none  { background: #f1f5f9; color: #94a3b8; }
 
+/* Breakdown / idle tags */
+.an-sum-tags { display: flex; gap: 4px; flex-wrap: wrap; grid-column: 1 / -1; }
+.an-tag { display: inline-block; font-size: 0.67rem; font-weight: 600; padding: 1px 6px; border-radius: 20px; white-space: nowrap; }
+.an-tag-breakdown { background: #fee2e2; color: #b91c1c; }
+.an-tag-idle      { background: #fef3c7; color: #b45309; }
+
 /* Drill-down */
 .an-drill-panel {
     background: #fff;
@@ -386,11 +392,15 @@ function buildMachineSummaryRow(m) {
     const row  = document.createElement('div');
     row.className = `an-sum-row${hiddenMachines.has(m) ? ' hidden' : ''}`;
     row.id = `msum-${m}`;
+    const extraBits = [];
+    if ((s.breakdown_hours ?? 0) > 0) extraBits.push(`<span class="an-tag an-tag-breakdown">${s.breakdown_hours}h breakdown</span>`);
+    if ((s.idle_hours ?? 0) > 0)      extraBits.push(`<span class="an-tag an-tag-idle">${s.idle_hours}h idle</span>`);
     row.innerHTML = `
         <span class="an-sum-name" title="${machineName(m)}">${machineName(m)}</span>
         <div class="an-sum-bar-track"><div class="an-sum-bar-fill" style="width:${fill}%"></div></div>
         <span class="an-sum-nums">${fmt(s.packs)} / ${fmt(s.target ?? 0)}</span>
-        <span class="an-pct-badge ${cls}">${pct !== null ? pct + '%' : '—'}</span>`;
+        <span class="an-pct-badge ${cls}">${pct !== null ? pct + '%' : '—'}</span>
+        ${extraBits.length ? '<span class="an-sum-tags">' + extraBits.join('') + '</span>' : ''}`;
     return row;
 }
 

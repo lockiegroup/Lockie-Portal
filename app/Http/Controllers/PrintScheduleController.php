@@ -398,36 +398,40 @@ class PrintScheduleController extends Controller
 
         $machineStats   = [];
         $operatorTotals = [];
+        $periodEnd      = Carbon::parse($dateTo)->endOfDay();
 
         foreach ($machines as $machine) {
-            $machineRuns        = $allRuns->where('machine', $machine);
-            $machinePacks       = 0;
-            $machineSecs        = 0;
-            $machineTargetPacks = 0.0;
-            $jobData            = [];
-            $opData             = [];
+            $machineRuns          = $allRuns->where('machine', $machine)->values();
+            $machinePacks         = 0;
+            $machineSecs          = 0;
+            $machineTargetPacks   = 0.0;
+            $machineBreakdownSecs = 0;
+            $jobData              = [];
+            $opData               = [];
+
+            // Sorted by started_at for inter-job gap analysis
+            $sortedMachineRuns = $machineRuns->sortBy('started_at')->values();
 
             foreach ($machineRuns->groupBy('print_job_id') as $jobId => $jobRuns) {
-                $baseline = $baselines[$jobId] ?? 0;
-                $firstRun = $jobRuns->first();
-                $tp       = $this->jobThroughput($machine, $firstRun->printJob?->product_code, $throughputs);
+                $baseline        = $baselines[$jobId] ?? 0;
+                $firstRun        = $jobRuns->first();
+                $tp              = $this->jobThroughput($machine, $firstRun->printJob?->product_code, $throughputs);
+                $sortedJobRuns   = $jobRuns->sortBy('started_at')->values();
 
                 // Use the last-by-id ended run's packs_produced as the correct period total,
                 // exactly as the machine log view does. This is immune to wrong intermediate
                 // entries (e.g. operator typed 8,090 instead of 80) because those are
                 // overwritten by the final correct cumulative value in subsequent runs.
-                $lastEndedRun = $jobRuns->filter(fn($r) => $r->packs_produced !== null && $r->ended_at !== null)
+                $lastEndedRun  = $jobRuns->filter(fn($r) => $r->packs_produced !== null && $r->ended_at !== null)
                     ->sortByDesc(fn($r) => $r->id)->first();
-                $activeRun    = $jobRuns->firstWhere('ended_at', null);
-
+                $activeRun     = $jobRuns->firstWhere('ended_at', null);
                 $jobCumulative = $activeRun?->progress_packs ?? $lastEndedRun?->packs_produced ?? $baseline;
                 $jobPacks      = max(0, $jobCumulative - $baseline);
 
-                // Per-run seconds (target and time are still run-by-run, which is fine)
-                $jobSecs       = 0;
-                $opSecsForJob  = []; // userId => seconds, for proportional packs attribution
+                $jobSecs      = 0;
+                $opSecsForJob = [];
 
-                foreach ($jobRuns->sortBy('id') as $run) {
+                foreach ($sortedJobRuns as $ri => $run) {
                     $secs = $run->ended_at
                         ? max(0, (int) $run->started_at->diffInSeconds($run->ended_at))
                         : 0;
@@ -450,6 +454,16 @@ class PrintScheduleController extends Controller
                         }
                         $operatorTotals[$run->user_id]['secs']   += $secs;
                         $operatorTotals[$run->user_id]['target'] += ($secs / 3600) * ($tp / 8.0);
+                    }
+
+                    // Breakdown gap: time between this run and the next within the same job
+                    // counts toward the production target (machine should have been running).
+                    if ($run->end_reason === 'pause' && $run->pause_type === 'breakdown' && $run->ended_at) {
+                        $nextRunInJob = $sortedJobRuns[$ri + 1] ?? null;
+                        $gapEnd       = $nextRunInJob ? $nextRunInJob->started_at : now()->min($periodEnd);
+                        $gapSecs      = max(0, (int) $run->ended_at->diffInSeconds($gapEnd));
+                        $machineBreakdownSecs += $gapSecs;
+                        $machineTargetPacks   += ($gapSecs / 3600) * ($tp / 8.0);
                     }
                 }
 
@@ -478,15 +492,26 @@ class PrintScheduleController extends Controller
                 }
             }
 
+            // Inter-job idle time: gaps between the last run of one job and the first run of the next.
+            $machineIdleSecs = 0;
+            foreach ($sortedMachineRuns as $ri => $run) {
+                $nextRun = $sortedMachineRuns[$ri + 1] ?? null;
+                if ($nextRun && $run->print_job_id !== $nextRun->print_job_id && $run->ended_at) {
+                    $machineIdleSecs += max(0, (int) $run->ended_at->diffInSeconds($nextRun->started_at));
+                }
+            }
+
             usort($jobData, fn($a, $b) => $b['packs'] <=> $a['packs']);
             uasort($opData, fn($a, $b) => $b['packs'] <=> $a['packs']);
 
             $machineStats[$machine] = [
-                'packs'     => $machinePacks,
-                'target'    => (int) round($machineTargetPacks),
-                'hours'     => round($machineSecs / 3600, 1),
-                'jobs'      => $jobData,
-                'operators' => array_values(array_map(fn($op) => [
+                'packs'            => $machinePacks,
+                'target'           => (int) round($machineTargetPacks),
+                'hours'            => round($machineSecs / 3600, 1),
+                'breakdown_hours'  => round($machineBreakdownSecs / 3600, 2),
+                'idle_hours'       => round($machineIdleSecs / 3600, 2),
+                'jobs'             => $jobData,
+                'operators'        => array_values(array_map(fn($op) => [
                     'name'   => $op['name'],
                     'packs'  => $op['packs'],
                     'target' => (int) round($op['target']),

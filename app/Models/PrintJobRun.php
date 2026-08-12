@@ -18,6 +18,7 @@ class PrintJobRun extends Model
         'packs_produced',
         'packs_corrected_from',
         'pause_reason',
+        'pause_type',
         'progress_packs',
         'progress_at',
         'fully_complete',
