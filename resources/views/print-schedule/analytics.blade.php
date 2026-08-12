@@ -103,17 +103,32 @@
 .an-events-popup {
     position: fixed; z-index: 9999;
     background: #fff; border: 1px solid #e2e8f0;
-    border-radius: 10px; box-shadow: 0 8px 30px rgba(0,0,0,0.13);
-    padding: 14px 18px; min-width: 320px; max-width: 480px;
-    font-size: 0.78rem; color: #334155;
+    border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.14);
+    padding: 0; min-width: 300px; max-width: 400px;
+    font-size: 0.8rem; color: #334155; overflow: hidden;
 }
-.an-events-popup h4 { margin: 0 0 10px; font-size: 0.82rem; font-weight: 700; color: #1e293b; }
-.an-events-popup table { width: 100%; border-collapse: collapse; }
-.an-events-popup td { padding: 4px 6px; vertical-align: top; }
-.an-events-popup tr:not(:last-child) td { border-bottom: 1px solid #f1f5f9; }
-.an-events-popup .ev-dur { font-weight: 700; white-space: nowrap; }
-.an-events-popup .ev-close { float: right; cursor: pointer; color: #94a3b8; font-size: 1rem; line-height: 1; margin-top: -2px; }
-.an-events-popup .ev-close:hover { color: #475569; }
+.an-ep-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 14px 10px; border-bottom: 1px solid #f1f5f9;
+    background: #f8fafc;
+}
+.an-ep-header h4 { margin: 0; font-size: 0.82rem; font-weight: 700; color: #1e293b; }
+.an-ep-close { cursor: pointer; color: #94a3b8; font-size: 1.1rem; line-height: 1; padding: 0 2px; }
+.an-ep-close:hover { color: #475569; }
+.an-ep-body { max-height: 260px; overflow-y: auto; padding: 6px 0; }
+.an-ep-row {
+    display: grid; grid-template-columns: 44px 1fr;
+    gap: 6px 10px; padding: 8px 14px; align-items: start;
+}
+.an-ep-row:not(:last-child) { border-bottom: 1px solid #f8fafc; }
+.an-ep-dur {
+    font-size: 0.85rem; font-weight: 700; color: #1e293b;
+    padding-top: 1px; text-align: right;
+}
+.an-ep-detail-time { font-size: 0.73rem; color: #64748b; }
+.an-ep-detail-job  { font-size: 0.75rem; color: #475569; margin-top: 2px; }
+.an-ep-detail-reason { font-size: 0.73rem; color: #b91c1c; margin-top: 2px; font-style: italic; }
+.an-ep-empty { padding: 16px 14px; color: #94a3b8; font-size: 0.78rem; }
 
 /* Drill-down */
 .an-drill-panel {
@@ -636,42 +651,53 @@ function fmtMins(mins) {
 
 function showEventsPopup(e, machine, type) {
     e.stopPropagation();
-    const s = machineStats[machine] ?? {};
+    const s      = machineStats[machine] ?? {};
     const events = type === 'breakdown' ? (s.breakdown_events ?? []) : (s.idle_events ?? []);
     const title  = type === 'breakdown' ? 'Breakdown events' : 'Idle between jobs';
 
-    let rows = '';
-    if (type === 'breakdown') {
-        rows = events.map(ev => `
-            <tr>
-                <td class="ev-dur">${fmtMins(ev.mins)}</td>
-                <td>${ev.from} → ${ev.to}</td>
-                <td style="color:#64748b;">${ev.job}${ev.reason ? '<br><em>' + ev.reason + '</em>' : ''}</td>
-            </tr>`).join('');
+    let bodyHtml = '';
+    if (!events.length) {
+        bodyHtml = `<div class="an-ep-empty">No events recorded.</div>`;
+    } else if (type === 'breakdown') {
+        bodyHtml = events.map(ev => `
+            <div class="an-ep-row">
+                <div class="an-ep-dur">${fmtMins(ev.mins)}</div>
+                <div>
+                    <div class="an-ep-detail-time">${ev.from} → ${ev.to}</div>
+                    <div class="an-ep-detail-job">${esc(ev.job)}</div>
+                    ${ev.reason ? `<div class="an-ep-detail-reason">${esc(ev.reason)}</div>` : ''}
+                </div>
+            </div>`).join('');
     } else {
-        rows = events.map(ev => `
-            <tr>
-                <td class="ev-dur">${fmtMins(ev.mins)}</td>
-                <td>${ev.from} → ${ev.to}</td>
-                <td style="color:#64748b;">${ev.from_job}<br>→ ${ev.to_job}</td>
-            </tr>`).join('');
+        bodyHtml = events.map(ev => `
+            <div class="an-ep-row">
+                <div class="an-ep-dur">${fmtMins(ev.mins)}</div>
+                <div>
+                    <div class="an-ep-detail-time">${ev.from} → ${ev.to}</div>
+                    <div class="an-ep-detail-job">${esc(ev.from_job)}</div>
+                    <div class="an-ep-detail-job" style="color:#94a3b8;">→ ${esc(ev.to_job)}</div>
+                </div>
+            </div>`).join('');
     }
 
     evPopup.innerHTML = `
-        <h4><span class="ev-close" onclick="document.querySelector('.an-events-popup').style.display='none'">✕</span>${title} — ${machineName(machine)}</h4>
-        ${events.length === 0
-            ? '<p style="color:#94a3b8;margin:0;">No events recorded.</p>'
-            : '<table>' + rows + '</table>'}`;
+        <div class="an-ep-header">
+            <h4>${title} — ${machineName(machine)}</h4>
+            <span class="an-ep-close">✕</span>
+        </div>
+        <div class="an-ep-body">${bodyHtml}</div>`;
 
-    // Position near the clicked tag
-    const rect = e.target.getBoundingClientRect();
+    evPopup.querySelector('.an-ep-close').addEventListener('click', () => { evPopup.style.display = 'none'; });
+
+    // Position below the tag, flip up if too close to bottom
     evPopup.style.display = 'block';
-    const pw = evPopup.offsetWidth;
-    const ph = evPopup.offsetHeight;
-    let left = rect.left + window.scrollX;
-    let top  = rect.bottom + window.scrollY + 6;
-    if (left + pw > window.innerWidth - 16) left = window.innerWidth - pw - 16;
-    if (top + ph > window.scrollY + window.innerHeight - 16) top = rect.top + window.scrollY - ph - 6;
+    const rect = e.target.getBoundingClientRect();
+    const pw = evPopup.offsetWidth, ph = evPopup.offsetHeight;
+    let left = rect.left;
+    let top  = rect.bottom + 8;
+    if (left + pw > window.innerWidth - 12) left = window.innerWidth - pw - 12;
+    if (left < 8) left = 8;
+    if (top + ph > window.innerHeight - 12) top = rect.top - ph - 8;
     evPopup.style.left = left + 'px';
     evPopup.style.top  = top + 'px';
 }
