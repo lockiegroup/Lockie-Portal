@@ -885,8 +885,12 @@
             @csrf
             <input type="hidden" id="pause-type-input" name="pause_type">
             <div class="modal-field">
-                <label>Packs produced so far</label>
+                <label>Total packs produced this job</label>
                 <input type="number" id="pause-packs-input" name="packs_produced" min="0" placeholder="0" inputmode="numeric">
+                <div id="pause-packs-hint" style="font-size:0.75rem;color:#64748b;margin-top:4px;display:none;">
+                    This is the <strong style="color:#94a3b8;">running total</strong> for the whole job — not just this run.
+                    Previously recorded: <strong id="pause-prev-packs" style="color:#94a3b8;">0</strong> packs.
+                </div>
             </div>
             <div class="modal-field">
                 <label>Reason for pausing <span style="color:#f59e0b;">*</span></label>
@@ -1049,6 +1053,14 @@ function openPauseModal(action, currentPacks, maxPacks, startedAtMs) {
     const packsInput = document.getElementById('pause-packs-input');
     packsInput.max = maxPacks || '';
     packsInput.value = (currentPacks > 0) ? currentPacks : '';
+    // Show hint with previous value when there's already a recorded count
+    const hint = document.getElementById('pause-packs-hint');
+    if (currentPacks > 0) {
+        document.getElementById('pause-prev-packs').textContent = currentPacks.toLocaleString();
+        hint.style.display = 'block';
+    } else {
+        hint.style.display = 'none';
+    }
     document.getElementById('pause-modal').classList.add('open');
 }
 
