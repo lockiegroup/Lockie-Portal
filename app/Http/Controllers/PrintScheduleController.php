@@ -787,7 +787,8 @@ class PrintScheduleController extends Controller
                     'job_number'   => $paused->printJob?->order_number,
                     'product_code' => $paused->printJob?->product_code,
                     'customer'     => $paused->printJob?->customer_name,
-                    'pause_reason' => $paused->pause_reason ?: 'No reason given',
+                    'pause_type'   => $paused->pause_type,
+                    'pause_reason' => $paused->pause_reason,
                     'paused_at'    => $paused->ended_at->toIso8601String(),
                     'packs_at_pause' => $paused->packs_produced,
                 ];

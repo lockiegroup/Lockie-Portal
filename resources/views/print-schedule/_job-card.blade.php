@@ -295,9 +295,19 @@
                     <span style="font-size:0.75rem;color:#b45309;">— {{ number_format($pausedPacks) }} packs done</span>
                 @endif
             </div>
-            @if($lastRun->pause_reason)
-                <div style="font-size:0.75rem;color:#b45309;margin-top:3px;padding-left:15px;">
-                    Reason: <strong>{{ $lastRun->pause_reason }}</strong>
+            @if($lastRun->pause_type || $lastRun->pause_reason)
+                @php
+                    $pauseDisplay = match($lastRun->pause_type ?? null) {
+                        'dinner'       => 'Dinner',
+                        'away'         => 'Away',
+                        'end_of_shift' => 'End of Shift',
+                        'breakdown'    => 'Breakdown' . ($lastRun->pause_reason ? ': ' . $lastRun->pause_reason : ''),
+                        default        => $lastRun->pause_reason,
+                    };
+                    $pauseColour = ($lastRun->pause_type === 'breakdown') ? '#b91c1c' : '#b45309';
+                @endphp
+                <div style="font-size:0.75rem;color:{{ $pauseColour }};margin-top:3px;padding-left:15px;">
+                    <strong>{{ $pauseDisplay }}</strong>
                     &nbsp;·&nbsp; Paused at {{ $lastRun->ended_at->format('H:i') }}
                 </div>
             @endif

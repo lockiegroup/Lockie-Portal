@@ -201,6 +201,11 @@
     align-items: flex-start;
     gap: 8px;
 }
+.prod-pause-reason.breakdown {
+    background: #450a0a55;
+    border-color: #dc262644;
+    color: #fca5a5;
+}
 
 /* ── Operator + last update ── */
 .prod-footer {
@@ -413,9 +418,9 @@ function renderMachines(machines) {
                     <div class="prod-job-number">${esc(info.job_number ?? '—')}</div>
                     <div class="prod-product">${esc(info.product_code ?? '')}${info.product_code && info.customer ? ' &middot; ' : ''}${esc(info.customer ?? '')}</div>
                 </div>
-                <div class="prod-pause-reason">
+                <div class="prod-pause-reason${info.pause_type === 'breakdown' ? ' breakdown' : ''}">
                     <svg style="width:14px;height:14px;flex-shrink:0;margin-top:1px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                    <span>${esc(info.pause_reason)}</span>
+                    <span>${esc(pauseLabel(info))}</span>
                 </div>
                 <div class="prod-footer">
                     <div class="prod-operator">
@@ -439,6 +444,11 @@ function renderMachines(machines) {
 function esc(str) {
     if (str == null) return '';
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function pauseLabel(info) {
+    const labels = { dinner: 'Dinner', away: 'Away', end_of_shift: 'End of Shift', breakdown: 'Breakdown' };
+    const base = labels[info.pause_type] ?? info.pause_reason ?? 'Paused';
+    return (info.pause_type === 'breakdown' && info.pause_reason) ? base + ': ' + info.pause_reason : base;
 }
 function fmt(n) {
     return Number(n).toLocaleString();
