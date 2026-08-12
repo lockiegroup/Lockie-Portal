@@ -885,11 +885,10 @@
             @csrf
             <input type="hidden" id="pause-type-input" name="pause_type">
             <div class="modal-field">
-                <label>Total packs produced this job</label>
+                <label>Packs produced so far</label>
                 <input type="number" id="pause-packs-input" name="packs_produced" min="0" placeholder="0" inputmode="numeric">
                 <div id="pause-packs-hint" style="font-size:0.75rem;color:#64748b;margin-top:4px;display:none;">
-                    This is the <strong style="color:#94a3b8;">running total</strong> for the whole job — not just this run.
-                    Previously recorded: <strong id="pause-prev-packs" style="color:#94a3b8;">0</strong> packs.
+                    Previously recorded: <strong id="pause-prev-packs" style="color:#94a3b8;">0</strong> packs
                 </div>
             </div>
             <div class="modal-field">
