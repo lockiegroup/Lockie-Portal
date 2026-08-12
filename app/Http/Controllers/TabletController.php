@@ -171,6 +171,10 @@ class TabletController extends Controller
             'pause_reason'   => 'nullable|string|max:500',
         ]);
 
+        if ($data['pause_type'] !== 'breakdown' && !isset($data['packs_produced'])) {
+            return back()->withErrors(['packs_produced' => 'Packs produced is required for planned pauses.']);
+        }
+
         $run = $job->runs()->where('machine', $machine)->whereNull('ended_at')->first();
         if ($run) {
             $run->update([

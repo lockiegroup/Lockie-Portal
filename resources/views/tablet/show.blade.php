@@ -890,6 +890,7 @@
                 <div id="pause-packs-hint" style="font-size:0.75rem;color:#64748b;margin-top:4px;display:none;">
                     Previously recorded: <strong id="pause-prev-packs" style="color:#94a3b8;">0</strong> packs
                 </div>
+                <div id="pause-packs-error" style="display:none;color:#f87171;font-size:0.82rem;margin-top:6px;">Please enter the total packs produced so far.</div>
             </div>
             <div class="modal-field">
                 <label>Reason for pausing <span style="color:#f59e0b;">*</span></label>
@@ -1070,6 +1071,7 @@ function selectPauseType(btn, type) {
     btn.classList.add('active');
     document.getElementById('pause-reason-error').style.display = 'none';
     document.getElementById('pause-breakdown-error').style.display = 'none';
+    document.getElementById('pause-packs-error').style.display = 'none';
     const wrap = document.getElementById('breakdown-reason-wrap');
     if (type === 'breakdown') {
         wrap.style.display = 'block';
@@ -1137,6 +1139,16 @@ function submitPauseForm() {
             document.getElementById('pause-breakdown-reason').focus();
             return;
         }
+    }
+    // Planned stops must have a packs count so the next run has a correct baseline
+    if (pauseSelectedType !== 'breakdown') {
+        const packsVal = document.getElementById('pause-packs-input').value.trim();
+        if (packsVal === '' || isNaN(parseInt(packsVal, 10))) {
+            document.getElementById('pause-packs-error').style.display = 'block';
+            document.getElementById('pause-packs-input').focus();
+            return;
+        }
+        document.getElementById('pause-packs-error').style.display = 'none';
     }
     const form      = document.getElementById('pause-form');
     const current   = parseInt(form.dataset.currentPacks || '0', 10);
