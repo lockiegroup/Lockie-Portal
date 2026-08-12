@@ -105,8 +105,14 @@
                                 $g = abs((int) $fe['run']->started_at->diffInSeconds($pr->ended_at));
                                 if ($g > 60) {
                                     $gap = $g;
-                                    if ($fe['run']->print_job_id === $pr->print_job_id && $pr->pause_reason) {
-                                        $breakReason = $pr->pause_reason;
+                                    if ($fe['run']->print_job_id === $pr->print_job_id && ($pr->pause_type || $pr->pause_reason)) {
+                                        $breakReason = match($pr->pause_type ?? null) {
+                                            'dinner'       => 'Dinner',
+                                            'away'         => 'Away',
+                                            'end_of_shift' => 'End of Shift',
+                                            'breakdown'    => 'Breakdown' . ($pr->pause_reason ? ': ' . $pr->pause_reason : ''),
+                                            default        => $pr->pause_reason,
+                                        };
                                         $breakStart  = $pr->ended_at;
                                         $breakEnd    = $fe['run']->started_at;
                                     }
@@ -391,6 +397,7 @@
                                     'packs'          => $finalPacks,
                                     'rate'           => ($finalPacks && $finalHours >= 0.1) ? (int) round($finalPacks / $finalHours) : null,
                                     'type'           => $run->ended_at ? ($run->end_reason ?? 'complete') : 'running',
+                                    'pause_type'     => $run->pause_type,
                                     'pause_reason'   => $run->pause_reason,
                                     'fully_complete' => $run->fully_complete,
                                 ];
@@ -503,10 +510,20 @@
                                                 @if($seg['fully_complete']) ✓ Complete @else Ended @endif
                                             </span>
                                         @elseif($seg['type'] === 'pause')
-                                            <span style="font-size:0.72rem;font-weight:700;background:#fef3c7;color:#92400e;padding:3px 9px;border-radius:9999px;">Paused</span>
+                                            @php
+                                                $pauseLabel = match($seg['pause_type'] ?? null) {
+                                                    'dinner'       => 'Dinner',
+                                                    'away'         => 'Away',
+                                                    'end_of_shift' => 'End of Shift',
+                                                    'breakdown'    => 'Breakdown',
+                                                    default        => 'Paused',
+                                                };
+                                                $isBreakdown = ($seg['pause_type'] ?? null) === 'breakdown';
+                                            @endphp
+                                            <span style="font-size:0.72rem;font-weight:700;background:{{ $isBreakdown ? '#fee2e2' : '#fef3c7' }};color:{{ $isBreakdown ? '#b91c1c' : '#92400e' }};padding:3px 9px;border-radius:9999px;">{{ $pauseLabel }}</span>
                                             @php $nextBreak = $group['entries'][$ei + 1]['break_reason'] ?? null; @endphp
                                             @if($seg['pause_reason'] && !$nextBreak)
-                                                <div style="font-size:0.7rem;color:#b45309;margin-top:3px;text-align:right;">{{ $seg['pause_reason'] }}</div>
+                                                <div style="font-size:0.7rem;color:{{ $isBreakdown ? '#b91c1c' : '#b45309' }};margin-top:3px;text-align:right;">{{ $seg['pause_reason'] }}</div>
                                             @endif
                                         @elseif($seg['type'] === 'handover')
                                             <span style="font-size:0.72rem;font-weight:700;background:#ede9fe;color:#5b21b6;padding:3px 9px;border-radius:9999px;">Handover</span>
