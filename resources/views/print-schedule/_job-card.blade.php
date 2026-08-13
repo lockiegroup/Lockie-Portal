@@ -171,7 +171,7 @@
                             class="inline-flex items-center gap-0.5 text-amber-500 hover:text-amber-700 transition-colors text-xs"
                             title="Date changed — click to view history">
                             <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0-3.42 0z"/>
                                 <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
                             </svg>
                             (changed)
@@ -182,7 +182,7 @@
                             onclick="toggleDateLog({{ $job->id }})"
                             class="hidden inline-flex items-center gap-0.5 text-amber-500 hover:text-amber-700 transition-colors text-xs">
                             <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0-3.42 0z"/>
                                 <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
                             </svg>
                             (changed)
@@ -351,6 +351,7 @@
             data-order-qty="{{ $job->order_quantity ?? 0 }}"
             data-default-pack="{{ $_lNum['defaultPack'] }}"
             data-universeal="{{ stripos($job->customer_name ?? '', 'universeal') !== false ? '1' : '0' }}"
+            data-label-name="{{ strtoupper(explode(' ', trim($job->customer_name ?? 'UNIVERSEAL'))[0]) }}"
             style="display:inline-flex;align-items:center;gap:5px;font-size:0.75rem;border-radius:8px;padding:5px 12px;border:1px solid #e2e8f0;background:#f8fafc;color:#475569;cursor:pointer;"
             onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'">
             <svg style="width:13px;height:13px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
