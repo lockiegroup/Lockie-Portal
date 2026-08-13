@@ -1080,6 +1080,9 @@ class PrintScheduleController extends Controller
         $packSize    = max(1, (int) $request->input('pack_size', 100));
         $isUniverseal = $request->boolean('universeal', false)
                      || stripos($job->customer_name ?? '', 'universeal') !== false;
+        $labelName   = $isUniverseal
+                     ? strtoupper(trim($request->input('label_name', '') ?: explode(' ', trim($job->customer_name ?? 'UNIVERSEAL'))[0]))
+                     : ($job->customer_name ?? '');
 
         $parsed = $this->parseJobComment($job->line_comment ?? '');
 
@@ -1115,7 +1118,7 @@ class PrintScheduleController extends Controller
             $labels = $uniqueLabels;
         }
 
-        $pdf      = $this->buildLabelPdf($labels, $parsed['printed'], $branded, $isUniverseal, $job->customer_name ?? '');
+        $pdf      = $this->buildLabelPdf($labels, $parsed['printed'], $branded, $isUniverseal, $labelName);
         $filename = 'labels-' . preg_replace('/[^A-Za-z0-9-]/', '-', $job->order_number ?? 'job') . '.pdf';
 
         return response($pdf, 200, [
@@ -1204,7 +1207,7 @@ class PrintScheduleController extends Controller
 
         // Three lines: customer name (top) / range (middle, large bold) / printed (bottom)
         // Sized to fit the shorter 14mm Universeal label cell
-        $nameText  = strtoupper(explode(' ', trim($customerName))[0]); // first word e.g. "UNIVERSEAL"
+        $nameText  = strtoupper(trim($customerName)) ?: 'UNIVERSEAL';
         $lines = array_filter([
             ['text' => $nameText,    'style' => 'B', 'size' => 7.0,  'cellH' => 3.0],
             $range   ? ['text' => $range,   'style' => 'B', 'size' => 8.5,  'cellH' => 3.8] : null,
