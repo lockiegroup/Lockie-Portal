@@ -492,12 +492,18 @@ class CrmController extends Controller
 
     private function upsertKeyAccount(string $customerCode): KeyAccount
     {
-        $name = DB::table('sales_lines')->where('customer_code', $customerCode)->whereNotNull('customer')->value('customer') ?? $customerCode;
+        $name    = DB::table('sales_lines')->where('customer_code', $customerCode)->whereNotNull('customer')->value('customer') ?? $customerCode;
+        $account = KeyAccount::withTrashed()->where('account_code', $customerCode)->first();
 
-        return KeyAccount::firstOrCreate(
-            ['account_code' => $customerCode],
-            ['name' => $name, 'type' => 'key']
-        );
+        if (!$account) {
+            return KeyAccount::create(['account_code' => $customerCode, 'name' => $name, 'type' => 'key']);
+        }
+
+        if ($account->trashed()) {
+            $account->restore();
+        }
+
+        return $account;
     }
 
     public function updateNotes(Request $request, string $customerCode): RedirectResponse
@@ -527,7 +533,7 @@ class CrmController extends Controller
 
     public function destroyContact(string $customerCode, KeyAccountContact $contact): RedirectResponse
     {
-        abort_unless($contact->keyAccount?->account_code === $customerCode, 404);
+        abort_unless($contact->account?->account_code === $customerCode, 404);
 
         $contact->delete();
 
@@ -600,10 +606,12 @@ class CrmController extends Controller
                 continue;
             }
 
-            $keyAccount = KeyAccount::firstOrCreate(
-                ['account_code' => $code],
-                ['name' => $known->get($code), 'type' => 'key']
-            );
+            $keyAccount = KeyAccount::withTrashed()->where('account_code', $code)->first();
+            if (!$keyAccount) {
+                $keyAccount = KeyAccount::create(['account_code' => $code, 'name' => $known->get($code), 'type' => 'key']);
+            } elseif ($keyAccount->trashed()) {
+                $keyAccount->restore();
+            }
 
             $keyAccount->contacts()->create([
                 'user_id'      => auth()->id(),
