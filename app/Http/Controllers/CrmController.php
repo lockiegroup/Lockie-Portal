@@ -533,4 +533,94 @@ class CrmController extends Controller
 
         return back()->with('crm_success', 'Contact entry removed.');
     }
+
+    public function previewBulkContacts(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $codes = $this->parseBulkCodes($request->input('account_codes', ''));
+
+        if (empty($codes)) {
+            return response()->json(['matched' => [], 'not_found' => []]);
+        }
+
+        $known = DB::table('sales_lines')
+            ->whereIn('customer_code', $codes)
+            ->selectRaw('customer_code, MAX(customer) as customer')
+            ->groupBy('customer_code')
+            ->get()
+            ->keyBy('customer_code');
+
+        $matched   = [];
+        $notFound  = [];
+        $seen      = [];
+
+        foreach ($codes as $code) {
+            if (isset($seen[$code])) continue;
+            $seen[$code] = true;
+
+            if ($known->has($code)) {
+                $matched[] = ['code' => $code, 'name' => $known->get($code)->customer];
+            } else {
+                $notFound[] = $code;
+            }
+        }
+
+        return response()->json(['matched' => $matched, 'not_found' => $notFound]);
+    }
+
+    public function bulkStoreContacts(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $data = $request->validate([
+            'account_codes' => ['required', 'string'],
+            'contacted_at'  => ['required', 'date'],
+            'note'          => ['required', 'string', 'max:2000'],
+        ]);
+
+        $codes = $this->parseBulkCodes($data['account_codes']);
+
+        if (empty($codes)) {
+            return response()->json(['logged' => 0, 'skipped' => []]);
+        }
+
+        $known = DB::table('sales_lines')
+            ->whereIn('customer_code', $codes)
+            ->selectRaw('customer_code, MAX(customer) as customer')
+            ->groupBy('customer_code')
+            ->pluck('customer', 'customer_code');
+
+        $logged  = 0;
+        $skipped = [];
+        $seen    = [];
+
+        foreach ($codes as $code) {
+            if (isset($seen[$code])) continue;
+            $seen[$code] = true;
+
+            if (!$known->has($code)) {
+                $skipped[] = $code;
+                continue;
+            }
+
+            $keyAccount = KeyAccount::firstOrCreate(
+                ['account_code' => $code],
+                ['name' => $known->get($code), 'type' => 'key']
+            );
+
+            $keyAccount->contacts()->create([
+                'user_id'      => auth()->id(),
+                'contacted_at' => $data['contacted_at'],
+                'note'         => $data['note'],
+            ]);
+
+            $logged++;
+        }
+
+        return response()->json(['logged' => $logged, 'skipped' => $skipped]);
+    }
+
+    private function parseBulkCodes(string $input): array
+    {
+        // Accept newlines, commas, semicolons, or tabs as separators
+        $codes = preg_split('/[\r\n,;\t]+/', $input);
+        return array_values(array_filter(array_map('trim', $codes)));
+    }
 }
