@@ -70,17 +70,27 @@
                                 </div>
                             </div>
                             @if($canEdit)
+                            @php
+                                $testJson = json_encode([
+                                    'id'               => $test->id,
+                                    'campaign_name'    => $test->campaign_name,
+                                    'sent_at'          => $test->sent_at->format('Y-m-d'),
+                                    'test_type'        => $test->test_type,
+                                    'variant_a'        => $test->variant_a,
+                                    'variant_a_result' => $test->variant_a_result,
+                                    'variant_a_ctr'    => $test->variant_a_ctr,
+                                    'variant_b'        => $test->variant_b,
+                                    'variant_b_result' => $test->variant_b_result,
+                                    'variant_b_ctr'    => $test->variant_b_ctr,
+                                    'winner'           => $test->winner,
+                                    'notes'            => $test->notes,
+                                ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
+                            @endphp
                             <div style="display:flex;gap:0.125rem;flex-shrink:0;">
                                 <button onclick="openEditTestModal({{ $test->id }}, this)"
                                     style="background:none;border:none;cursor:pointer;color:#cbd5e1;padding:4px;border-radius:4px;line-height:0;"
                                     title="Edit test"
-                                    data-test='@json([
-                                        "id"=>$test->id,"campaign_name"=>$test->campaign_name,
-                                        "sent_at"=>$test->sent_at->format("Y-m-d"),"test_type"=>$test->test_type,
-                                        "variant_a"=>$test->variant_a,"variant_a_result"=>$test->variant_a_result,"variant_a_ctr"=>$test->variant_a_ctr,
-                                        "variant_b"=>$test->variant_b,"variant_b_result"=>$test->variant_b_result,"variant_b_ctr"=>$test->variant_b_ctr,
-                                        "winner"=>$test->winner,"notes"=>$test->notes
-                                    ])'>
+                                    data-test='{!! $testJson !!}'>
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                 </button>
                                 <button onclick="deleteTest({{ $test->id }}, this)"
@@ -598,12 +608,12 @@ async function deleteTest(id, btn) {
 // ── Edit Test Modal ───────────────────────────────────────────────────────────
 let _editTestCard = null;
 function openEditTestModal(id, btn) {
-    const raw = btn.closest('[data-test-id]') ? btn.closest('[data-test-id]').querySelector('[data-test]') : btn;
-    const data = JSON.parse((raw.dataset.test || btn.dataset.test || '{}').replace(/&quot;/g,'"').replace(/&#39;/g,"'"));
+    const dataRaw = btn.dataset.test || '';
+    const data = dataRaw ? JSON.parse(dataRaw) : {};
     _editTestCard = btn.closest('[data-test-id]');
     document.getElementById('edit-test-id').value = id;
     document.getElementById('edit-campaign').value  = data.campaign_name || '';
-    document.getElementById('edit-sent-at').value   = data.sent_at || '';
+    document.getElementById('edit-sent-at').value   = data.sent_at_input || '';
     document.getElementById('edit-variant-a').value = data.variant_a || '';
     document.getElementById('edit-result-a').value  = data.variant_a_result ?? '';
     document.getElementById('edit-ctr-a').value     = data.variant_a_ctr ?? '';
@@ -672,7 +682,7 @@ function buildTestCardHtml(test) {
                 <div style="font-size:0.75rem;color:#94a3b8;margin-top:0.15rem;">${escHtml(test.sent_at)} &middot; ${escHtml(test.test_type)}${test.logged_by ? ' &middot; ' + escHtml(test.logged_by) : ''}</div>
             </div>
             <div style="display:flex;gap:0.125rem;flex-shrink:0;">
-                <button onclick="openEditTestModal(${test.id}, this)" data-test='${JSON.stringify(test).replace(/'/g,"&#39;")}' style="background:none;border:none;cursor:pointer;color:#cbd5e1;padding:4px;border-radius:4px;line-height:0;" title="Edit test">
+                <button onclick="openEditTestModal(${test.id}, this)" data-test="${escAttr(JSON.stringify(test))}" style="background:none;border:none;cursor:pointer;color:#cbd5e1;padding:4px;border-radius:4px;line-height:0;" title="Edit test">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 </button>
                 <button onclick="deleteTest(${test.id}, this)" style="background:none;border:none;cursor:pointer;color:#cbd5e1;padding:4px;border-radius:4px;line-height:0;" title="Delete test">
@@ -900,6 +910,10 @@ async function deleteDivision(id, name) {
 function escHtml(str) {
     if (!str) return '';
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escAttr(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
 }
 
 // Close modals on backdrop click

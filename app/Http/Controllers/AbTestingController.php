@@ -176,6 +176,7 @@ class AbTestingController extends Controller
             'id'                    => $test->id,
             'campaign_name'         => $test->campaign_name,
             'sent_at'               => $test->sent_at->format('d M Y'),
+            'sent_at_input'         => $test->sent_at->format('Y-m-d'),
             'test_type'             => $test->test_type_label,
             'variant_a'             => $test->variant_a,
             'variant_a_result'      => $test->variant_a_result,
