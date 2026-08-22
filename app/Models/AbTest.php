@@ -32,7 +32,7 @@ class AbTest extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function getTestTypeLabelAttribute(): string
+    public function getTestTypeLabelAttribute(): ?string
     {
         return self::TEST_TYPES[$this->test_type] ?? $this->test_type;
     }
