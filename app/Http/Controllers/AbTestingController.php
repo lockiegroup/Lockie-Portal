@@ -34,15 +34,16 @@ class AbTestingController extends Controller
             'marketing_division_id' => ['required', 'exists:marketing_divisions,id'],
             'campaign_name'         => ['required', 'string', 'max:200'],
             'sent_at'               => ['required', 'date'],
-            'test_type'             => ['required', 'in:' . implode(',', array_keys(AbTest::TEST_TYPES))],
-            'variant_a'             => ['required', 'string', 'max:500'],
+            'test_type'             => ['nullable', 'in:' . implode(',', array_keys(AbTest::TEST_TYPES))],
+            'variant_a'             => ['nullable', 'string', 'max:500'],
             'variant_a_result'      => ['nullable', 'numeric', 'min:0', 'max:100'],
             'variant_a_ctr'         => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'variant_b'             => ['required', 'string', 'max:500'],
+            'variant_b'             => ['nullable', 'string', 'max:500'],
             'variant_b_result'      => ['nullable', 'numeric', 'min:0', 'max:100'],
             'variant_b_ctr'         => ['nullable', 'numeric', 'min:0', 'max:100'],
             'winner'                => ['nullable', 'in:a,b,inconclusive'],
             'notes'                 => ['nullable', 'string', 'max:2000'],
+            'revenue'               => ['nullable', 'numeric', 'min:0'],
         ]);
 
         $test = AbTest::create(array_merge($data, ['user_id' => auth()->id()]));
@@ -58,15 +59,16 @@ class AbTestingController extends Controller
         $data = $request->validate([
             'campaign_name'    => ['required', 'string', 'max:200'],
             'sent_at'          => ['required', 'date'],
-            'test_type'        => ['required', 'in:' . implode(',', array_keys(AbTest::TEST_TYPES))],
-            'variant_a'        => ['required', 'string', 'max:500'],
+            'test_type'        => ['nullable', 'in:' . implode(',', array_keys(AbTest::TEST_TYPES))],
+            'variant_a'        => ['nullable', 'string', 'max:500'],
             'variant_a_result' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'variant_a_ctr'    => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'variant_b'        => ['required', 'string', 'max:500'],
+            'variant_b'        => ['nullable', 'string', 'max:500'],
             'variant_b_result' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'variant_b_ctr'    => ['nullable', 'numeric', 'min:0', 'max:100'],
             'winner'           => ['nullable', 'in:a,b,inconclusive'],
             'notes'            => ['nullable', 'string', 'max:2000'],
+            'revenue'          => ['nullable', 'numeric', 'min:0'],
         ]);
 
         $test->update($data);
@@ -186,6 +188,7 @@ class AbTestingController extends Controller
             'variant_b_ctr'         => $test->variant_b_ctr,
             'winner'                => $test->winner,
             'notes'                 => $test->notes,
+            'revenue'               => $test->revenue,
             'logged_by'             => $test->user?->name,
         ];
     }
