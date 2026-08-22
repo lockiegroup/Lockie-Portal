@@ -22,6 +22,7 @@ use App\Http\Controllers\AmazonController;
 use App\Http\Controllers\ImportsController;
 use App\Http\Controllers\KeyAccountController;
 use App\Http\Controllers\Admin\KeyAccountAdminController;
+use App\Http\Controllers\AbTestingController;
 use App\Http\Controllers\KeyActionController;
 use App\Http\Controllers\RemindersController;
 use App\Http\Controllers\TrainingController;
@@ -240,6 +241,19 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::post('/departments',                              [TrainingController::class, 'storeDepartment'])->name('departments.store');
         Route::put('/departments/{department}',                  [TrainingController::class, 'updateDepartment'])->name('departments.update');
         Route::delete('/departments/{department}',               [TrainingController::class, 'destroyDepartment'])->name('departments.destroy');
+    });
+
+    // A/B Testing
+    Route::prefix('ab-testing')->name('ab-testing.')->group(function () {
+        Route::get('/',                          [AbTestingController::class, 'index'])->name('index');
+        Route::post('/tests',                    [AbTestingController::class, 'storeTest'])->name('tests.store');
+        Route::delete('/tests/{test}',           [AbTestingController::class, 'destroyTest'])->name('tests.destroy');
+        Route::post('/rules',                    [AbTestingController::class, 'storeRule'])->name('rules.store');
+        Route::put('/rules/{rule}',              [AbTestingController::class, 'updateRule'])->name('rules.update');
+        Route::delete('/rules/{rule}',           [AbTestingController::class, 'destroyRule'])->name('rules.destroy');
+        Route::post('/rules/reorder',            [AbTestingController::class, 'reorderRules'])->name('rules.reorder');
+        Route::post('/divisions',                [AbTestingController::class, 'storeDivision'])->name('divisions.store');
+        Route::delete('/divisions/{division}',   [AbTestingController::class, 'destroyDivision'])->name('divisions.destroy');
     });
 
     // Key Actions

@@ -6,7 +6,7 @@
 
     $activeFinance    = request()->routeIs('sales*') || request()->routeIs('amazon.*');
     $activeStock      = request()->routeIs('stock.*') || $isWatchlistSection;
-    $activePlanning   = request()->routeIs('key-actions.*') || request()->routeIs('action-plans.*');
+    $activePlanning   = request()->routeIs('key-actions.*') || request()->routeIs('action-plans.*') || request()->routeIs('ab-testing.*');
     $activeCustomers  = request()->routeIs('key-accounts.*') || request()->routeIs('crm.*') || request()->routeIs('reminders.*');
     $activeOperations = request()->routeIs('church-envelopes.*') || request()->routeIs('policies.*') || request()->routeIs('training.*') || request()->routeIs('letter-filter.*') || $isPrintSection;
     $activeAdmin      = request()->routeIs('admin.*') || request()->routeIs('imports.*');
@@ -102,7 +102,7 @@
         @endif
 
         {{-- PLANNING --}}
-        @if($showKeyActions || $showActionPlans)
+        @if($showKeyActions || $showActionPlans || true)
         <div style="height:1px;background:#1e293b;margin:10px 4px 2px;"></div>
         <button onclick="sbSection('planning')" class="sb-section-btn sb-label" data-tip="Planning">
             <span style="font-size:0.625rem;font-weight:700;text-transform:uppercase;">Planning</span>
@@ -125,6 +125,12 @@
                 <span class="sb-label">Action Plans</span>
             </a>
             @endif
+            <a href="{{ route('ab-testing.index') }}" class="sb-item{{ request()->routeIs('ab-testing.*') ? ' sb-active' : '' }}" data-tip="A/B Testing">
+                <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/>
+                </svg>
+                <span class="sb-label">A/B Testing</span>
+            </a>
         </div>
         @endif
 

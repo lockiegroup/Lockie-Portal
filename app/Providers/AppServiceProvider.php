@@ -26,5 +26,6 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('imports',               fn($user) => $user->isMaster() || $user->hasPermission('imports'));
         Gate::define('action_plans_admin',    fn($user) => $user->isMaster() || $user->hasPermission('action_plans_admin'));
         Gate::define('key_actions_admin',     fn($user) => $user->isMaster() || $user->hasPermission('key_actions_admin'));
+        Gate::define('ab_test',               fn($user) => $user->isMaster() || $user->hasPermission('ab_test'));
     }
 }
