@@ -9,8 +9,8 @@ class AbTest extends Model
 {
     protected $fillable = [
         'marketing_division_id', 'campaign_name', 'sent_at',
-        'test_type', 'variant_a', 'variant_a_result',
-        'variant_b', 'variant_b_result', 'winner', 'notes', 'user_id',
+        'test_type', 'variant_a', 'variant_a_result', 'variant_a_ctr',
+        'variant_b', 'variant_b_result', 'variant_b_ctr', 'winner', 'notes', 'user_id',
     ];
 
     protected $casts = ['sent_at' => 'date'];

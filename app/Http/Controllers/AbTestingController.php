@@ -37,13 +37,39 @@ class AbTestingController extends Controller
             'test_type'             => ['required', 'in:' . implode(',', array_keys(AbTest::TEST_TYPES))],
             'variant_a'             => ['required', 'string', 'max:500'],
             'variant_a_result'      => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'variant_a_ctr'         => ['nullable', 'numeric', 'min:0', 'max:100'],
             'variant_b'             => ['required', 'string', 'max:500'],
             'variant_b_result'      => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'variant_b_ctr'         => ['nullable', 'numeric', 'min:0', 'max:100'],
             'winner'                => ['nullable', 'in:a,b,inconclusive'],
             'notes'                 => ['nullable', 'string', 'max:2000'],
         ]);
 
         $test = AbTest::create(array_merge($data, ['user_id' => auth()->id()]));
+        $test->load('user');
+
+        return response()->json(['success' => true, 'test' => $this->formatTest($test)]);
+    }
+
+    public function updateTest(Request $request, AbTest $test): JsonResponse
+    {
+        abort_unless($this->canEdit(), 403);
+
+        $data = $request->validate([
+            'campaign_name'    => ['required', 'string', 'max:200'],
+            'sent_at'          => ['required', 'date'],
+            'test_type'        => ['required', 'in:' . implode(',', array_keys(AbTest::TEST_TYPES))],
+            'variant_a'        => ['required', 'string', 'max:500'],
+            'variant_a_result' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'variant_a_ctr'    => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'variant_b'        => ['required', 'string', 'max:500'],
+            'variant_b_result' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'variant_b_ctr'    => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'winner'           => ['nullable', 'in:a,b,inconclusive'],
+            'notes'            => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $test->update($data);
         $test->load('user');
 
         return response()->json(['success' => true, 'test' => $this->formatTest($test)]);
@@ -153,8 +179,10 @@ class AbTestingController extends Controller
             'test_type'             => $test->test_type_label,
             'variant_a'             => $test->variant_a,
             'variant_a_result'      => $test->variant_a_result,
+            'variant_a_ctr'         => $test->variant_a_ctr,
             'variant_b'             => $test->variant_b,
             'variant_b_result'      => $test->variant_b_result,
+            'variant_b_ctr'         => $test->variant_b_ctr,
             'winner'                => $test->winner,
             'notes'                 => $test->notes,
             'logged_by'             => $test->user?->name,

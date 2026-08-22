@@ -247,6 +247,7 @@ Route::middleware(['auth', 'otp'])->group(function () {
     Route::prefix('ab-testing')->name('ab-testing.')->group(function () {
         Route::get('/',                          [AbTestingController::class, 'index'])->name('index');
         Route::post('/tests',                    [AbTestingController::class, 'storeTest'])->name('tests.store');
+        Route::put('/tests/{test}',              [AbTestingController::class, 'updateTest'])->name('tests.update');
         Route::delete('/tests/{test}',           [AbTestingController::class, 'destroyTest'])->name('tests.destroy');
         Route::post('/rules',                    [AbTestingController::class, 'storeRule'])->name('rules.store');
         Route::put('/rules/{rule}',              [AbTestingController::class, 'updateRule'])->name('rules.update');

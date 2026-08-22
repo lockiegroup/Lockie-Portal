@@ -70,11 +70,25 @@
                                 </div>
                             </div>
                             @if($canEdit)
-                            <button onclick="deleteTest({{ $test->id }}, this)"
-                                style="flex-shrink:0;background:none;border:none;cursor:pointer;color:#cbd5e1;padding:4px;border-radius:4px;line-height:0;"
-                                title="Delete test">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-                            </button>
+                            <div style="display:flex;gap:0.125rem;flex-shrink:0;">
+                                <button onclick="openEditTestModal({{ $test->id }}, this)"
+                                    style="background:none;border:none;cursor:pointer;color:#cbd5e1;padding:4px;border-radius:4px;line-height:0;"
+                                    title="Edit test"
+                                    data-test='@json([
+                                        "id"=>$test->id,"campaign_name"=>$test->campaign_name,
+                                        "sent_at"=>$test->sent_at->format("Y-m-d"),"test_type"=>$test->test_type,
+                                        "variant_a"=>$test->variant_a,"variant_a_result"=>$test->variant_a_result,"variant_a_ctr"=>$test->variant_a_ctr,
+                                        "variant_b"=>$test->variant_b,"variant_b_result"=>$test->variant_b_result,"variant_b_ctr"=>$test->variant_b_ctr,
+                                        "winner"=>$test->winner,"notes"=>$test->notes
+                                    ])'>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                </button>
+                                <button onclick="deleteTest({{ $test->id }}, this)"
+                                    style="background:none;border:none;cursor:pointer;color:#cbd5e1;padding:4px;border-radius:4px;line-height:0;"
+                                    title="Delete test">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                                </button>
+                            </div>
                             @endif
                         </div>
 
@@ -84,8 +98,15 @@
                                     Variant A @if($test->winner === 'a') ✓ Winner @endif
                                 </div>
                                 <div style="font-size:0.8125rem;color:#334155;">{{ $test->variant_a }}</div>
-                                @if($test->variant_a_result !== null)
-                                <div style="font-size:1rem;font-weight:700;color:{{ $test->winner === 'a' ? '#16a34a' : '#1e293b' }};margin-top:0.5rem;">{{ $test->variant_a_result }}%</div>
+                                @if($test->variant_a_result !== null || $test->variant_a_ctr !== null)
+                                <div style="display:flex;gap:0.75rem;margin-top:0.5rem;flex-wrap:wrap;">
+                                    @if($test->variant_a_result !== null)
+                                    <div><div style="font-size:0.65rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Open</div><div style="font-size:0.9375rem;font-weight:700;color:{{ $test->winner === 'a' ? '#16a34a' : '#1e293b' }};">{{ $test->variant_a_result }}%</div></div>
+                                    @endif
+                                    @if($test->variant_a_ctr !== null)
+                                    <div><div style="font-size:0.65rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">CTR</div><div style="font-size:0.9375rem;font-weight:700;color:{{ $test->winner === 'a' ? '#16a34a' : '#1e293b' }};">{{ $test->variant_a_ctr }}%</div></div>
+                                    @endif
+                                </div>
                                 @endif
                             </div>
                             <div style="padding:0.75rem;border-radius:8px;border:1px solid {{ $test->winner === 'b' ? '#bbf7d0' : '#e2e8f0' }};background:{{ $test->winner === 'b' ? '#f0fdf4' : '#f8fafc' }};">
@@ -93,8 +114,15 @@
                                     Variant B @if($test->winner === 'b') ✓ Winner @endif
                                 </div>
                                 <div style="font-size:0.8125rem;color:#334155;">{{ $test->variant_b }}</div>
-                                @if($test->variant_b_result !== null)
-                                <div style="font-size:1rem;font-weight:700;color:{{ $test->winner === 'b' ? '#16a34a' : '#1e293b' }};margin-top:0.5rem;">{{ $test->variant_b_result }}%</div>
+                                @if($test->variant_b_result !== null || $test->variant_b_ctr !== null)
+                                <div style="display:flex;gap:0.75rem;margin-top:0.5rem;flex-wrap:wrap;">
+                                    @if($test->variant_b_result !== null)
+                                    <div><div style="font-size:0.65rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Open</div><div style="font-size:0.9375rem;font-weight:700;color:{{ $test->winner === 'b' ? '#16a34a' : '#1e293b' }};">{{ $test->variant_b_result }}%</div></div>
+                                    @endif
+                                    @if($test->variant_b_ctr !== null)
+                                    <div><div style="font-size:0.65rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">CTR</div><div style="font-size:0.9375rem;font-weight:700;color:{{ $test->winner === 'b' ? '#16a34a' : '#1e293b' }};">{{ $test->variant_b_ctr }}%</div></div>
+                                    @endif
+                                </div>
                                 @endif
                             </div>
                         </div>
@@ -218,28 +246,38 @@
                 </div>
             </div>
 
-            <div style="display:grid;grid-template-columns:1fr 80px;gap:0.5rem;align-items:end;">
+            <div style="display:grid;grid-template-columns:1fr 80px 80px;gap:0.5rem;align-items:end;">
                 <div>
                     <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">Variant A</label>
                     <input id="log-variant-a" type="text" placeholder="e.g. 'Don't miss out!'"
                         style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;">
                 </div>
                 <div>
-                    <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">Open rate %</label>
+                    <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">Open %</label>
                     <input id="log-result-a" type="number" min="0" max="100" step="0.01" placeholder="—"
+                        style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;">
+                </div>
+                <div>
+                    <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">CTR %</label>
+                    <input id="log-ctr-a" type="number" min="0" max="100" step="0.01" placeholder="—"
                         style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;">
                 </div>
             </div>
 
-            <div style="display:grid;grid-template-columns:1fr 80px;gap:0.5rem;align-items:end;">
+            <div style="display:grid;grid-template-columns:1fr 80px 80px;gap:0.5rem;align-items:end;">
                 <div>
                     <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">Variant B</label>
                     <input id="log-variant-b" type="text" placeholder="e.g. 'New arrivals inside'"
                         style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;">
                 </div>
                 <div>
-                    <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">Open rate %</label>
+                    <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">Open %</label>
                     <input id="log-result-b" type="number" min="0" max="100" step="0.01" placeholder="—"
+                        style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;">
+                </div>
+                <div>
+                    <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">CTR %</label>
+                    <input id="log-ctr-b" type="number" min="0" max="100" step="0.01" placeholder="—"
                         style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;">
                 </div>
             </div>
@@ -362,6 +400,108 @@
     </div>
 </div>
 
+{{-- Edit Test Modal --}}
+<div id="edit-test-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(15,23,42,0.5);align-items:center;justify-content:center;padding:1rem;">
+    <div style="background:#fff;border-radius:14px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+        <div style="padding:1.5rem;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;">
+            <h2 style="margin:0;font-size:1.0625rem;font-weight:700;color:#1e293b;">Edit Test</h2>
+            <button onclick="closeEditTestModal()" style="background:none;border:none;cursor:pointer;color:#94a3b8;padding:4px;line-height:0;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <form id="edit-test-form" style="padding:1.5rem;display:flex;flex-direction:column;gap:1rem;">
+            <input type="hidden" id="edit-test-id">
+
+            <div>
+                <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">Campaign Name</label>
+                <input id="edit-campaign" type="text"
+                    style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;">
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+                <div>
+                    <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">Date Sent</label>
+                    <input id="edit-sent-at" type="date"
+                        style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;">
+                </div>
+                <div>
+                    <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">What Was Tested</label>
+                    <select id="edit-test-type" style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;background:#fff;">
+                        @foreach($testTypes as $key => $label)
+                        <option value="{{ $key }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 80px 80px;gap:0.5rem;align-items:end;">
+                <div>
+                    <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">Variant A</label>
+                    <input id="edit-variant-a" type="text"
+                        style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;">
+                </div>
+                <div>
+                    <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">Open %</label>
+                    <input id="edit-result-a" type="number" min="0" max="100" step="0.01" placeholder="—"
+                        style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;">
+                </div>
+                <div>
+                    <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">CTR %</label>
+                    <input id="edit-ctr-a" type="number" min="0" max="100" step="0.01" placeholder="—"
+                        style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;">
+                </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 80px 80px;gap:0.5rem;align-items:end;">
+                <div>
+                    <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">Variant B</label>
+                    <input id="edit-variant-b" type="text"
+                        style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;">
+                </div>
+                <div>
+                    <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">Open %</label>
+                    <input id="edit-result-b" type="number" min="0" max="100" step="0.01" placeholder="—"
+                        style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;">
+                </div>
+                <div>
+                    <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">CTR %</label>
+                    <input id="edit-ctr-b" type="number" min="0" max="100" step="0.01" placeholder="—"
+                        style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;">
+                </div>
+            </div>
+
+            <div>
+                <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">Winner</label>
+                <select id="edit-winner" style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;background:#fff;">
+                    <option value="">— Not yet known —</option>
+                    <option value="a">Variant A</option>
+                    <option value="b">Variant B</option>
+                    <option value="inconclusive">Inconclusive</option>
+                </select>
+            </div>
+
+            <div>
+                <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">Notes <span style="font-weight:400;color:#94a3b8;">(optional)</span></label>
+                <textarea id="edit-notes" rows="2"
+                    style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;resize:vertical;"></textarea>
+            </div>
+
+            <div id="edit-test-error" style="display:none;background:#fef2f2;border:1px solid #fecaca;color:#991b1b;font-size:0.8125rem;border-radius:8px;padding:0.625rem 0.875rem;"></div>
+
+            <div style="display:flex;justify-content:flex-end;gap:0.5rem;padding-top:0.5rem;">
+                <button type="button" onclick="closeEditTestModal()"
+                    style="padding:0.5rem 1rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#374151;font-size:0.875rem;cursor:pointer;">
+                    Cancel
+                </button>
+                <button type="button" id="edit-test-submit" onclick="submitEditTest()"
+                    style="padding:0.5rem 1rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.875rem;font-weight:600;border:none;cursor:pointer;">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script>
 const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
@@ -409,8 +549,10 @@ async function submitLogTest() {
         test_type:             document.getElementById('log-test-type').value,
         variant_a:             document.getElementById('log-variant-a').value.trim(),
         variant_a_result:      document.getElementById('log-result-a').value || null,
+        variant_a_ctr:         document.getElementById('log-ctr-a').value || null,
         variant_b:             document.getElementById('log-variant-b').value.trim(),
         variant_b_result:      document.getElementById('log-result-b').value || null,
+        variant_b_ctr:         document.getElementById('log-ctr-b').value || null,
         winner:                document.getElementById('log-winner').value || null,
         notes:                 document.getElementById('log-notes').value.trim() || null,
     };
@@ -438,34 +580,8 @@ async function submitLogTest() {
 
 function prependTest(divisionId, test) {
     const container = document.getElementById('tests-' + divisionId);
-    const winner = test.winner;
-    const html = `<div data-test-id="${test.id}" style="background:#fff;border-radius:10px;border:1px solid #e2e8f0;padding:1.25rem;">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:0.5rem;margin-bottom:0.75rem;">
-            <div>
-                <div style="font-weight:700;color:#1e293b;font-size:0.9375rem;">${escHtml(test.campaign_name)}</div>
-                <div style="font-size:0.75rem;color:#94a3b8;margin-top:0.15rem;">${escHtml(test.sent_at)} &middot; ${escHtml(test.test_type)}${test.logged_by ? ' &middot; ' + escHtml(test.logged_by) : ''}</div>
-            </div>
-            <button onclick="deleteTest(${test.id}, this)" style="flex-shrink:0;background:none;border:none;cursor:pointer;color:#cbd5e1;padding:4px;border-radius:4px;line-height:0;" title="Delete test">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-            </button>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
-            <div style="padding:0.75rem;border-radius:8px;border:1px solid ${winner==='a'?'#bbf7d0':'#e2e8f0'};background:${winner==='a'?'#f0fdf4':'#f8fafc'};">
-                <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:${winner==='a'?'#16a34a':'#94a3b8'};margin-bottom:0.35rem;">Variant A${winner==='a'?' ✓ Winner':''}</div>
-                <div style="font-size:0.8125rem;color:#334155;">${escHtml(test.variant_a)}</div>
-                ${test.variant_a_result!=null?`<div style="font-size:1rem;font-weight:700;color:${winner==='a'?'#16a34a':'#1e293b'};margin-top:0.5rem;">${test.variant_a_result}%</div>`:''}
-            </div>
-            <div style="padding:0.75rem;border-radius:8px;border:1px solid ${winner==='b'?'#bbf7d0':'#e2e8f0'};background:${winner==='b'?'#f0fdf4':'#f8fafc'};">
-                <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:${winner==='b'?'#16a34a':'#94a3b8'};margin-bottom:0.35rem;">Variant B${winner==='b'?' ✓ Winner':''}</div>
-                <div style="font-size:0.8125rem;color:#334155;">${escHtml(test.variant_b)}</div>
-                ${test.variant_b_result!=null?`<div style="font-size:1rem;font-weight:700;color:${winner==='b'?'#16a34a':'#1e293b'};margin-top:0.5rem;">${test.variant_b_result}%</div>`:''}
-            </div>
-        </div>
-        ${winner==='inconclusive'?'<div style="margin-top:0.6rem;font-size:0.75rem;color:#94a3b8;">Result: Inconclusive</div>':''}
-        ${test.notes?`<div style="margin-top:0.75rem;padding:0.6rem 0.75rem;background:#f8fafc;border-radius:6px;font-size:0.8125rem;color:#475569;border-left:3px solid #e2e8f0;">${escHtml(test.notes)}</div>`:''}
-    </div>`;
     if (!container) { location.reload(); return; }
-    container.insertAdjacentHTML('afterbegin', html);
+    container.insertAdjacentHTML('afterbegin', buildTestCardHtml(test));
 }
 
 async function deleteTest(id, btn) {
@@ -477,6 +593,108 @@ async function deleteTest(id, btn) {
         });
         if (res.ok) btn.closest('[data-test-id]').remove();
     } catch(e) { alert('Error deleting test.'); }
+}
+
+// ── Edit Test Modal ───────────────────────────────────────────────────────────
+let _editTestCard = null;
+function openEditTestModal(id, btn) {
+    const raw = btn.closest('[data-test-id]') ? btn.closest('[data-test-id]').querySelector('[data-test]') : btn;
+    const data = JSON.parse((raw.dataset.test || btn.dataset.test || '{}').replace(/&quot;/g,'"').replace(/&#39;/g,"'"));
+    _editTestCard = btn.closest('[data-test-id]');
+    document.getElementById('edit-test-id').value = id;
+    document.getElementById('edit-campaign').value  = data.campaign_name || '';
+    document.getElementById('edit-sent-at').value   = data.sent_at || '';
+    document.getElementById('edit-variant-a').value = data.variant_a || '';
+    document.getElementById('edit-result-a').value  = data.variant_a_result ?? '';
+    document.getElementById('edit-ctr-a').value     = data.variant_a_ctr ?? '';
+    document.getElementById('edit-variant-b').value = data.variant_b || '';
+    document.getElementById('edit-result-b').value  = data.variant_b_result ?? '';
+    document.getElementById('edit-ctr-b').value     = data.variant_b_ctr ?? '';
+    document.getElementById('edit-winner').value    = data.winner || '';
+    document.getElementById('edit-notes').value     = data.notes || '';
+    document.getElementById('edit-test-type').value = data.test_type || '';
+    document.getElementById('edit-test-error').style.display = 'none';
+    document.getElementById('edit-test-modal').style.display = 'flex';
+}
+function closeEditTestModal() {
+    document.getElementById('edit-test-modal').style.display = 'none';
+}
+async function submitEditTest() {
+    const btn = document.getElementById('edit-test-submit');
+    const errEl = document.getElementById('edit-test-error');
+    const id = document.getElementById('edit-test-id').value;
+    errEl.style.display = 'none';
+    const body = {
+        campaign_name:    document.getElementById('edit-campaign').value.trim(),
+        sent_at:          document.getElementById('edit-sent-at').value,
+        test_type:        document.getElementById('edit-test-type').value,
+        variant_a:        document.getElementById('edit-variant-a').value.trim(),
+        variant_a_result: document.getElementById('edit-result-a').value || null,
+        variant_a_ctr:    document.getElementById('edit-ctr-a').value || null,
+        variant_b:        document.getElementById('edit-variant-b').value.trim(),
+        variant_b_result: document.getElementById('edit-result-b').value || null,
+        variant_b_ctr:    document.getElementById('edit-ctr-b').value || null,
+        winner:           document.getElementById('edit-winner').value || null,
+        notes:            document.getElementById('edit-notes').value.trim() || null,
+    };
+    btn.disabled = true; btn.textContent = 'Saving…';
+    try {
+        const res = await fetch(`/ab-testing/tests/${id}`, {
+            method: 'PUT',
+            headers: {'Content-Type':'application/json','X-CSRF-TOKEN':CSRF,'Accept':'application/json'},
+            body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            const msgs = data.errors ? Object.values(data.errors).flat().join(' ') : (data.message || 'Error saving.');
+            errEl.textContent = msgs; errEl.style.display = 'block'; return;
+        }
+        closeEditTestModal();
+        // Replace the card with updated content by re-rendering
+        if (_editTestCard) {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = buildTestCardHtml(data.test);
+            _editTestCard.replaceWith(tmp.firstElementChild);
+        }
+    } catch(e) {
+        errEl.textContent = 'Network error. Please try again.'; errEl.style.display = 'block';
+    } finally {
+        btn.disabled = false; btn.textContent = 'Save Changes';
+    }
+}
+
+function buildTestCardHtml(test) {
+    const winner = test.winner;
+    return `<div data-test-id="${test.id}" style="background:#fff;border-radius:10px;border:1px solid #e2e8f0;padding:1.25rem;">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:0.5rem;margin-bottom:0.75rem;">
+            <div>
+                <div style="font-weight:700;color:#1e293b;font-size:0.9375rem;">${escHtml(test.campaign_name)}</div>
+                <div style="font-size:0.75rem;color:#94a3b8;margin-top:0.15rem;">${escHtml(test.sent_at)} &middot; ${escHtml(test.test_type)}${test.logged_by ? ' &middot; ' + escHtml(test.logged_by) : ''}</div>
+            </div>
+            <div style="display:flex;gap:0.125rem;flex-shrink:0;">
+                <button onclick="openEditTestModal(${test.id}, this)" data-test='${JSON.stringify(test).replace(/'/g,"&#39;")}' style="background:none;border:none;cursor:pointer;color:#cbd5e1;padding:4px;border-radius:4px;line-height:0;" title="Edit test">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+                <button onclick="deleteTest(${test.id}, this)" style="background:none;border:none;cursor:pointer;color:#cbd5e1;padding:4px;border-radius:4px;line-height:0;" title="Delete test">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                </button>
+            </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+            <div style="padding:0.75rem;border-radius:8px;border:1px solid ${winner==='a'?'#bbf7d0':'#e2e8f0'};background:${winner==='a'?'#f0fdf4':'#f8fafc'};">
+                <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:${winner==='a'?'#16a34a':'#94a3b8'};margin-bottom:0.35rem;">Variant A${winner==='a'?' ✓ Winner':''}</div>
+                <div style="font-size:0.8125rem;color:#334155;">${escHtml(test.variant_a)}</div>
+                ${(test.variant_a_result!=null||test.variant_a_ctr!=null)?`<div style="display:flex;gap:0.75rem;margin-top:0.5rem;flex-wrap:wrap;">${test.variant_a_result!=null?`<div><div style="font-size:0.65rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Open</div><div style="font-size:0.9375rem;font-weight:700;color:${winner==='a'?'#16a34a':'#1e293b'};">${test.variant_a_result}%</div></div>`:''} ${test.variant_a_ctr!=null?`<div><div style="font-size:0.65rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">CTR</div><div style="font-size:0.9375rem;font-weight:700;color:${winner==='a'?'#16a34a':'#1e293b'};">${test.variant_a_ctr}%</div></div>`:''}</div>`:''}
+            </div>
+            <div style="padding:0.75rem;border-radius:8px;border:1px solid ${winner==='b'?'#bbf7d0':'#e2e8f0'};background:${winner==='b'?'#f0fdf4':'#f8fafc'};">
+                <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:${winner==='b'?'#16a34a':'#94a3b8'};margin-bottom:0.35rem;">Variant B${winner==='b'?' ✓ Winner':''}</div>
+                <div style="font-size:0.8125rem;color:#334155;">${escHtml(test.variant_b)}</div>
+                ${(test.variant_b_result!=null||test.variant_b_ctr!=null)?`<div style="display:flex;gap:0.75rem;margin-top:0.5rem;flex-wrap:wrap;">${test.variant_b_result!=null?`<div><div style="font-size:0.65rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Open</div><div style="font-size:0.9375rem;font-weight:700;color:${winner==='b'?'#16a34a':'#1e293b'};">${test.variant_b_result}%</div></div>`:''} ${test.variant_b_ctr!=null?`<div><div style="font-size:0.65rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">CTR</div><div style="font-size:0.9375rem;font-weight:700;color:${winner==='b'?'#16a34a':'#1e293b'};">${test.variant_b_ctr}%</div></div>`:''}</div>`:''}
+            </div>
+        </div>
+        ${winner==='inconclusive'?'<div style="margin-top:0.6rem;font-size:0.75rem;color:#94a3b8;">Result: Inconclusive</div>':''}
+        ${test.notes?`<div style="margin-top:0.75rem;padding:0.6rem 0.75rem;background:#f8fafc;border-radius:6px;font-size:0.8125rem;color:#475569;border-left:3px solid #e2e8f0;">${escHtml(test.notes)}</div>`:''}
+    </div>`;
 }
 
 // ── Rules ─────────────────────────────────────────────────────────────────────
@@ -685,7 +903,7 @@ function escHtml(str) {
 }
 
 // Close modals on backdrop click
-['log-test-modal','add-rule-modal','edit-rule-modal','add-division-modal'].forEach(function(id) {
+['log-test-modal','edit-test-modal','add-rule-modal','edit-rule-modal','add-division-modal'].forEach(function(id) {
     const el = document.getElementById(id);
     if (el) el.addEventListener('click', function(e) { if (e.target === el) el.style.display = 'none'; });
 });
