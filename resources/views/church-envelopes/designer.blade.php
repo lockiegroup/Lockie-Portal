@@ -335,31 +335,115 @@ function buildEnvHtml(row, setNum) {
 }
 
 // ── PDF Generation ────────────────────────────────────────────────────────────
-// Text is drawn using jsPDF with angle:-90 (90° CW) so it reads when the page
-// is rotated 90° CCW — matching the InDesign print layout.
-// Images are pre-rotated 90° CW on a small canvas and embedded as JPEG (no transparency
-// needed for the image itself; the surrounding envelope area is transparent in the PDF
-// because we draw no background rectangle).
-//
-// Transform from reading coords (rx, ry) to PDF coords (per half):
-//   pdf_x = xBase + (RH - ry)   [RH=78]
-//   pdf_y = rx
-// Text at reading (cx, ry) → doc.text(text, xBase+RH-ry, cx, { angle:-90, align:'center' })
+// Each envelope half is rendered onto a canvas (portrait 78×98mm, CPPM=3 px/mm)
+// using the same coordinates as the HTML preview, then embedded as a transparent
+// PNG. This avoids jsPDF angle/alignment ambiguity entirely.
 
-async function rotateCW90(dataUrl) {
+const CPPM = 3; // canvas pixels per mm — keep low enough to avoid jsPDF size limits
+
+function loadImage(src) {
     return new Promise(resolve => {
         const img = new Image();
-        img.onload = () => {
-            const c = document.createElement('canvas');
-            c.width = img.naturalHeight; c.height = img.naturalWidth;
-            const ctx = c.getContext('2d');
-            ctx.translate(img.naturalHeight, 0);
-            ctx.rotate(Math.PI / 2);
-            ctx.drawImage(img, 0, 0);
-            resolve(c.toDataURL('image/jpeg', 0.92));
-        };
-        img.src = dataUrl;
+        img.onload  = () => resolve(img);
+        img.onerror = () => resolve(null);
+        img.src = src;
     });
+}
+
+function wrapCanvasText(ctx, text, maxWidth) {
+    const words = text.split(' ');
+    const lines = [];
+    let cur = '';
+    for (const w of words) {
+        const test = cur ? cur + ' ' + w : w;
+        if (ctx.measureText(test).width <= maxWidth || !cur) { cur = test; }
+        else { lines.push(cur); cur = w; }
+    }
+    if (cur) lines.push(cur);
+    return lines;
+}
+
+async function buildEnvCanvas(row, setNum, imgDataUrl) {
+    const cW = Math.round(ENV_W * CPPM); // 234px
+    const cH = Math.round(ENV_H * CPPM); // 294px
+    const canvas = document.createElement('canvas');
+    canvas.width = cW; canvas.height = cH;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, cW, cH); // transparent background
+
+    const p = mm => Math.round(mm * CPPM);
+    const isSpec = row.isSpecial;
+
+    // Church name
+    ctx.textBaseline = 'top'; ctx.textAlign = 'center'; ctx.fillStyle = '#111111';
+    ctx.font = `bold ${p(5.5)}px Arial,sans-serif`;
+    const churchW = p(ENV_W - 8);
+    const churchLines = wrapCanvasText(ctx, row.church.toUpperCase(), churchW);
+    let y = 9; // mm — matches buildEnvHtml
+    const churchLineH = 6.5;
+    churchLines.forEach((line, i) => {
+        ctx.fillText(line, p(ENV_W / 2), p(y + i * churchLineH));
+    });
+    y += churchLines.length * churchLineH + 2;
+
+    // Town
+    if (row.town) {
+        ctx.font = `bold ${p(4.2)}px Arial,sans-serif`;
+        ctx.fillText(row.town.toUpperCase(), p(ENV_W / 2), p(y));
+        y += 5;
+    }
+
+    // Diocese
+    ctx.font = `${p(3)}px Arial,sans-serif`;
+    ctx.fillStyle = '#333333';
+    for (const d of [row.diocese1, row.diocese2, row.diocese3]) {
+        if (d) { ctx.fillText(d, p(ENV_W / 2), p(y)); y += 3.8; }
+    }
+
+    // Image — scaled to fit within the fixed box, centred inside it
+    if (imgDataUrl) {
+        const { dW, dH } = imgDisplayDims(isSpec);
+        const imgX = IMG_BOX_X + (IMG_BOX_W - dW) / 2;
+        const imgY = IMG_BOX_Y + (IMG_BOX_H - dH) / 2;
+        const imgEl = await loadImage(imgDataUrl);
+        if (imgEl) ctx.drawImage(imgEl, p(imgX), p(imgY), p(dW), p(dH));
+    }
+
+    // Offering text — centred in the area to the right of the image box
+    const offeringLines = getOfferingLines(row);
+    if (offeringLines.length) {
+        const lineH = 4.8;
+        const totalH = offeringLines.length * lineH;
+        const imgMidY = IMG_BOX_Y + IMG_BOX_H / 2;
+        const textStartY = imgMidY - totalH / 2;
+        const textLeft = IMG_BOX_X + IMG_BOX_W + 4;
+        const textW_mm = ENV_W - textLeft - 3;
+        const textCx   = textLeft + textW_mm / 2;
+        ctx.font = `italic ${p(3.8)}px Arial,sans-serif`;
+        ctx.fillStyle = '#111111';
+        offeringLines.forEach((line, i) => {
+            ctx.fillText(line, p(textCx), p(textStartY + i * lineH));
+        });
+    }
+
+    // Set number — bottom-left
+    if (setNum !== null) {
+        ctx.font = `bold ${p(7)}px Arial,sans-serif`;
+        ctx.fillStyle = '#111111';
+        ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+        ctx.fillText(String(setNum), p(5), cH - p(5));
+    }
+
+    // Date — bottom-right
+    const date = buildDate(row);
+    if (date) {
+        ctx.font = `${p(3.5)}px Arial,sans-serif`;
+        ctx.fillStyle = '#333333';
+        ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+        ctx.fillText(date, cW - p(4), cH - p(5));
+    }
+
+    return canvas;
 }
 
 async function generatePDF() {
@@ -368,128 +452,35 @@ async function generatePDF() {
     const st  = document.getElementById('generate-status');
     btn.disabled = true; btn.textContent = 'Generating…';
     st.style.display = 'block'; st.style.color = '#64748b';
-    st.textContent = 'Preparing images…';
-    await new Promise(r => setTimeout(r, 30));
+    st.textContent = 'Starting…';
 
     try {
-        // Pre-rotate images once
-        const weeklyRot  = weeklyImgDataUrl  ? await rotateCW90(weeklyImgDataUrl)  : null;
-        const specialRot = specialImgDataUrl ? await rotateCW90(specialImgDataUrl) : null;
-
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ unit: 'mm', format: [PAGE_W, PAGE_H], orientation: 'landscape' });
         const church = (parsedRows.find(r => !r.isSpecial) || parsedRows[0])?.church || 'envelopes';
 
-        parsedRows.forEach((row, idx) => {
+        for (let idx = 0; idx < parsedRows.length; idx++) {
             if (idx > 0) doc.addPage();
-            const imgRot = row.isSpecial ? specialRot : weeklyRot;
-            drawEnvPdf(doc, row, 0,     row.setLeft,  imgRot);
-            drawEnvPdf(doc, row, ENV_W, row.setRight, imgRot);
-        });
+            st.textContent = `Rendering page ${idx + 1} of ${parsedRows.length}…`;
+            await new Promise(r => setTimeout(r, 0)); // yield so UI updates
+
+            const row    = parsedRows[idx];
+            const imgSrc = row.isSpecial ? specialImgDataUrl : weeklyImgDataUrl;
+
+            const lc = await buildEnvCanvas(row, row.setLeft,  imgSrc);
+            const rc = await buildEnvCanvas(row, row.setRight, imgSrc);
+            doc.addImage(lc.toDataURL('image/png'), 'PNG', 0,     0, ENV_W, ENV_H, '', 'NONE');
+            doc.addImage(rc.toDataURL('image/png'), 'PNG', ENV_W, 0, ENV_W, ENV_H, '', 'NONE');
+        }
 
         st.textContent = `Done — ${parsedRows.length} pages saved.`;
         st.style.color = '#166534';
         doc.save(sanitise(church) + '-envelopes.pdf');
-    } catch(e) {
+    } catch (e) {
         st.textContent = 'PDF error: ' + e.message;
         st.style.color = '#991b1b';
     } finally {
         btn.disabled = false; btn.textContent = 'Generate & Download PDF';
-    }
-}
-
-function drawEnvPdf(doc, row, xBase, setNum, imgRotDataUrl) {
-    const isSpec = row.isSpecial;
-
-    // reading (rx, ry) → PDF position for angle:-90 text
-    function tp(rx, ry) { return { x: xBase + RH - ry, y: rx }; }
-
-    let ry = 7;
-
-    // ── Church name ─────────────────────────────────────────────────────────────
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.setTextColor(15, 15, 15);
-    const churchLines = doc.splitTextToSize(row.church.toUpperCase(), RW - 8);
-    churchLines.forEach((line, i) => {
-        const p = tp(RW / 2, ry + i * 6);
-        doc.text(line, p.x, p.y, { angle: -90, align: 'center' });
-    });
-    ry += churchLines.length * 6 + 1;
-
-    // ── Town ───────────────────────────────────────────────────────────────────
-    if (row.town) {
-        doc.setFontSize(8);
-        const p = tp(RW / 2, ry);
-        doc.text(row.town.toUpperCase(), p.x, p.y, { angle: -90, align: 'center' });
-        ry += 5.5;
-    }
-
-    // ── Diocese lines ──────────────────────────────────────────────────────────
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(6.5);
-    doc.setTextColor(40, 40, 40);
-    for (const d of [row.diocese1, row.diocese2, row.diocese3]) {
-        if (d) {
-            const p = tp(RW / 2, ry);
-            doc.text(d, p.x, p.y, { angle: -90, align: 'center' });
-            ry += 4;
-        }
-    }
-
-    // ── Image ──────────────────────────────────────────────────────────────────
-    // Fixed image box in reading space (from InDesign layout: 18.8×32.6mm at reading x=5, y=30)
-    // Image scaled within box maintaining aspect ratio, then centred inside it.
-    if (imgRotDataUrl) {
-        const { dW, dH } = imgDisplayDims(isSpec);
-        // Centre within the fixed box
-        const imgX_r = IMG_BOX_X + (IMG_BOX_W - dW) / 2;
-        const imgY_r = IMG_BOX_Y + (IMG_BOX_H - dH) / 2;
-        // Map to PDF: 90° CW rotation swaps reading H↔W
-        // pdfImgW = dH (reading height → pdf width), pdfImgH = dW (reading width → pdf height)
-        const pdfImgX = xBase + (RH - imgY_r - dH);
-        const pdfImgY = imgX_r;
-        try {
-            doc.addImage(imgRotDataUrl, 'JPEG', pdfImgX, pdfImgY, dH, dW, undefined, 'NONE');
-        } catch(_) {}
-    }
-
-    // ── Offering text ──────────────────────────────────────────────────────────
-    const offeringLines = getOfferingLines(row);
-    if (offeringLines.length) {
-        doc.setFont('helvetica', 'italic');
-        doc.setFontSize(8);
-        doc.setTextColor(15, 15, 15);
-        // Centre in the area to the right of the image box
-        const textCx  = (IMG_BOX_X + IMG_BOX_W + 5 + RW - 5) / 2;
-        const lineH   = 5;
-        const totalH  = offeringLines.length * lineH;
-        // Vertically centred with the image box centre
-        const startRY = IMG_BOX_Y + IMG_BOX_H / 2 - totalH / 2 + lineH * 0.8;
-        offeringLines.forEach((line, i) => {
-            const p = tp(textCx, startRY + i * lineH);
-            doc.text(line, p.x, p.y, { angle: -90, align: 'center' });
-        });
-    }
-
-    // ── Set number (bottom-left: reading rx=5, ry=73) ─────────────────────────
-    if (setNum !== null) {
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(14);
-        doc.setTextColor(15, 15, 15);
-        const p = tp(5, 73);
-        doc.text(String(setNum), p.x, p.y, { angle: -90 });
-    }
-
-    // ── Date (bottom-right: reading rx=93, ry=73) ─────────────────────────────
-    const date = buildDate(row);
-    if (date) {
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7.5);
-        doc.setTextColor(40, 40, 40);
-        const p = tp(93, 73);
-        // align:'right' → text ends at pdf_y=93 (reading: right edge at rx=93)
-        doc.text(date, p.x, p.y, { angle: -90, align: 'right' });
     }
 }
 </script>
