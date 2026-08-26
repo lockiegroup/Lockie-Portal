@@ -97,6 +97,23 @@ let parsedRows        = [];
 let weeklyImgDataUrl  = null;
 let specialImgDataUrl = null;
 
+// Pre-load the default spiral image for special envelopes
+(function () {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = function () {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+        canvas.getContext('2d').drawImage(img, 0, 0);
+        specialImgDataUrl = canvas.toDataURL('image/jpeg');
+        document.getElementById('special-img-thumb').src = specialImgDataUrl;
+        document.getElementById('special-img-preview').style.display = 'block';
+        document.getElementById('special-img-label').textContent = 'Spiral.jpg (default)';
+        updatePreview();
+    };
+    img.src = '{{ asset('images/Spiral.jpg') }}';
+})();
+
 // ── File handling ─────────────────────────────────────────────────────────────
 function handleImage(input, type) {
     const file = input.files[0];
