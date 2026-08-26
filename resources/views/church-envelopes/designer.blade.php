@@ -335,11 +335,9 @@ function buildEnvHtml(row, setNum) {
 }
 
 // ── PDF Generation ────────────────────────────────────────────────────────────
-// Each envelope half is rendered onto a canvas (portrait 78×98mm, CPPM=3 px/mm)
-// using the same coordinates as the HTML preview, then embedded as a transparent
-// PNG. This avoids jsPDF angle/alignment ambiguity entirely.
-
-const CPPM = 4; // canvas pixels per mm (~100 dpi equivalent for print)
+// jsPDF native text (vector, infinitely sharp) for all text elements.
+// Canvas only for the small image box (18.8×32.6mm) — tiny PNG, no size issues.
+// Coordinates match the HTML preview (portrait 78×98mm per half, no angle rotation).
 
 function loadImage(src) {
     return new Promise(resolve => {
@@ -350,100 +348,101 @@ function loadImage(src) {
     });
 }
 
-function wrapCanvasText(ctx, text, maxWidth) {
-    const words = text.split(' ');
-    const lines = [];
-    let cur = '';
-    for (const w of words) {
-        const test = cur ? cur + ' ' + w : w;
-        if (ctx.measureText(test).width <= maxWidth || !cur) { cur = test; }
-        else { lines.push(cur); cur = w; }
-    }
-    if (cur) lines.push(cur);
-    return lines;
-}
-
-async function buildEnvCanvas(row, setNum, imgDataUrl) {
-    const cW = Math.round(ENV_W * CPPM); // 234px
-    const cH = Math.round(ENV_H * CPPM); // 294px
+// Build a small canvas for just the image box (18.8×32.6mm at high res)
+async function buildImgCanvas(isSpec, imgDataUrl) {
+    if (!imgDataUrl) return null;
+    const ICPPM = 8; // high res for the small image only
+    const { dW, dH } = imgDisplayDims(isSpec);
+    const cW = Math.round(dW * ICPPM), cH = Math.round(dH * ICPPM);
     const canvas = document.createElement('canvas');
     canvas.width = cW; canvas.height = cH;
     const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, cW, cH); // transparent background
+    ctx.clearRect(0, 0, cW, cH);
+    const imgEl = await loadImage(imgDataUrl);
+    if (imgEl) ctx.drawImage(imgEl, 0, 0, cW, cH);
+    return { canvas, dW, dH };
+}
 
-    const p = mm => Math.round(mm * CPPM);
+function drawEnvPdf(doc, row, xBase, setNum, imgCanvasData) {
     const isSpec = row.isSpecial;
 
+    // jsPDF uses portrait coords: x=0 is left edge of this half, y=0 is top.
+    // All values in mm matching the HTML preview layout.
+    const cx = xBase + ENV_W / 2; // horizontal centre of this half
+
+    let y = 9; // mm from top
+
     // Church name
-    ctx.textBaseline = 'top'; ctx.textAlign = 'center'; ctx.fillStyle = '#111111';
-    ctx.font = `bold ${p(5.5)}px Arial,sans-serif`;
-    const churchW = p(ENV_W - 8);
-    const churchLines = wrapCanvasText(ctx, row.church.toUpperCase(), churchW);
-    let y = 9; // mm — matches buildEnvHtml
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(17, 17, 17);
+    const churchLines = doc.splitTextToSize(row.church.toUpperCase(), ENV_W - 8);
     const churchLineH = 6.5;
     churchLines.forEach((line, i) => {
-        ctx.fillText(line, p(ENV_W / 2), p(y + i * churchLineH));
+        doc.text(line, cx, y + i * churchLineH, { align: 'center' });
     });
     y += churchLines.length * churchLineH + 2;
 
     // Town
     if (row.town) {
-        ctx.font = `bold ${p(4.2)}px Arial,sans-serif`;
-        ctx.fillText(row.town.toUpperCase(), p(ENV_W / 2), p(y));
+        doc.setFontSize(8);
+        doc.text(row.town.toUpperCase(), cx, y, { align: 'center' });
         y += 5;
     }
 
     // Diocese
-    ctx.font = `${p(3)}px Arial,sans-serif`;
-    ctx.fillStyle = '#333333';
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6);
+    doc.setTextColor(51, 51, 51);
     for (const d of [row.diocese1, row.diocese2, row.diocese3]) {
-        if (d) { ctx.fillText(d, p(ENV_W / 2), p(y)); y += 3.8; }
+        if (d) { doc.text(d, cx, y, { align: 'center' }); y += 3.8; }
     }
 
-    // Image — scaled to fit within the fixed box, centred inside it
-    if (imgDataUrl) {
-        const { dW, dH } = imgDisplayDims(isSpec);
-        const imgX = IMG_BOX_X + (IMG_BOX_W - dW) / 2;
+    // Image — small canvas pre-rendered at high res
+    if (imgCanvasData) {
+        const { canvas, dW, dH } = imgCanvasData;
+        const imgX = xBase + IMG_BOX_X + (IMG_BOX_W - dW) / 2;
         const imgY = IMG_BOX_Y + (IMG_BOX_H - dH) / 2;
-        const imgEl = await loadImage(imgDataUrl);
-        if (imgEl) ctx.drawImage(imgEl, p(imgX), p(imgY), p(dW), p(dH));
+        try {
+            const alias = (isSpec ? 'sp' : 'wk') + Math.round(dW * 10);
+            doc.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG',
+                         imgX, imgY, dW, dH, alias, 'NONE');
+        } catch(_) {}
     }
 
-    // Offering text — centred in the area to the right of the image box
+    // Offering text — centred in area to the right of the image box
     const offeringLines = getOfferingLines(row);
     if (offeringLines.length) {
         const lineH = 4.8;
         const totalH = offeringLines.length * lineH;
-        const imgMidY = IMG_BOX_Y + IMG_BOX_H / 2;
-        const textStartY = imgMidY - totalH / 2;
-        const textLeft = IMG_BOX_X + IMG_BOX_W + 4;
-        const textW_mm = ENV_W - textLeft - 3;
-        const textCx   = textLeft + textW_mm / 2;
-        ctx.font = `italic ${p(3.8)}px Arial,sans-serif`;
-        ctx.fillStyle = '#111111';
+        const textLeft = xBase + IMG_BOX_X + IMG_BOX_W + 4;
+        const textRight = xBase + ENV_W - 3;
+        const textCx = (textLeft + textRight) / 2;
+        const startY = IMG_BOX_Y + IMG_BOX_H / 2 - totalH / 2 + lineH * 0.75;
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(7);
+        doc.setTextColor(17, 17, 17);
         offeringLines.forEach((line, i) => {
-            ctx.fillText(line, p(textCx), p(textStartY + i * lineH));
+            doc.text(line, textCx, startY + i * lineH, { align: 'center' });
         });
     }
 
     // Set number — bottom-left
     if (setNum !== null) {
-        ctx.font = `bold ${p(7)}px Arial,sans-serif`;
-        ctx.fillStyle = '#111111';
-        ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
-        ctx.fillText(String(setNum), p(5), cH - p(5));
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.setTextColor(17, 17, 17);
+        doc.text(String(setNum), xBase + 5, ENV_H - 5);
     }
 
     // Date — bottom-right
     const date = buildDate(row);
     if (date) {
-        ctx.font = `${p(3.5)}px Arial,sans-serif`;
-        ctx.fillStyle = '#333333';
-        ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
-        ctx.fillText(date, cW - p(4), cH - p(5));
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7);
+        doc.setTextColor(51, 51, 51);
+        doc.text(date, xBase + ENV_W - 4, ENV_H - 5, { align: 'right' });
     }
-
-    return canvas;
 }
 
 async function generatePDF() {
@@ -452,26 +451,28 @@ async function generatePDF() {
     const st  = document.getElementById('generate-status');
     btn.disabled = true; btn.textContent = 'Generating…';
     st.style.display = 'block'; st.style.color = '#64748b';
-    st.textContent = 'Starting…';
+    st.textContent = 'Preparing images…';
+    await new Promise(r => setTimeout(r, 30));
 
     try {
+        // Pre-render image canvases once (reused across all pages)
+        const weeklyImgData  = weeklyImgDataUrl  ? await buildImgCanvas(false, weeklyImgDataUrl)  : null;
+        const specialImgData = specialImgDataUrl ? await buildImgCanvas(true,  specialImgDataUrl) : null;
+
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ unit: 'mm', format: [PAGE_W, PAGE_H], orientation: 'landscape' });
         const church = (parsedRows.find(r => !r.isSpecial) || parsedRows[0])?.church || 'envelopes';
 
         for (let idx = 0; idx < parsedRows.length; idx++) {
             if (idx > 0) doc.addPage();
-            st.textContent = `Rendering page ${idx + 1} of ${parsedRows.length}…`;
-            await new Promise(r => setTimeout(r, 0)); // yield so UI updates
-
-            const row    = parsedRows[idx];
-            const imgSrc = row.isSpecial ? specialImgDataUrl : weeklyImgDataUrl;
-
-            const lc = await buildEnvCanvas(row, row.setLeft,  imgSrc);
-            const rc = await buildEnvCanvas(row, row.setRight, imgSrc);
-            // Pass canvas elements directly — avoids creating large base64 data URL strings
-            doc.addImage(lc, 'PNG', 0,     0, ENV_W, ENV_H, '', 'NONE');
-            doc.addImage(rc, 'PNG', ENV_W, 0, ENV_W, ENV_H, '', 'NONE');
+            if (idx % 10 === 0) {
+                st.textContent = `Rendering page ${idx + 1} of ${parsedRows.length}…`;
+                await new Promise(r => setTimeout(r, 0));
+            }
+            const row = parsedRows[idx];
+            const imgData = row.isSpecial ? specialImgData : weeklyImgData;
+            drawEnvPdf(doc, row, 0,     row.setLeft,  imgData);
+            drawEnvPdf(doc, row, ENV_W, row.setRight, imgData);
         }
 
         st.textContent = `Done — ${parsedRows.length} pages saved.`;
