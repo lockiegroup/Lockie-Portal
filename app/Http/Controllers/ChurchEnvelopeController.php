@@ -16,6 +16,11 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ChurchEnvelopeController extends Controller
 {
+    public function designer(): View
+    {
+        return view('church-envelopes.designer');
+    }
+
     public function index(): View
     {
         $verses  = EnvelopeVerse::orderBy('sort_order')->get();

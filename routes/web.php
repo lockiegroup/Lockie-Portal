@@ -73,6 +73,7 @@ Route::middleware(['auth', 'otp'])->group(function () {
     Route::get('/church-envelopes', [ChurchEnvelopeController::class, 'index'])->name('church-envelopes.index');
     Route::post('/church-envelopes/parse', [ChurchEnvelopeController::class, 'parse'])->name('church-envelopes.parse');
     Route::post('/church-envelopes/generate', [ChurchEnvelopeController::class, 'generate'])->name('church-envelopes.generate');
+    Route::get('/church-envelopes/designer', [ChurchEnvelopeController::class, 'designer'])->name('church-envelopes.designer');
 
     // Letter Filter
     Route::get('/letter-filter', [LetterFilterController::class, 'index'])->name('letter-filter.index');

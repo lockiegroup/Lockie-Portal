@@ -2,7 +2,14 @@
 
     <main class="max-w-2xl mx-auto px-6 py-10">
         <div class="mb-8">
-            <h1 class="text-2xl font-bold text-slate-800">Church Envelope Generator</h1>
+            <div class="flex items-center gap-3 mb-1 flex-wrap">
+                <h1 class="text-2xl font-bold text-slate-800">Church Envelope Generator</h1>
+                <a href="{{ route('church-envelopes.designer') }}"
+                   style="font-size:0.8125rem;color:#64748b;text-decoration:none;display:inline-flex;align-items:center;gap:0.3rem;padding:0.3rem 0.75rem;border:1px solid #e2e8f0;border-radius:6px;background:#f8fafc;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    Envelope Designer
+                </a>
+            </div>
             <p class="text-slate-500 mt-1">Generate a print-ready Excel file for envelope data merge.</p>
         </div>
 
