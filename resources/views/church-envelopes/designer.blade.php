@@ -339,7 +339,7 @@ function buildEnvHtml(row, setNum) {
 // using the same coordinates as the HTML preview, then embedded as a transparent
 // PNG. This avoids jsPDF angle/alignment ambiguity entirely.
 
-const CPPM = 3; // canvas pixels per mm — keep low enough to avoid jsPDF size limits
+const CPPM = 6; // canvas pixels per mm (~150 dpi equivalent for print)
 
 function loadImage(src) {
     return new Promise(resolve => {
