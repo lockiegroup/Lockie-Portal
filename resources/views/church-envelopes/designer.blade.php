@@ -411,7 +411,7 @@ async function updatePreview() {
 
         for (const rotCanvas of [leftRot, rightRot]) {
             const img = document.createElement('img');
-            img.src = rotCanvas.toDataURL('image/jpeg', 0.9);
+            img.src = rotCanvas.toDataURL('image/png');
             // Each half: ENV_W × ENV_H mm displayed at PREV_SCALE px/mm
             img.style.cssText = `width:${ENV_W * PREV_SCALE}px;height:${ENV_H * PREV_SCALE}px;display:block;image-rendering:auto;`;
             pageDiv.appendChild(img);
@@ -452,8 +452,8 @@ async function generatePDF() {
             const rightRot = rotateCW(rightC);
 
             // Insert into PDF (each half: ENV_W × ENV_H mm)
-            doc.addImage(leftRot.toDataURL('image/jpeg', 0.95),  'JPEG', 0,     0, ENV_W, ENV_H, undefined, 'NONE');
-            doc.addImage(rightRot.toDataURL('image/jpeg', 0.95), 'JPEG', ENV_W, 0, ENV_W, ENV_H, undefined, 'NONE');
+            doc.addImage(leftRot.toDataURL('image/png'),  'PNG', 0,     0, ENV_W, ENV_H, undefined, 'NONE');
+            doc.addImage(rightRot.toDataURL('image/png'), 'PNG', ENV_W, 0, ENV_W, ENV_H, undefined, 'NONE');
         }
 
         doc.save(sanitise(church) + '-envelopes.pdf');
