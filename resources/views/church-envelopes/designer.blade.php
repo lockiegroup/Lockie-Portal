@@ -1,7 +1,6 @@
 <x-layout title="Church Envelope Designer — Lockie Portal">
 <main style="max-width:1100px;margin:0 auto;padding:2rem 1.5rem;">
 
-    {{-- Page header --}}
     <div style="margin-bottom:1.5rem;">
         <div style="display:flex;align-items:center;gap:1rem;margin-bottom:0.5rem;flex-wrap:wrap;">
             <h1 style="font-size:1.5rem;font-weight:700;color:#1e293b;margin:0;">Church Envelope Designer</h1>
@@ -11,19 +10,20 @@
                 Envelope Generator
             </a>
         </div>
-        <p style="color:#64748b;font-size:0.875rem;margin:0;">Upload a generated spreadsheet to preview and download a print-ready PDF — 2-up side by side (196 × 78 mm per page, transparent background for pre-coloured envelopes).</p>
+        <p style="color:#64748b;font-size:0.875rem;margin:0;">Upload a generated spreadsheet to preview and download a print-ready PDF — 2-up (156 × 98 mm landscape page, two 78 × 98 mm portrait envelopes side by side, transparent background).</p>
     </div>
 
-    {{-- Upload section --}}
+    {{-- Upload --}}
     <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:1.5rem;margin-bottom:1.5rem;">
         <h2 style="font-size:0.9375rem;font-weight:700;color:#1e293b;margin:0 0 1rem;">1. Upload Spreadsheet</h2>
         <div style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:center;">
             <label style="flex:1;min-width:200px;display:flex;align-items:center;gap:0.5rem;background:#f8fafc;border:1.5px dashed #cbd5e1;border-radius:8px;padding:0.75rem 1rem;cursor:pointer;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-                <span id="file-label" style="font-size:0.875rem;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Choose .xlsx file…</span>
-                <input type="file" id="xlsx-file" accept=".xlsx,.xls" style="display:none;" onchange="document.getElementById('file-label').textContent=this.files[0]?.name||'Choose .xlsx file…'">
+                <span id="file-label" style="font-size:0.875rem;color:#64748b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Choose .xlsx file…</span>
+                <input type="file" id="xlsx-file" accept=".xlsx,.xls" style="display:none;"
+                       onchange="document.getElementById('file-label').textContent=this.files[0]?.name||'Choose .xlsx file…'">
             </label>
-            <button onclick="parseFile()" id="parse-btn"
+            <button onclick="parseFile()"
                 style="padding:0.6rem 1.25rem;background:#1e293b;color:#fff;border:none;border-radius:8px;font-size:0.875rem;font-weight:600;cursor:pointer;white-space:nowrap;">
                 Load File
             </button>
@@ -31,12 +31,10 @@
         <p id="parse-status" style="display:none;font-size:0.8125rem;margin:0.75rem 0 0;padding:0.5rem 0.75rem;border-radius:6px;"></p>
     </div>
 
-    {{-- Options panel --}}
+    {{-- Images --}}
     <div id="options-panel" style="display:none;background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:1.5rem;margin-bottom:1.5rem;">
-        <h2 style="font-size:0.9375rem;font-weight:700;color:#1e293b;margin:0 0 1rem;">2. Images</h2>
-
+        <h2 style="font-size:0.9375rem;font-weight:700;color:#1e293b;margin:0 0 0.75rem;">2. Images</h2>
         <div id="parse-summary" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:0.75rem 1rem;margin-bottom:1.25rem;font-size:0.8125rem;color:#166534;"></div>
-
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
             <div>
                 <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.4rem;">Weekly Envelope Image <span style="font-weight:400;color:#94a3b8;">(optional)</span></label>
@@ -50,10 +48,10 @@
                 </div>
             </div>
             <div>
-                <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.4rem;">Special Envelope Image <span style="font-weight:400;color:#94a3b8;">(optional)</span></label>
+                <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.4rem;">Special Envelope Image <span style="font-weight:400;color:#94a3b8;">(auto-loaded)</span></label>
                 <label style="display:flex;align-items:center;gap:0.5rem;background:#f8fafc;border:1.5px dashed #cbd5e1;border-radius:8px;padding:0.6rem 0.75rem;cursor:pointer;">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                    <span id="special-img-label" style="font-size:0.8125rem;color:#64748b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Choose image…</span>
+                    <span id="special-img-label" style="font-size:0.8125rem;color:#64748b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Loading…</span>
                     <input type="file" id="special-img" accept="image/*" style="display:none;" onchange="handleImage(this,'special')">
                 </label>
                 <div id="special-img-preview" style="margin-top:0.5rem;display:none;">
@@ -63,21 +61,21 @@
         </div>
     </div>
 
-    {{-- Preview panel --}}
+    {{-- Preview --}}
     <div id="preview-panel" style="display:none;background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:1.5rem;margin-bottom:1.5rem;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;flex-wrap:wrap;gap:0.5rem;">
             <h2 style="font-size:0.9375rem;font-weight:700;color:#1e293b;margin:0;">3. Preview <span id="preview-count" style="font-weight:400;font-size:0.8125rem;color:#94a3b8;"></span></h2>
             <button onclick="updatePreview()"
                 style="padding:0.4rem 0.875rem;background:#f1f5f9;color:#374151;border:1px solid #e2e8f0;border-radius:7px;font-size:0.8125rem;cursor:pointer;">
                 Refresh Preview
             </button>
         </div>
-        <p style="font-size:0.75rem;color:#94a3b8;margin:0 0 0.75rem;">Background is transparent — preview shown on light grey to aid visibility.</p>
-        <div id="preview-cards" style="display:flex;flex-direction:column;gap:1rem;"></div>
-        <p style="font-size:0.75rem;color:#94a3b8;margin:0.75rem 0 0;">Showing first 6 pages. The PDF will include all rows.</p>
+        <p style="font-size:0.75rem;color:#94a3b8;margin:0 0 1rem;">Background is transparent — preview shown on light grey. Each page shows 2 portrait envelopes side by side.</p>
+        <div id="preview-cards" style="display:flex;flex-direction:column;gap:1.25rem;"></div>
+        <p style="font-size:0.75rem;color:#94a3b8;margin:0.75rem 0 0;">Showing first 6 pages. PDF will include all rows.</p>
     </div>
 
-    {{-- Generate button --}}
+    {{-- Generate --}}
     <div id="generate-section" style="display:none;">
         <button onclick="generatePDF()" id="generate-btn"
             style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.75rem 1.75rem;background:#0f172a;color:#fff;border:none;border-radius:10px;font-size:0.9375rem;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(15,23,42,0.2);">
@@ -97,24 +95,30 @@ let parsedRows        = [];
 let weeklyImgDataUrl  = null;
 let specialImgDataUrl = null;
 
-// Pre-load the default spiral image for special envelopes
+// PDF page: 156mm wide × 98mm tall (landscape); each envelope: 78mm wide × 98mm tall (portrait)
+const PAGE_W = 156, PAGE_H = 98, ENV_W = 78, ENV_H = 98;
+
+// Auto-load spiral image for special envelopes
 (function () {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = function () {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
-        canvas.getContext('2d').drawImage(img, 0, 0);
-        specialImgDataUrl = canvas.toDataURL('image/jpeg');
+        const c = document.createElement('canvas');
+        c.width = img.naturalWidth; c.height = img.naturalHeight;
+        c.getContext('2d').drawImage(img, 0, 0);
+        specialImgDataUrl = c.toDataURL('image/jpeg', 0.92);
         document.getElementById('special-img-thumb').src = specialImgDataUrl;
         document.getElementById('special-img-preview').style.display = 'block';
         document.getElementById('special-img-label').textContent = 'Spiral.jpg (default)';
         updatePreview();
     };
+    img.onerror = function () {
+        document.getElementById('special-img-label').textContent = 'Choose image…';
+    };
     img.src = '{{ asset('images/Spiral.jpg') }}';
 })();
 
-// ── File handling ─────────────────────────────────────────────────────────────
+// ── Image upload ──────────────────────────────────────────────────────────────
 function handleImage(input, type) {
     const file = input.files[0];
     if (!file) return;
@@ -136,6 +140,7 @@ function handleImage(input, type) {
     reader.readAsDataURL(file);
 }
 
+// ── Parse spreadsheet ─────────────────────────────────────────────────────────
 function parseFile() {
     const file = document.getElementById('xlsx-file').files[0];
     if (!file) { showStatus('parse-status', 'Please choose a file first.', 'error'); return; }
@@ -158,50 +163,40 @@ function parseFile() {
             parsedRows = [];
             raw.slice(1).forEach(row => {
                 if (row.every(v => v === '' || v === null || v === undefined)) return;
-                const vt1     = String(row[vtCols[1]] ?? '').trim();
-                const vt6     = String(row[vtCols[6]] ?? '').trim();
-                const spiral  = String(row[7] ?? '').trim();
-                const isSpec  = spiral !== '' || (vt6 !== '' && vt1 === '');
-
-                const vts = [];
+                const vt1    = String(row[vtCols[1]] ?? '').trim();
+                const vt6    = String(row[vtCols[6]] ?? '').trim();
+                const spiral = String(row[7] ?? '').trim();
+                const isSpec = spiral !== '' || (vt6 !== '' && vt1 === '');
+                const vts    = [];
                 for (let i = 1; i <= 8; i++) vts.push(String(row[vtCols[i]] ?? '').trim());
 
-                const rawLeft  = row[4];
-                const rawRight = row[5];
-                const setLeft  = (rawLeft  !== '' && rawLeft  !== null) ? parseInt(rawLeft)  : null;
-                const setRight = (rawRight !== '' && rawRight !== null) ? parseInt(rawRight) : null;
-
+                const rawL = row[4], rawR = row[5];
                 parsedRows.push({
-                    lineNum:      row[0],
-                    day:          String(row[1] ?? '').trim(),
-                    month:        String(row[2] ?? '').trim(),
-                    year:         String(row[3] ?? '').trim(),
-                    setLeft,
-                    setRight,
-                    hasSpecialImg: spiral !== '',
-                    church:       String(row[8]  ?? '').trim(),
-                    town:         String(row[9]  ?? '').trim(),
-                    diocese1:     String(row[10] ?? '').trim(),
-                    diocese2:     String(row[11] ?? '').trim(),
-                    diocese3:     String(row[12] ?? '').trim(),
-                    vts,
+                    day:      String(row[1] ?? '').trim(),
+                    month:    String(row[2] ?? '').trim(),
+                    year:     String(row[3] ?? '').trim(),
+                    setLeft:  (rawL !== '' && rawL !== null) ? parseInt(rawL)  : null,
+                    setRight: (rawR !== '' && rawR !== null) ? parseInt(rawR) : null,
                     isSpecial: isSpec,
+                    church:   String(row[8]  ?? '').trim(),
+                    town:     String(row[9]  ?? '').trim(),
+                    diocese1: String(row[10] ?? '').trim(),
+                    diocese2: String(row[11] ?? '').trim(),
+                    diocese3: String(row[12] ?? '').trim(),
+                    vts,
                 });
             });
 
             if (!parsedRows.length) throw new Error('No data rows found');
-
-            const first     = parsedRows.find(r => !r.isSpecial) || parsedRows[0];
-            const weeklyCnt = parsedRows.filter(r => !r.isSpecial).length;
-            const specCnt   = parsedRows.filter(r => r.isSpecial).length;
+            const first   = parsedRows.find(r => !r.isSpecial) || parsedRows[0];
+            const weekly  = parsedRows.filter(r => !r.isSpecial).length;
+            const special = parsedRows.filter(r => r.isSpecial).length;
             document.getElementById('parse-summary').innerHTML =
-                `<strong>${parsedRows.length} pages</strong> loaded — ` +
-                `<strong>${first.church}</strong>, ${first.town} — ` +
-                `${weeklyCnt} weekly, ${specCnt} special.`;
+                `<strong>${parsedRows.length} pages</strong> — <strong>${first.church}</strong>, ${first.town} — ${weekly} weekly, ${special} special.`;
 
             showStatus('parse-status', `Loaded ${parsedRows.length} rows successfully.`, 'success');
-            document.getElementById('options-panel').style.display   = 'block';
-            document.getElementById('preview-panel').style.display   = 'block';
+            document.getElementById('options-panel').style.display    = 'block';
+            document.getElementById('preview-panel').style.display    = 'block';
             document.getElementById('generate-section').style.display = 'block';
             updatePreview();
         } catch(err) {
@@ -213,14 +208,16 @@ function parseFile() {
 
 function showStatus(id, msg, type) {
     const el = document.getElementById(id);
-    el.textContent     = msg;
-    el.style.display   = 'block';
+    el.textContent = msg; el.style.display = 'block';
     el.style.background = type === 'error' ? '#fef2f2' : '#f0fdf4';
     el.style.color      = type === 'error' ? '#991b1b' : '#166534';
     el.style.border     = type === 'error' ? '1px solid #fecaca' : '1px solid #bbf7d0';
 }
 
 // ── Preview ───────────────────────────────────────────────────────────────────
+// Preview scale: 1.7px per mm → each envelope: 133px × 167px
+const S = 1.7;
+
 function updatePreview() {
     if (!parsedRows.length) return;
     const container = document.getElementById('preview-cards');
@@ -228,110 +225,114 @@ function updatePreview() {
     const count = Math.min(parsedRows.length, 6);
     document.getElementById('preview-count').textContent = `(${parsedRows.length} pages total)`;
 
-    // Scale: 196mm × 78mm → displayed at S px/mm
-    const S = 1.8;
-
     for (let i = 0; i < count; i++) {
         const row = parsedRows[i];
         const wrap = document.createElement('div');
 
-        const label = document.createElement('div');
-        label.style.cssText = 'font-size:0.7rem;color:#94a3b8;margin-bottom:4px;';
-        label.textContent = `Page ${i + 1}`;
-        wrap.appendChild(label);
+        const lbl = document.createElement('div');
+        lbl.style.cssText = 'font-size:0.7rem;color:#94a3b8;margin-bottom:4px;';
+        lbl.textContent = `Page ${i + 1} — ${row.church}${row.isSpecial ? ' (special)' : ''}`;
+        wrap.appendChild(lbl);
 
-        // Page: two envelopes side by side
+        // Two portrait envelopes side by side
         const page = document.createElement('div');
-        page.style.cssText = `display:inline-flex;background:#e5e7eb;border:1px solid #d1d5db;border-radius:4px;overflow:hidden;`;
-
-        const leftEnv  = buildEnvelopeHtml(row, row.setLeft,  S);
-        const rightEnv = buildEnvelopeHtml(row, row.setRight, S);
-
-        page.appendChild(leftEnv);
-        page.appendChild(rightEnv);
+        page.style.cssText = `display:inline-flex;background:#d1d5db;gap:1px;border:1px solid #9ca3af;border-radius:3px;overflow:hidden;`;
+        page.appendChild(buildEnvHtml(row, row.setLeft,  false));
+        page.appendChild(buildEnvHtml(row, row.setRight, false));
         wrap.appendChild(page);
         container.appendChild(wrap);
     }
 }
 
-function buildEnvelopeHtml(row, setNum, S) {
-    const W = 98 * S, H = 78 * S;
+function buildEnvHtml(row, setNum, forPdf) {
+    // Portrait envelope: ENV_W × ENV_H mm, displayed at scale S
+    const W = ENV_W * S, H = ENV_H * S;
     const env = document.createElement('div');
-    env.style.cssText = `position:relative;width:${W}px;height:${H}px;overflow:hidden;flex-shrink:0;background:transparent;`;
+    env.style.cssText = `position:relative;width:${W}px;height:${H}px;overflow:hidden;background:transparent;flex-shrink:0;`;
 
-    const isSpecial = row.isSpecial;
-    const img = isSpecial ? specialImgDataUrl : weeklyImgDataUrl;
+    const isSpec = row.isSpecial;
+    const imgSrc = isSpec ? specialImgDataUrl : weeklyImgDataUrl;
 
-    // Church name — centered
-    const church = document.createElement('div');
-    church.style.cssText = `position:absolute;left:${4*S}px;top:${7*S}px;width:${90*S}px;font-weight:700;font-size:${5.5*S}px;color:#1a1a1a;line-height:1.2;text-transform:uppercase;text-align:center;`;
-    church.textContent = row.church || '';
-    env.appendChild(church);
+    // — Header: church name, town, diocese (all centered) —
+    let y = 9 * S;
 
-    // Town — centered
-    const town = document.createElement('div');
-    town.style.cssText = `position:absolute;left:${4*S}px;top:${16*S}px;width:${90*S}px;font-weight:700;font-size:${4.5*S}px;color:#1a1a1a;text-align:center;`;
-    town.textContent = row.town || '';
-    env.appendChild(town);
+    // Church name (bold, uppercase)
+    const cname = document.createElement('div');
+    cname.style.cssText = `position:absolute;left:0;top:${y}px;width:${W}px;font-family:Arial,sans-serif;font-weight:700;font-size:${5.5*S}px;color:#111;text-align:center;line-height:1.25;`;
+    cname.textContent = row.church;
+    env.appendChild(cname);
+    // Approximate height: 1 line or 2 lines
+    const churchLines = Math.ceil((row.church.length * 5.5 * S * 0.55) / W) || 1;
+    y += (6.5 * S) * churchLines + 2 * S;
 
-    // Diocese lines — centered
-    let dioceseY = 21.5;
-    [row.diocese1, row.diocese2, row.diocese3].forEach(line => {
-        if (!line) return;
-        const d = document.createElement('div');
-        d.style.cssText = `position:absolute;left:${4*S}px;top:${dioceseY*S}px;width:${90*S}px;font-size:${3.3*S}px;color:#333;text-align:center;`;
-        d.textContent = line;
-        env.appendChild(d);
-        dioceseY += 4.2;
+    if (row.town) {
+        const town = document.createElement('div');
+        town.style.cssText = `position:absolute;left:0;top:${y}px;width:${W}px;font-family:Arial,sans-serif;font-weight:700;font-size:${4.2*S}px;color:#111;text-align:center;`;
+        town.textContent = row.town;
+        env.appendChild(town);
+        y += 5 * S;
+    }
+
+    [row.diocese1, row.diocese2, row.diocese3].forEach(d => {
+        if (!d) return;
+        const dl = document.createElement('div');
+        dl.style.cssText = `position:absolute;left:0;top:${y}px;width:${W}px;font-family:Arial,sans-serif;font-size:${3*S}px;color:#333;text-align:center;`;
+        dl.textContent = d;
+        env.appendChild(dl);
+        y += 3.8 * S;
     });
 
-    // Image — left side of lower area
-    const imgX = 4, imgY = 33, imgW = 26, imgH = 33;
-    if (img) {
+    // Gap before image area
+    const imgTop = Math.max(y + 2 * S, 30 * S);
+    // Image: 18.8mm wide × 32.6mm tall, positioned at left x≈4mm
+    const imgW = 18.8 * S, imgH = 32.6 * S;
+    const imgX = 4 * S;
+
+    if (imgSrc) {
         const imgEl = document.createElement('img');
-        imgEl.src = img;
-        imgEl.style.cssText = `position:absolute;left:${imgX*S}px;top:${imgY*S}px;width:${imgW*S}px;height:${imgH*S}px;object-fit:contain;`;
+        imgEl.src = imgSrc;
+        imgEl.style.cssText = `position:absolute;left:${imgX}px;top:${imgTop}px;width:${imgW}px;height:${imgH}px;object-fit:contain;image-rendering:auto;`;
         env.appendChild(imgEl);
     } else {
         const ph = document.createElement('div');
-        ph.style.cssText = `position:absolute;left:${imgX*S}px;top:${imgY*S}px;width:${imgW*S}px;height:${imgH*S}px;background:rgba(0,0,0,0.06);border-radius:3px;display:flex;align-items:center;justify-content:center;`;
-        const phTxt = document.createElement('span');
-        phTxt.style.cssText = `font-size:${3*S}px;color:#aaa;`;
-        phTxt.textContent = 'IMAGE';
-        ph.appendChild(phTxt);
-        env.appendChild(ph);
+        ph.style.cssText = `position:absolute;left:${imgX}px;top:${imgTop}px;width:${imgW}px;height:${imgH}px;background:rgba(0,0,0,0.08);border-radius:2px;display:flex;align-items:center;justify-content:center;`;
+        const pt = document.createElement('span');
+        pt.style.cssText = `font-size:${2.8*S}px;color:#aaa;text-align:center;`;
+        pt.textContent = 'IMAGE';
+        ph.appendChild(pt); env.appendChild(ph);
     }
 
-    // Offering text — centred in right area
+    // Offering text: centred in the right portion (x from ~26mm to ~75mm)
     const offeringLines = getOfferingLines(row);
     if (offeringLines.length) {
-        const textX = (imgX + imgW + 3) * S;
-        const textW = (98 - imgX - imgW - 3 - 4) * S;
-        const lineH = 5 * S;
+        const lineH = 4.8 * S;
         const totalH = offeringLines.length * lineH;
-        const centerY = (imgY * S) + (imgH * S / 2) - (totalH / 2);
+        const imgMidY = imgTop + imgH / 2;
+        const textStartY = imgMidY - totalH / 2;
+        const textLeft = (imgX + imgW + 3 * S);
+        const textWidth = W - textLeft - 3 * S;
 
         offeringLines.forEach((line, i) => {
             const t = document.createElement('div');
-            t.style.cssText = `position:absolute;left:${textX}px;top:${centerY + i * lineH}px;width:${textW}px;font-style:italic;font-size:${4*S}px;color:#1a1a1a;text-align:center;`;
+            t.style.cssText = `position:absolute;left:${textLeft}px;top:${textStartY + i * lineH}px;width:${textWidth}px;font-family:Arial,sans-serif;font-style:italic;font-size:${3.8*S}px;color:#111;text-align:center;line-height:1.2;`;
             t.textContent = line;
             env.appendChild(t);
         });
     }
 
-    // Set number — bottom left (only if > 0)
+    // Set number — bottom left (~y=71mm from top)
     if (setNum !== null) {
-        const num = document.createElement('div');
-        num.style.cssText = `position:absolute;left:${5*S}px;bottom:${5*S}px;font-weight:700;font-size:${5*S}px;color:#1a1a1a;`;
-        num.textContent = setNum;
-        env.appendChild(num);
+        const sn = document.createElement('div');
+        sn.style.cssText = `position:absolute;left:${5*S}px;top:${71*S}px;font-family:Arial,sans-serif;font-weight:700;font-size:${7*S}px;color:#111;`;
+        sn.textContent = String(setNum);
+        env.appendChild(sn);
     }
 
-    // Date — bottom right
+    // Date — bottom right (~y=70mm from top)
     const date = buildDate(row);
     if (date) {
         const dt = document.createElement('div');
-        dt.style.cssText = `position:absolute;right:${5*S}px;bottom:${5*S}px;font-size:${3.5*S}px;color:#333;text-align:right;`;
+        dt.style.cssText = `position:absolute;right:${4*S}px;top:${70*S}px;font-family:Arial,sans-serif;font-size:${3.5*S}px;color:#333;text-align:right;`;
         dt.textContent = date;
         env.appendChild(dt);
     }
@@ -342,56 +343,56 @@ function buildEnvelopeHtml(row, setNum, S) {
 // ── PDF Generation ────────────────────────────────────────────────────────────
 async function generatePDF() {
     if (!parsedRows.length) return;
-    const btn    = document.getElementById('generate-btn');
-    const status = document.getElementById('generate-status');
-    btn.disabled    = true;
-    btn.textContent = 'Generating…';
-    status.style.display = 'block';
-    status.textContent   = `Building ${parsedRows.length} pages…`;
+    const btn = document.getElementById('generate-btn');
+    const st  = document.getElementById('generate-status');
+    btn.disabled = true; btn.textContent = 'Generating…';
+    st.style.display = 'block'; st.style.color = '#64748b';
+    st.textContent = `Building ${parsedRows.length} pages…`;
     await new Promise(r => setTimeout(r, 50));
 
     try {
         const { jsPDF } = window.jspdf;
-        // Page: 196mm wide × 78mm tall (2 envelopes side by side)
-        const doc = new jsPDF({ unit: 'mm', format: [196, 78], orientation: 'landscape' });
+        // Landscape page: 156mm wide × 98mm tall
+        const doc = new jsPDF({ unit: 'mm', format: [PAGE_W, PAGE_H], orientation: 'landscape' });
         const church = (parsedRows.find(r => !r.isSpecial) || parsedRows[0])?.church || 'envelopes';
 
         parsedRows.forEach((row, idx) => {
             if (idx > 0) doc.addPage();
-            // Left envelope at x=0, right envelope at x=98
-            drawEnvelope(doc, row, 0,  row.setLeft);
-            drawEnvelope(doc, row, 98, row.setRight);
+            // Left envelope at x=0, right at x=78
+            drawEnvPdf(doc, row, 0,  row.setLeft);
+            drawEnvPdf(doc, row, ENV_W, row.setRight);
         });
 
-        doc.save(sanitiseName(church) + '-envelopes.pdf');
-        status.textContent = `Done — ${parsedRows.length} pages saved.`;
-        status.style.color = '#166534';
+        doc.save(sanitise(church) + '-envelopes.pdf');
+        st.textContent = `Done — ${parsedRows.length} pages saved.`;
+        st.style.color = '#166534';
     } catch(e) {
-        status.textContent = 'PDF generation failed: ' + e.message;
-        status.style.color = '#991b1b';
+        st.textContent = 'PDF error: ' + e.message;
+        st.style.color = '#991b1b';
     } finally {
-        btn.disabled    = false;
-        btn.textContent = 'Generate & Download PDF';
+        btn.disabled = false; btn.textContent = 'Generate & Download PDF';
     }
 }
 
-// Draw one envelope at xBase (0 = left, 98 = right). No background fill.
-function drawEnvelope(doc, row, xBase, setNum) {
-    const isSpecial  = row.isSpecial;
-    const imgDataUrl = isSpecial ? specialImgDataUrl : weeklyImgDataUrl;
-    const cx         = xBase + 49; // horizontal centre of this envelope
+function drawEnvPdf(doc, row, xBase, setNum) {
+    // Each envelope is ENV_W (78mm) wide × ENV_H (98mm) tall in the landscape page
+    const cx    = xBase + ENV_W / 2; // horizontal centre of this envelope
+    const isSpec = row.isSpecial;
+    const imgUrl = isSpec ? specialImgDataUrl : weeklyImgDataUrl;
 
-    let y = 9;
+    let y = 10; // start y from top of page
 
     // Church name — bold, uppercase, centered
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
-    doc.setTextColor(20, 20, 20);
-    const churchLines = doc.splitTextToSize((row.church || '').toUpperCase(), 88);
-    doc.text(churchLines, cx, y, { align: 'center' });
-    y += churchLines.length * 5.2;
+    doc.setTextColor(15, 15, 15);
+    const churchLines = doc.splitTextToSize(row.church.toUpperCase(), ENV_W - 6);
+    churchLines.forEach((line, i) => {
+        doc.text(line, cx, y + i * 5.5, { align: 'center' });
+    });
+    y += churchLines.length * 5.5 + 2;
 
-    // Town — bold, centered
+    // Town — bold, uppercase, centered
     if (row.town) {
         doc.setFontSize(8);
         doc.text(row.town.toUpperCase(), cx, y, { align: 'center' });
@@ -402,59 +403,64 @@ function drawEnvelope(doc, row, xBase, setNum) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(6.5);
     doc.setTextColor(40, 40, 40);
-    [row.diocese1, row.diocese2, row.diocese3].forEach(line => {
-        if (line) { doc.text(line, cx, y, { align: 'center' }); y += 4; }
+    [row.diocese1, row.diocese2, row.diocese3].forEach(d => {
+        if (d) { doc.text(d, cx, y, { align: 'center' }); y += 4; }
     });
 
-    // Image — left side of lower area
-    const imgX = xBase + 4, imgY = 32, imgW = 26, imgH = 33;
-    if (imgDataUrl) {
+    // Image — left side, positioned below header
+    const imgTop  = Math.max(y + 2, 30);
+    const imgX    = xBase + 4;
+    const imgW    = 18.8;
+    const imgH    = 32.6;
+
+    if (imgUrl) {
         try {
-            const fmt = imgDataUrl.startsWith('data:image/png') ? 'PNG' : 'JPEG';
-            doc.addImage(imgDataUrl, fmt, imgX, imgY, imgW, imgH, undefined, 'FAST');
+            const fmt = imgUrl.startsWith('data:image/png') ? 'PNG' : 'JPEG';
+            // Use NONE compression to preserve sharpness; let jsPDF handle scaling
+            doc.addImage(imgUrl, fmt, imgX, imgTop, imgW, imgH, undefined, 'NONE');
         } catch(e) {
-            doc.setFillColor(220, 220, 220);
-            doc.rect(imgX, imgY, imgW, imgH, 'F');
+            doc.setFillColor(210, 210, 210);
+            doc.rect(imgX, imgTop, imgW, imgH, 'F');
         }
     }
 
-    // Offering text — italic, centred in right portion of envelope
+    // Offering text — italic, centred in the right portion of the envelope
     const offeringLines = getOfferingLines(row);
     if (offeringLines.length) {
         doc.setFont('helvetica', 'italic');
         doc.setFontSize(8.5);
-        doc.setTextColor(20, 20, 20);
-        const textLeft  = imgX + imgW + 3;
-        const textRight = xBase + 94;
-        const textCx    = (textLeft + textRight) / 2;
-        const textW     = textRight - textLeft;
-        const lineH     = 5;
-        const totalH    = offeringLines.length * lineH;
-        const startY    = imgY + (imgH / 2) - (totalH / 2) + 4;
+        doc.setTextColor(15, 15, 15);
+        const textLeft = imgX + imgW + 2;
+        const textRight = xBase + ENV_W - 4;
+        const textCx  = (textLeft + textRight) / 2;
+        const textW   = textRight - textLeft;
+        const lineH   = 5;
+        const totalH  = offeringLines.length * lineH;
+        const startY  = imgTop + imgH / 2 - totalH / 2 + 4;
 
         offeringLines.forEach((line, i) => {
             const wrapped = doc.splitTextToSize(line, textW);
             wrapped.forEach((wl, wi) => {
-                doc.text(wl, textCx, startY + i * lineH + wi * lineH, { align: 'center' });
+                doc.text(wl, textCx, startY + (i + wi) * lineH, { align: 'center' });
             });
         });
     }
 
-    // Set number — bottom left (only if > 0)
+    // Set number — bold, bottom-left (~71mm from top)
     if (setNum !== null) {
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(10);
-        doc.setTextColor(20, 20, 20);
-        doc.text(String(setNum), xBase + 5, 73);
+        doc.setFontSize(14);
+        doc.setTextColor(15, 15, 15);
+        doc.text(String(setNum), xBase + 5, 75);
     }
 
-    // Date — bottom right
+    // Date — bottom-right (~70mm from top)
     const date = buildDate(row);
     if (date) {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(7.5);
-        doc.setTextColor(50, 50, 50);
-        doc.text(date, xBase + 93, 73, { align: 'right' });
+        doc.setTextColor(40, 40, 40);
+        doc.text(date, xBase + ENV_W - 4, 75, { align: 'right' });
     }
 }
 
@@ -466,7 +472,7 @@ function getOfferingLines(row) {
 function buildDate(row) {
     return [row.day, row.month, row.year].filter(Boolean).join(' ');
 }
-function sanitiseName(str) {
+function sanitise(str) {
     return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'envelopes';
 }
 </script>
