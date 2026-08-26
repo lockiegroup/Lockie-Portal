@@ -219,15 +219,22 @@ function getOfferingLines(row) {
 function buildDate(row) { return [row.day, row.month, row.year].filter(Boolean).join(' '); }
 function sanitise(str) { return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'envelopes'; }
 
-// Image aspect ratio helpers
+// Image box in reading space — from InDesign layout analysis
+const IMG_BOX_W = 18.8, IMG_BOX_H = 32.6, IMG_BOX_X = 5, IMG_BOX_Y = 30;
+
 function imgAspect(isSpec) {
     const nw = isSpec ? specialNatW : weeklyNatW;
     const nh = isSpec ? specialNatH : weeklyNatH;
-    return (nw && nh) ? nw / nh : 1;
+    return (nw && nh) ? nw / nh : IMG_BOX_W / IMG_BOX_H;
 }
-// Image display dimensions in reading space (mm): fixed width, height from aspect, capped
-const IMG_W_R = 33;
-function imgHeightR(isSpec) { return Math.min(IMG_W_R / imgAspect(isSpec), RH - 22); }
+// Compute display W/H within the fixed box, maintaining aspect ratio
+function imgDisplayDims(isSpec) {
+    const asp = imgAspect(isSpec);
+    let dW, dH;
+    if (asp >= IMG_BOX_W / IMG_BOX_H) { dW = IMG_BOX_W; dH = IMG_BOX_W / asp; }
+    else                               { dH = IMG_BOX_H; dW = IMG_BOX_H * asp; }
+    return { dW, dH };
+}
 
 // ── Preview (HTML, reading orientation) ───────────────────────────────────────
 const S = 1.7; // px per mm for preview
@@ -261,7 +268,6 @@ function buildEnvHtml(row, setNum) {
 
     const isSpec = row.isSpecial;
     const imgSrc = isSpec ? specialImgDataUrl : weeklyImgDataUrl;
-    const imgH   = imgHeightR(isSpec);
 
     let y = 9 * S;
 
@@ -285,9 +291,11 @@ function buildEnvHtml(row, setNum) {
         dl.textContent = d; env.appendChild(dl); y += 3.8 * S;
     });
 
-    const imgTop = Math.max(y + 2 * S, 30 * S);
-    const imgW = IMG_W_R * S, imgHpx = imgH * S;
-    const imgX = 4 * S;
+    // Image: fixed box from InDesign layout, image scaled to fit within it
+    const { dW, dH } = imgDisplayDims(isSpec);
+    const imgX   = (IMG_BOX_X + (IMG_BOX_W - dW) / 2) * S;
+    const imgTop = (IMG_BOX_Y + (IMG_BOX_H - dH) / 2) * S;
+    const imgW   = dW * S, imgHpx = dH * S;
 
     if (imgSrc) {
         const imgEl = document.createElement('img');
@@ -299,9 +307,9 @@ function buildEnvHtml(row, setNum) {
     const offeringLines = getOfferingLines(row);
     if (offeringLines.length) {
         const lineH = 4.8 * S, totalH = offeringLines.length * lineH;
-        const imgMidY = imgTop + imgHpx / 2;
+        const imgMidY = (IMG_BOX_Y + IMG_BOX_H / 2) * S;
         const textStartY = imgMidY - totalH / 2;
-        const textLeft = imgX + imgW + 3 * S;
+        const textLeft = (IMG_BOX_X + IMG_BOX_W + 4) * S;
         const textWidth = W - textLeft - 3 * S;
         offeringLines.forEach((line, i) => {
             const t = document.createElement('div');
@@ -392,13 +400,11 @@ async function generatePDF() {
 
 function drawEnvPdf(doc, row, xBase, setNum, imgRotDataUrl) {
     const isSpec = row.isSpecial;
-    const imgH_r = imgHeightR(isSpec); // image height in reading space (mm), already capped
 
-    // Helper: reading (rx, ry) → PDF position for angle:-90 text
-    // With angle:-90 and align:'center', the text is centred at pdf_y=rx along the +pdf_y axis.
+    // reading (rx, ry) → PDF position for angle:-90 text
     function tp(rx, ry) { return { x: xBase + RH - ry, y: rx }; }
 
-    let ry = 7; // current reading Y (mm from top of reading envelope)
+    let ry = 7;
 
     // ── Church name ─────────────────────────────────────────────────────────────
     doc.setFont('helvetica', 'bold');
@@ -432,20 +438,19 @@ function drawEnvPdf(doc, row, xBase, setNum, imgRotDataUrl) {
     }
 
     // ── Image ──────────────────────────────────────────────────────────────────
-    // Image top in reading space
-    const imgTop_r = Math.max(ry + 2, 20);
-    const imgX_r   = 5; // reading x (left edge of image)
-
+    // Fixed image box in reading space (from InDesign layout: 18.8×32.6mm at reading x=5, y=30)
+    // Image scaled within box maintaining aspect ratio, then centred inside it.
     if (imgRotDataUrl) {
-        // Pre-rotated image (90° CW): placed in PDF with reading H/W swapped.
-        // In PDF: image rectangle is (imgH_r wide × IMG_W_R tall).
-        // This ensures image appears correctly oriented in reading view.
-        const pdfImgX = xBase + (RH - imgTop_r - imgH_r);
+        const { dW, dH } = imgDisplayDims(isSpec);
+        // Centre within the fixed box
+        const imgX_r = IMG_BOX_X + (IMG_BOX_W - dW) / 2;
+        const imgY_r = IMG_BOX_Y + (IMG_BOX_H - dH) / 2;
+        // Map to PDF: 90° CW rotation swaps reading H↔W
+        // pdfImgW = dH (reading height → pdf width), pdfImgH = dW (reading width → pdf height)
+        const pdfImgX = xBase + (RH - imgY_r - dH);
         const pdfImgY = imgX_r;
-        const pdfImgW = imgH_r;   // reading height → pdf width (after 90° CW)
-        const pdfImgH = IMG_W_R;  // reading width  → pdf height (after 90° CW)
         try {
-            doc.addImage(imgRotDataUrl, 'JPEG', pdfImgX, pdfImgY, pdfImgW, pdfImgH, undefined, 'NONE');
+            doc.addImage(imgRotDataUrl, 'JPEG', pdfImgX, pdfImgY, dH, dW, undefined, 'NONE');
         } catch(_) {}
     }
 
@@ -455,27 +460,28 @@ function drawEnvPdf(doc, row, xBase, setNum, imgRotDataUrl) {
         doc.setFont('helvetica', 'italic');
         doc.setFontSize(8);
         doc.setTextColor(15, 15, 15);
-        const textCx  = (imgX_r + IMG_W_R + 4 + RW - 4) / 2; // centre of right area in reading
+        // Centre in the area to the right of the image box
+        const textCx  = (IMG_BOX_X + IMG_BOX_W + 5 + RW - 5) / 2;
         const lineH   = 5;
         const totalH  = offeringLines.length * lineH;
-        const startRY = imgTop_r + imgH_r / 2 - totalH / 2 + lineH * 0.8;
+        // Vertically centred with the image box centre
+        const startRY = IMG_BOX_Y + IMG_BOX_H / 2 - totalH / 2 + lineH * 0.8;
         offeringLines.forEach((line, i) => {
             const p = tp(textCx, startRY + i * lineH);
             doc.text(line, p.x, p.y, { angle: -90, align: 'center' });
         });
     }
 
-    // ── Set number (bottom-left in reading: rx≈5, ry≈73) ──────────────────────
+    // ── Set number (bottom-left: reading rx=5, ry=73) ─────────────────────────
     if (setNum !== null) {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(14);
         doc.setTextColor(15, 15, 15);
         const p = tp(5, 73);
-        // align:'left' → text starts at pdf_y=5 going downward (reading: starts at rx=5 rightward)
         doc.text(String(setNum), p.x, p.y, { angle: -90 });
     }
 
-    // ── Date (bottom-right in reading: rx≈93, ry≈73) ──────────────────────────
+    // ── Date (bottom-right: reading rx=93, ry=73) ─────────────────────────────
     const date = buildDate(row);
     if (date) {
         doc.setFont('helvetica', 'normal');
