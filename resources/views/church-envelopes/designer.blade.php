@@ -10,7 +10,7 @@
                 Envelope Generator
             </a>
         </div>
-        <p style="color:#64748b;font-size:0.875rem;margin:0;">Upload a generated spreadsheet to preview and download a print-ready PDF — 2-up (156 × 98 mm landscape page, two 78 × 98 mm portrait halves side by side, content rotated to match InDesign artwork).</p>
+        <p style="color:#64748b;font-size:0.875rem;margin:0;">Upload a generated spreadsheet to preview and download a print-ready PDF — 2-up (156 × 98 mm landscape, two 78 × 98 mm portrait halves, content rotated 90° to match InDesign artwork, transparent background).</p>
     </div>
 
     {{-- Upload --}}
@@ -70,7 +70,7 @@
                 Refresh Preview
             </button>
         </div>
-        <p style="font-size:0.75rem;color:#94a3b8;margin:0 0 1rem;">Preview shows print layout (content rotated as it will appear on the printed sheet). Each page: two 78×98mm portrait halves side by side.</p>
+        <p style="font-size:0.75rem;color:#94a3b8;margin:0 0 1rem;">Preview shows content in reading orientation. PDF will print rotated 90° to match the InDesign layout (transparent background).</p>
         <div id="preview-cards" style="display:flex;flex-direction:column;gap:1.25rem;"></div>
         <p style="font-size:0.75rem;color:#94a3b8;margin:0.75rem 0 0;">Showing first 6 pages. PDF will include all rows.</p>
     </div>
@@ -92,17 +92,15 @@
 <script>
 // ── State ─────────────────────────────────────────────────────────────────────
 let parsedRows = [];
-// Weekly image
 let weeklyImgDataUrl = null, weeklyNatW = 0, weeklyNatH = 0;
-// Special image
 let specialImgDataUrl = null, specialNatW = 0, specialNatH = 0;
 
-// PDF page: 156mm wide × 98mm tall (landscape)
-// Each envelope half: 78mm wide × 98mm tall (portrait)
-// Envelopes are used landscape (98mm wide × 78mm tall), so content is rotated 90° CW in print
+// PDF layout constants (mm)
+// Page: 156 × 98 mm landscape. Each half: 78 × 98 mm portrait.
+// Envelope reading orientation: 98 mm wide × 78 mm tall (landscape in hand).
+// Content is drawn in reading space then rotated 90° CW for print.
 const PAGE_W = 156, PAGE_H = 98, ENV_W = 78, ENV_H = 98;
-// Reading space per envelope: 98mm wide × 78mm tall
-const RW = 98, RH = 78;
+const RW = 98, RH = 78; // reading space dimensions
 
 // ── Auto-load Spiral.jpg ──────────────────────────────────────────────────────
 (function () {
@@ -136,16 +134,12 @@ function handleImage(input, type) {
         const probe = new Image();
         probe.onload = function() {
             if (type === 'weekly') {
-                weeklyImgDataUrl = url;
-                weeklyNatW = probe.naturalWidth;
-                weeklyNatH = probe.naturalHeight;
+                weeklyImgDataUrl = url; weeklyNatW = probe.naturalWidth; weeklyNatH = probe.naturalHeight;
                 document.getElementById('weekly-img-label').textContent = file.name;
                 document.getElementById('weekly-img-thumb').src = url;
                 document.getElementById('weekly-img-preview').style.display = 'block';
             } else {
-                specialImgDataUrl = url;
-                specialNatW = probe.naturalWidth;
-                specialNatH = probe.naturalHeight;
+                specialImgDataUrl = url; specialNatW = probe.naturalWidth; specialNatH = probe.naturalHeight;
                 document.getElementById('special-img-label').textContent = file.name;
                 document.getElementById('special-img-thumb').src = url;
                 document.getElementById('special-img-preview').style.display = 'block';
@@ -168,49 +162,35 @@ function parseFile() {
             const ws  = wb.Sheets[wb.SheetNames[0]];
             const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
             if (raw.length < 2) throw new Error('Empty spreadsheet');
-
             const header = raw[0];
             const vtCols = {};
-            header.forEach((h, i) => {
-                const m = String(h || '').match(/^VT(\d+)$/i);
-                if (m) vtCols[parseInt(m[1])] = i;
-            });
+            header.forEach((h, i) => { const m = String(h||'').match(/^VT(\d+)$/i); if (m) vtCols[parseInt(m[1])] = i; });
             for (let i = 1; i <= 8; i++) vtCols[i] = vtCols[i] ?? (12 + i);
-
             parsedRows = [];
             raw.slice(1).forEach(row => {
                 if (row.every(v => v === '' || v === null || v === undefined)) return;
-                const vt1    = String(row[vtCols[1]] ?? '').trim();
-                const vt6    = String(row[vtCols[6]] ?? '').trim();
-                const spiral = String(row[7] ?? '').trim();
-                const isSpec = spiral !== '' || (vt6 !== '' && vt1 === '');
-                const vts    = [];
+                const vt1 = String(row[vtCols[1]] ?? '').trim();
+                const vt6 = String(row[vtCols[6]] ?? '').trim();
+                const isSpec = String(row[7] ?? '').trim() !== '' || (vt6 !== '' && vt1 === '');
+                const vts = [];
                 for (let i = 1; i <= 8; i++) vts.push(String(row[vtCols[i]] ?? '').trim());
-
                 const rawL = row[4], rawR = row[5];
                 parsedRows.push({
-                    day:      String(row[1] ?? '').trim(),
-                    month:    String(row[2] ?? '').trim(),
-                    year:     String(row[3] ?? '').trim(),
+                    day: String(row[1]??'').trim(), month: String(row[2]??'').trim(), year: String(row[3]??'').trim(),
                     setLeft:  (rawL !== '' && rawL !== null) ? parseInt(rawL)  : null,
                     setRight: (rawR !== '' && rawR !== null) ? parseInt(rawR) : null,
                     isSpecial: isSpec,
-                    church:   String(row[8]  ?? '').trim(),
-                    town:     String(row[9]  ?? '').trim(),
-                    diocese1: String(row[10] ?? '').trim(),
-                    diocese2: String(row[11] ?? '').trim(),
-                    diocese3: String(row[12] ?? '').trim(),
+                    church: String(row[8]??'').trim(), town: String(row[9]??'').trim(),
+                    diocese1: String(row[10]??'').trim(), diocese2: String(row[11]??'').trim(), diocese3: String(row[12]??'').trim(),
                     vts,
                 });
             });
-
             if (!parsedRows.length) throw new Error('No data rows found');
-            const first   = parsedRows.find(r => !r.isSpecial) || parsedRows[0];
-            const weekly  = parsedRows.filter(r => !r.isSpecial).length;
-            const special = parsedRows.filter(r => r.isSpecial).length;
+            const first  = parsedRows.find(r => !r.isSpecial) || parsedRows[0];
+            const weekly = parsedRows.filter(r => !r.isSpecial).length;
+            const special= parsedRows.filter(r => r.isSpecial).length;
             document.getElementById('parse-summary').innerHTML =
                 `<strong>${parsedRows.length} pages</strong> — <strong>${first.church}</strong>, ${first.town} — ${weekly} weekly, ${special} special.`;
-
             showStatus('parse-status', `Loaded ${parsedRows.length} rows successfully.`, 'success');
             document.getElementById('options-panel').style.display    = 'block';
             document.getElementById('preview-panel').style.display    = 'block';
@@ -231,234 +211,177 @@ function showStatus(id, msg, type) {
     el.style.border     = type === 'error' ? '1px solid #fecaca' : '1px solid #bbf7d0';
 }
 
-// ── Canvas rendering ──────────────────────────────────────────────────────────
-// Render one envelope in READING orientation (98mm × 78mm) on a canvas,
-// then rotate 90° CW to get the print orientation (78mm × 98mm in PDF).
-const CPPM = 4; // canvas pixels per mm
-
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function getOfferingLines(row) {
     if (row.isSpecial) return [row.vts[5], row.vts[6]].filter(Boolean);
     return row.vts.filter(Boolean);
 }
-function buildDate(row) {
-    return [row.day, row.month, row.year].filter(Boolean).join(' ');
+function buildDate(row) { return [row.day, row.month, row.year].filter(Boolean).join(' '); }
+function sanitise(str) { return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'envelopes'; }
+
+// Image aspect ratio helpers
+function imgAspect(isSpec) {
+    const nw = isSpec ? specialNatW : weeklyNatW;
+    const nh = isSpec ? specialNatH : weeklyNatH;
+    return (nw && nh) ? nw / nh : 1;
 }
+// Image display dimensions in reading space (mm): fixed width, height from aspect, capped
+const IMG_W_R = 33;
+function imgHeightR(isSpec) { return Math.min(IMG_W_R / imgAspect(isSpec), RH - 22); }
 
-// Draw envelope in reading orientation (RW × RH mm) on a canvas, return Promise<canvas>
-function drawEnvReading(row, setNum) {
-    const isSpec = row.isSpecial;
-    const imgUrl = isSpec ? specialImgDataUrl : weeklyImgDataUrl;
-    const natW   = isSpec ? specialNatW : weeklyNatW;
-    const natH   = isSpec ? specialNatH : weeklyNatH;
+// ── Preview (HTML, reading orientation) ───────────────────────────────────────
+const S = 1.7; // px per mm for preview
 
-    const CW = RW * CPPM, CH = RH * CPPM;
-    const c  = document.createElement('canvas');
-    c.width = CW; c.height = CH;
-    const ctx = c.getContext('2d');
-
-    function px(mm) { return mm * CPPM; }
-
-    let y = px(7);
-
-    // Church name — bold, centred
-    ctx.fillStyle = '#0f0f0f';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.font = `bold ${px(5)}px Arial,sans-serif`;
-    const maxTw = px(RW - 8);
-    const churchLines = wrapText(ctx, row.church.toUpperCase(), maxTw);
-    for (const line of churchLines) {
-        ctx.fillText(line, CW / 2, y);
-        y += px(6);
-    }
-    y += px(1);
-
-    // Town — bold, centred
-    if (row.town) {
-        ctx.font = `bold ${px(4)}px Arial,sans-serif`;
-        ctx.fillText(row.town.toUpperCase(), CW / 2, y);
-        y += px(5.5);
-    }
-
-    // Diocese lines — normal, centred
-    ctx.fillStyle = '#282828';
-    ctx.font = `${px(3)}px Arial,sans-serif`;
-    for (const d of [row.diocese1, row.diocese2, row.diocese3]) {
-        if (d) { ctx.fillText(d, CW / 2, y); y += px(3.8); }
-    }
-
-    // Image area
-    const imgTop = Math.max(y + px(3), px(20));
-    const IMG_W  = px(33); // image width in pixels (≈33mm)
-    const aspect = (natW && natH) ? natW / natH : 1;
-    const IMG_H  = IMG_W / aspect;
-    const imgX   = px(5);
-
-    const offeringLines = getOfferingLines(row);
-    const date = buildDate(row);
-
-    function finishCanvas() {
-        // Offering text — italic, centred in right portion
-        if (offeringLines.length) {
-            ctx.fillStyle = '#0f0f0f';
-            ctx.font = `italic ${px(3.5)}px Arial,sans-serif`;
-            ctx.textAlign = 'center';
-            const textLeft = imgX + IMG_W + px(4);
-            const textCx   = (textLeft + px(RW - 4)) / 2;
-            const lineH    = px(4.5);
-            const totalH   = offeringLines.length * lineH;
-            const startY   = imgTop + IMG_H / 2 - totalH / 2;
-            offeringLines.forEach((line, i) => {
-                ctx.fillText(line, textCx, startY + i * lineH);
-            });
-        }
-
-        // Set number — bold, bottom-left
-        if (setNum !== null) {
-            ctx.fillStyle = '#0f0f0f';
-            ctx.font = `bold ${px(7)}px Arial,sans-serif`;
-            ctx.textAlign = 'left';
-            ctx.textBaseline = 'bottom';
-            ctx.fillText(String(setNum), px(5), CH - px(5));
-        }
-
-        // Date — bottom-right
-        if (date) {
-            ctx.fillStyle = '#282828';
-            ctx.font = `${px(3.5)}px Arial,sans-serif`;
-            ctx.textAlign = 'right';
-            ctx.textBaseline = 'bottom';
-            ctx.fillText(date, px(RW - 5), CH - px(5));
-        }
-    }
-
-    return new Promise(resolve => {
-        if (imgUrl) {
-            const imgEl = new Image();
-            imgEl.onload = () => {
-                ctx.drawImage(imgEl, imgX, imgTop, IMG_W, IMG_H);
-                finishCanvas();
-                resolve(c);
-            };
-            imgEl.onerror = () => { finishCanvas(); resolve(c); };
-            imgEl.src = imgUrl;
-        } else {
-            // Placeholder rectangle
-            ctx.fillStyle = 'rgba(0,0,0,0.08)';
-            ctx.fillRect(imgX, imgTop, IMG_W, IMG_H);
-            finishCanvas();
-            resolve(c);
-        }
-    });
-}
-
-function wrapText(ctx, text, maxWidth) {
-    const words = text.split(' ');
-    const lines = [];
-    let cur = '';
-    for (const w of words) {
-        const test = cur ? cur + ' ' + w : w;
-        if (ctx.measureText(test).width > maxWidth && cur) {
-            lines.push(cur); cur = w;
-        } else { cur = test; }
-    }
-    if (cur) lines.push(cur);
-    return lines;
-}
-
-// Rotate canvas 90° CW → new canvas (H×W)
-function rotateCW(srcCanvas) {
-    const dst = document.createElement('canvas');
-    dst.width  = srcCanvas.height;
-    dst.height = srcCanvas.width;
-    const ctx  = dst.getContext('2d');
-    ctx.translate(dst.width, 0);
-    ctx.rotate(Math.PI / 2);
-    ctx.drawImage(srcCanvas, 0, 0);
-    return dst;
-}
-
-// ── Preview ───────────────────────────────────────────────────────────────────
-const PREV_SCALE = 2.2; // px per mm for preview display
-
-async function updatePreview() {
+function updatePreview() {
     if (!parsedRows.length) return;
     const container = document.getElementById('preview-cards');
     container.innerHTML = '';
     const count = Math.min(parsedRows.length, 6);
     document.getElementById('preview-count').textContent = `(${parsedRows.length} pages total)`;
-
     for (let i = 0; i < count; i++) {
         const row = parsedRows[i];
         const wrap = document.createElement('div');
-
         const lbl = document.createElement('div');
         lbl.style.cssText = 'font-size:0.7rem;color:#94a3b8;margin-bottom:4px;';
         lbl.textContent = `Page ${i + 1} — ${row.church}${row.isSpecial ? ' (special)' : ''}`;
         wrap.appendChild(lbl);
-
-        // Render both halves as canvases, rotate CW, display side by side
-        const [leftC, rightC] = await Promise.all([
-            drawEnvReading(row, row.setLeft),
-            drawEnvReading(row, row.setRight),
-        ]);
-        const leftRot  = rotateCW(leftC);
-        const rightRot = rotateCW(rightC);
-
-        // Page container: two portrait halves side by side, scaled for display
-        const pageDiv = document.createElement('div');
-        pageDiv.style.cssText = `display:inline-flex;background:#d1d5db;gap:1px;border:1px solid #9ca3af;border-radius:3px;overflow:hidden;`;
-
-        for (const rotCanvas of [leftRot, rightRot]) {
-            const img = document.createElement('img');
-            img.src = rotCanvas.toDataURL('image/png');
-            // Each half: ENV_W × ENV_H mm displayed at PREV_SCALE px/mm
-            img.style.cssText = `width:${ENV_W * PREV_SCALE}px;height:${ENV_H * PREV_SCALE}px;display:block;image-rendering:auto;`;
-            pageDiv.appendChild(img);
-        }
-        wrap.appendChild(pageDiv);
+        const page = document.createElement('div');
+        page.style.cssText = 'display:inline-flex;background:#d1d5db;gap:1px;border:1px solid #9ca3af;border-radius:3px;overflow:hidden;';
+        page.appendChild(buildEnvHtml(row, row.setLeft));
+        page.appendChild(buildEnvHtml(row, row.setRight));
+        wrap.appendChild(page);
         container.appendChild(wrap);
     }
 }
 
+function buildEnvHtml(row, setNum) {
+    const W = ENV_W * S, H = ENV_H * S;
+    const env = document.createElement('div');
+    env.style.cssText = `position:relative;width:${W}px;height:${H}px;overflow:hidden;background:transparent;flex-shrink:0;`;
+
+    const isSpec = row.isSpecial;
+    const imgSrc = isSpec ? specialImgDataUrl : weeklyImgDataUrl;
+    const imgH   = imgHeightR(isSpec);
+
+    let y = 9 * S;
+
+    const cname = document.createElement('div');
+    cname.style.cssText = `position:absolute;left:0;top:${y}px;width:${W}px;font-family:Arial,sans-serif;font-weight:700;font-size:${5.5*S}px;color:#111;text-align:center;line-height:1.25;`;
+    cname.textContent = row.church;
+    env.appendChild(cname);
+    const churchLines = Math.ceil((row.church.length * 5.5 * S * 0.55) / W) || 1;
+    y += (6.5 * S) * churchLines + 2 * S;
+
+    if (row.town) {
+        const t = document.createElement('div');
+        t.style.cssText = `position:absolute;left:0;top:${y}px;width:${W}px;font-family:Arial,sans-serif;font-weight:700;font-size:${4.2*S}px;color:#111;text-align:center;`;
+        t.textContent = row.town; env.appendChild(t); y += 5 * S;
+    }
+
+    [row.diocese1, row.diocese2, row.diocese3].forEach(d => {
+        if (!d) return;
+        const dl = document.createElement('div');
+        dl.style.cssText = `position:absolute;left:0;top:${y}px;width:${W}px;font-family:Arial,sans-serif;font-size:${3*S}px;color:#333;text-align:center;`;
+        dl.textContent = d; env.appendChild(dl); y += 3.8 * S;
+    });
+
+    const imgTop = Math.max(y + 2 * S, 30 * S);
+    const imgW = IMG_W_R * S, imgHpx = imgH * S;
+    const imgX = 4 * S;
+
+    if (imgSrc) {
+        const imgEl = document.createElement('img');
+        imgEl.src = imgSrc;
+        imgEl.style.cssText = `position:absolute;left:${imgX}px;top:${imgTop}px;width:${imgW}px;height:${imgHpx}px;object-fit:contain;`;
+        env.appendChild(imgEl);
+    }
+
+    const offeringLines = getOfferingLines(row);
+    if (offeringLines.length) {
+        const lineH = 4.8 * S, totalH = offeringLines.length * lineH;
+        const imgMidY = imgTop + imgHpx / 2;
+        const textStartY = imgMidY - totalH / 2;
+        const textLeft = imgX + imgW + 3 * S;
+        const textWidth = W - textLeft - 3 * S;
+        offeringLines.forEach((line, i) => {
+            const t = document.createElement('div');
+            t.style.cssText = `position:absolute;left:${textLeft}px;top:${textStartY + i*lineH}px;width:${textWidth}px;font-family:Arial,sans-serif;font-style:italic;font-size:${3.8*S}px;color:#111;text-align:center;line-height:1.2;`;
+            t.textContent = line; env.appendChild(t);
+        });
+    }
+
+    if (setNum !== null) {
+        const sn = document.createElement('div');
+        sn.style.cssText = `position:absolute;left:${5*S}px;bottom:${5*S}px;font-family:Arial,sans-serif;font-weight:700;font-size:${7*S}px;color:#111;`;
+        sn.textContent = String(setNum); env.appendChild(sn);
+    }
+
+    const date = buildDate(row);
+    if (date) {
+        const dt = document.createElement('div');
+        dt.style.cssText = `position:absolute;right:${4*S}px;bottom:${5*S}px;font-family:Arial,sans-serif;font-size:${3.5*S}px;color:#333;text-align:right;`;
+        dt.textContent = date; env.appendChild(dt);
+    }
+
+    return env;
+}
+
 // ── PDF Generation ────────────────────────────────────────────────────────────
+// Text is drawn using jsPDF with angle:-90 (90° CW) so it reads when the page
+// is rotated 90° CCW — matching the InDesign print layout.
+// Images are pre-rotated 90° CW on a small canvas and embedded as JPEG (no transparency
+// needed for the image itself; the surrounding envelope area is transparent in the PDF
+// because we draw no background rectangle).
+//
+// Transform from reading coords (rx, ry) to PDF coords (per half):
+//   pdf_x = xBase + (RH - ry)   [RH=78]
+//   pdf_y = rx
+// Text at reading (cx, ry) → doc.text(text, xBase+RH-ry, cx, { angle:-90, align:'center' })
+
+async function rotateCW90(dataUrl) {
+    return new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => {
+            const c = document.createElement('canvas');
+            c.width = img.naturalHeight; c.height = img.naturalWidth;
+            const ctx = c.getContext('2d');
+            ctx.translate(img.naturalHeight, 0);
+            ctx.rotate(Math.PI / 2);
+            ctx.drawImage(img, 0, 0);
+            resolve(c.toDataURL('image/jpeg', 0.92));
+        };
+        img.src = dataUrl;
+    });
+}
+
 async function generatePDF() {
     if (!parsedRows.length) return;
     const btn = document.getElementById('generate-btn');
     const st  = document.getElementById('generate-status');
     btn.disabled = true; btn.textContent = 'Generating…';
     st.style.display = 'block'; st.style.color = '#64748b';
-    st.textContent = `Building ${parsedRows.length} pages…`;
-    await new Promise(r => setTimeout(r, 50));
+    st.textContent = 'Preparing images…';
+    await new Promise(r => setTimeout(r, 30));
 
     try {
+        // Pre-rotate images once
+        const weeklyRot  = weeklyImgDataUrl  ? await rotateCW90(weeklyImgDataUrl)  : null;
+        const specialRot = specialImgDataUrl ? await rotateCW90(specialImgDataUrl) : null;
+
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ unit: 'mm', format: [PAGE_W, PAGE_H], orientation: 'landscape' });
         const church = (parsedRows.find(r => !r.isSpecial) || parsedRows[0])?.church || 'envelopes';
 
-        for (let idx = 0; idx < parsedRows.length; idx++) {
-            const row = parsedRows[idx];
+        parsedRows.forEach((row, idx) => {
             if (idx > 0) doc.addPage();
+            const imgRot = row.isSpecial ? specialRot : weeklyRot;
+            drawEnvPdf(doc, row, 0,     row.setLeft,  imgRot);
+            drawEnvPdf(doc, row, ENV_W, row.setRight, imgRot);
+        });
 
-            st.textContent = `Building page ${idx + 1} of ${parsedRows.length}…`;
-            await new Promise(r => setTimeout(r, 0)); // yield
-
-            // Render each envelope in reading orientation, rotate CW, insert as image
-            const [leftC, rightC] = await Promise.all([
-                drawEnvReading(row, row.setLeft),
-                drawEnvReading(row, row.setRight),
-            ]);
-            const leftRot  = rotateCW(leftC);
-            const rightRot = rotateCW(rightC);
-
-            // Insert into PDF (each half: ENV_W × ENV_H mm)
-            doc.addImage(leftRot.toDataURL('image/png'),  'PNG', 0,     0, ENV_W, ENV_H, undefined, 'NONE');
-            doc.addImage(rightRot.toDataURL('image/png'), 'PNG', ENV_W, 0, ENV_W, ENV_H, undefined, 'NONE');
-        }
-
-        doc.save(sanitise(church) + '-envelopes.pdf');
         st.textContent = `Done — ${parsedRows.length} pages saved.`;
         st.style.color = '#166534';
+        doc.save(sanitise(church) + '-envelopes.pdf');
     } catch(e) {
         st.textContent = 'PDF error: ' + e.message;
         st.style.color = '#991b1b';
@@ -467,8 +390,101 @@ async function generatePDF() {
     }
 }
 
-function sanitise(str) {
-    return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'envelopes';
+function drawEnvPdf(doc, row, xBase, setNum, imgRotDataUrl) {
+    const isSpec = row.isSpecial;
+    const imgH_r = imgHeightR(isSpec); // image height in reading space (mm), already capped
+
+    // Helper: reading (rx, ry) → PDF position for angle:-90 text
+    // With angle:-90 and align:'center', the text is centred at pdf_y=rx along the +pdf_y axis.
+    function tp(rx, ry) { return { x: xBase + RH - ry, y: rx }; }
+
+    let ry = 7; // current reading Y (mm from top of reading envelope)
+
+    // ── Church name ─────────────────────────────────────────────────────────────
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(15, 15, 15);
+    const churchLines = doc.splitTextToSize(row.church.toUpperCase(), RW - 8);
+    churchLines.forEach((line, i) => {
+        const p = tp(RW / 2, ry + i * 6);
+        doc.text(line, p.x, p.y, { angle: -90, align: 'center' });
+    });
+    ry += churchLines.length * 6 + 1;
+
+    // ── Town ───────────────────────────────────────────────────────────────────
+    if (row.town) {
+        doc.setFontSize(8);
+        const p = tp(RW / 2, ry);
+        doc.text(row.town.toUpperCase(), p.x, p.y, { angle: -90, align: 'center' });
+        ry += 5.5;
+    }
+
+    // ── Diocese lines ──────────────────────────────────────────────────────────
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.5);
+    doc.setTextColor(40, 40, 40);
+    for (const d of [row.diocese1, row.diocese2, row.diocese3]) {
+        if (d) {
+            const p = tp(RW / 2, ry);
+            doc.text(d, p.x, p.y, { angle: -90, align: 'center' });
+            ry += 4;
+        }
+    }
+
+    // ── Image ──────────────────────────────────────────────────────────────────
+    // Image top in reading space
+    const imgTop_r = Math.max(ry + 2, 20);
+    const imgX_r   = 5; // reading x (left edge of image)
+
+    if (imgRotDataUrl) {
+        // Pre-rotated image (90° CW): placed in PDF with reading H/W swapped.
+        // In PDF: image rectangle is (imgH_r wide × IMG_W_R tall).
+        // This ensures image appears correctly oriented in reading view.
+        const pdfImgX = xBase + (RH - imgTop_r - imgH_r);
+        const pdfImgY = imgX_r;
+        const pdfImgW = imgH_r;   // reading height → pdf width (after 90° CW)
+        const pdfImgH = IMG_W_R;  // reading width  → pdf height (after 90° CW)
+        try {
+            doc.addImage(imgRotDataUrl, 'JPEG', pdfImgX, pdfImgY, pdfImgW, pdfImgH, undefined, 'NONE');
+        } catch(_) {}
+    }
+
+    // ── Offering text ──────────────────────────────────────────────────────────
+    const offeringLines = getOfferingLines(row);
+    if (offeringLines.length) {
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(8);
+        doc.setTextColor(15, 15, 15);
+        const textCx  = (imgX_r + IMG_W_R + 4 + RW - 4) / 2; // centre of right area in reading
+        const lineH   = 5;
+        const totalH  = offeringLines.length * lineH;
+        const startRY = imgTop_r + imgH_r / 2 - totalH / 2 + lineH * 0.8;
+        offeringLines.forEach((line, i) => {
+            const p = tp(textCx, startRY + i * lineH);
+            doc.text(line, p.x, p.y, { angle: -90, align: 'center' });
+        });
+    }
+
+    // ── Set number (bottom-left in reading: rx≈5, ry≈73) ──────────────────────
+    if (setNum !== null) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.setTextColor(15, 15, 15);
+        const p = tp(5, 73);
+        // align:'left' → text starts at pdf_y=5 going downward (reading: starts at rx=5 rightward)
+        doc.text(String(setNum), p.x, p.y, { angle: -90 });
+    }
+
+    // ── Date (bottom-right in reading: rx≈93, ry≈73) ──────────────────────────
+    const date = buildDate(row);
+    if (date) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7.5);
+        doc.setTextColor(40, 40, 40);
+        const p = tp(93, 73);
+        // align:'right' → text ends at pdf_y=93 (reading: right edge at rx=93)
+        doc.text(date, p.x, p.y, { angle: -90, align: 'right' });
+    }
 }
 </script>
 </x-layout>
