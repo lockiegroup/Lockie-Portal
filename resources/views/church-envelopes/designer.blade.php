@@ -339,7 +339,7 @@ function buildEnvHtml(row, setNum) {
 // using the same coordinates as the HTML preview, then embedded as a transparent
 // PNG. This avoids jsPDF angle/alignment ambiguity entirely.
 
-const CPPM = 6; // canvas pixels per mm (~150 dpi equivalent for print)
+const CPPM = 4; // canvas pixels per mm (~100 dpi equivalent for print)
 
 function loadImage(src) {
     return new Promise(resolve => {
@@ -469,8 +469,9 @@ async function generatePDF() {
 
             const lc = await buildEnvCanvas(row, row.setLeft,  imgSrc);
             const rc = await buildEnvCanvas(row, row.setRight, imgSrc);
-            doc.addImage(lc.toDataURL('image/png'), 'PNG', 0,     0, ENV_W, ENV_H, '', 'NONE');
-            doc.addImage(rc.toDataURL('image/png'), 'PNG', ENV_W, 0, ENV_W, ENV_H, '', 'NONE');
+            // Pass canvas elements directly — avoids creating large base64 data URL strings
+            doc.addImage(lc, 'PNG', 0,     0, ENV_W, ENV_H, '', 'NONE');
+            doc.addImage(rc, 'PNG', ENV_W, 0, ENV_W, ENV_H, '', 'NONE');
         }
 
         st.textContent = `Done — ${parsedRows.length} pages saved.`;
