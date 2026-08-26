@@ -303,7 +303,7 @@ function buildEnvelopeHtml(row, setNum, S) {
     }
 
     // Set number — bottom left (only if > 0)
-    if (setNum !== null && setNum > 0) {
+    if (setNum !== null) {
         const num = document.createElement('div');
         num.style.cssText = `position:absolute;left:${5*S}px;bottom:${5*S}px;font-weight:700;font-size:${5*S}px;color:#1a1a1a;`;
         num.textContent = setNum;
@@ -424,7 +424,7 @@ function drawEnvelope(doc, row, xBase, setNum) {
     }
 
     // Set number — bottom left (only if > 0)
-    if (setNum !== null && setNum > 0) {
+    if (setNum !== null) {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(10);
         doc.setTextColor(20, 20, 20);
