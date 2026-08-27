@@ -29,6 +29,7 @@ use App\Http\Controllers\TrainingController;
 use App\Http\Controllers\ImpersonateController;
 use App\Http\Controllers\ActionPlanController;
 use App\Http\Controllers\TabletController;
+use App\Http\Controllers\RackingController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn() => redirect()->route('login'));
@@ -70,6 +71,23 @@ Route::middleware(['auth', 'otp'])->group(function () {
     Route::post('/logout', LogoutController::class)->name('logout');
 
     // Church Envelope Generator
+    // Racking
+    Route::prefix('racking')->name('racking.')->group(function () {
+        Route::get('/',                                   [RackingController::class, 'index'])->name('index');
+        Route::post('/',                                  [RackingController::class, 'store'])->name('store');
+        Route::put('/{rackingItem}',                      [RackingController::class, 'update'])->name('update');
+        Route::delete('/{rackingItem}',                   [RackingController::class, 'destroy'])->name('destroy');
+        Route::post('/settings',                          [RackingController::class, 'updateSettings'])->name('settings');
+        Route::post('/import',                            [RackingController::class, 'import'])->name('import');
+        Route::get('/outside-storage',                    [RackingController::class, 'outside'])->name('outside');
+        Route::post('/outside-storage',                   [RackingController::class, 'storeOutside'])->name('outside.store');
+        Route::put('/outside-storage/{outsideStorageItem}', [RackingController::class, 'updateOutside'])->name('outside.update');
+        Route::delete('/outside-storage/{outsideStorageItem}', [RackingController::class, 'destroyOutside'])->name('outside.destroy');
+        Route::get('/movements',                          [RackingController::class, 'movements'])->name('movements');
+        Route::post('/movements',                         [RackingController::class, 'storeMovement'])->name('movements.store');
+        Route::delete('/movements/{stockMovement}',       [RackingController::class, 'destroyMovement'])->name('movements.destroy');
+    });
+
     Route::get('/church-envelopes', [ChurchEnvelopeController::class, 'index'])->name('church-envelopes.index');
     Route::post('/church-envelopes/parse', [ChurchEnvelopeController::class, 'parse'])->name('church-envelopes.parse');
     Route::post('/church-envelopes/generate', [ChurchEnvelopeController::class, 'generate'])->name('church-envelopes.generate');

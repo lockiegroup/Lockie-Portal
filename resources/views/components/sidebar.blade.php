@@ -8,7 +8,7 @@
     $activeStock      = request()->routeIs('stock.*') || $isWatchlistSection;
     $activePlanning   = request()->routeIs('key-actions.*') || request()->routeIs('action-plans.*') || request()->routeIs('ab-testing.*');
     $activeCustomers  = request()->routeIs('key-accounts.*') || request()->routeIs('crm.*') || request()->routeIs('reminders.*');
-    $activeOperations = request()->routeIs('church-envelopes.*') || request()->routeIs('policies.*') || request()->routeIs('training.*') || request()->routeIs('letter-filter.*') || $isPrintSection;
+    $activeOperations = request()->routeIs('church-envelopes.*') || request()->routeIs('policies.*') || request()->routeIs('training.*') || request()->routeIs('letter-filter.*') || request()->routeIs('racking.*') || $isPrintSection;
     $activeAdmin      = request()->routeIs('admin.*') || request()->routeIs('imports.*');
 
     $showKeyActions  = $user->isMaster() || $user->can('admin') || \App\Models\KeyActionGroup::whereHas('members', fn($q) => $q->where('user_id', $user->id))->exists();
@@ -174,13 +174,20 @@
         @endif
 
         {{-- OPERATIONS --}}
-        @if($user->hasModule('envelopes') || $user->hasModule('policies') || $user->can('factory_training_view') || $user->hasModule('print_schedule'))
+        @if($user->hasModule('envelopes') || $user->hasModule('policies') || $user->can('factory_training_view') || $user->hasModule('print_schedule') || true)
         <div style="height:1px;background:#1e293b;margin:10px 4px 2px;"></div>
         <button onclick="sbSection('operations')" class="sb-section-btn sb-label" data-tip="Operations">
             <span style="font-size:0.625rem;font-weight:700;text-transform:uppercase;">Operations</span>
             <svg id="sc-operations" style="width:10px;height:10px;flex-shrink:0;transition:transform 0.2s;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div id="ss-operations">
+            <a href="{{ route('racking.index') }}" class="sb-item{{ request()->routeIs('racking.*') ? ' sb-active' : '' }}" data-tip="Racking">
+                <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="3" width="20" height="4" rx="1"/><rect x="2" y="10" width="20" height="4" rx="1"/><rect x="2" y="17" width="20" height="4" rx="1"/>
+                    <line x1="6" y1="3" x2="6" y2="21"/><line x1="18" y1="3" x2="18" y2="21"/>
+                </svg>
+                <span class="sb-label">Racking</span>
+            </a>
             @if($user->hasModule('envelopes'))
             <a href="{{ route('church-envelopes.index') }}" class="sb-item{{ request()->routeIs('church-envelopes.*') ? ' sb-active' : '' }}" data-tip="Church Envelopes">
                 <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
