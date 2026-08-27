@@ -6,8 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class RackingItem extends Model
 {
+    public const SLOTS_PER_BAY = 4;
+
     protected $fillable = [
-        'bay', 'division', 'description', 'pallet_ref',
+        'bay', 'slot_number', 'division', 'description', 'pallet_ref',
         'quantity', 'date_stored', 'is_unusable',
         'for_outside_storage', 'sort_order', 'notes',
     ];

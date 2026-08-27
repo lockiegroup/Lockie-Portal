@@ -16,26 +16,32 @@ class RackingController extends Controller
 {
     // ── Main Racking ──────────────────────────────────────────────────────────
 
-    public function index(Request $request): View
+    public function index(): View
     {
-        $query = RackingItem::orderByRaw("SUBSTR(bay,1,1), CAST(SUBSTR(bay,2) AS UNSIGNED), sort_order, id");
-
-        if ($request->filled('bay'))      $query->where('bay', $request->bay);
-        if ($request->filled('division')) $query->where('division', $request->division);
-        if ($request->filled('q'))        $query->where('description', 'like', '%'.$request->q.'%');
-
-        $items     = $query->get()->groupBy('bay');
-        $divisions = RackingItem::distinct()->orderBy('division')->pluck('division')->filter()->values();
         $bays      = RackingItem::bays();
+        $slots     = RackingItem::SLOTS_PER_BAY;
+        $allItems  = RackingItem::orderBy('slot_number')->get()->groupBy('bay');
+        $divisions = RackingItem::distinct()->orderBy('division')->pluck('division')->filter()->values();
 
-        $unusableCount       = RackingItem::where('is_unusable', true)->count();
-        $forOutsideCount     = RackingItem::where('for_outside_storage', true)->count();
-        $availableSpaces     = (int) DB::table('app_settings')->where('key', 'racking_available_spaces')->value('value') ?: 0;
-        $outsideStorageCount = OutsideStorageItem::count();
+        // Build a full grid: bay => [slot1 => item|null, slot2 => item|null, ...]
+        $grid = [];
+        foreach ($bays as $bay) {
+            $bySlot = ($allItems[$bay] ?? collect())->keyBy('slot_number');
+            for ($s = 1; $s <= $slots; $s++) {
+                $grid[$bay][$s] = $bySlot[$s] ?? null;
+            }
+        }
+
+        $totalSlots      = count($bays) * $slots;
+        $filledCount     = RackingItem::whereNotNull('description')->count();
+        $unusableCount   = RackingItem::where('is_unusable', true)->count();
+        $forOutsideCount = RackingItem::where('for_outside_storage', true)->count();
+        $emptyCount      = $totalSlots - RackingItem::count();
+        $outsideCount    = OutsideStorageItem::count();
 
         return view('racking.index', compact(
-            'items', 'divisions', 'bays',
-            'unusableCount', 'forOutsideCount', 'availableSpaces', 'outsideStorageCount'
+            'grid', 'bays', 'slots', 'divisions',
+            'filledCount', 'unusableCount', 'forOutsideCount', 'emptyCount', 'outsideCount'
         ));
     }
 
@@ -43,6 +49,7 @@ class RackingController extends Controller
     {
         $data = $request->validate([
             'bay'                  => 'required|string|max:3',
+            'slot_number'          => 'required|integer|min:1|max:10',
             'division'             => 'nullable|string|max:100',
             'description'          => 'nullable|string|max:500',
             'pallet_ref'           => 'nullable|string|max:100',
@@ -54,18 +61,15 @@ class RackingController extends Controller
         ]);
         $data['is_unusable']         = $request->boolean('is_unusable');
         $data['for_outside_storage'] = $request->boolean('for_outside_storage');
-        $data['sort_order']          = RackingItem::where('bay', $data['bay'])->max('sort_order') + 1;
+        $data['sort_order']          = $data['slot_number'];
 
         RackingItem::create($data);
-
-        return redirect()->route('racking.index', $request->only(['bay', 'division', 'q']))
-            ->with('success', 'Item added.');
+        return redirect()->route('racking.index')->with('success', 'Slot filled.');
     }
 
     public function update(Request $request, RackingItem $rackingItem): RedirectResponse
     {
         $data = $request->validate([
-            'bay'                  => 'required|string|max:3',
             'division'             => 'nullable|string|max:100',
             'description'          => 'nullable|string|max:500',
             'pallet_ref'           => 'nullable|string|max:100',
@@ -79,27 +83,18 @@ class RackingController extends Controller
         $data['for_outside_storage'] = $request->boolean('for_outside_storage');
 
         $rackingItem->update($data);
-
-        return redirect()->route('racking.index', $request->only(['bay', 'division', 'q']))
-            ->with('success', 'Item updated.');
+        return redirect()->route('racking.index')->with('success', 'Slot updated.');
     }
 
     public function destroy(Request $request, RackingItem $rackingItem): RedirectResponse
     {
         $rackingItem->delete();
-
-        return redirect()->route('racking.index', $request->only(['bay', 'division', 'q']))
-            ->with('success', 'Item removed.');
+        return redirect()->route('racking.index')->with('success', 'Slot cleared.');
     }
 
     public function updateSettings(Request $request): RedirectResponse
     {
-        $spaces = max(0, (int) $request->input('available_spaces', 0));
-        DB::table('app_settings')->updateOrInsert(
-            ['key' => 'racking_available_spaces'],
-            ['value' => $spaces, 'updated_at' => now(), 'created_at' => now()]
-        );
-        return redirect()->route('racking.index')->with('success', 'Available spaces updated.');
+        return redirect()->route('racking.index');
     }
 
     // ── Outside Storage ───────────────────────────────────────────────────────
@@ -207,15 +202,22 @@ class RackingController extends Controller
             $qty        = trim((string) ($row[4] ?? ''));
             $qty        = ($qty === '-') ? null : ($qty ?: null);
 
+            // Slot number within this bay (1-based)
+            static $baySlotCount = [];
+            $bayKey = strtoupper($bay);
+            $baySlotCount[$bayKey] = ($baySlotCount[$bayKey] ?? 0) + 1;
+            $slotNum = $baySlotCount[$bayKey];
+
             RackingItem::create([
-                'bay'          => strtoupper($bay),
+                'bay'          => $bayKey,
+                'slot_number'  => $slotNum,
                 'division'     => trim((string) ($row[1] ?? '')) ?: null,
                 'description'  => $desc ?: null,
                 'pallet_ref'   => trim((string) ($row[3] ?? '')) ?: null,
                 'quantity'     => $qty,
                 'date_stored'  => $dateStore,
                 'is_unusable'  => $isUnusable,
-                'sort_order'   => $imported,
+                'sort_order'   => $slotNum,
             ]);
             $imported++;
         }
