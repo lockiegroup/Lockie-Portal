@@ -500,7 +500,9 @@ class KeyActionController extends Controller
 
         $imagePath = null;
         if ($request->hasFile('image')) {
+            Storage::disk('local')->makeDirectory('comment-images');
             $imagePath = $request->file('image')->store('comment-images', 'local');
+            \Log::debug('storeComment image', ['imagePath' => $imagePath, 'full' => $imagePath ? Storage::disk('local')->path($imagePath) : null]);
         }
 
         $comment = $task->comments()->create([
@@ -539,9 +541,11 @@ class KeyActionController extends Controller
 
     public function serveCommentImage(Request $request, string $filename): BinaryFileResponse
     {
-        $fullPath = storage_path('app/comment-images/' . basename($filename));
-        abort_unless(file_exists($fullPath), 404);
-        return response()->file($fullPath);
+        $disk = Storage::disk('local');
+        $path = 'comment-images/' . basename($filename);
+        \Log::debug('serveCommentImage', ['path' => $path, 'full' => $disk->path($path), 'exists' => $disk->exists($path)]);
+        abort_unless($disk->exists($path), 404);
+        return response()->file($disk->path($path));
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
