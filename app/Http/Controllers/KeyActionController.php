@@ -502,7 +502,6 @@ class KeyActionController extends Controller
         if ($request->hasFile('image')) {
             Storage::disk('local')->makeDirectory('comment-images');
             $imagePath = $request->file('image')->store('comment-images', 'local');
-            \Log::debug('storeComment image', ['imagePath' => $imagePath, 'full' => $imagePath ? Storage::disk('local')->path($imagePath) : null]);
         }
 
         $comment = $task->comments()->create([
@@ -543,7 +542,6 @@ class KeyActionController extends Controller
     {
         $disk = Storage::disk('local');
         $path = 'comment-images/' . basename($filename);
-        \Log::debug('serveCommentImage', ['path' => $path, 'full' => $disk->path($path), 'exists' => $disk->exists($path)]);
         abort_unless($disk->exists($path), 404);
         return response()->file($disk->path($path));
     }
