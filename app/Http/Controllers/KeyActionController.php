@@ -332,7 +332,7 @@ class KeyActionController extends Controller
             'comments' => $task->comments->map(fn($c) => [
                 'id'         => $c->id,
                 'body'       => $c->body,
-                'image_url'  => $c->image_path ? route('key-actions.comment-image', ['path' => $c->image_path]) : null,
+                'image_url'  => $c->image_path ? route('key-actions.comment-image', ['filename' => basename($c->image_path)]) : null,
                 'user_name'  => $c->user->name,
                 'created_at' => $c->created_at->diffForHumans(),
             ]),
@@ -516,7 +516,7 @@ class KeyActionController extends Controller
             'comment' => [
                 'id'         => $comment->id,
                 'body'       => $comment->body,
-                'image_url'  => $imagePath ? route('key-actions.comment-image', ['path' => $imagePath]) : null,
+                'image_url'  => $imagePath ? route('key-actions.comment-image', ['filename' => basename($imagePath)]) : null,
                 'user_name'  => $comment->user->name,
                 'created_at' => $comment->created_at->diffForHumans(),
             ],
@@ -537,9 +537,9 @@ class KeyActionController extends Controller
         return response()->json(['ok' => true]);
     }
 
-    public function serveCommentImage(Request $request, string $path): BinaryFileResponse
+    public function serveCommentImage(Request $request, string $filename): BinaryFileResponse
     {
-        $fullPath = storage_path('app/' . $path);
+        $fullPath = storage_path('app/comment-images/' . basename($filename));
         abort_unless(file_exists($fullPath), 404);
         return response()->file($fullPath);
     }

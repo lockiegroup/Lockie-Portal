@@ -302,7 +302,7 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::post('/{group}/tasks/reorder',                                [KeyActionController::class, 'reorderTasks'])->name('tasks.reorder');
         Route::post('/{group}/tasks/{task}/comments',                        [KeyActionController::class, 'storeComment'])->name('tasks.comments.store');
         Route::delete('/{group}/tasks/{task}/comments/{comment}',            [KeyActionController::class, 'destroyComment'])->name('tasks.comments.destroy');
-        Route::get('/comment-image/{path}',                                  [KeyActionController::class, 'serveCommentImage'])->name('comment-image')->where('path', '.+');
+        Route::get('/comment-image/{filename}',                              [KeyActionController::class, 'serveCommentImage'])->name('comment-image');
     });
 
     // Impersonation (stop must be before {user} to avoid route conflict)
