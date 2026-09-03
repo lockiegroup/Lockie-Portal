@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class KeyActionComment extends Model
 {
-    protected $fillable = ['task_id', 'user_id', 'body'];
+    protected $fillable = ['task_id', 'user_id', 'body', 'image_path'];
 
     public function user(): BelongsTo
     {

@@ -194,11 +194,22 @@
     <div style="border-top:1px solid #f1f5f9;padding-top:1rem;">
         <p style="font-size:0.75rem;font-weight:700;color:#64748b;margin:0 0 0.75rem;text-transform:uppercase;letter-spacing:0.05em;">Comments</p>
         <div id="comments-list" style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:0.75rem;"></div>
+        <div id="comment-image-preview" style="display:none;margin-bottom:0.5rem;position:relative;display:none;">
+            <img id="comment-image-thumb" src="" alt="Attached image"
+                 style="max-height:120px;max-width:100%;border-radius:0.375rem;border:1px solid #e2e8f0;object-fit:cover;">
+            <button onclick="removeCommentImage()" title="Remove image"
+                    style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.5);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer;line-height:1;">✕</button>
+        </div>
         <div style="display:flex;gap:0.5rem;align-items:flex-end;">
             <textarea id="comment-input" placeholder="Add a comment…" rows="1"
                    style="flex:1;border:1px solid #d1d5db;border-radius:0.375rem;padding:0.375rem 0.5rem;font-size:0.8125rem;resize:none;overflow-y:hidden;line-height:1.4;"
                    onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitComment();}"
                    oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px';"></textarea>
+            <input type="file" id="comment-image-input" accept="image/*" style="display:none;" onchange="previewCommentImage(this)">
+            <button onclick="document.getElementById('comment-image-input').click()" title="Attach image"
+                    style="background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;border-radius:0.375rem;padding:0.375rem 0.5rem;font-size:0.875rem;cursor:pointer;flex-shrink:0;">
+                📎
+            </button>
             <button onclick="submitComment()"
                     style="background:#1e293b;color:#fff;border:none;border-radius:0.375rem;padding:0.375rem 0.75rem;font-size:0.8125rem;font-weight:600;cursor:pointer;flex-shrink:0;">
                 Send
@@ -633,9 +644,16 @@ function buildComment(c) {
     const div = document.createElement('div');
     div.id    = 'comment-' + c.id;
     div.style = 'background:#f8fafc;border-radius:0.5rem;padding:0.5rem 0.75rem;position:relative;';
-    const safeBody = c.body.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+    const safeBody = (c.body || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+    const imgHtml  = c.image_url
+        ? `<a href="${c.image_url}" target="_blank" rel="noopener">
+               <img src="${c.image_url}" alt="Attached image"
+                    style="max-width:100%;max-height:220px;border-radius:0.375rem;margin-top:0.375rem;display:block;object-fit:cover;cursor:pointer;">
+           </a>`
+        : '';
     div.innerHTML = `<p style="font-size:0.7rem;font-weight:700;color:#64748b;margin:0 0 2px;">${c.user_name} · ${c.created_at}</p>
-                     <p style="font-size:0.8125rem;color:#1e293b;margin:0;padding-right:1.25rem;white-space:pre-wrap;">${safeBody}</p>
+                     ${safeBody ? `<p style="font-size:0.8125rem;color:#1e293b;margin:0;padding-right:1.25rem;white-space:pre-wrap;">${safeBody}</p>` : ''}
+                     ${imgHtml}
                      <button onclick="deleteComment(${c.id})" title="Delete comment"
                              style="position:absolute;top:0.375rem;right:0.5rem;background:none;border:none;cursor:pointer;color:#cbd5e1;font-size:0.7rem;line-height:1;padding:0;">✕</button>`;
     return div;
@@ -665,18 +683,45 @@ async function deleteComment(commentId) {
     }
 }
 
+function previewCommentImage(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        document.getElementById('comment-image-thumb').src = e.target.result;
+        document.getElementById('comment-image-preview').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+}
+
+function removeCommentImage() {
+    document.getElementById('comment-image-input').value = '';
+    document.getElementById('comment-image-thumb').src   = '';
+    document.getElementById('comment-image-preview').style.display = 'none';
+}
+
 async function submitComment() {
-    const inp  = document.getElementById('comment-input');
-    const body = inp.value.trim();
-    if (!body) return;
+    const inp   = document.getElementById('comment-input');
+    const body  = inp.value.trim();
+    const imgInput = document.getElementById('comment-image-input');
+    const hasImg   = imgInput.files && imgInput.files.length > 0;
+    if (!body && !hasImg) return;
+
+    const fd = new FormData();
+    fd.append('_token', csrf);
+    if (body)   fd.append('body', body);
+    if (hasImg) fd.append('image', imgInput.files[0]);
+
     const res  = await fetch(`${baseUrl}/tasks/${activeTaskId}/comments`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
-        body: JSON.stringify({ body }),
+        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
+        body: fd,
     });
     const json = await res.json();
     if (json.ok) {
         inp.value = '';
+        inp.style.height = 'auto';
+        removeCommentImage();
         document.getElementById('comments-list').appendChild(buildComment(json.comment));
         const card = document.getElementById('task-' + activeTaskId);
         if (card) {

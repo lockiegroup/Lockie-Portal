@@ -332,6 +332,7 @@ class KeyActionController extends Controller
             'comments' => $task->comments->map(fn($c) => [
                 'id'         => $c->id,
                 'body'       => $c->body,
+                'image_url'  => $c->image_path ? Storage::url($c->image_path) : null,
                 'user_name'  => $c->user->name,
                 'created_at' => $c->created_at->diffForHumans(),
             ]),
@@ -490,11 +491,22 @@ class KeyActionController extends Controller
         abort_unless($this->isSiteAdmin() || $group->hasMember($user), 403);
         abort_unless($task->group_id === $group->id, 404);
 
-        $data = $request->validate(['body' => 'required|string|max:2000']);
+        $data = $request->validate([
+            'body'  => 'nullable|string|max:2000',
+            'image' => 'nullable|file|mimes:jpg,jpeg,png,gif,webp|max:10240',
+        ]);
+
+        abort_if(empty($data['body']) && !$request->hasFile('image'), 422);
+
+        $imagePath = null;
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('comment-images', 'public');
+        }
 
         $comment = $task->comments()->create([
-            'user_id' => auth()->id(),
-            'body'    => $data['body'],
+            'user_id'    => auth()->id(),
+            'body'       => $data['body'] ?? '',
+            'image_path' => $imagePath,
         ]);
 
         $comment->load('user');
@@ -504,6 +516,7 @@ class KeyActionController extends Controller
             'comment' => [
                 'id'         => $comment->id,
                 'body'       => $comment->body,
+                'image_url'  => $imagePath ? Storage::url($imagePath) : null,
                 'user_name'  => $comment->user->name,
                 'created_at' => $comment->created_at->diffForHumans(),
             ],
@@ -517,6 +530,9 @@ class KeyActionController extends Controller
         abort_unless($this->isSiteAdmin() || $group->hasMember($user), 403);
         abort_unless($user->isMaster() || $comment->user_id === $user->id, 403);
 
+        if ($comment->image_path && Storage::disk('public')->exists($comment->image_path)) {
+            Storage::disk('public')->delete($comment->image_path);
+        }
         $comment->delete();
         return response()->json(['ok' => true]);
     }
