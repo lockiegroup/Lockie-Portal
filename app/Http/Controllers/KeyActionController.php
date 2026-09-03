@@ -332,7 +332,7 @@ class KeyActionController extends Controller
             'comments' => $task->comments->map(fn($c) => [
                 'id'         => $c->id,
                 'body'       => $c->body,
-                'image_url'  => $c->image_path ? Storage::url($c->image_path) : null,
+                'image_url'  => $c->image_path ? route('key-actions.comment-image', ['path' => $c->image_path]) : null,
                 'user_name'  => $c->user->name,
                 'created_at' => $c->created_at->diffForHumans(),
             ]),
@@ -500,7 +500,7 @@ class KeyActionController extends Controller
 
         $imagePath = null;
         if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('comment-images', 'public');
+            $imagePath = $request->file('image')->store('comment-images', 'local');
         }
 
         $comment = $task->comments()->create([
@@ -516,7 +516,7 @@ class KeyActionController extends Controller
             'comment' => [
                 'id'         => $comment->id,
                 'body'       => $comment->body,
-                'image_url'  => $imagePath ? Storage::url($imagePath) : null,
+                'image_url'  => $imagePath ? route('key-actions.comment-image', ['path' => $imagePath]) : null,
                 'user_name'  => $comment->user->name,
                 'created_at' => $comment->created_at->diffForHumans(),
             ],
@@ -530,11 +530,18 @@ class KeyActionController extends Controller
         abort_unless($this->isSiteAdmin() || $group->hasMember($user), 403);
         abort_unless($user->isMaster() || $comment->user_id === $user->id, 403);
 
-        if ($comment->image_path && Storage::disk('public')->exists($comment->image_path)) {
-            Storage::disk('public')->delete($comment->image_path);
+        if ($comment->image_path && Storage::disk('local')->exists($comment->image_path)) {
+            Storage::disk('local')->delete($comment->image_path);
         }
         $comment->delete();
         return response()->json(['ok' => true]);
+    }
+
+    public function serveCommentImage(Request $request, string $path): BinaryFileResponse
+    {
+        $fullPath = storage_path('app/' . $path);
+        abort_unless(file_exists($fullPath), 404);
+        return response()->file($fullPath);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
