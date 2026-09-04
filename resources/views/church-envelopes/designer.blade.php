@@ -386,18 +386,16 @@ function drawEnvPdf(doc, row, xBase, setNum, imgCanvasData) {
         doc.text(String(setNum), xBase + 5, 16);
     }
 
-    // Church name — rightmost column, full height
-    // angle:90 = text drawn CCW; read by rotating page 90° CW, placing x=70 at portrait TOP.
-    // Cap-height extends LEFTWARD (−x) so no right-edge overflow.
+    // Church name — rightmost column, full height, rotated 90° CW
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(13);
     doc.setTextColor(17, 17, 17);
-    doc.text(row.church.toUpperCase(), xBase + 70, 49, { angle: 90, align: 'center' });
+    doc.text(row.church.toUpperCase(), xBase + 70, 49, { angle: -90, align: 'center' });
 
-    // Town — next column left, lower half (portrait lower-right area)
+    // Town — next column left, lower half
     if (row.town) {
         doc.setFontSize(8.5);
-        doc.text(row.town.toUpperCase(), xBase + 61, 70, { angle: 90, align: 'center' });
+        doc.text(row.town.toUpperCase(), xBase + 61, 70, { angle: -90, align: 'center' });
     }
 
     // Diocese lines — stepping left, lower half
@@ -405,16 +403,16 @@ function drawEnvPdf(doc, row, xBase, setNum, imgCanvasData) {
     doc.setFontSize(6.5);
     doc.setTextColor(51, 51, 51);
     [row.diocese1, row.diocese2, row.diocese3].filter(Boolean).forEach((d, i) => {
-        doc.text(d, xBase + 55 - i * 4.5, 70, { angle: 90, align: 'center' });
+        doc.text(d, xBase + 55 - i * 4.5, 70, { angle: -90, align: 'center' });
     });
 
-    // Date — leftmost column (portrait BOTTOM)
+    // Date — leftmost column, lower half
     const date = buildDate(row);
     if (date) {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(11);
         doc.setTextColor(17, 17, 17);
-        doc.text(date.toUpperCase(), xBase + 7, 70, { angle: 90, align: 'center' });
+        doc.text(date.toUpperCase(), xBase + 7, 70, { angle: -90, align: 'center' });
     }
 
     // Offering lines — stepping right from date column
@@ -424,7 +422,7 @@ function drawEnvPdf(doc, row, xBase, setNum, imgCanvasData) {
         doc.setFontSize(7.5);
         doc.setTextColor(17, 17, 17);
         offeringLines.forEach((line, i) => {
-            doc.text(line, xBase + 19 + i * 6.5, 70, { angle: 90, align: 'center' });
+            doc.text(line, xBase + 19 + i * 6.5, 70, { angle: -90, align: 'center' });
         });
     }
 }
