@@ -363,10 +363,16 @@ async function buildImgCanvas(isSpec, imgDataUrl) {
     return { canvas, dW, dH };
 }
 
+// Auto-size font to fill targetMM of rotated text width.
+// maxPt is capped conservatively so cap-height never overflows the half boundary.
+function fitFont(doc, text, targetMM, nominalPt, minPt, maxPt) {
+    doc.setFontSize(nominalPt);
+    const w = doc.getTextWidth(text);
+    if (!w) return nominalPt;
+    return Math.min(maxPt, Math.max(minPt, nominalPt * targetMM / w));
+}
+
 function drawEnvPdf(doc, row, xBase, setNum, imgCanvasData) {
-    // Portrait 78×98mm per half. Text rotated 90° CW (angle:-90) so it reads
-    // left-to-right when the envelope is held landscape.
-    // x positions match InDesign guide baselines; font sizes match original working output.
     const isSpec = row.isSpecial;
 
     // Image — upper-left guide box
@@ -389,23 +395,30 @@ function drawEnvPdf(doc, row, xBase, setNum, imgCanvasData) {
         doc.text(String(setNum), xBase + 5, 16);
     }
 
-    // Church name — rightmost column, full height
+    // Church name — rightmost column, spans full envelope height (y=2..96 = 94mm usable)
+    // maxPt=17 keeps cap-height within ~6.4mm from x=70, safely inside x=78 boundary.
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(13);
     doc.setTextColor(17, 17, 17);
-    doc.text(row.church.toUpperCase(), xBase + 70, 49, { angle: -90, align: 'center' });
+    const churchStr = row.church.toUpperCase();
+    const churchPt = fitFont(doc, churchStr, 88, 13, 8, 17);
+    doc.setFontSize(churchPt);
+    doc.text(churchStr, xBase + 70, 49, { angle: -90, align: 'center' });
 
-    // Town — next column left, lower half
+    // Town — next column left, lower half (y=48..96 = 48mm usable)
     if (row.town) {
-        doc.setFontSize(8.5);
-        doc.text(row.town.toUpperCase(), xBase + 61, 70, { angle: -90, align: 'center' });
+        doc.setFont('helvetica', 'bold');
+        const townStr = row.town.toUpperCase();
+        const townPt = fitFont(doc, townStr, 42, 8.5, 5, 10);
+        doc.setFontSize(townPt);
+        doc.text(townStr, xBase + 61, 70, { angle: -90, align: 'center' });
     }
 
     // Diocese lines — stepping left, lower half
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(6.5);
     doc.setTextColor(51, 51, 51);
     [row.diocese1, row.diocese2, row.diocese3].filter(Boolean).forEach((d, i) => {
+        const diocPt = fitFont(doc, d, 42, 6.5, 4, 6.5);
+        doc.setFontSize(diocPt);
         doc.text(d, xBase + 55 - i * 4.5, 70, { angle: -90, align: 'center' });
     });
 
@@ -413,18 +426,21 @@ function drawEnvPdf(doc, row, xBase, setNum, imgCanvasData) {
     const date = buildDate(row);
     if (date) {
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(11);
         doc.setTextColor(17, 17, 17);
-        doc.text(date.toUpperCase(), xBase + 7, 70, { angle: -90, align: 'center' });
+        const dateStr = date.toUpperCase();
+        const datePt = fitFont(doc, dateStr, 42, 11, 7, 12);
+        doc.setFontSize(datePt);
+        doc.text(dateStr, xBase + 7, 70, { angle: -90, align: 'center' });
     }
 
     // Offering lines — stepping right from date column
     const offeringLines = getOfferingLines(row);
     if (offeringLines.length) {
         doc.setFont('helvetica', 'italic');
-        doc.setFontSize(7.5);
         doc.setTextColor(17, 17, 17);
         offeringLines.forEach((line, i) => {
+            const offPt = fitFont(doc, line, 42, 7.5, 5, 7.5);
+            doc.setFontSize(offPt);
             doc.text(line, xBase + 19 + i * 6.5, 70, { angle: -90, align: 'center' });
         });
     }
