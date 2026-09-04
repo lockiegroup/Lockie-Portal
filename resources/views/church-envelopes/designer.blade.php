@@ -214,7 +214,7 @@ function showStatus(id, msg, type) {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function getOfferingLines(row) {
     if (row.isSpecial) return [row.vts[5], row.vts[6]].filter(Boolean);
-    return row.vts.filter(Boolean);
+    return row.vts.filter(Boolean).slice(0, 2);
 }
 function buildDate(row) { return [row.day, row.month, row.year].filter(Boolean).join(' '); }
 function sanitise(str) { return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'envelopes'; }
