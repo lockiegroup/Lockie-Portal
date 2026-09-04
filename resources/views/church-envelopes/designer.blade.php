@@ -303,11 +303,11 @@ function buildEnvHtml(row, setNum) {
         env.appendChild(el);
     }
 
-    // Church — centred at y_pdf=49, spans full card width (44mm each side)
-    band(row.church.toUpperCase(), 70, 49, 6 * S, true, false, '#111', 44);
+    // Church — centred at y_pdf=49, mixed case as entered
+    band(row.church, 70, 49, 6 * S, true, false, '#111', 44);
 
-    // Town — centred at y_pdf=70 (lower portion, below image), 30mm cap
-    if (row.town) band(row.town.toUpperCase(), 42, 70, 4.5 * S, true, false, '#111', 15);
+    // Town — mixed case as entered, 30mm cap
+    if (row.town) band(row.town, 42, 70, 4.5 * S, true, false, '#111', 15);
 
     // Diocese lines — 15mm each side = 30mm max span
     [row.diocese1, row.diocese2, row.diocese3].filter(Boolean).forEach((d, i) => {
@@ -331,20 +331,26 @@ function buildEnvHtml(row, setNum) {
     const imgPdfCx = IMG_BOX_X + (IMG_BOX_W - dW) / 2;
     const imgPdfCy = IMG_BOX_Y + (IMG_BOX_H - dH) / 2;
     if (imgSrc) {
-        const imgEl = document.createElement('img');
-        imgEl.src = imgSrc;
+        // Image rotated 90° CCW so it appears upright in reading portrait
         const rLeft = imgPdfCy * S;
         const rTop  = (78 - imgPdfCx - dW) * S;
-        imgEl.style.cssText = `position:absolute;left:${rLeft}px;top:${rTop}px;` +
-            `width:${dH * S}px;height:${dW * S}px;object-fit:contain;`;
+        const visW  = dH * S; // visual width  (reading x = PDF y direction)
+        const visH  = dW * S; // visual height (reading y = PDF x direction)
+        const imgEl = document.createElement('img');
+        imgEl.src = imgSrc;
+        // CSS rotate(-90deg) rotates element CCW; element dims must be swapped vs visual
+        imgEl.style.cssText = `position:absolute;` +
+            `left:${rLeft + (visW - visH) / 2}px;top:${rTop + (visH - visW) / 2}px;` +
+            `width:${visH}px;height:${visW}px;` +
+            `transform:rotate(-90deg);transform-origin:center;object-fit:contain;`;
         env.appendChild(imgEl);
     }
 
-    // Set number — small, top-right corner of reading card
+    // Set number — bottom-left of reading card (matches angle:-90 in PDF)
     if (setNum !== null) {
         const sn = document.createElement('div');
-        sn.style.cssText = `position:absolute;right:${3*S}px;top:${2*S}px;` +
-            `font-family:Arial,sans-serif;font-weight:700;font-size:${5*S}px;color:#111;`;
+        sn.style.cssText = `position:absolute;left:${3*S}px;bottom:${3*S}px;` +
+            `font-family:Arial,sans-serif;font-weight:700;font-size:${3.5*S}px;color:#111;`;
         sn.textContent = String(setNum);
         env.appendChild(sn);
     }
@@ -377,7 +383,14 @@ async function buildImgCanvas(isSpec, imgDataUrl) {
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, cW, cH);
     const imgEl = await loadImage(imgDataUrl);
-    if (imgEl) ctx.drawImage(imgEl, 0, 0, cW, cH);
+    if (imgEl) {
+        // Rotate 90° CCW so the image appears upright in reading portrait orientation
+        ctx.save();
+        ctx.translate(cW / 2, cH / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.drawImage(imgEl, -cH / 2, -cW / 2, cH, cW);
+        ctx.restore();
+    }
     return { canvas, dW, dH };
 }
 
@@ -396,21 +409,20 @@ function drawEnvPdf(doc, row, xBase, setNum, imgCanvasData) {
         } catch(_) {}
     }
 
-    // Set number — top-left corner, upright
+    // Set number — bottom-left of reading portrait; angle:-90 so it reads upright
     if (setNum !== null) {
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(18);
+        doc.setFontSize(10);
         doc.setTextColor(17, 17, 17);
-        doc.text(String(setNum), xBase + 5, 16);
+        doc.text(String(setNum), xBase + 5, 8, { angle: -90, align: 'left' });
     }
 
-    // Church name — rightmost column, full height, rotated 90° CW
-    // fitFont: scale up to fill ~88mm column height, cap at 13pt (matches InDesign)
+    // Church name — rightmost column, full height, rotated 90° CW; mixed case as entered
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(17, 17, 17);
     {
-        const churchText = row.church.toUpperCase();
-        const targetMM = 88; // column height available
+        const churchText = row.church;
+        const targetMM = 88;
         const maxPt = 13;
         let pt = maxPt;
         doc.setFontSize(pt);
@@ -419,14 +431,13 @@ function drawEnvPdf(doc, row, xBase, setNum, imgCanvasData) {
             doc.setFontSize(pt);
         }
     }
-    doc.text(row.church.toUpperCase(), xBase + 70, 49, { angle: -90, align: 'center' });
+    doc.text(row.church, xBase + 70, 49, { angle: -90, align: 'center' });
 
-    // Town — second column from right
-    // y=70 places text in lower portion (y=57–82mm), safely below image box (y=7–43mm)
+    // Town — mixed case as entered
     if (row.town) {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8.5);
-        doc.text(row.town.toUpperCase(), xBase + 42, 70, { angle: -90, align: 'center' });
+        doc.text(row.town, xBase + 42, 70, { angle: -90, align: 'center' });
     }
 
     // Diocese lines — stepping left from town, max span 30mm (±15mm from y=70)
