@@ -387,23 +387,41 @@ function drawEnvPdf(doc, row, xBase, setNum, imgCanvasData) {
     }
 
     // Church name — rightmost column, full height, rotated 90° CW
+    // fitFont: scale up to fill ~88mm column height, cap at 20pt
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(13);
     doc.setTextColor(17, 17, 17);
+    {
+        const churchText = row.church.toUpperCase();
+        const targetMM = 88; // column height available
+        const maxPt = 20;
+        let pt = maxPt;
+        doc.setFontSize(pt);
+        while (pt > 6 && doc.getTextWidth(churchText) > targetMM) {
+            pt -= 0.5;
+            doc.setFontSize(pt);
+        }
+    }
     doc.text(row.church.toUpperCase(), xBase + 70, 49, { angle: -90, align: 'center' });
 
-    // Town — next column left, lower half
+    // Town — second column from right, lower half
     if (row.town) {
+        doc.setFont('helvetica', 'bold');
         doc.setFontSize(8.5);
-        doc.text(row.town.toUpperCase(), xBase + 61, 70, { angle: -90, align: 'center' });
+        doc.text(row.town.toUpperCase(), xBase + 43, 70, { angle: -90, align: 'center' });
     }
 
-    // Diocese lines — stepping left, lower half
+    // Diocese lines — stepping left from town, lower half
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(6.5);
     doc.setTextColor(51, 51, 51);
     [row.diocese1, row.diocese2, row.diocese3].filter(Boolean).forEach((d, i) => {
-        doc.text(d, xBase + 55 - i * 4.5, 70, { angle: -90, align: 'center' });
+        // fitFont: scale down if too wide for rotated column
+        let pt = 6.5;
+        doc.setFontSize(pt);
+        while (pt > 4 && doc.getTextWidth(d) > 55) {
+            pt -= 0.25;
+            doc.setFontSize(pt);
+        }
+        doc.text(d, xBase + 34 - i * 4.5, 70, { angle: -90, align: 'center' });
     });
 
     // Date — leftmost column, lower half
@@ -415,14 +433,15 @@ function drawEnvPdf(doc, row, xBase, setNum, imgCanvasData) {
         doc.text(date.toUpperCase(), xBase + 7, 70, { angle: -90, align: 'center' });
     }
 
-    // Offering lines — stepping right from date column
+    // Offering lines — between date and diocese, stepping LEFT toward date
+    // First offering at highest x (near diocese side), subsequent lines step toward date
     const offeringLines = getOfferingLines(row);
     if (offeringLines.length) {
         doc.setFont('helvetica', 'italic');
         doc.setFontSize(7.5);
         doc.setTextColor(17, 17, 17);
         offeringLines.forEach((line, i) => {
-            doc.text(line, xBase + 19 + i * 6.5, 70, { angle: -90, align: 'center' });
+            doc.text(line, xBase + 22 - i * 5, 70, { angle: -90, align: 'center' });
         });
     }
 }
