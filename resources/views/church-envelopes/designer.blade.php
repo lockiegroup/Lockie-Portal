@@ -363,19 +363,10 @@ async function buildImgCanvas(isSpec, imgDataUrl) {
     return { canvas, dW, dH };
 }
 
-// Scale font so text exactly fills targetMM (matches InDesign text-box auto-fit).
-function fitFont(doc, text, targetMM, nominalPt, minPt, maxPt) {
-    doc.setFontSize(nominalPt);
-    const w = doc.getTextWidth(text);
-    if (!w) return nominalPt;
-    return Math.min(maxPt, Math.max(minPt, nominalPt * targetMM / w));
-}
-
 function drawEnvPdf(doc, row, xBase, setNum, imgCanvasData) {
-    // Matches InDesign portrait 78×98mm layout.
-    // angle:-90 = 90° CW rotation. With this rotation, cap-height extends RIGHTWARD
-    // from the baseline x, so all x values are the LEFT (baseline) edge of the column,
-    // not the centre — this prevents text from overflowing the half boundary.
+    // Portrait 78×98mm per half. Text rotated 90° CW (angle:-90) so it reads
+    // left-to-right when the envelope is held landscape.
+    // x positions match InDesign guide baselines; font sizes match original working output.
     const isSpec = row.isSpecial;
 
     // Image — upper-left guide box
@@ -390,60 +381,51 @@ function drawEnvPdf(doc, row, xBase, setNum, imgCanvasData) {
         } catch(_) {}
     }
 
-    // Set number — top-left corner, upright (no rotation)
+    // Set number — top-left corner, upright
     if (setNum !== null) {
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(22);
+        doc.setFontSize(18);
         doc.setTextColor(17, 17, 17);
-        doc.text(String(setNum), xBase + 5, 17);
+        doc.text(String(setNum), xBase + 5, 16);
     }
 
-    // Church name — rightmost column (baseline x=70, cap →75.5mm at 22pt), full height
-    const churchStr = row.church.toUpperCase();
+    // Church name — rightmost column, full height
     doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
     doc.setTextColor(17, 17, 17);
-    const churchFS = fitFont(doc, churchStr, 82, 14, 8, 22);
-    doc.setFontSize(churchFS);
-    doc.text(churchStr, xBase + 70, 49, { angle: -90, align: 'center' });
+    doc.text(row.church.toUpperCase(), xBase + 70, 49, { angle: -90, align: 'center' });
 
-    // Town — column left of church (baseline x=61), lower portion
+    // Town — next column left, lower half
     if (row.town) {
-        const townStr = row.town.toUpperCase();
-        doc.setFont('helvetica', 'bold');
-        const townFS = fitFont(doc, townStr, 40, 9, 6, 14);
-        doc.setFontSize(townFS);
-        doc.text(townStr, xBase + 61, 70, { angle: -90, align: 'center' });
+        doc.setFontSize(8.5);
+        doc.text(row.town.toUpperCase(), xBase + 61, 70, { angle: -90, align: 'center' });
     }
 
-    // Diocese lines — stepping left from x=55, lower portion
+    // Diocese lines — stepping left, lower half
     doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.5);
     doc.setTextColor(51, 51, 51);
     [row.diocese1, row.diocese2, row.diocese3].filter(Boolean).forEach((d, i) => {
-        const diocFS = fitFont(doc, d, 40, 6.5, 4, 8);
-        doc.setFontSize(diocFS);
         doc.text(d, xBase + 55 - i * 4.5, 70, { angle: -90, align: 'center' });
     });
 
-    // Date — left column (baseline x=7), lower portion, bold
+    // Date — leftmost column, lower half
     const date = buildDate(row);
     if (date) {
-        const dateStr = date.toUpperCase();
         doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
         doc.setTextColor(17, 17, 17);
-        const dateFS = fitFont(doc, dateStr, 40, 12, 8, 15);
-        doc.setFontSize(dateFS);
-        doc.text(dateStr, xBase + 7, 70, { angle: -90, align: 'center' });
+        doc.text(date.toUpperCase(), xBase + 7, 70, { angle: -90, align: 'center' });
     }
 
-    // Offering lines — stepping right from x=19, each line its own column
+    // Offering lines — stepping right from date column
     const offeringLines = getOfferingLines(row);
     if (offeringLines.length) {
         doc.setFont('helvetica', 'italic');
+        doc.setFontSize(7.5);
         doc.setTextColor(17, 17, 17);
         offeringLines.forEach((line, i) => {
-            const oFS = fitFont(doc, line, 40, 7.5, 5, 10);
-            doc.setFontSize(oFS);
-            doc.text(line, xBase + 19 + i * 7, 70, { angle: -90, align: 'center' });
+            doc.text(line, xBase + 19 + i * 6.5, 70, { angle: -90, align: 'center' });
         });
     }
 }
