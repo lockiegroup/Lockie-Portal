@@ -398,11 +398,11 @@ function drawEnvPdf(doc, row, xBase, setNum, imgCanvasData) {
         doc.text(String(setNum), xBase + 5, 17);
     }
 
-    // Church name — rightmost column (baseline x=70, cap →77mm max), full height
+    // Church name — rightmost column (baseline x=70, cap →75.5mm at 22pt), full height
     const churchStr = row.church.toUpperCase();
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(17, 17, 17);
-    const churchFS = fitFont(doc, churchStr, 82, 14, 8, 17);
+    const churchFS = fitFont(doc, churchStr, 82, 14, 8, 22);
     doc.setFontSize(churchFS);
     doc.text(churchStr, xBase + 70, 49, { angle: -90, align: 'center' });
 
@@ -410,7 +410,7 @@ function drawEnvPdf(doc, row, xBase, setNum, imgCanvasData) {
     if (row.town) {
         const townStr = row.town.toUpperCase();
         doc.setFont('helvetica', 'bold');
-        const townFS = fitFont(doc, townStr, 40, 9, 6, 12);
+        const townFS = fitFont(doc, townStr, 40, 9, 6, 14);
         doc.setFontSize(townFS);
         doc.text(townStr, xBase + 61, 70, { angle: -90, align: 'center' });
     }
