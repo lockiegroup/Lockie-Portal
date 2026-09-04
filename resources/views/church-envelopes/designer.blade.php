@@ -70,7 +70,7 @@
                 Refresh Preview
             </button>
         </div>
-        <p style="font-size:0.75rem;color:#94a3b8;margin:0 0 1rem;">Preview shows portrait layout matching InDesign. When held landscape the text reads left-to-right.</p>
+        <p style="font-size:0.75rem;color:#94a3b8;margin:0 0 1rem;">Preview shows reading orientation — how the envelope looks when held in hand. Matches InDesign artwork.</p>
         <div id="preview-cards" style="display:flex;flex-direction:column;gap:1.25rem;"></div>
         <p style="font-size:0.75rem;color:#94a3b8;margin:0.75rem 0 0;">Showing first 6 pages. PDF will include all rows.</p>
     </div>
@@ -262,73 +262,81 @@ function updatePreview() {
 }
 
 function buildEnvHtml(row, setNum) {
-    const W = ENV_W * S, H = ENV_H * S;
-    const env = document.createElement('div');
-    env.style.cssText = `position:relative;width:${W}px;height:${H}px;overflow:hidden;background:transparent;flex-shrink:0;`;
+    // Show the envelope in READING orientation — how it looks when held in hand.
+    // This matches the InDesign artwork exactly.
+    //
+    // PDF coordinate → reading coordinate transform (90° CW rotation of landscape half):
+    //   reading_x = y_pdf          (PDF y-axis → reading left-right)
+    //   reading_y = 78 - x_pdf     (PDF x-axis inverted → reading top-bottom)
+    //
+    // Reading card dimensions: 98mm wide × 78mm tall (landscape)
+    const RW = ENV_H * S;  // 98mm × 1.7 = 166.6px
+    const RH = ENV_W * S;  // 78mm × 1.7 = 132.6px
 
     const isSpec = row.isSpecial;
     const imgSrc = isSpec ? specialImgDataUrl : weeklyImgDataUrl;
 
-    let y = 9 * S;
+    const env = document.createElement('div');
+    env.style.cssText = `position:relative;width:${RW}px;height:${RH}px;overflow:hidden;background:white;flex-shrink:0;`;
 
-    const cname = document.createElement('div');
-    cname.style.cssText = `position:absolute;left:0;top:${y}px;width:${W}px;font-family:Arial,sans-serif;font-weight:700;font-size:${5.5*S}px;color:#111;text-align:center;line-height:1.25;`;
-    cname.textContent = row.church;
-    env.appendChild(cname);
-    const churchLines = Math.ceil((row.church.length * 5.5 * S * 0.55) / W) || 1;
-    y += (6.5 * S) * churchLines + 2 * S;
+    // Convert PDF x column position → reading y position (px from top of card)
+    const rY = (x_pdf) => (78 - x_pdf) * S;
 
-    if (row.town) {
-        const t = document.createElement('div');
-        t.style.cssText = `position:absolute;left:0;top:${y}px;width:${W}px;font-family:Arial,sans-serif;font-weight:700;font-size:${4.2*S}px;color:#111;text-align:center;`;
-        t.textContent = row.town; env.appendChild(t); y += 5 * S;
+    // Add a full-width text band at a given PDF column x position
+    function band(text, x_pdf, fsizePx, bold, italic, color) {
+        const el = document.createElement('div');
+        el.style.cssText = `position:absolute;left:0;right:0;top:${rY(x_pdf)}px;` +
+            `font-family:Arial,sans-serif;font-weight:${bold?'700':'400'};` +
+            `font-style:${italic?'italic':'normal'};font-size:${fsizePx}px;` +
+            `color:${color||'#111'};text-align:center;white-space:nowrap;overflow:hidden;line-height:1;`;
+        el.textContent = text;
+        env.appendChild(el);
     }
 
-    [row.diocese1, row.diocese2, row.diocese3].forEach(d => {
-        if (!d) return;
-        const dl = document.createElement('div');
-        dl.style.cssText = `position:absolute;left:0;top:${y}px;width:${W}px;font-family:Arial,sans-serif;font-size:${3*S}px;color:#333;text-align:center;`;
-        dl.textContent = d; env.appendChild(dl); y += 3.8 * S;
+    // Church name — near top of reading card (PDF x=70 → reading_y=8mm)
+    band(row.church.toUpperCase(), 70, 6 * S, true, false, '#111');
+
+    // Town — PDF x=43 → reading_y=35mm
+    if (row.town) band(row.town.toUpperCase(), 43, 4.5 * S, true, false, '#111');
+
+    // Diocese lines — PDF x=34, 29.5, 25 → reading_y=44, 48.5, 53mm
+    [row.diocese1, row.diocese2, row.diocese3].filter(Boolean).forEach((d, i) => {
+        band(d, 34 - i * 4.5, 3.2 * S, false, false, '#555');
     });
 
-    // Image: fixed box from InDesign layout, image scaled to fit within it
-    const { dW, dH } = imgDisplayDims(isSpec);
-    const imgX   = (IMG_BOX_X + (IMG_BOX_W - dW) / 2) * S;
-    const imgTop = (IMG_BOX_Y + (IMG_BOX_H - dH) / 2) * S;
-    const imgW   = dW * S, imgHpx = dH * S;
+    // Offering lines — PDF x=22, 17, 12 → reading_y=56, 61, 66mm
+    const offeringLines = getOfferingLines(row);
+    offeringLines.forEach((line, i) => {
+        band(line, 22 - i * 5, 3.8 * S, false, true, '#111');
+    });
 
+    // Date — PDF x=7 → reading_y=71mm (near bottom of 78mm card)
+    const date = buildDate(row);
+    if (date) band(date.toUpperCase(), 7, 4.5 * S, true, false, '#111');
+
+    // Cross image — PDF: x=14–59, y=7–43 (image box centre).
+    // In reading coords: reading_x = y_pdf, reading_y = 78 - x_pdf.
+    // The image dimensions swap: reading_width = dH, reading_height = dW.
+    const { dW, dH } = imgDisplayDims(isSpec);
+    const imgPdfCx = IMG_BOX_X + (IMG_BOX_W - dW) / 2;
+    const imgPdfCy = IMG_BOX_Y + (IMG_BOX_H - dH) / 2;
     if (imgSrc) {
         const imgEl = document.createElement('img');
         imgEl.src = imgSrc;
-        imgEl.style.cssText = `position:absolute;left:${imgX}px;top:${imgTop}px;width:${imgW}px;height:${imgHpx}px;object-fit:contain;`;
+        const rLeft = imgPdfCy * S;
+        const rTop  = (78 - imgPdfCx - dW) * S;
+        imgEl.style.cssText = `position:absolute;left:${rLeft}px;top:${rTop}px;` +
+            `width:${dH * S}px;height:${dW * S}px;object-fit:contain;`;
         env.appendChild(imgEl);
     }
 
-    const offeringLines = getOfferingLines(row);
-    if (offeringLines.length) {
-        const lineH = 4.8 * S, totalH = offeringLines.length * lineH;
-        const imgMidY = (IMG_BOX_Y + IMG_BOX_H / 2) * S;
-        const textStartY = imgMidY - totalH / 2;
-        const textLeft = (IMG_BOX_X + IMG_BOX_W + 4) * S;
-        const textWidth = W - textLeft - 3 * S;
-        offeringLines.forEach((line, i) => {
-            const t = document.createElement('div');
-            t.style.cssText = `position:absolute;left:${textLeft}px;top:${textStartY + i*lineH}px;width:${textWidth}px;font-family:Arial,sans-serif;font-style:italic;font-size:${3.8*S}px;color:#111;text-align:center;line-height:1.2;`;
-            t.textContent = line; env.appendChild(t);
-        });
-    }
-
+    // Set number — small, top-right corner of reading card
     if (setNum !== null) {
         const sn = document.createElement('div');
-        sn.style.cssText = `position:absolute;left:${5*S}px;bottom:${5*S}px;font-family:Arial,sans-serif;font-weight:700;font-size:${7*S}px;color:#111;`;
-        sn.textContent = String(setNum); env.appendChild(sn);
-    }
-
-    const date = buildDate(row);
-    if (date) {
-        const dt = document.createElement('div');
-        dt.style.cssText = `position:absolute;right:${4*S}px;bottom:${5*S}px;font-family:Arial,sans-serif;font-size:${3.5*S}px;color:#333;text-align:right;`;
-        dt.textContent = date; env.appendChild(dt);
+        sn.style.cssText = `position:absolute;right:${3*S}px;top:${2*S}px;` +
+            `font-family:Arial,sans-serif;font-weight:700;font-size:${5*S}px;color:#111;`;
+        sn.textContent = String(setNum);
+        env.appendChild(sn);
     }
 
     return env;
