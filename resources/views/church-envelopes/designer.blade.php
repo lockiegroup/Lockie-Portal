@@ -279,13 +279,22 @@ function buildEnvHtml(row, setNum) {
     const env = document.createElement('div');
     env.style.cssText = `position:relative;width:${RW}px;height:${RH}px;overflow:hidden;background:white;flex-shrink:0;`;
 
-    // Convert PDF x column position → reading y position (px from top of card)
+    // Coordinate mapping for reading-orientation preview (landscape card 98×78mm):
+    //   reading_y = (78 - x_pdf) * S   — vertical position of the text strip
+    //   reading_x_center = (y_pdf / 98) * RW — horizontal center of text
+    //     church (y_pdf=49) → center at 49/98 * RW = 50% (middle)
+    //     all others (y_pdf=70) → center at 70/98 * RW ≈ 71% (right portion, below image)
     const rY = (x_pdf) => (78 - x_pdf) * S;
+    const CHURCH_CX = (49 / 98) * RW;   // center-x for church band
+    const OTHER_CX  = (70 / 98) * RW;   // center-x for all other bands
 
-    // Add a full-width text band at a given PDF column x position
-    function band(text, x_pdf, fsizePx, bold, italic, color) {
+    function band(text, x_pdf, y_pdf_center, fsizePx, bold, italic, color) {
+        const cx = (y_pdf_center === 49) ? CHURCH_CX : OTHER_CX;
+        const halfW = RW * 0.46; // ±46% of card width each side
         const el = document.createElement('div');
-        el.style.cssText = `position:absolute;left:0;right:0;top:${rY(x_pdf)}px;` +
+        el.style.cssText = `position:absolute;` +
+            `top:${rY(x_pdf)}px;` +
+            `left:${Math.max(0, cx - halfW)}px;width:${Math.min(RW, halfW * 2)}px;` +
             `font-family:Arial,sans-serif;font-weight:${bold?'700':'400'};` +
             `font-style:${italic?'italic':'normal'};font-size:${fsizePx}px;` +
             `color:${color||'#111'};text-align:center;white-space:nowrap;overflow:hidden;line-height:1;`;
@@ -293,26 +302,26 @@ function buildEnvHtml(row, setNum) {
         env.appendChild(el);
     }
 
-    // Church name — near top of reading card (PDF x=70 → reading_y=8mm)
-    band(row.church.toUpperCase(), 70, 6 * S, true, false, '#111');
+    // Church — centred at y_pdf=49 (full card height), near top of reading card
+    band(row.church.toUpperCase(), 70, 49, 6 * S, true, false, '#111');
 
-    // Town — PDF x=42 → reading_y=36mm
-    if (row.town) band(row.town.toUpperCase(), 42, 4.5 * S, true, false, '#111');
+    // Town — centred at y_pdf=70 (lower portion, below image)
+    if (row.town) band(row.town.toUpperCase(), 42, 70, 4.5 * S, true, false, '#111');
 
-    // Diocese lines — PDF x=30, 26, 22 → reading_y=48, 52, 56mm
+    // Diocese lines
     [row.diocese1, row.diocese2, row.diocese3].filter(Boolean).forEach((d, i) => {
-        band(d, 30 - i * 4, 3.2 * S, false, false, '#555');
+        band(d, 30 - i * 4, 70, 3.2 * S, false, false, '#555');
     });
 
-    // Offering lines — PDF x=20, 16, 12 → reading_y=58, 62, 66mm
+    // Offering lines
     const offeringLines = getOfferingLines(row);
     offeringLines.forEach((line, i) => {
-        band(line, 20 - i * 4, 3.8 * S, false, true, '#111');
+        band(line, 20 - i * 4, 70, 3.8 * S, false, true, '#111');
     });
 
-    // Date — PDF x=8 → reading_y=70mm (near bottom of 78mm card)
+    // Date
     const date = buildDate(row);
-    if (date) band(date.toUpperCase(), 8, 4.5 * S, true, false, '#111');
+    if (date) band(date.toUpperCase(), 8, 70, 4.5 * S, true, false, '#111');
 
     // Cross image — PDF: x=14–59, y=7–43 (image box centre).
     // In reading coords: reading_x = y_pdf, reading_y = 78 - x_pdf.
@@ -412,24 +421,25 @@ function drawEnvPdf(doc, row, xBase, setNum, imgCanvasData) {
     doc.text(row.church.toUpperCase(), xBase + 70, 49, { angle: -90, align: 'center' });
 
     // Town — second column from right
+    // y=70 places text in lower portion (y=57–82mm), safely below image box (y=7–43mm)
     if (row.town) {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8.5);
-        doc.text(row.town.toUpperCase(), xBase + 42, 49, { angle: -90, align: 'center' });
+        doc.text(row.town.toUpperCase(), xBase + 42, 70, { angle: -90, align: 'center' });
     }
 
     // Diocese lines — stepping left from town
-    // fitFont: scale down if text would exceed column height
+    // fitFont: scale down if text would exceed safe span centred at y=70
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(51, 51, 51);
     [row.diocese1, row.diocese2, row.diocese3].filter(Boolean).forEach((d, i) => {
         let pt = 6.5;
         doc.setFontSize(pt);
-        while (pt > 4 && doc.getTextWidth(d) > 88) {
+        while (pt > 4 && doc.getTextWidth(d) > 55) {
             pt -= 0.25;
             doc.setFontSize(pt);
         }
-        doc.text(d, xBase + 30 - i * 4, 49, { angle: -90, align: 'center' });
+        doc.text(d, xBase + 30 - i * 4, 70, { angle: -90, align: 'center' });
     });
 
     // Date — leftmost column
@@ -438,7 +448,7 @@ function drawEnvPdf(doc, row, xBase, setNum, imgCanvasData) {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(11);
         doc.setTextColor(17, 17, 17);
-        doc.text(date.toUpperCase(), xBase + 8, 49, { angle: -90, align: 'center' });
+        doc.text(date.toUpperCase(), xBase + 8, 70, { angle: -90, align: 'center' });
     }
 
     // Offering lines — between date and diocese, stepping LEFT toward date
@@ -448,7 +458,7 @@ function drawEnvPdf(doc, row, xBase, setNum, imgCanvasData) {
         doc.setFontSize(7.5);
         doc.setTextColor(17, 17, 17);
         offeringLines.forEach((line, i) => {
-            doc.text(line, xBase + 20 - i * 4, 49, { angle: -90, align: 'center' });
+            doc.text(line, xBase + 20 - i * 4, 70, { angle: -90, align: 'center' });
         });
     }
 }
