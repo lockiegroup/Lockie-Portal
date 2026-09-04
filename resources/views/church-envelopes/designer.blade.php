@@ -288,9 +288,10 @@ function buildEnvHtml(row, setNum) {
     const CHURCH_CX = (49 / 98) * RW;   // center-x for church band
     const OTHER_CX  = (70 / 98) * RW;   // center-x for all other bands
 
-    function band(text, x_pdf, y_pdf_center, fsizePx, bold, italic, color) {
+    // halfMaxMM: max half-width in mm each side of y_pdf=70 centre (maps to reading x)
+    function band(text, x_pdf, y_pdf_center, fsizePx, bold, italic, color, halfMaxMM) {
         const cx = (y_pdf_center === 49) ? CHURCH_CX : OTHER_CX;
-        const halfW = RW * 0.46; // ±46% of card width each side
+        const halfW = (halfMaxMM !== undefined ? halfMaxMM : 44) * S;
         const el = document.createElement('div');
         el.style.cssText = `position:absolute;` +
             `top:${rY(x_pdf)}px;` +
@@ -302,26 +303,26 @@ function buildEnvHtml(row, setNum) {
         env.appendChild(el);
     }
 
-    // Church — centred at y_pdf=49 (full card height), near top of reading card
-    band(row.church.toUpperCase(), 70, 49, 6 * S, true, false, '#111');
+    // Church — centred at y_pdf=49, spans full card width (44mm each side)
+    band(row.church.toUpperCase(), 70, 49, 6 * S, true, false, '#111', 44);
 
-    // Town — centred at y_pdf=70 (lower portion, below image)
-    if (row.town) band(row.town.toUpperCase(), 42, 70, 4.5 * S, true, false, '#111');
+    // Town — centred at y_pdf=70 (lower portion, below image), 30mm cap
+    if (row.town) band(row.town.toUpperCase(), 42, 70, 4.5 * S, true, false, '#111', 15);
 
-    // Diocese lines
+    // Diocese lines — 15mm each side = 30mm max span
     [row.diocese1, row.diocese2, row.diocese3].filter(Boolean).forEach((d, i) => {
-        band(d, 30 - i * 4, 70, 3.2 * S, false, false, '#555');
+        band(d, 30 - i * 4, 70, 3.2 * S, false, false, '#555', 15);
     });
 
-    // Offering lines
+    // Offering lines — 15mm each side = 30mm max span
     const offeringLines = getOfferingLines(row);
     offeringLines.forEach((line, i) => {
-        band(line, 20 - i * 4, 70, 3.8 * S, false, true, '#111');
+        band(line, 20 - i * 4, 70, 3.8 * S, false, true, '#111', 15);
     });
 
-    // Date
+    // Date — 15mm each side
     const date = buildDate(row);
-    if (date) band(date.toUpperCase(), 8, 70, 4.5 * S, true, false, '#111');
+    if (date) band(date.toUpperCase(), 8, 70, 4.5 * S, true, false, '#111', 15);
 
     // Cross image — PDF: x=14–59, y=7–43 (image box centre).
     // In reading coords: reading_x = y_pdf, reading_y = 78 - x_pdf.
@@ -428,14 +429,13 @@ function drawEnvPdf(doc, row, xBase, setNum, imgCanvasData) {
         doc.text(row.town.toUpperCase(), xBase + 42, 70, { angle: -90, align: 'center' });
     }
 
-    // Diocese lines — stepping left from town
-    // fitFont: scale down if text would exceed safe span centred at y=70
+    // Diocese lines — stepping left from town, max span 30mm (±15mm from y=70)
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(51, 51, 51);
     [row.diocese1, row.diocese2, row.diocese3].filter(Boolean).forEach((d, i) => {
         let pt = 6.5;
         doc.setFontSize(pt);
-        while (pt > 4 && doc.getTextWidth(d) > 55) {
+        while (pt > 4 && doc.getTextWidth(d) > 30) {
             pt -= 0.25;
             doc.setFontSize(pt);
         }
@@ -451,13 +451,18 @@ function drawEnvPdf(doc, row, xBase, setNum, imgCanvasData) {
         doc.text(date.toUpperCase(), xBase + 8, 70, { angle: -90, align: 'center' });
     }
 
-    // Offering lines — between date and diocese, stepping LEFT toward date
+    // Offering lines — between date and diocese, max span 30mm
     const offeringLines = getOfferingLines(row);
     if (offeringLines.length) {
         doc.setFont('helvetica', 'italic');
-        doc.setFontSize(7.5);
         doc.setTextColor(17, 17, 17);
         offeringLines.forEach((line, i) => {
+            let pt = 7.5;
+            doc.setFontSize(pt);
+            while (pt > 4.5 && doc.getTextWidth(line) > 30) {
+                pt -= 0.25;
+                doc.setFontSize(pt);
+            }
             doc.text(line, xBase + 20 - i * 4, 70, { angle: -90, align: 'center' });
         });
     }
