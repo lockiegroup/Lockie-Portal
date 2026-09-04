@@ -296,23 +296,23 @@ function buildEnvHtml(row, setNum) {
     // Church name — near top of reading card (PDF x=70 → reading_y=8mm)
     band(row.church.toUpperCase(), 70, 6 * S, true, false, '#111');
 
-    // Town — PDF x=43 → reading_y=35mm
-    if (row.town) band(row.town.toUpperCase(), 43, 4.5 * S, true, false, '#111');
+    // Town — PDF x=42 → reading_y=36mm
+    if (row.town) band(row.town.toUpperCase(), 42, 4.5 * S, true, false, '#111');
 
-    // Diocese lines — PDF x=34, 29.5, 25 → reading_y=44, 48.5, 53mm
+    // Diocese lines — PDF x=30, 26, 22 → reading_y=48, 52, 56mm
     [row.diocese1, row.diocese2, row.diocese3].filter(Boolean).forEach((d, i) => {
-        band(d, 34 - i * 4.5, 3.2 * S, false, false, '#555');
+        band(d, 30 - i * 4, 3.2 * S, false, false, '#555');
     });
 
-    // Offering lines — PDF x=22, 17, 12 → reading_y=56, 61, 66mm
+    // Offering lines — PDF x=20, 16, 12 → reading_y=58, 62, 66mm
     const offeringLines = getOfferingLines(row);
     offeringLines.forEach((line, i) => {
-        band(line, 22 - i * 5, 3.8 * S, false, true, '#111');
+        band(line, 20 - i * 4, 3.8 * S, false, true, '#111');
     });
 
-    // Date — PDF x=7 → reading_y=71mm (near bottom of 78mm card)
+    // Date — PDF x=8 → reading_y=70mm (near bottom of 78mm card)
     const date = buildDate(row);
-    if (date) band(date.toUpperCase(), 7, 4.5 * S, true, false, '#111');
+    if (date) band(date.toUpperCase(), 8, 4.5 * S, true, false, '#111');
 
     // Cross image — PDF: x=14–59, y=7–43 (image box centre).
     // In reading coords: reading_x = y_pdf, reading_y = 78 - x_pdf.
@@ -395,13 +395,13 @@ function drawEnvPdf(doc, row, xBase, setNum, imgCanvasData) {
     }
 
     // Church name — rightmost column, full height, rotated 90° CW
-    // fitFont: scale up to fill ~88mm column height, cap at 20pt
+    // fitFont: scale up to fill ~88mm column height, cap at 13pt (matches InDesign)
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(17, 17, 17);
     {
         const churchText = row.church.toUpperCase();
         const targetMM = 88; // column height available
-        const maxPt = 20;
+        const maxPt = 13;
         let pt = maxPt;
         doc.setFontSize(pt);
         while (pt > 6 && doc.getTextWidth(churchText) > targetMM) {
@@ -415,11 +415,11 @@ function drawEnvPdf(doc, row, xBase, setNum, imgCanvasData) {
     if (row.town) {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8.5);
-        doc.text(row.town.toUpperCase(), xBase + 43, 49, { angle: -90, align: 'center' });
+        doc.text(row.town.toUpperCase(), xBase + 42, 49, { angle: -90, align: 'center' });
     }
 
     // Diocese lines — stepping left from town
-    // fitFont: scale down if text would exceed column height (90mm safe span at y=49)
+    // fitFont: scale down if text would exceed column height
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(51, 51, 51);
     [row.diocese1, row.diocese2, row.diocese3].filter(Boolean).forEach((d, i) => {
@@ -429,7 +429,7 @@ function drawEnvPdf(doc, row, xBase, setNum, imgCanvasData) {
             pt -= 0.25;
             doc.setFontSize(pt);
         }
-        doc.text(d, xBase + 34 - i * 4.5, 49, { angle: -90, align: 'center' });
+        doc.text(d, xBase + 30 - i * 4, 49, { angle: -90, align: 'center' });
     });
 
     // Date — leftmost column
@@ -438,7 +438,7 @@ function drawEnvPdf(doc, row, xBase, setNum, imgCanvasData) {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(11);
         doc.setTextColor(17, 17, 17);
-        doc.text(date.toUpperCase(), xBase + 7, 49, { angle: -90, align: 'center' });
+        doc.text(date.toUpperCase(), xBase + 8, 49, { angle: -90, align: 'center' });
     }
 
     // Offering lines — between date and diocese, stepping LEFT toward date
@@ -448,7 +448,7 @@ function drawEnvPdf(doc, row, xBase, setNum, imgCanvasData) {
         doc.setFontSize(7.5);
         doc.setTextColor(17, 17, 17);
         offeringLines.forEach((line, i) => {
-            doc.text(line, xBase + 22 - i * 5, 49, { angle: -90, align: 'center' });
+            doc.text(line, xBase + 20 - i * 4, 49, { angle: -90, align: 'center' });
         });
     }
 }
