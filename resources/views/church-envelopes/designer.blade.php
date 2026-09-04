@@ -411,45 +411,44 @@ function drawEnvPdf(doc, row, xBase, setNum, imgCanvasData) {
     }
     doc.text(row.church.toUpperCase(), xBase + 70, 49, { angle: -90, align: 'center' });
 
-    // Town — second column from right, lower half
+    // Town — second column from right
     if (row.town) {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8.5);
-        doc.text(row.town.toUpperCase(), xBase + 43, 70, { angle: -90, align: 'center' });
+        doc.text(row.town.toUpperCase(), xBase + 43, 49, { angle: -90, align: 'center' });
     }
 
-    // Diocese lines — stepping left from town, lower half
+    // Diocese lines — stepping left from town
+    // fitFont: scale down if text would exceed column height (90mm safe span at y=49)
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(51, 51, 51);
     [row.diocese1, row.diocese2, row.diocese3].filter(Boolean).forEach((d, i) => {
-        // fitFont: scale down if too wide for rotated column
         let pt = 6.5;
         doc.setFontSize(pt);
-        while (pt > 4 && doc.getTextWidth(d) > 55) {
+        while (pt > 4 && doc.getTextWidth(d) > 88) {
             pt -= 0.25;
             doc.setFontSize(pt);
         }
-        doc.text(d, xBase + 34 - i * 4.5, 70, { angle: -90, align: 'center' });
+        doc.text(d, xBase + 34 - i * 4.5, 49, { angle: -90, align: 'center' });
     });
 
-    // Date — leftmost column, lower half
+    // Date — leftmost column
     const date = buildDate(row);
     if (date) {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(11);
         doc.setTextColor(17, 17, 17);
-        doc.text(date.toUpperCase(), xBase + 7, 70, { angle: -90, align: 'center' });
+        doc.text(date.toUpperCase(), xBase + 7, 49, { angle: -90, align: 'center' });
     }
 
     // Offering lines — between date and diocese, stepping LEFT toward date
-    // First offering at highest x (near diocese side), subsequent lines step toward date
     const offeringLines = getOfferingLines(row);
     if (offeringLines.length) {
         doc.setFont('helvetica', 'italic');
         doc.setFontSize(7.5);
         doc.setTextColor(17, 17, 17);
         offeringLines.forEach((line, i) => {
-            doc.text(line, xBase + 22 - i * 5, 70, { angle: -90, align: 'center' });
+            doc.text(line, xBase + 22 - i * 5, 49, { angle: -90, align: 'center' });
         });
     }
 }
