@@ -32,13 +32,13 @@ class PrintJobArchiveController extends Controller
             ->when($dateFrom !== '', fn ($q) => $q->whereDate('archived_at', '>=', $dateFrom))
             ->when($dateTo   !== '', fn ($q) => $q->whereDate('archived_at', '<=', $dateTo))
             ->when($machine  !== '', function ($q) use ($machine) {
-                $q->whereIn('id',
-                    \DB::table('print_job_runs')
-                        ->select('print_job_id')
+                $q->whereIn('id', function ($sub) use ($machine) {
+                    $sub->select('print_job_id')
+                        ->from('print_job_runs')
                         ->where('machine', $machine)
                         ->whereNotNull('print_job_id')
-                        ->distinct()
-                );
+                        ->distinct();
+                });
             })
             ->orderByRaw('CASE WHEN archive_reason = "deleted" THEN order_date ELSE archived_at END DESC')
             ->paginate(30)
