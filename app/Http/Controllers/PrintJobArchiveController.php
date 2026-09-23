@@ -40,7 +40,7 @@ class PrintJobArchiveController extends Controller
                         ->distinct();
                 });
             })
-            ->orderByRaw('CASE WHEN archive_reason = "deleted" THEN order_date ELSE archived_at END DESC')
+            ->orderByRaw("CASE WHEN archive_reason = 'deleted' THEN order_date ELSE archived_at END DESC")
             ->paginate(30)
             ->withQueryString();
 
