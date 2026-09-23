@@ -10,6 +10,7 @@ class PrintJobArchiveController extends Controller
 {
     public function index(Request $request): View
     {
+        try {
         $search    = trim($request->input('q', ''));
         $dateFrom  = $request->input('date_from', '');
         $dateTo    = $request->input('date_to', '');
@@ -47,5 +48,8 @@ class PrintJobArchiveController extends Controller
         $machines = PrintJob::MACHINES;
 
         return view('print-schedule.archive', compact('jobs', 'search', 'dateFrom', 'dateTo', 'machine', 'machines'));
+        } catch (\Throwable $e) {
+            return response('Archive error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine(), 500);
+        }
     }
 }
