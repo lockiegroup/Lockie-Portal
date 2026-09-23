@@ -408,6 +408,9 @@
                                 <div style="display:grid;grid-template-columns:150px 1fr;align-items:center;gap:8px;padding:7px 20px 7px 36px;background:#fafaf7;border-top:1px dashed #e2e8f0;border-bottom:1px dashed #e2e8f0;min-width:680px;">
                                     <div>
                                         <div style="font-size:0.82rem;font-weight:600;color:#92400e;font-family:monospace;">
+                                            @if($dateFrom !== $dateTo)
+                                                <span style="font-size:0.72rem;font-weight:400;color:#b45309;">{{ $entry['break_start']->format('d M') }}</span>
+                                            @endif
                                             {{ $entry['break_start']->format('H:i') }} → {{ $entry['break_end']->format('H:i') }}
                                         </div>
                                         <div style="font-size:0.72rem;color:#b45309;margin-top:1px;">{{ fmtDur($entry['gap']) }}</div>
@@ -451,12 +454,26 @@
                                     {{-- Time --}}
                                     <div>
                                         <div style="font-size:0.82rem;font-weight:600;color:#334155;font-family:monospace;">
-                                            {{ $seg['start']->format('H:i') }}
-                                            →
-                                            @if($seg['end'])
-                                                {{ $seg['end']->format('H:i') }}
+                                            @if($dateFrom !== $dateTo)
+                                                <span style="font-size:0.72rem;font-weight:400;color:#94a3b8;">{{ $seg['start']->format('d M') }}</span>
+                                                {{ $seg['start']->format('H:i') }}
+                                                →
+                                                @if($seg['end'])
+                                                    @if($seg['end']->format('Y-m-d') !== $seg['start']->format('Y-m-d'))
+                                                        <span style="font-size:0.72rem;font-weight:400;color:#94a3b8;">{{ $seg['end']->format('d M') }}</span>
+                                                    @endif
+                                                    {{ $seg['end']->format('H:i') }}
+                                                @else
+                                                    <span style="color:#16a34a;">now</span>
+                                                @endif
                                             @else
-                                                <span style="color:#16a34a;">now</span>
+                                                {{ $seg['start']->format('H:i') }}
+                                                →
+                                                @if($seg['end'])
+                                                    {{ $seg['end']->format('H:i') }}
+                                                @else
+                                                    <span style="color:#16a34a;">now</span>
+                                                @endif
                                             @endif
                                         </div>
                                         <div style="font-size:0.72rem;color:#94a3b8;margin-top:1px;">{{ $durStr }}</div>

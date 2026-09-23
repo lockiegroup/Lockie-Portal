@@ -10,7 +10,10 @@ class PrintJobArchiveController extends Controller
 {
     public function index(Request $request): View
     {
-        $search = trim($request->input('q', ''));
+        $search    = trim($request->input('q', ''));
+        $dateFrom  = $request->input('date_from', '');
+        $dateTo    = $request->input('date_to', '');
+        $machine   = $request->input('machine', '');
 
         $jobs = PrintJob::whereNotNull('archived_at')
             ->when($search !== '', function ($query) use ($search) {
@@ -26,10 +29,15 @@ class PrintJobArchiveController extends Controller
                       ->orWhere('delivery_postcode',   'like', '%' . $search . '%');
                 });
             })
+            ->when($dateFrom !== '', fn ($q) => $q->whereDate('archived_at', '>=', $dateFrom))
+            ->when($dateTo   !== '', fn ($q) => $q->whereDate('archived_at', '<=', $dateTo))
+            ->when($machine  !== '', fn ($q) => $q->whereHas('runs', fn ($r) => $r->where('machine', $machine)))
             ->orderByRaw('CASE WHEN archive_reason = "deleted" THEN order_date ELSE archived_at END DESC')
             ->paginate(30)
             ->withQueryString();
 
-        return view('print-schedule.archive', compact('jobs', 'search'));
+        $machines = PrintJob::MACHINES;
+
+        return view('print-schedule.archive', compact('jobs', 'search', 'dateFrom', 'dateTo', 'machine', 'machines'));
     }
 }

@@ -15,34 +15,72 @@
             <span class="text-xs text-slate-400">{{ number_format($jobs->total()) }} completed job{{ $jobs->total() !== 1 ? 's' : '' }}</span>
         </div>
 
-        {{-- Search --}}
-        <form method="GET" action="{{ route('print.archive') }}" style="margin-bottom:1.5rem;position:relative;">
-            <svg style="position:absolute;left:14px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:#94a3b8;pointer-events:none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-            </svg>
-            <input type="text" name="q" value="{{ $search }}"
-                placeholder="Search order numbers, customer names, refs, product codes, print data…"
-                autocomplete="off"
-                style="width:100%;padding:10px 120px 10px 40px;border:1px solid #e2e8f0;border-radius:0.75rem;font-size:0.875rem;color:#1e293b;background:#fff;outline:none;box-sizing:border-box;"
-                onfocus="this.style.borderColor='#e11d48';this.style.boxShadow='0 0 0 3px rgba(225,29,72,0.1)'"
-                onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
-            <div style="position:absolute;right:8px;top:50%;transform:translateY(-50%);display:flex;gap:6px;">
-                @if($search)
-                    <a href="{{ route('print.archive') }}"
-                        style="font-size:0.75rem;color:#64748b;padding:5px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#f8fafc;text-decoration:none;white-space:nowrap;">
-                        Clear
-                    </a>
-                @endif
-                <button type="submit"
-                    style="background:#1e293b;color:#fff;font-size:0.75rem;padding:5px 14px;border-radius:6px;border:none;cursor:pointer;white-space:nowrap;">
-                    Search
-                </button>
+        {{-- Search + filters --}}
+        <form method="GET" action="{{ route('print.archive') }}" style="margin-bottom:1.5rem;">
+            {{-- Search bar --}}
+            <div style="position:relative;margin-bottom:10px;">
+                <svg style="position:absolute;left:14px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:#94a3b8;pointer-events:none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                </svg>
+                <input type="text" name="q" value="{{ $search }}"
+                    placeholder="Search order numbers, customer names, refs, product codes, print data…"
+                    autocomplete="off"
+                    style="width:100%;padding:10px 120px 10px 40px;border:1px solid #e2e8f0;border-radius:0.75rem;font-size:0.875rem;color:#1e293b;background:#fff;outline:none;box-sizing:border-box;"
+                    onfocus="this.style.borderColor='#e11d48';this.style.boxShadow='0 0 0 3px rgba(225,29,72,0.1)'"
+                    onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
+                <div style="position:absolute;right:8px;top:50%;transform:translateY(-50%);display:flex;gap:6px;">
+                    @if($search || $dateFrom || $dateTo || $machine)
+                        <a href="{{ route('print.archive') }}"
+                            style="font-size:0.75rem;color:#64748b;padding:5px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#f8fafc;text-decoration:none;white-space:nowrap;">
+                            Clear
+                        </a>
+                    @endif
+                    <button type="submit"
+                        style="background:#1e293b;color:#fff;font-size:0.75rem;padding:5px 14px;border-radius:6px;border:none;cursor:pointer;white-space:nowrap;">
+                        Search
+                    </button>
+                </div>
+            </div>
+
+            {{-- Date + Machine filters --}}
+            <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+                <span style="font-size:0.75rem;color:#94a3b8;white-space:nowrap;">Archive date:</span>
+                <input type="date" name="date_from" value="{{ $dateFrom }}"
+                    style="font-size:0.8125rem;border:1px solid #e2e8f0;border-radius:8px;padding:5px 10px;color:#334155;background:#fff;outline:none;"
+                    onfocus="this.style.borderColor='#e11d48'" onblur="this.style.borderColor='#e2e8f0'"
+                    title="Archived from">
+                <span style="font-size:0.75rem;color:#94a3b8;">→</span>
+                <input type="date" name="date_to" value="{{ $dateTo }}"
+                    style="font-size:0.8125rem;border:1px solid #e2e8f0;border-radius:8px;padding:5px 10px;color:#334155;background:#fff;outline:none;"
+                    onfocus="this.style.borderColor='#e11d48'" onblur="this.style.borderColor='#e2e8f0'"
+                    title="Archived to">
+
+                <span style="font-size:0.75rem;color:#94a3b8;white-space:nowrap;margin-left:4px;">Machine:</span>
+                <select name="machine"
+                    style="font-size:0.8125rem;border:1px solid #e2e8f0;border-radius:8px;padding:5px 10px;color:#334155;background:#fff;outline:none;">
+                    <option value="">All machines</option>
+                    @foreach($machines as $m)
+                        <option value="{{ $m }}" {{ $machine === $m ? 'selected' : '' }}>
+                            {{ ucwords(str_replace('_', ' ', $m)) }}
+                        </option>
+                    @endforeach
+                </select>
             </div>
         </form>
 
-        @if($search)
+        @if($search || $dateFrom || $dateTo || $machine)
             <p class="text-sm text-slate-500 mb-4">
-                {{ $jobs->total() }} result{{ $jobs->total() !== 1 ? 's' : '' }} for <span class="font-medium text-slate-700">&ldquo;{{ $search }}&rdquo;</span>
+                {{ $jobs->total() }} result{{ $jobs->total() !== 1 ? 's' : '' }}
+                @if($search) for <span class="font-medium text-slate-700">&ldquo;{{ $search }}&rdquo;</span>@endif
+                @if($dateFrom || $dateTo)
+                    <span class="text-slate-400">archived
+                    @if($dateFrom) from <span class="font-medium text-slate-600">{{ \Carbon\Carbon::parse($dateFrom)->format('d M Y') }}</span>@endif
+                    @if($dateTo) to <span class="font-medium text-slate-600">{{ \Carbon\Carbon::parse($dateTo)->format('d M Y') }}</span>@endif
+                    </span>
+                @endif
+                @if($machine)
+                    · machine: <span class="font-medium text-slate-700">{{ ucwords(str_replace('_', ' ', $machine)) }}</span>
+                @endif
             </p>
         @endif
 
