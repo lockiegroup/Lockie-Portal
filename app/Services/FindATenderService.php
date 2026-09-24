@@ -37,18 +37,22 @@ class FindATenderService
     {
         $results  = [];
         $fromDate = now()->subDays($daysBack)->format('Y-m-d') . 'T00:00:00Z';
-        $cursor   = null;
+        $nextUrl  = null;
         $page     = 0;
-        $maxPages = 30;
+        $maxPages = 50;
 
         if ($output) $output->line("     [FAT] Fetching releases updated from {$fromDate}...");
 
         do {
-            $params = ['updatedFrom' => $fromDate, 'limit' => 100];
-            if ($cursor) $params['cursor'] = $cursor;
-
             try {
-                $response = Http::timeout(30)->get(self::BASE_URL, $params);
+                if ($nextUrl) {
+                    $response = Http::timeout(30)->get($nextUrl);
+                } else {
+                    $response = Http::timeout(30)->get(self::BASE_URL, [
+                        'updatedFrom' => $fromDate,
+                        'limit'       => 100,
+                    ]);
+                }
             } catch (\Throwable $e) {
                 Log::warning('FindATender request failed: ' . $e->getMessage());
                 break;
@@ -61,29 +65,26 @@ class FindATenderService
                 break;
             }
 
-            $body     = $response->json();
-            $cursor   = $body['cursor'] ?? null;
+            $body    = $response->json();
+            $nextUrl = $body['links']['next'] ?? $body['links']['nextPage'] ?? null;
 
             if ($output && $page === 0) {
                 $topKeys = is_array($body) ? implode(', ', array_keys($body)) : gettype($body);
-                $output->line("     [FAT] Body top-level keys: {$topKeys}");
-                $firstKey = is_array($body) ? array_key_first($body) : null;
-                if ($firstKey && is_array($body[$firstKey]) && count($body[$firstKey]) > 0) {
-                    $firstItem = $body[$firstKey][0];
-                    $output->line("     [FAT] First [{$firstKey}][0] keys: " . implode(', ', array_keys($firstItem)));
-                }
+                $output->line("     [FAT] Body keys: {$topKeys}");
+                $links = $body['links'] ?? [];
+                $output->line("     [FAT] links: " . json_encode($links));
             }
 
             $releases = $this->extractReleases($body);
 
             if ($output) {
                 $output->line("     [FAT] Got " . count($releases) . " releases on this page");
-                if ($page === 1 && count($releases) > 0) {
+                if ($page === 0 && count($releases) > 0) {
                     $sample = $releases[0];
-                    $output->line("     [FAT] Sample keys: " . implode(', ', array_keys($sample)));
+                    $output->line("     [FAT] Release keys: " . implode(', ', array_keys($sample)));
                     $tender = $sample['tender'] ?? [];
-                    $output->line("     [FAT] Sample tender keys: " . implode(', ', array_keys($tender)));
-                    $output->line("     [FAT] Sample title: " . ($tender['title'] ?? $sample['id'] ?? '(none)'));
+                    $output->line("     [FAT] Tender keys: " . implode(', ', array_keys($tender)));
+                    $output->line("     [FAT] First title: " . ($tender['title'] ?? $sample['id'] ?? '(none)'));
                 }
             }
 
@@ -97,9 +98,9 @@ class FindATenderService
 
             $page++;
 
-            if (count($releases) > 0 && $cursor) sleep(1);
+            if (count($releases) > 0 && $nextUrl) sleep(1);
 
-        } while ($cursor && $page < $maxPages);
+        } while ($nextUrl && $page < $maxPages);
 
         if ($output) $output->line("     [FAT] Total matching: " . count($results));
 
