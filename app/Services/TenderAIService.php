@@ -76,9 +76,10 @@ TEXT;
         $desc     = mb_substr($tender['description'] ?? 'No description', 0, 800);
         $value    = $tender['value_high'] ? '£' . number_format((int)$tender['value_high']) : 'Not specified';
         $cpv      = implode(', ', (array)($tender['cpv_codes'] ?? [])) ?: 'None';
+        $context  = self::PRODUCT_CONTEXT;
 
         return <<<PROMPT
-{$this->PRODUCT_CONTEXT}
+{$context}
 
 Assess this UK procurement opportunity and return ONLY a JSON object (no other text):
 

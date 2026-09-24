@@ -98,7 +98,7 @@ class FindATenderService
 
             $page++;
 
-            if (count($releases) > 0 && $nextUrl) sleep(1);
+            if (count($releases) > 0 && $nextUrl) sleep(2);
 
         } while ($nextUrl && $page < $maxPages);
 
