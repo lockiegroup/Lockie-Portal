@@ -18,6 +18,11 @@ return [
         'key' => env('ANTHROPIC_API_KEY'),
     ],
 
+    'contracts_finder' => [
+        'client_id'     => env('CONTRACTS_FINDER_CLIENT_ID'),
+        'client_secret' => env('CONTRACTS_FINDER_CLIENT_SECRET'),
+    ],
+
     'tender_radar' => [
         'alert_email' => env('TENDER_RADAR_ALERT_EMAIL'),
     ],
