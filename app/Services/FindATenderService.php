@@ -63,9 +63,29 @@ class FindATenderService
 
             $body     = $response->json();
             $cursor   = $body['cursor'] ?? null;
+
+            if ($output && $page === 0) {
+                $topKeys = is_array($body) ? implode(', ', array_keys($body)) : gettype($body);
+                $output->line("     [FAT] Body top-level keys: {$topKeys}");
+                $firstKey = is_array($body) ? array_key_first($body) : null;
+                if ($firstKey && is_array($body[$firstKey]) && count($body[$firstKey]) > 0) {
+                    $firstItem = $body[$firstKey][0];
+                    $output->line("     [FAT] First [{$firstKey}][0] keys: " . implode(', ', array_keys($firstItem)));
+                }
+            }
+
             $releases = $this->extractReleases($body);
 
-            if ($output) $output->line("     [FAT] Got " . count($releases) . " releases on this page");
+            if ($output) {
+                $output->line("     [FAT] Got " . count($releases) . " releases on this page");
+                if ($page === 1 && count($releases) > 0) {
+                    $sample = $releases[0];
+                    $output->line("     [FAT] Sample keys: " . implode(', ', array_keys($sample)));
+                    $tender = $sample['tender'] ?? [];
+                    $output->line("     [FAT] Sample tender keys: " . implode(', ', array_keys($tender)));
+                    $output->line("     [FAT] Sample title: " . ($tender['title'] ?? $sample['id'] ?? '(none)'));
+                }
+            }
 
             foreach ($releases as $r) {
                 if (! $this->matchesKeywords($r)) continue;
