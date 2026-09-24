@@ -25,3 +25,7 @@ Schedule::command('stock-watchlist:sync')->dailyAt('03:00');
 
 // Sync Amazon settlements and ad spend daily at 6am
 Schedule::command('amazon:sync --settlements --ads')->dailyAt('06:00');
+
+// Tender Radar: fetch new opportunities and score with AI, then send daily alert
+Schedule::command('tender:fetch --days=2')->dailyAt('07:00');
+Schedule::command('tender:alert')->dailyAt('07:30');

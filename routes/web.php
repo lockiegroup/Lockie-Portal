@@ -30,6 +30,8 @@ use App\Http\Controllers\ImpersonateController;
 use App\Http\Controllers\ActionPlanController;
 use App\Http\Controllers\TabletController;
 use App\Http\Controllers\RackingController;
+use App\Http\Controllers\TenderRadarController;
+use App\Http\Controllers\HistoricalContractController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn() => redirect()->route('login'));
@@ -125,6 +127,19 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::post('/jobs/{job}/manual-complete', [PrintScheduleController::class, 'completeManual'])->name('jobs.manual.complete');
         Route::post('/jobs/{job}/manual-archive', [PrintScheduleController::class, 'archiveManual'])->name('jobs.manual.archive');
         Route::get('/jobs/{job}/labels', [PrintScheduleController::class, 'downloadLabels'])->name('jobs.labels');
+    });
+
+    // Tender Radar
+    Route::prefix('tender-radar')->name('tender-radar.')->group(function () {
+        Route::get('/', [TenderRadarController::class, 'index'])->name('index');
+        Route::get('/historical', [HistoricalContractController::class, 'index'])->name('historical.index');
+        Route::get('/historical/create', [HistoricalContractController::class, 'create'])->name('historical.create');
+        Route::post('/historical', [HistoricalContractController::class, 'store'])->name('historical.store');
+        Route::get('/historical/{contract}/edit', [HistoricalContractController::class, 'edit'])->name('historical.edit');
+        Route::put('/historical/{contract}', [HistoricalContractController::class, 'update'])->name('historical.update');
+        Route::delete('/historical/{contract}', [HistoricalContractController::class, 'destroy'])->name('historical.destroy');
+        Route::get('/{tender}', [TenderRadarController::class, 'show'])->name('show');
+        Route::patch('/{tender}/status', [TenderRadarController::class, 'updateStatus'])->name('status');
     });
 
     // Company Policies — all authenticated staff can view

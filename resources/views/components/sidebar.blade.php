@@ -6,7 +6,7 @@
 
     $activeFinance    = request()->routeIs('sales*') || request()->routeIs('amazon.*');
     $activeStock      = request()->routeIs('stock.*') || $isWatchlistSection;
-    $activePlanning   = request()->routeIs('key-actions.*') || request()->routeIs('action-plans.*') || request()->routeIs('ab-testing.*');
+    $activePlanning   = request()->routeIs('key-actions.*') || request()->routeIs('action-plans.*') || request()->routeIs('ab-testing.*') || request()->routeIs('tender-radar.*');
     $activeCustomers  = request()->routeIs('key-accounts.*') || request()->routeIs('crm.*') || request()->routeIs('reminders.*');
     $activeOperations = request()->routeIs('church-envelopes.*') || request()->routeIs('policies.*') || request()->routeIs('training.*') || request()->routeIs('letter-filter.*') || request()->routeIs('racking.*') || $isPrintSection;
     $activeAdmin      = request()->routeIs('admin.*') || request()->routeIs('imports.*');
@@ -130,6 +130,12 @@
                     <path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/>
                 </svg>
                 <span class="sb-label">A/B Testing</span>
+            </a>
+            <a href="{{ route('tender-radar.index') }}" class="sb-item{{ request()->routeIs('tender-radar.*') ? ' sb-active' : '' }}" data-tip="Tender Radar">
+                <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/>
+                </svg>
+                <span class="sb-label">Tender Radar</span>
             </a>
         </div>
         @endif

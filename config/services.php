@@ -14,6 +14,14 @@ return [
     |
     */
 
+    'anthropic' => [
+        'key' => env('ANTHROPIC_API_KEY'),
+    ],
+
+    'tender_radar' => [
+        'alert_email' => env('TENDER_RADAR_ALERT_EMAIL'),
+    ],
+
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
     ],
