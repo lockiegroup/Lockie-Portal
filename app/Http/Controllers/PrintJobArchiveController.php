@@ -49,7 +49,7 @@ class PrintJobArchiveController extends Controller
 
         return view('print-schedule.archive', compact('jobs', 'search', 'dateFrom', 'dateTo', 'machine', 'machines'));
         } catch (\Throwable $e) {
-            return response('Archive error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine(), 500);
+            return response('ARCHIVE DEBUG ERROR: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine(), 200);
         }
     }
 }
