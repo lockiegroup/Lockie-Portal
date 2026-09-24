@@ -10,11 +10,10 @@ class PrintJobArchiveController extends Controller
 {
     public function index(Request $request): View
     {
-        try {
-        $search    = trim($request->input('q', ''));
-        $dateFrom  = $request->input('date_from', '');
-        $dateTo    = $request->input('date_to', '');
-        $machine   = $request->input('machine', '');
+        $search   = trim($request->input('q', ''));
+        $dateFrom = $request->input('date_from') ?? '';
+        $dateTo   = $request->input('date_to') ?? '';
+        $machine  = $request->input('machine') ?? '';
 
         $jobs = PrintJob::whereNotNull('archived_at')
             ->when($search !== '', function ($query) use ($search) {
@@ -48,9 +47,5 @@ class PrintJobArchiveController extends Controller
         $machines = PrintJob::MACHINES;
 
         return view('print-schedule.archive', compact('jobs', 'search', 'dateFrom', 'dateTo', 'machine', 'machines'));
-        } catch (\Throwable $e) {
-            \Log::error('ARCHIVE DEBUG: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
-            throw $e;
-        }
     }
 }
