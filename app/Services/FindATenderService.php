@@ -23,15 +23,15 @@ class FindATenderService
         'utility meter seals',
     ];
 
-    public function fetchRecentOpportunities(int $daysBack = 7): array
+    public function fetchRecentOpportunities(int $daysBack = 7, $output = null): array
     {
         $results  = [];
         $seen     = [];
-        $fromDate = now()->subDays($daysBack)->toIso8601String();
+        $fromDate = now()->subDays($daysBack)->format('Y-m-d') . 'T00:00:00Z';
 
         foreach (self::SEARCH_TERMS as $term) {
             try {
-                $releases = $this->searchReleases($term, $fromDate);
+                $releases = $this->searchReleases($term, $fromDate, $output);
                 foreach ($releases as $release) {
                     $ref = $release['ocid'] ?? null;
                     if (! $ref || isset($seen[$ref])) continue;
@@ -41,27 +41,45 @@ class FindATenderService
                 sleep(1);
             } catch (\Throwable $e) {
                 Log::warning("FindATender search failed for term '{$term}': " . $e->getMessage());
+                if ($output) $output->line("     ERROR for '{$term}': " . $e->getMessage());
             }
         }
 
         return $results;
     }
 
-    private function searchReleases(string $term, string $fromDate): array
+    private function searchReleases(string $term, string $fromDate, $output = null): array
     {
         $response = Http::timeout(30)->get(self::BASE_URL, [
             'publishedFrom' => $fromDate,
             'q'             => $term,
         ]);
 
+        if ($output) {
+            $output->line("     [FAT] '{$term}' → HTTP " . $response->status());
+            $output->line("     [FAT] Body (first 300): " . substr($response->body(), 0, 300));
+        }
+
         if (! $response->successful()) {
-            Log::warning('FindATender API error: ' . $response->status());
+            Log::warning('FindATender API error ' . $response->status() . ': ' . $response->body());
             return [];
         }
 
-        $packages = $response->json('releases') ?? [];
+        $body = $response->json();
+
+        if ($output) {
+            $keys = is_array($body) ? implode(', ', array_keys($body)) : gettype($body);
+            $output->line("     [FAT] JSON keys: {$keys}");
+        }
+
+        // OCDS package: top-level "releases" is an array of release packages,
+        // each having a "releases" sub-array. Or the top-level may directly be releases.
+        $rawPackages = $body['releases'] ?? $body['releasePackages'] ?? [];
+
+        if ($output) $output->line("     [FAT] packages: " . count($rawPackages));
+
         $releases = [];
-        foreach ($packages as $pkg) {
+        foreach ($rawPackages as $pkg) {
             if (isset($pkg['releases'])) {
                 foreach ($pkg['releases'] as $r) {
                     $releases[] = $r;
@@ -70,6 +88,9 @@ class FindATenderService
                 $releases[] = $pkg;
             }
         }
+
+        if ($output) $output->line("     [FAT] '{$term}': " . count($releases) . " releases");
+
         return $releases;
     }
 

@@ -13,7 +13,8 @@ class FetchTendersCommand extends Command
     protected $signature = 'tender:fetch
                             {--days=7 : How many days back to search}
                             {--source=all : Which source to fetch (all, contracts_finder, find_a_tender)}
-                            {--rescore : Re-score existing tenders with AI}';
+                            {--rescore : Re-score existing tenders with AI}
+                            {--debug : Dump raw API responses for debugging}';
 
     protected $description = 'Fetch new tender opportunities from UK procurement sources and score with AI';
 
@@ -29,15 +30,18 @@ class FetchTendersCommand extends Command
 
         $raw = [];
 
+        $debug = (bool) $this->option('debug');
+
         if (in_array($source, ['all', 'contracts_finder'])) {
             $this->line('  → Contracts Finder...');
-            $raw = array_merge($raw, $contractsFinder->fetchRecentOpportunities($days));
-            $this->line('     Found ' . count($raw) . ' so far');
+            $cfResults = $contractsFinder->fetchRecentOpportunities($days, $debug ? $this : null);
+            $raw = array_merge($raw, $cfResults);
+            $this->line('     Found ' . count($cfResults) . ' from Contracts Finder');
         }
 
         if (in_array($source, ['all', 'find_a_tender'])) {
             $this->line('  → Find a Tender...');
-            $fatResults = $findATender->fetchRecentOpportunities($days);
+            $fatResults = $findATender->fetchRecentOpportunities($days, $debug ? $this : null);
             $raw        = array_merge($raw, $fatResults);
             $this->line('     Found ' . count($fatResults) . ' from Find a Tender');
         }
