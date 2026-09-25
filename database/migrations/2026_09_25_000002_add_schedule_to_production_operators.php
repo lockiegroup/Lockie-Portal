@@ -11,12 +11,15 @@ return new class extends Migration
 
     public function up(): void
     {
-        Schema::table('production_operators', function (Blueprint $table) {
-            $table->json('schedule')->nullable()->after('name');
-        });
+        if (!Schema::hasColumn('production_operators', 'schedule')) {
+            Schema::table('production_operators', function (Blueprint $table) {
+                $table->json('schedule')->nullable()->after('name');
+            });
+        }
 
         // Migrate existing am_hours / pm_hours into per-day schedule
-        DB::table('production_operators')->each(function ($op) {
+        DB::table('production_operators')->orderBy('id')->each(function ($op) {
+            if (!empty($op->schedule)) return; // already migrated
             $am = $op->am_hours ?? 4;
             $pm = $op->pm_hours ?? 4;
             $schedule = [];
@@ -28,9 +31,11 @@ return new class extends Migration
             ]);
         });
 
-        Schema::table('production_operators', function (Blueprint $table) {
-            $table->dropColumn(['am_hours', 'pm_hours']);
-        });
+        if (Schema::hasColumn('production_operators', 'am_hours')) {
+            Schema::table('production_operators', function (Blueprint $table) {
+                $table->dropColumn(['am_hours', 'pm_hours']);
+            });
+        }
     }
 
     public function down(): void
