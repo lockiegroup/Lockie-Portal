@@ -6,9 +6,8 @@
     --pp-border:   #e2e8f0;
     --pp-text:     #1e293b;
     --pp-muted:    #64748b;
-    --pp-am-tint:  #fffbeb;
-    --pp-pm-tint:  #eff6ff;
-    --pp-row-alt:  #f1f5f9;
+    --pp-am-bg:    #fffbeb;
+    --pp-pm-bg:    #eff6ff;
     --pp-hdr-bg:   #1e293b;
     --pp-hdr-text: #e2e8f0;
 }
@@ -38,59 +37,77 @@
     padding:3px 8px; border-radius:999px; white-space:nowrap;
 }
 
-/* Grid table */
+/* Main grid */
 #pp-table-wrap { overflow-x:auto; }
 #pp-table {
     border-collapse: collapse; width:100%; font-size:0.78rem;
-    background: white; border-radius:8px; overflow:hidden;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    background:white; border-radius:8px; overflow:hidden;
+    box-shadow:0 1px 3px rgba(0,0,0,0.08);
 }
-#pp-table th, #pp-table td { border:1px solid var(--pp-border); padding:0; }
+#pp-table th, #pp-table td { border:1px solid var(--pp-border); }
 #pp-table thead th {
     background:var(--pp-hdr-bg); color:var(--pp-hdr-text);
-    padding:8px 10px; text-align:center; font-size:0.75rem; font-weight:700; white-space:nowrap;
+    padding:8px 12px; text-align:center; font-size:0.8rem; font-weight:700; white-space:nowrap;
 }
-#pp-table thead th.am-hdr { background:#78350f; }
-#pp-table thead th.pm-hdr { background:#1e3a5f; }
-#pp-table thead th.op-hdr { background:#0f172a; text-align:left; min-width:150px; }
+#pp-table thead th.op-hdr { text-align:left; min-width:160px; background:#0f172a; }
+#pp-table thead th.day-hdr { min-width:190px; }
 
+/* Operator name cell */
 .pp-op-cell {
-    padding:6px 10px; background:#f8fafc; min-width:150px; vertical-align:middle;
+    padding:0; background:#f8fafc; vertical-align:top;
 }
-.pp-op-name { font-weight:700; color:var(--pp-text); display:block; line-height:1.3; }
+.pp-op-inner {
+    padding:8px 10px;
+    border-bottom:1px solid #e2e8f0;
+}
+.pp-op-name { font-weight:700; color:var(--pp-text); display:block; font-size:0.82rem; }
 .pp-op-hours { font-size:0.68rem; color:var(--pp-muted); }
+.pp-op-actions { padding:6px 10px; }
 .pp-copy-btn {
     font-size:0.65rem; padding:2px 6px; border:1px solid #cbd5e1; border-radius:4px;
-    background:white; color:#475569; cursor:pointer; margin-top:3px; display:inline-block;
+    background:white; color:#475569; cursor:pointer; display:inline-block;
     transition:background 0.12s;
 }
 .pp-copy-btn:hover { background:#f1f5f9; }
 
-.pp-shift-cell { padding:4px; min-width:200px; vertical-align:top; }
-.pp-shift-cell.am { background:var(--pp-am-tint); }
-.pp-shift-cell.pm { background:var(--pp-pm-tint); }
-.pp-shift-inner { display:flex; align-items:center; gap:4px; flex-wrap:wrap; }
+/* Day cell — two halves stacked */
+.pp-day-cell { padding:0; vertical-align:top; }
+
+.pp-shift-block { padding:5px 7px; }
+.pp-shift-block.am { background:var(--pp-am-bg); border-bottom:1px solid #e8e0c8; }
+.pp-shift-block.pm { background:var(--pp-pm-bg); }
+
+.pp-shift-label {
+    font-size:0.6rem; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;
+    color:#94a3b8; margin-bottom:4px; display:flex; align-items:center; justify-content:space-between;
+}
+.pp-shift-label .pp-badge {
+    font-size:0.6rem; font-weight:700; padding:1px 5px; border-radius:3px;
+}
+.pp-badge.over  { background:#fee2e2; color:#991b1b; }
+.pp-badge.under { background:#fef3c7; color:#92400e; }
+
+.pp-slot { display:flex; align-items:center; gap:4px; margin-bottom:3px; }
+.pp-slot:last-child { margin-bottom:0; }
 
 .pp-select {
-    flex:1; min-width:100px; padding:4px 6px; border:1px solid #cbd5e1; border-radius:5px;
-    font-size:0.75rem; background:white; cursor:pointer; outline:none;
-    transition:border-color 0.15s;
+    flex:1; min-width:0; padding:3px 5px; border:1px solid #cbd5e1; border-radius:5px;
+    font-size:0.73rem; background:white; cursor:pointer; outline:none;
+    transition:border-color 0.15s; height:26px;
 }
 .pp-select:focus { border-color:#6366f1; }
 
 .pp-hours-input {
-    width:46px; padding:4px 5px; border:1px solid #cbd5e1; border-radius:5px;
-    font-size:0.75rem; text-align:center; outline:none; transition:border-color 0.15s;
+    width:40px; padding:3px 4px; border:1px solid #cbd5e1; border-radius:5px;
+    font-size:0.73rem; text-align:center; outline:none;
+    transition:border-color 0.15s; height:26px; flex-shrink:0;
 }
-.pp-hours-input:focus { border-color:#6366f1; }
-.pp-hours-input.over  { border-color:#ef4444; background:#fef2f2; }
-.pp-hours-input.under { border-color:#f59e0b; background:#fffbeb; }
+.pp-hours-input:focus  { border-color:#6366f1; }
+.pp-hours-input.over   { border-color:#ef4444; background:#fef2f2; }
+.pp-hours-input.under  { border-color:#f59e0b; background:#fffbeb; }
 
-.pp-hours-badge {
-    font-size:0.65rem; font-weight:700; padding:2px 5px; border-radius:4px; white-space:nowrap;
-}
-.pp-hours-badge.over  { background:#fee2e2; color:#991b1b; }
-.pp-hours-badge.under { background:#fef3c7; color:#92400e; }
+.pp-slot2 { display:none; }
+.pp-slot2.visible { display:flex; }
 
 /* Bottom tables */
 .pp-bottom { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:24px; }
@@ -136,23 +153,14 @@
         <table id="pp-table">
             <thead>
                 <tr>
-                    <th class="op-hdr" rowspan="2">Operator</th>
+                    <th class="op-hdr">Operator</th>
                     @foreach(['Mon','Tue','Wed','Thu','Fri'] as $day)
-                        <th class="am-hdr" colspan="2">{{ $day }} AM</th>
-                        <th class="pm-hdr" colspan="2">{{ $day }} PM</th>
-                    @endforeach
-                </tr>
-                <tr>
-                    @foreach(['Mon','Tue','Wed','Thu','Fri'] as $day)
-                        <th class="am-hdr" style="font-size:0.65rem;padding:4px 8px;">Machine</th>
-                        <th class="am-hdr" style="font-size:0.65rem;padding:4px 8px;">Hours</th>
-                        <th class="pm-hdr" style="font-size:0.65rem;padding:4px 8px;">Machine</th>
-                        <th class="pm-hdr" style="font-size:0.65rem;padding:4px 8px;">Hours</th>
+                        <th class="day-hdr">{{ $day }}</th>
                     @endforeach
                 </tr>
             </thead>
             <tbody id="pp-tbody">
-                <tr><td colspan="21" style="padding:20px;text-align:center;color:#94a3b8;">Loading week data…</td></tr>
+                <tr><td colspan="6" style="padding:20px;text-align:center;color:#94a3b8;">Loading week data…</td></tr>
             </tbody>
         </table>
     </div>
@@ -180,16 +188,13 @@ const MACHINES  = @json($machines);
 const CSRF      = document.querySelector('meta[name=csrf-token]').content;
 
 const DAYS    = ['mon','tue','wed','thu','fri'];
-const DAYNAME = {mon:'Monday',tue:'Tuesday',wed:'Wednesday',thu:'Thursday',fri:'Friday'};
 const SHIFTS  = ['am','pm'];
 
-// Machine lookup
 const machineByKey = {};
 MACHINES.forEach(m => { machineByKey[m.key] = m; });
 
-// State
 let currentMonday = getMonday(new Date());
-let assignments   = {};   // { opId: { mon: { am: {m,h,m2,h2}, pm: {...} }, ... } }
+let assignments   = {};
 let saveTimer     = null;
 
 // ── Date helpers ──────────────────────────────────────────────────────
@@ -263,87 +268,82 @@ function getCell(opId, day, shift) {
     return assignments[opStr][day][shift];
 }
 
-// ── Build machine select options ─────────────────────────────────────
+// ── Per-day scheduled hours ───────────────────────────────────────────
+function getScheduled(op, day, shift) {
+    return parseFloat(op.schedule?.[day]?.[shift]) || 0;
+}
+
+// ── Machine select options ────────────────────────────────────────────
 function buildOptions(selectedKey) {
     let html = `<option value="" ${!selectedKey?'selected':''} style="font-style:italic;color:#94a3b8;">(Unassigned)</option>`;
     html += `<option value="holiday" ${selectedKey==='holiday'?'selected':''} style="background:#fef3c7;">Holiday</option>`;
     html += `<option value="sick"    ${selectedKey==='sick'?'selected':''} style="background:#fee2e2;">Sick</option>`;
     MACHINES.forEach(m => {
         const sel = selectedKey === m.key ? 'selected' : '';
-        const bg  = `hsl(${m.hue},65%,88%)`;
-        html += `<option value="${m.key}" ${sel} style="background:${bg};">${m.name}</option>`;
+        html += `<option value="${m.key}" ${sel} style="background:hsl(${m.hue},65%,88%);">${m.name}</option>`;
     });
     return html;
 }
 
-// ── Style a select based on value ────────────────────────────────────
-function styleSelect(sel, val) {
-    if (!val) {
-        sel.style.background = '#f8fafc';
-        sel.style.color      = '#94a3b8';
-        sel.style.fontStyle  = 'italic';
-    } else if (val === 'holiday') {
-        sel.style.background = '#fef3c7';
-        sel.style.color      = '#92400e';
-        sel.style.fontStyle  = 'normal';
-    } else if (val === 'sick') {
-        sel.style.background = '#fee2e2';
-        sel.style.color      = '#991b1b';
-        sel.style.fontStyle  = 'normal';
-    } else {
-        const m = machineByKey[val];
-        if (m) {
-            sel.style.background = `hsl(${m.hue},65%,88%)`;
-            sel.style.color      = `hsl(${m.hue},60%,20%)`;
-        }
-        sel.style.fontStyle = 'normal';
-    }
+function selectStyle(val) {
+    if (!val)            return 'background:#f8fafc;color:#94a3b8;font-style:italic;';
+    if (val==='holiday') return 'background:#fef3c7;color:#92400e;font-style:normal;';
+    if (val==='sick')    return 'background:#fee2e2;color:#991b1b;font-style:normal;';
+    const m = machineByKey[val];
+    if (m) return `background:hsl(${m.hue},65%,88%);color:hsl(${m.hue},60%,20%);font-style:normal;`;
+    return '';
 }
 
-// ── Hours validation ─────────────────────────────────────────────────
-function validateHours(opId, shift) {
+// ── Should the second slot be visible? ───────────────────────────────
+function shouldShowSlot2(op, day, shift) {
+    const cell = getCell(op.id, day, shift);
+    // Always show if m2 or h2 already has data saved
+    if (cell.m2 || cell.h2) return true;
+    const scheduled = getScheduled(op, day, shift);
+    const hours1    = parseFloat(cell.h) || 0;
+    // Show when scheduled > 0 and there are remaining hours after first allocation
+    if (scheduled > 0 && hours1 > 0 && hours1 < scheduled) return true;
+    return false;
+}
+
+// ── Validate & update badge ───────────────────────────────────────────
+function validateCell(opId, day, shift) {
     const op = OPERATORS.find(o => String(o.id) === String(opId));
     if (!op) return;
-    const scheduled = parseFloat(shift === 'am' ? op.am_hours : op.pm_hours) || 0;
 
-    let totalHours = 0;
-    let hasAny = false;
-    DAYS.forEach(day => {
-        const cell = getCell(opId, day, shift);
-        const h  = parseFloat(cell.h)  || 0;
-        const h2 = parseFloat(cell.h2) || 0;
-        if (cell.h !== '' || cell.h2 !== '') hasAny = true;
-        totalHours += h + h2;
+    const scheduled = getScheduled(op, day, shift);
+    const cell  = getCell(opId, day, shift);
+    const total = (parseFloat(cell.h)||0) + (parseFloat(cell.h2)||0);
+
+    const inp1  = document.querySelector(`[data-op="${opId}"][data-day="${day}"][data-shift="${shift}"][data-field="h"]`);
+    const inp2  = document.querySelector(`[data-op="${opId}"][data-day="${day}"][data-shift="${shift}"][data-field="h2"]`);
+    const badge = document.querySelector(`.pp-badge[data-op="${opId}"][data-day="${day}"][data-shift="${shift}"]`);
+    const slot2 = document.querySelector(`.pp-slot2[data-op="${opId}"][data-day="${day}"][data-shift="${shift}"]`);
+
+    // Update slot2 visibility
+    if (slot2) {
+        const show = shouldShowSlot2(op, day, shift);
+        slot2.classList.toggle('visible', show);
+    }
+
+    [inp1, inp2].forEach(inp => {
+        if (!inp) return;
+        inp.classList.remove('over','under');
+        if (scheduled > 0 && total > scheduled) inp.classList.add('over');
+        else if (scheduled > 0 && total > 0 && total < scheduled) inp.classList.add('under');
     });
 
-    // per-day validation
-    DAYS.forEach(day => {
-        const cell  = getCell(opId, day, shift);
-        const total = (parseFloat(cell.h)||0) + (parseFloat(cell.h2)||0);
-        const inp1  = document.querySelector(`[data-op="${opId}"][data-day="${day}"][data-shift="${shift}"][data-field="h"]`);
-        const inp2  = document.querySelector(`[data-op="${opId}"][data-day="${day}"][data-shift="${shift}"][data-field="h2"]`);
-        const badge = document.querySelector(`.pp-badge[data-op="${opId}"][data-day="${day}"][data-shift="${shift}"]`);
-
-        if (inp1 || inp2) {
-            [inp1, inp2].forEach(inp => {
-                if (!inp) return;
-                inp.classList.remove('over','under');
-                if (total > scheduled) inp.classList.add('over');
-                else if (total > 0 && total < scheduled) inp.classList.add('under');
-            });
-            if (badge) {
-                badge.textContent = '';
-                badge.className   = 'pp-hours-badge';
-                if (total > scheduled) {
-                    badge.textContent = `+${(total-scheduled).toFixed(1)}h over`;
-                    badge.className   += ' over';
-                } else if (total > 0 && total < scheduled) {
-                    badge.textContent = `${(scheduled-total).toFixed(1)}h under`;
-                    badge.className   += ' under';
-                }
-            }
+    if (badge) {
+        badge.textContent = '';
+        badge.className   = 'pp-badge';
+        if (scheduled > 0 && total > scheduled) {
+            badge.textContent = `+${(total-scheduled).toFixed(1)}h over`;
+            badge.className  += ' over';
+        } else if (scheduled > 0 && total > 0 && total < scheduled) {
+            badge.textContent = `${(scheduled-total).toFixed(1)}h under`;
+            badge.className  += ' under';
         }
-    });
+    }
 }
 
 // ── Copy Mon → rest of week ──────────────────────────────────────────
@@ -361,6 +361,16 @@ function copyMonToWeek(opId) {
     scheduleSave();
 }
 
+// ── Format scheduled hours for operator cell ──────────────────────────
+function fmtSched(op) {
+    const s = op.schedule || {};
+    const days = ['mon','tue','wed','thu','fri'];
+    const monAm = s.mon?.am ?? 4, monPm = s.mon?.pm ?? 4;
+    const allSame = days.every(d => (s[d]?.am ?? 4) === monAm && (s[d]?.pm ?? 4) === monPm);
+    if (allSame) return `${monAm}h AM · ${monPm}h PM`;
+    return days.map((d,i) => `${'MTWRF'[i]}:${s[d]?.am??4}/${s[d]?.pm??4}`).join(' ');
+}
+
 // ── Render full grid ─────────────────────────────────────────────────
 function renderGrid() {
     const tbody = document.getElementById('pp-tbody');
@@ -368,81 +378,75 @@ function renderGrid() {
 
     OPERATORS.forEach(op => {
         html += `<tr>`;
-        // Operator cell
+
+        // Operator name cell
         html += `<td class="pp-op-cell">
-            <span class="pp-op-name">${escHtml(op.name)}</span>
-            <span class="pp-op-hours">${op.am_hours}h AM &middot; ${op.pm_hours}h PM</span><br>
-            <button class="pp-copy-btn" onclick="ppCopyMon(${op.id})">Copy Mon &rarr; week</button>
+            <div class="pp-op-inner">
+                <span class="pp-op-name">${escHtml(op.name)}</span>
+                <span class="pp-op-hours">${fmtSched(op)}</span>
+            </div>
+            <div class="pp-op-actions">
+                <button class="pp-copy-btn" onclick="ppCopyMon(${op.id})">Copy Mon &rarr; week</button>
+            </div>
         </td>`;
 
+        // One cell per day
         DAYS.forEach(day => {
-            SHIFTS.forEach(shift => {
-                const cell   = getCell(op.id, day, shift);
-                const cls    = shift === 'am' ? 'am' : 'pm';
-                const selBg  = selectBg(cell.m);
-                const selBg2 = selectBg(cell.m2);
+            html += `<td class="pp-day-cell">`;
 
-                html += `<td class="pp-shift-cell ${cls}">
-                    <div class="pp-shift-inner">
-                        <select class="pp-select" style="${selBg}"
+            SHIFTS.forEach(shift => {
+                const cell    = getCell(op.id, day, shift);
+                const show2   = shouldShowSlot2(op, day, shift);
+                const shiftLabel = shift.toUpperCase();
+
+                html += `<div class="pp-shift-block ${shift}">
+                    <div class="pp-shift-label">
+                        <span>${shiftLabel}</span>
+                        <span class="pp-badge" data-op="${op.id}" data-day="${day}" data-shift="${shift}"></span>
+                    </div>
+                    <div class="pp-slot">
+                        <select class="pp-select" style="${selectStyle(cell.m)}"
                             data-op="${op.id}" data-day="${day}" data-shift="${shift}" data-field="m"
                             onchange="ppChange(this)">
                             ${buildOptions(cell.m)}
                         </select>
-                        <input type="number" class="pp-hours-input${hoursClass(op,day,shift,'h')}" min="0" max="12" step="0.5"
+                        <input type="number" class="pp-hours-input" min="0" max="12" step="0.5"
                             placeholder="h" value="${escHtml(cell.h)}"
                             data-op="${op.id}" data-day="${day}" data-shift="${shift}" data-field="h"
                             onchange="ppChange(this)" oninput="ppChange(this)">
                     </div>
-                    <div class="pp-shift-inner" style="margin-top:3px;">
-                        <select class="pp-select" style="${selBg2}"
+                    <div class="pp-slot pp-slot2${show2?' visible':''}" data-op="${op.id}" data-day="${day}" data-shift="${shift}">
+                        <select class="pp-select" style="${selectStyle(cell.m2)}"
                             data-op="${op.id}" data-day="${day}" data-shift="${shift}" data-field="m2"
                             onchange="ppChange(this)">
                             ${buildOptions(cell.m2)}
                         </select>
-                        <input type="number" class="pp-hours-input${hoursClass(op,day,shift,'h2')}" min="0" max="12" step="0.5"
+                        <input type="number" class="pp-hours-input" min="0" max="12" step="0.5"
                             placeholder="h" value="${escHtml(cell.h2)}"
                             data-op="${op.id}" data-day="${day}" data-shift="${shift}" data-field="h2"
                             onchange="ppChange(this)" oninput="ppChange(this)">
                     </div>
-                    <div>
-                        <span class="pp-hours-badge pp-badge" data-op="${op.id}" data-day="${day}" data-shift="${shift}"></span>
-                    </div>
-                </td>`;
+                </div>`;
             });
+
+            html += `</td>`;
         });
 
         html += `</tr>`;
     });
 
-    if (!html) html = `<tr><td colspan="21" style="padding:20px;text-align:center;color:#94a3b8;">No operators configured.</td></tr>`;
+    if (!html) html = `<tr><td colspan="6" style="padding:20px;text-align:center;color:#94a3b8;">No operators configured.</td></tr>`;
     tbody.innerHTML = html;
 
-    // Re-validate all hours
+    // Re-validate all cells
     OPERATORS.forEach(op => {
-        SHIFTS.forEach(shift => validateHours(op.id, shift));
+        DAYS.forEach(day => {
+            SHIFTS.forEach(shift => validateCell(op.id, day, shift));
+        });
     });
 
     renderCoverage();
     renderLabour();
-}
-
-function selectBg(val) {
-    if (!val)            return 'background:#f8fafc;color:#94a3b8;font-style:italic;';
-    if (val==='holiday') return 'background:#fef3c7;color:#92400e;';
-    if (val==='sick')    return 'background:#fee2e2;color:#991b1b;';
-    const m = machineByKey[val];
-    if (m) return `background:hsl(${m.hue},65%,88%);color:hsl(${m.hue},60%,20%);`;
-    return '';
-}
-
-function hoursClass(op, day, shift, field) {
-    const cell      = getCell(op.id, day, shift);
-    const scheduled = parseFloat(shift==='am' ? op.am_hours : op.pm_hours) || 0;
-    const total     = (parseFloat(cell.h)||0) + (parseFloat(cell.h2)||0);
-    if (total > scheduled)  return ' over';
-    if (total > 0 && total < scheduled) return ' under';
-    return '';
 }
 
 // ── onChange handler ─────────────────────────────────────────────────
@@ -456,10 +460,11 @@ window.ppChange = function(el) {
     const cell = getCell(opId, day, shift);
     cell[field] = val;
 
-    // Re-style select immediately
-    if (field === 'm' || field === 'm2') styleSelect(el, val);
+    if (field === 'm' || field === 'm2') {
+        el.style.cssText = selectStyle(val);
+    }
 
-    validateHours(opId, shift);
+    validateCell(opId, day, shift);
     renderCoverage();
     renderLabour();
     scheduleSave();
@@ -469,7 +474,6 @@ window.ppCopyMon = function(opId) { copyMonToWeek(opId); };
 
 // ── Coverage table ────────────────────────────────────────────────────
 function renderCoverage() {
-    // machine → day → total hours
     const cov = {};
     MACHINES.forEach(m => { cov[m.key] = {}; DAYS.forEach(d => { cov[m.key][d] = 0; }); });
 
@@ -509,17 +513,17 @@ function renderCoverage() {
 function renderLabour() {
     let html = `<table><thead><tr><th>Operator</th><th>Sched AM</th><th>Sched PM</th><th>Logged AM</th><th>Logged PM</th></tr></thead><tbody>`;
     OPERATORS.forEach(op => {
-        let logAm = 0, logPm = 0;
+        let logAm = 0, logPm = 0, schedAm = 0, schedPm = 0;
         DAYS.forEach(day => {
             const am = getCell(op.id, day, 'am');
             const pm = getCell(op.id, day, 'pm');
-            logAm += (parseFloat(am.h)||0) + (parseFloat(am.h2)||0);
-            logPm += (parseFloat(pm.h)||0) + (parseFloat(pm.h2)||0);
+            logAm   += (parseFloat(am.h)||0) + (parseFloat(am.h2)||0);
+            logPm   += (parseFloat(pm.h)||0) + (parseFloat(pm.h2)||0);
+            schedAm += getScheduled(op, day, 'am');
+            schedPm += getScheduled(op, day, 'pm');
         });
-        const schedAm = parseFloat(op.am_hours) * 5;
-        const schedPm = parseFloat(op.pm_hours) * 5;
-        const amColor = logAm > schedAm ? '#991b1b' : logAm < schedAm && logAm > 0 ? '#92400e' : '#166534';
-        const pmColor = logPm > schedPm ? '#991b1b' : logPm < schedPm && logPm > 0 ? '#92400e' : '#166534';
+        const amColor = logAm > schedAm ? '#991b1b' : (logAm < schedAm && logAm > 0 ? '#92400e' : '#166534');
+        const pmColor = logPm > schedPm ? '#991b1b' : (logPm < schedPm && logPm > 0 ? '#92400e' : '#166534');
         html += `<tr>
             <td style="font-weight:600;">${escHtml(op.name)}</td>
             <td style="text-align:center;">${schedAm}h</td>
@@ -550,7 +554,6 @@ document.getElementById('pp-next').addEventListener('click', () => {
     loadWeek();
 });
 
-// ── Init ──────────────────────────────────────────────────────────────
 loadWeek();
 
 })();

@@ -17,16 +17,38 @@ class ProductionSettingsController extends Controller
         return view('admin.production.index', compact('operators', 'machines'));
     }
 
+    private const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri'];
+
+    private function buildSchedule(Request $request): array
+    {
+        $schedule = [];
+        foreach (self::DAYS as $day) {
+            $schedule[$day] = [
+                'am' => (float) $request->input("schedule_{$day}_am", 4),
+                'pm' => (float) $request->input("schedule_{$day}_pm", 4),
+            ];
+        }
+        return $schedule;
+    }
+
     public function storeOperator(Request $request)
     {
-        $data = $request->validate([
-            'name'     => ['required', 'string', 'max:100'],
-            'am_hours' => ['required', 'numeric', 'min:0', 'max:12'],
-            'pm_hours' => ['required', 'numeric', 'min:0', 'max:12'],
-        ]);
+        $data = $request->validate(['name' => ['required', 'string', 'max:100']]);
+
+        foreach (self::DAYS as $day) {
+            $request->validate([
+                "schedule_{$day}_am" => ['required', 'numeric', 'min:0', 'max:12'],
+                "schedule_{$day}_pm" => ['required', 'numeric', 'min:0', 'max:12'],
+            ]);
+        }
 
         $maxOrder = ProductionOperator::max('sort_order') ?? 0;
-        ProductionOperator::create(array_merge($data, ['sort_order' => $maxOrder + 1, 'is_active' => true]));
+        ProductionOperator::create([
+            'name'       => $data['name'],
+            'schedule'   => $this->buildSchedule($request),
+            'sort_order' => $maxOrder + 1,
+            'is_active'  => true,
+        ]);
 
         return redirect()->route('admin.production.index')->with('success', 'Operator added.');
     }
@@ -35,12 +57,14 @@ class ProductionSettingsController extends Controller
     {
         $data = $request->validate([
             'name'      => ['required', 'string', 'max:100'],
-            'am_hours'  => ['required', 'numeric', 'min:0', 'max:12'],
-            'pm_hours'  => ['required', 'numeric', 'min:0', 'max:12'],
             'is_active' => ['sometimes', 'boolean'],
         ]);
 
-        $operator->update($data);
+        $operator->update([
+            'name'      => $data['name'],
+            'schedule'  => $this->buildSchedule($request),
+            'is_active' => $request->boolean('is_active', $operator->is_active),
+        ]);
 
         return redirect()->route('admin.production.index')->with('success', 'Operator updated.');
     }

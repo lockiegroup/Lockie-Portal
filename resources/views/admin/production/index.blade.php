@@ -78,22 +78,33 @@
         <div class="ps-card">
             <div class="ps-card-head">Operators</div>
 
-            <table class="ps-table">
+            @php
+                $schedDays = [
+                    'mon' => 'Mon', 'tue' => 'Tue', 'wed' => 'Wed', 'thu' => 'Thu', 'fri' => 'Fri',
+                ];
+            @endphp
+
+            <table class="ps-table" style="min-width:700px;">
                 <thead>
                     <tr>
                         <th>Name</th>
-                        <th>AM h</th>
-                        <th>PM h</th>
+                        @foreach($schedDays as $dk => $dl)
+                            <th style="text-align:center;min-width:90px;">{{ $dl }}<br><span style="font-size:.68rem;color:#94a3b8;font-weight:500;">AM / PM</span></th>
+                        @endforeach
                         <th>Active</th>
                         <th></th>
                     </tr>
                 </thead>
                 <tbody>
                 @forelse($operators as $op)
+                    @php $sched = $op->schedule ?? []; @endphp
                     <tr>
-                        <td>{{ $op->name }}</td>
-                        <td>{{ $op->am_hours }}</td>
-                        <td>{{ $op->pm_hours }}</td>
+                        <td style="font-weight:600;">{{ $op->name }}</td>
+                        @foreach($schedDays as $dk => $dl)
+                            <td style="text-align:center;font-size:.82rem;font-family:monospace;">
+                                {{ $sched[$dk]['am'] ?? 4 }}h / {{ $sched[$dk]['pm'] ?? 4 }}h
+                            </td>
+                        @endforeach
                         <td>
                             @if($op->is_active)
                                 <span class="ps-active-yes">Yes</span>
@@ -114,39 +125,57 @@
                     </tr>
                     {{-- Inline edit row --}}
                     <tr id="op-{{ $op->id }}" class="ps-inline-form">
-                        <td colspan="5" style="padding:0;">
+                        <td colspan="{{ count($schedDays) + 3 }}" style="padding:0;">
                             <form method="POST" action="{{ route('admin.production.operators.update', $op) }}"
-                                style="padding:12px 16px;background:#f0f9ff;border-bottom:1px solid #e2e8f0;">
+                                style="padding:14px 16px;background:#f0f9ff;border-bottom:1px solid #e2e8f0;">
                                 @csrf @method('PUT')
-                                <div class="ps-form-row">
+                                <div class="ps-form-row" style="flex-wrap:wrap;gap:10px 20px;">
                                     <div class="ps-form-group">
                                         <label>Name</label>
-                                        <input name="name" class="ps-input" value="{{ old('name', $op->name) }}" required style="width:160px;">
+                                        <input name="name" class="ps-input" value="{{ old('name', $op->name) }}" required style="width:150px;">
                                     </div>
-                                    <div class="ps-form-group">
-                                        <label>AM Hours</label>
-                                        <input name="am_hours" type="number" class="ps-input" step="0.5" min="0" max="12" value="{{ old('am_hours', $op->am_hours) }}" style="width:70px;">
+
+                                    {{-- Per-day schedule grid --}}
+                                    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;">
+                                        @foreach($schedDays as $dk => $dl)
+                                            <div class="ps-form-group" style="min-width:72px;">
+                                                <label style="text-align:center;display:block;">{{ $dl }}</label>
+                                                <div style="display:flex;gap:3px;align-items:center;">
+                                                    <input name="schedule_{{ $dk }}_am" type="number" class="ps-input"
+                                                        step="0.5" min="0" max="12"
+                                                        value="{{ old("schedule_{$dk}_am", $sched[$dk]['am'] ?? 4) }}"
+                                                        style="width:44px;padding:5px 4px;text-align:center;"
+                                                        title="{{ $dl }} AM hours">
+                                                    <span style="color:#94a3b8;font-size:.7rem;">/</span>
+                                                    <input name="schedule_{{ $dk }}_pm" type="number" class="ps-input"
+                                                        step="0.5" min="0" max="12"
+                                                        value="{{ old("schedule_{$dk}_pm", $sched[$dk]['pm'] ?? 4) }}"
+                                                        style="width:44px;padding:5px 4px;text-align:center;"
+                                                        title="{{ $dl }} PM hours">
+                                                </div>
+                                                <div style="font-size:.62rem;color:#94a3b8;text-align:center;margin-top:1px;">AM / PM</div>
+                                            </div>
+                                        @endforeach
                                     </div>
-                                    <div class="ps-form-group">
-                                        <label>PM Hours</label>
-                                        <input name="pm_hours" type="number" class="ps-input" step="0.5" min="0" max="12" value="{{ old('pm_hours', $op->pm_hours) }}" style="width:70px;">
-                                    </div>
+
                                     <div class="ps-form-group">
                                         <label>Active</label>
-                                        <select name="is_active" class="ps-input" style="width:80px;">
+                                        <select name="is_active" class="ps-input" style="width:75px;">
                                             <option value="1" {{ $op->is_active ? 'selected' : '' }}>Yes</option>
                                             <option value="0" {{ !$op->is_active ? 'selected' : '' }}>No</option>
                                         </select>
                                     </div>
-                                    <button type="submit" class="ps-btn ps-btn-primary ps-btn-sm" style="align-self:flex-end;">Save</button>
-                                    <button type="button" class="ps-btn ps-btn-sm" style="align-self:flex-end;background:#f1f5f9;color:#475569;"
-                                        onclick="psToggleEdit('op-{{ $op->id }}')">Cancel</button>
+                                    <div style="display:flex;gap:6px;align-items:flex-end;padding-bottom:2px;">
+                                        <button type="submit" class="ps-btn ps-btn-primary ps-btn-sm">Save</button>
+                                        <button type="button" class="ps-btn ps-btn-sm" style="background:#f1f5f9;color:#475569;"
+                                            onclick="psToggleEdit('op-{{ $op->id }}')">Cancel</button>
+                                    </div>
                                 </div>
                             </form>
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="5" style="padding:16px;text-align:center;color:#94a3b8;">No operators yet.</td></tr>
+                    <tr><td colspan="{{ count($schedDays) + 3 }}" style="padding:16px;text-align:center;color:#94a3b8;">No operators yet.</td></tr>
                 @endforelse
                 </tbody>
             </table>
@@ -155,20 +184,37 @@
                 <h4>Add Operator</h4>
                 <form method="POST" action="{{ route('admin.production.operators.store') }}">
                     @csrf
-                    <div class="ps-form-row">
+                    <div class="ps-form-row" style="flex-wrap:wrap;gap:10px 20px;">
                         <div class="ps-form-group">
                             <label>Name</label>
-                            <input name="name" class="ps-input" placeholder="Full name" required style="width:160px;" value="{{ old('name') }}">
+                            <input name="name" class="ps-input" placeholder="Full name" required style="width:150px;" value="{{ old('name') }}">
                         </div>
-                        <div class="ps-form-group">
-                            <label>AM Hours</label>
-                            <input name="am_hours" type="number" class="ps-input" step="0.5" min="0" max="12" value="{{ old('am_hours', 4) }}" style="width:70px;">
+
+                        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;">
+                            @foreach($schedDays as $dk => $dl)
+                                <div class="ps-form-group" style="min-width:72px;">
+                                    <label style="text-align:center;display:block;">{{ $dl }}</label>
+                                    <div style="display:flex;gap:3px;align-items:center;">
+                                        <input name="schedule_{{ $dk }}_am" type="number" class="ps-input"
+                                            step="0.5" min="0" max="12"
+                                            value="{{ old("schedule_{$dk}_am", 4) }}"
+                                            style="width:44px;padding:5px 4px;text-align:center;"
+                                            title="{{ $dl }} AM hours">
+                                        <span style="color:#94a3b8;font-size:.7rem;">/</span>
+                                        <input name="schedule_{{ $dk }}_pm" type="number" class="ps-input"
+                                            step="0.5" min="0" max="12"
+                                            value="{{ old("schedule_{$dk}_pm", 4) }}"
+                                            style="width:44px;padding:5px 4px;text-align:center;"
+                                            title="{{ $dl }} PM hours">
+                                    </div>
+                                    <div style="font-size:.62rem;color:#94a3b8;text-align:center;margin-top:1px;">AM / PM</div>
+                                </div>
+                            @endforeach
                         </div>
-                        <div class="ps-form-group">
-                            <label>PM Hours</label>
-                            <input name="pm_hours" type="number" class="ps-input" step="0.5" min="0" max="12" value="{{ old('pm_hours', 4) }}" style="width:70px;">
+
+                        <div style="align-self:flex-end;padding-bottom:2px;">
+                            <button type="submit" class="ps-btn ps-btn-primary">Add</button>
                         </div>
-                        <button type="submit" class="ps-btn ps-btn-primary" style="align-self:flex-end;">Add</button>
                     </div>
                 </form>
             </div>
