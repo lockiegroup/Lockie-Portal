@@ -411,11 +411,16 @@ function renderGrid() {
 
             SHIFTS.forEach(shift => {
                 const scheduled = getScheduled(op, day, shift);
-                if (scheduled === 0) return; // no work this shift — hide entirely
-
                 const cell    = getCell(op.id, day, shift);
                 const show2   = shouldShowSlot2(op, day, shift);
                 const shiftLabel = shift.toUpperCase();
+
+                if (scheduled === 0) {
+                    html += `<div class="pp-shift-block ${shift}" style="opacity:0.4;">
+                        <div class="pp-shift-label"><span>${shiftLabel}</span></div>
+                    </div>`;
+                    return;
+                }
 
                 html += `<div class="pp-shift-block ${shift}">
                     <div class="pp-shift-label">
