@@ -360,7 +360,7 @@ Route::middleware(['auth', 'otp'])->group(function () {
     });
 
     // Admin — production planner settings
-    Route::prefix('admin/production')->name('admin.production.')->middleware('module:production_settings')->group(function () {
+    Route::prefix('admin/production')->name('admin.production.')->middleware('can:production_settings')->group(function () {
         Route::get('/', [ProductionSettingsController::class, 'index'])->name('index');
         Route::post('/operators', [ProductionSettingsController::class, 'storeOperator'])->name('operators.store');
         Route::put('/operators/{operator}', [ProductionSettingsController::class, 'updateOperator'])->name('operators.update');

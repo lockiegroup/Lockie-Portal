@@ -19,8 +19,9 @@ class User extends Authenticatable
         'key_accounts_admin' => 'Key Accounts Admin',
         'key_actions_admin'  => 'Key Actions Admin',
         'action_plans_admin' => 'Action Plans Admin',
-        'factory_training'   => 'Factory Training',
-        'imports'            => 'Imports',
+        'factory_training'    => 'Factory Training',
+        'imports'             => 'Imports',
+        'production_settings' => 'Production Settings',
     ];
 
     const MODULES = [
@@ -36,7 +37,6 @@ class User extends Authenticatable
         'factory_training'   => 'Factory Training',
         'reminders'          => 'Order Reminders',
         'production_planner'  => 'Production Planner',
-        'production_settings' => 'Production Settings (Admin)',
     ];
 
     protected $fillable = ['name', 'email', 'password', 'role', 'is_active', 'permissions', 'modules', 'last_login_at', 'operator_pin'];
