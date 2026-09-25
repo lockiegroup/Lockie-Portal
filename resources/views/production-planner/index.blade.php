@@ -777,17 +777,6 @@ th.day-th { text-align: center; width: 17%; }
     </tr></thead>
     <tbody>${opRows}</tbody>
 </table>
-<div class="div-section">
-    <h2>Labour Allocation (hours per division per day)</h2>
-    <table>
-        <thead><tr>
-            <th style="width:14%;text-align:left;">Area</th>
-            ${DAY_LABELS.map(d=>`<th style="text-align:center;width:13%;">${d}</th>`).join('')}
-            <th style="text-align:center;width:10%;">Total</th>
-        </tr></thead>
-        <tbody>${divRows}</tbody>
-    </table>
-</div>
 <div class="footer">Lockie Group · Production Planner</div>
 <script>window.onload=function(){window.print();}<\/script>
 </body></html>`;
