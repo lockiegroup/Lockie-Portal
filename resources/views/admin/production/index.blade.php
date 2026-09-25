@@ -59,7 +59,6 @@
 .ps-flash-error   { background:#fee2e2; color:#991b1b; border:1px solid #fecaca; }
 
 .ps-inline-form { display:none; }
-.ps-inline-form.open { display:table-row; }
 </style>
 
 <div class="ps-wrap">
@@ -360,7 +359,7 @@
 function psToggleEdit(id) {
     var row = document.getElementById(id);
     if (!row) return;
-    row.classList.toggle('open');
+    row.style.display = (row.style.display === 'table-row') ? 'none' : 'table-row';
 }
 function psHuePreview(input, previewId) {
     var el = document.getElementById(previewId);
