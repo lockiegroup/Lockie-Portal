@@ -135,14 +135,25 @@
     </div>
 
     {{-- Legend --}}
+    @php
+    $divisionHues = [
+        'Lockie' => 22, 'JW' => 130, 'A1' => 200,
+        'Hammond & Harper' => 270, 'Warehousing' => 170, 'General' => 220,
+    ];
+    @endphp
     <div id="pp-legend">
         <span class="pp-legend-chip" style="background:#f1f5f9;color:#475569;">Unassigned</span>
         <span class="pp-legend-chip" style="background:#fef3c7;color:#92400e;">Holiday</span>
         <span class="pp-legend-chip" style="background:#fee2e2;color:#991b1b;">Sick</span>
         @foreach($machines->groupBy('division') as $division => $divMachines)
+            @php $h = $divisionHues[$division] ?? 220; @endphp
+            <span class="pp-legend-chip"
+                style="background:hsl({{ $h }},70%,88%);color:hsl({{ $h }},60%,25%);font-weight:800;">
+                {{ $division }}
+            </span>
             @foreach($divMachines as $m)
                 <span class="pp-legend-chip"
-                    style="background:hsl({{ $m->hue }},70%,88%);color:hsl({{ $m->hue }},60%,25%);">
+                    style="background:hsl({{ $h }},65%,91%);color:hsl({{ $h }},55%,30%);">
                     {{ $m->name }}
                 </span>
             @endforeach
@@ -190,6 +201,17 @@ const CSRF      = document.querySelector('meta[name=csrf-token]').content;
 
 const DAYS    = ['mon','tue','wed','thu','fri'];
 const SHIFTS  = ['am','pm'];
+
+// Division → hue mapping (single colour per division)
+const DIV_HUES = {
+    'Lockie':           22,
+    'JW':              130,
+    'A1':              200,
+    'Hammond & Harper':270,
+    'Warehousing':     170,
+    'General':         220,
+};
+function divHue(division) { return DIV_HUES[division] ?? 220; }
 
 const machineByKey = {};
 MACHINES.forEach(m => { machineByKey[m.key] = m; });
@@ -281,7 +303,8 @@ function buildOptions(selectedKey) {
     html += `<option value="sick"    ${selectedKey==='sick'?'selected':''} style="background:#fee2e2;">Sick</option>`;
     MACHINES.forEach(m => {
         const sel = selectedKey === m.key ? 'selected' : '';
-        html += `<option value="${m.key}" ${sel} style="background:hsl(${m.hue},65%,88%);">${m.name}</option>`;
+        const h   = divHue(m.division);
+        html += `<option value="${m.key}" ${sel} style="background:hsl(${h},65%,88%);">${m.name}</option>`;
     });
     return html;
 }
@@ -291,7 +314,7 @@ function selectStyle(val) {
     if (val==='holiday') return 'background:#fef3c7;color:#92400e;font-style:normal;';
     if (val==='sick')    return 'background:#fee2e2;color:#991b1b;font-style:normal;';
     const m = machineByKey[val];
-    if (m) return `background:hsl(${m.hue},65%,88%);color:hsl(${m.hue},60%,20%);font-style:normal;`;
+    if (m) { const h = divHue(m.division); return `background:hsl(${h},65%,88%);color:hsl(${h},60%,20%);font-style:normal;`; }
     return '';
 }
 
@@ -521,7 +544,7 @@ function renderCoverage() {
         const row    = cov[m.key];
         const hasAny = DAYS.some(d => row[d] > 0);
         if (!hasAny) return;
-        const bg = `hsl(${m.hue},60%,92%)`;
+        const bg = `hsl(${divHue(m.division)},60%,92%)`;
         html += `<tr><td style="font-weight:600;background:${bg};">${escHtml(m.name)}</td>`;
         DAYS.forEach(d => {
             const v = row[d];

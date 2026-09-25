@@ -231,6 +231,12 @@
         </div>
 
         {{-- MACHINES --}}
+        @php
+        $divHues = [
+            'Lockie' => 22, 'JW' => 130, 'A1' => 200,
+            'Hammond & Harper' => 270, 'Warehousing' => 170, 'General' => 220,
+        ];
+        @endphp
         <div class="ps-card">
             <div class="ps-card-head">Machines</div>
 
@@ -240,21 +246,19 @@
                         <th>Key</th>
                         <th>Name</th>
                         <th>Division</th>
-                        <th>Hue</th>
                         <th>Active</th>
                         <th></th>
                     </tr>
                 </thead>
                 <tbody>
                 @forelse($machines as $machine)
+                    @php $mh = $divHues[$machine->division] ?? 220; @endphp
                     <tr>
                         <td><code style="font-size:0.72rem;background:#f1f5f9;padding:2px 5px;border-radius:3px;">{{ $machine->key }}</code></td>
                         <td>{{ $machine->name }}</td>
-                        <td>{{ $machine->division }}</td>
                         <td>
-                            <span class="ps-badge"
-                                style="background:hsl({{ $machine->hue }},65%,70%);"></span>
-                            <span style="font-size:0.72rem;color:#64748b;">{{ $machine->hue }}°</span>
+                            <span class="ps-badge" style="background:hsl({{ $mh }},65%,70%);"></span>
+                            {{ $machine->division }}
                         </td>
                         <td>
                             @if($machine->is_active)
@@ -276,10 +280,11 @@
                     </tr>
                     {{-- Inline edit row --}}
                     <tr id="mc-{{ $machine->id }}" class="ps-inline-form">
-                        <td colspan="6" style="padding:0;">
+                        <td colspan="5" style="padding:0;">
                             <form method="POST" action="{{ route('admin.production.machines.update', $machine) }}"
                                 style="padding:12px 16px;background:#f0f9ff;border-bottom:1px solid #e2e8f0;">
                                 @csrf @method('PUT')
+                                <input type="hidden" name="hue" value="{{ $mh }}">
                                 <div class="ps-form-row">
                                     <div class="ps-form-group">
                                         <label>Key (slug)</label>
@@ -298,16 +303,6 @@
                                         </select>
                                     </div>
                                     <div class="ps-form-group">
-                                        <label>Hue (0–359)</label>
-                                        <div style="display:flex;align-items:center;gap:6px;">
-                                            <input name="hue" type="range" min="0" max="359" value="{{ old('hue', $machine->hue) }}"
-                                                class="ps-input" style="width:90px;padding:4px 2px;"
-                                                oninput="psHuePreview(this,'mc-hue-prev-{{ $machine->id }}')">
-                                            <span id="mc-hue-prev-{{ $machine->id }}" class="ps-badge"
-                                                style="background:hsl({{ $machine->hue }},65%,70%);"></span>
-                                        </div>
-                                    </div>
-                                    <div class="ps-form-group">
                                         <label>Active</label>
                                         <select name="is_active" class="ps-input" style="width:80px;">
                                             <option value="1" {{ $machine->is_active ? 'selected' : '' }}>Yes</option>
@@ -322,14 +317,14 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="6" style="padding:16px;text-align:center;color:#94a3b8;">No machines yet.</td></tr>
+                    <tr><td colspan="5" style="padding:16px;text-align:center;color:#94a3b8;">No machines yet.</td></tr>
                 @endforelse
                 </tbody>
             </table>
 
             <div class="ps-form">
                 <h4>Add Machine</h4>
-                <form method="POST" action="{{ route('admin.production.machines.store') }}">
+                <form method="POST" action="{{ route('admin.production.machines.store') }}" id="add-machine-form">
                     @csrf
                     <div class="ps-form-row">
                         <div class="ps-form-group">
@@ -342,21 +337,13 @@
                         </div>
                         <div class="ps-form-group">
                             <label>Division</label>
-                            <select name="division" class="ps-input" style="width:160px;">
+                            <select name="division" class="ps-input" style="width:160px;" id="add-machine-div">
                                 @foreach(['Lockie','JW','A1','Hammond & Harper','Warehousing','General'] as $div)
                                     <option value="{{ $div }}" {{ old('division')===$div?'selected':'' }}>{{ $div }}</option>
                                 @endforeach
                             </select>
                         </div>
-                        <div class="ps-form-group">
-                            <label>Hue (0–359)</label>
-                            <div style="display:flex;align-items:center;gap:6px;">
-                                <input name="hue" type="range" min="0" max="359" value="{{ old('hue', 180) }}"
-                                    class="ps-input" style="width:90px;padding:4px 2px;"
-                                    oninput="psHuePreview(this,'add-mc-hue-prev')">
-                                <span id="add-mc-hue-prev" class="ps-badge" style="background:hsl(180,65%,70%);"></span>
-                            </div>
-                        </div>
+                        <input type="hidden" name="hue" id="add-machine-hue" value="22">
                         <button type="submit" class="ps-btn ps-btn-primary" style="align-self:flex-end;">Add</button>
                     </div>
                 </form>
@@ -372,9 +359,14 @@ function psToggleEdit(id) {
     if (!row) return;
     row.style.display = (row.style.display === 'table-row') ? 'none' : 'table-row';
 }
-function psHuePreview(input, previewId) {
-    var el = document.getElementById(previewId);
-    if (el) el.style.background = 'hsl(' + input.value + ',65%,70%)';
+// Auto-set hidden hue from division for the Add Machine form
+var DIV_HUES = {'Lockie':22,'JW':130,'A1':200,'Hammond & Harper':270,'Warehousing':170,'General':220};
+var addDiv = document.getElementById('add-machine-div');
+var addHue = document.getElementById('add-machine-hue');
+if (addDiv && addHue) {
+    addDiv.addEventListener('change', function() {
+        addHue.value = DIV_HUES[this.value] || 220;
+    });
 }
 function psUpdateTotal(form, totalId) {
     var inputs = form.querySelectorAll('input[type=number][name^=schedule_]');
