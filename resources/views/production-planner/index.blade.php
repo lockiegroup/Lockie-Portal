@@ -416,8 +416,8 @@ function renderGrid() {
                 const shiftLabel = shift.toUpperCase();
 
                 if (scheduled === 0) {
-                    html += `<div class="pp-shift-block ${shift}" style="opacity:0.4;">
-                        <div class="pp-shift-label"><span>${shiftLabel}</span></div>
+                    html += `<div class="pp-shift-block ${shift}">
+                        <div class="pp-shift-label" style="color:#94a3b8;">${shiftLabel}</div>
                     </div>`;
                     return;
                 }
