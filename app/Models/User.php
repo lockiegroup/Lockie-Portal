@@ -35,7 +35,8 @@ class User extends Authenticatable
         'crm'              => 'Customer Insights (CRM)',
         'factory_training'   => 'Factory Training',
         'reminders'          => 'Order Reminders',
-        'production_planner' => 'Production Planner',
+        'production_planner'  => 'Production Planner',
+        'production_settings' => 'Production Settings (Admin)',
     ];
 
     protected $fillable = ['name', 'email', 'password', 'role', 'is_active', 'permissions', 'modules', 'last_login_at', 'operator_pin'];

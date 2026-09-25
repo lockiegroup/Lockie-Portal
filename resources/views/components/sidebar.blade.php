@@ -340,7 +340,7 @@
                 <span class="sb-label">Envelope Settings</span>
             </a>
             @endcan
-            @can('manage_users')
+            @if(auth()->user()->hasModule('production_settings'))
             <a href="{{ route('admin.production.index') }}" class="sb-item{{ request()->routeIs('admin.production*') ? ' sb-active' : '' }}" data-tip="Production Settings">
                 <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="2" y="3" width="20" height="18" rx="2"/>
@@ -351,7 +351,7 @@
                 </svg>
                 <span class="sb-label">Production Settings</span>
             </a>
-            @endcan
+            @endif
         </div>
         @endcanany
 
