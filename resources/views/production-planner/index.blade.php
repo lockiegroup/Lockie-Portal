@@ -132,6 +132,7 @@
             <button id="pp-next">Next &#8594;</button>
         </div>
         <span id="pp-save-status" class="idle">Ready</span>
+        <button onclick="printWeek()" style="background:#475569;color:white;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:0.8125rem;font-weight:600;">&#128438; Print</button>
     </div>
 
     {{-- Legend --}}
@@ -649,6 +650,152 @@ function renderDivisionAllocation() {
     html += `</tbody></table>`;
     document.getElementById('pp-division-wrap').innerHTML = html;
 }
+
+// ── Print ─────────────────────────────────────────────────────────────
+window.printWeek = function() {
+    const weekLabel = document.getElementById('pp-week-label').textContent;
+    const DAY_LABELS = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
+
+    // Build coverage: machine → day → hours (for summary)
+    const cov = {};
+    MACHINES.forEach(m => { cov[m.key] = {}; DAYS.forEach(d => { cov[m.key][d] = 0; }); });
+    OPERATORS.forEach(op => {
+        DAYS.forEach(day => {
+            SHIFTS.forEach(shift => {
+                const cell = getCell(op.id, day, shift);
+                [['m','h'],['m2','h2']].forEach(([mk,hk]) => {
+                    const mkey = cell[mk]; const hrs = parseFloat(cell[hk])||0;
+                    if (mkey && machineByKey[mkey] && hrs>0) cov[mkey][day] = (cov[mkey][day]||0)+hrs;
+                });
+            });
+        });
+    });
+
+    // Build operator rows HTML
+    let opRows = '';
+    OPERATORS.forEach(op => {
+        let cols = '';
+        DAYS.forEach(day => {
+            let cellHtml = '';
+            SHIFTS.forEach(shift => {
+                const scheduled = getScheduled(op, day, shift);
+                const cell = getCell(op.id, day, shift);
+                const shiftLabel = shift.toUpperCase();
+                if (scheduled === 0) {
+                    cellHtml += `<div class="shift-block shift-${shift} no-work"><span class="shift-lbl">${shiftLabel}</span></div>`;
+                    return;
+                }
+                const entries = [];
+                [['m','h'],['m2','h2']].forEach(([mk,hk]) => {
+                    const mkey = cell[mk]; const hrs = cell[hk];
+                    if (!mkey) return;
+                    if (mkey === 'holiday') { entries.push(`<span class="chip holiday">Holiday</span>`); return; }
+                    if (mkey === 'sick')    { entries.push(`<span class="chip sick">Sick</span>`); return; }
+                    const m = machineByKey[mkey];
+                    if (m) {
+                        const h = divHue(m.division);
+                        entries.push(`<span class="chip" style="background:hsl(${h},65%,85%);color:hsl(${h},60%,22%);">${escHtml(m.name)}${hrs ? ' · '+hrs+'h' : ''}</span>`);
+                    }
+                });
+                cellHtml += `<div class="shift-block shift-${shift}">
+                    <span class="shift-lbl">${shiftLabel}</span>
+                    ${entries.join('')}
+                </div>`;
+            });
+            cols += `<td class="day-td">${cellHtml}</td>`;
+        });
+        opRows += `<tr><td class="op-td">${escHtml(op.name)}</td>${cols}</tr>`;
+    });
+
+    // Build division summary rows
+    const alloc = {};
+    DIVISIONS.forEach(div => { alloc[div.name] = {}; DAYS.forEach(d => { alloc[div.name][d] = 0; }); });
+    OPERATORS.forEach(op => {
+        DAYS.forEach(day => {
+            SHIFTS.forEach(shift => {
+                const cell = getCell(op.id, day, shift);
+                [['m','h'],['m2','h2']].forEach(([mk,hk]) => {
+                    const mkey = cell[mk]; const hrs = parseFloat(cell[hk])||0;
+                    const m = machineByKey[mkey];
+                    if (m && hrs>0 && alloc[m.division]!==undefined) alloc[m.division][day]+=hrs;
+                });
+            });
+        });
+    });
+    let divRows = '';
+    DIVISIONS.forEach(div => {
+        const row = alloc[div.name]||{};
+        const total = DAYS.reduce((s,d)=>s+(row[d]||0),0);
+        if (total===0) return;
+        const h = div.hue;
+        const dayCells = DAYS.map(d => {
+            const v = row[d]||0;
+            return v>0 ? `<td style="text-align:center;background:hsl(${h},60%,90%);color:hsl(${h},55%,28%);font-weight:700;">${v}h</td>`
+                       : `<td style="text-align:center;color:#cbd5e1;">–</td>`;
+        }).join('');
+        divRows += `<tr>
+            <td style="font-weight:700;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:hsl(${h},65%,55%);margin-right:6px;vertical-align:middle;"></span>${escHtml(div.name)}</td>
+            ${dayCells}
+            <td style="text-align:center;font-weight:800;background:hsl(${h},55%,86%);color:hsl(${h},55%,25%);">${total}h</td>
+        </tr>`;
+    });
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>Production Plan — ${weekLabel}</title>
+<style>
+@page { size: A4 landscape; margin: 10mm; }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, Arial, sans-serif; font-size: 9pt; color: #1e293b; margin: 0; }
+h1 { font-size: 13pt; font-weight: 800; margin: 0 0 2mm; }
+.subtitle { font-size: 8pt; color: #64748b; margin-bottom: 4mm; }
+table { width: 100%; border-collapse: collapse; }
+th { background: #1e293b; color: #e2e8f0; padding: 4px 6px; font-size: 8pt; font-weight: 700; text-align: left; }
+th.day-th { text-align: center; width: 17%; }
+.op-td { padding: 4px 6px; font-weight: 700; font-size: 8pt; background: #f8fafc; border: 1px solid #e2e8f0; vertical-align: top; white-space: nowrap; }
+.day-td { padding: 2px 4px; border: 1px solid #e2e8f0; vertical-align: top; }
+.shift-block { padding: 2px 2px 3px; }
+.shift-am { background: #fffbeb; border-bottom: 1px solid #e8e0c8; }
+.shift-pm { background: #eff6ff; }
+.no-work { background: #f8fafc; }
+.shift-lbl { display: block; font-size: 6.5pt; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 1px; }
+.chip { display: inline-block; font-size: 7pt; font-weight: 600; padding: 1px 4px; border-radius: 3px; margin: 1px 1px 0 0; }
+.holiday { background: #fef3c7; color: #92400e; }
+.sick    { background: #fee2e2; color: #991b1b; }
+.div-section { margin-top: 5mm; }
+.div-section h2 { font-size: 9pt; font-weight: 700; margin: 0 0 2mm; }
+.div-section table { font-size: 8pt; }
+.div-section th { font-size: 7.5pt; padding: 3px 6px; }
+.div-section td { padding: 3px 6px; border: 1px solid #e2e8f0; }
+.footer { margin-top: 4mm; font-size: 7pt; color: #94a3b8; text-align: right; }
+</style></head><body>
+<h1>Production Plan</h1>
+<div class="subtitle">Week: ${weekLabel} &nbsp;·&nbsp; Printed: ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</div>
+<table>
+    <thead><tr>
+        <th style="width:12%;">Operator</th>
+        ${DAY_LABELS.map(d=>`<th class="day-th">${d}</th>`).join('')}
+    </tr></thead>
+    <tbody>${opRows}</tbody>
+</table>
+<div class="div-section">
+    <h2>Labour Allocation (hours per division per day)</h2>
+    <table>
+        <thead><tr>
+            <th style="width:14%;text-align:left;">Area</th>
+            ${DAY_LABELS.map(d=>`<th style="text-align:center;width:13%;">${d}</th>`).join('')}
+            <th style="text-align:center;width:10%;">Total</th>
+        </tr></thead>
+        <tbody>${divRows}</tbody>
+    </table>
+</div>
+<div class="footer">Lockie Group · Production Planner</div>
+<script>window.onload=function(){window.print();}<\/script>
+</body></html>`;
+
+    const win = window.open('','_blank','width=1100,height=800');
+    win.document.write(html);
+    win.document.close();
+};
 
 // ── Escape HTML ───────────────────────────────────────────────────────
 function escHtml(s) {
