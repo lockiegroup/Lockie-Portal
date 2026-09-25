@@ -184,6 +184,12 @@
         </div>
     </div>
 
+    {{-- Division allocation --}}
+    <div class="pp-bottom-table" style="margin-top:16px;">
+        <h3>Labour Allocation (hours per division per day)</h3>
+        <div id="pp-division-wrap"><p style="padding:12px;color:#94a3b8;font-size:0.8rem;">Loading…</p></div>
+    </div>
+
 </div>
 
 <script>
@@ -484,6 +490,7 @@ function renderGrid() {
 
     renderCoverage();
     renderLabour();
+    renderDivisionAllocation();
 }
 
 // ── onChange handler ─────────────────────────────────────────────────
@@ -504,6 +511,7 @@ window.ppChange = function(el) {
     validateCell(opId, day, shift);
     renderCoverage();
     renderLabour();
+    renderDivisionAllocation();
     scheduleSave();
 };
 
@@ -548,29 +556,98 @@ function renderCoverage() {
 
 // ── Labour summary ────────────────────────────────────────────────────
 function renderLabour() {
-    let html = `<table><thead><tr><th>Operator</th><th>Sched AM</th><th>Sched PM</th><th>Logged AM</th><th>Logged PM</th></tr></thead><tbody>`;
+    let html = `<table><thead><tr><th>Operator</th><th>Sched AM</th><th>Sched PM</th><th>Diff AM</th><th>Diff PM</th></tr></thead><tbody>`;
     OPERATORS.forEach(op => {
         let logAm = 0, logPm = 0, schedAm = 0, schedPm = 0;
         DAYS.forEach(day => {
             const am = getCell(op.id, day, 'am');
             const pm = getCell(op.id, day, 'pm');
-            logAm   += (parseFloat(am.h)||0) + (parseFloat(am.h2)||0);
-            logPm   += (parseFloat(pm.h)||0) + (parseFloat(pm.h2)||0);
-            schedAm += getScheduled(op, day, 'am');
-            schedPm += getScheduled(op, day, 'pm');
+            const amAbsent = (am.m === 'holiday' || am.m === 'sick');
+            const pmAbsent = (pm.m === 'holiday' || pm.m === 'sick');
+
+            // Scheduled: exclude days where operator is on holiday/sick
+            if (!amAbsent) schedAm += getScheduled(op, day, 'am');
+            if (!pmAbsent) schedPm += getScheduled(op, day, 'pm');
+
+            // Logged: only count real machine hours (not holiday/sick slots)
+            if (!amAbsent) logAm += (parseFloat(am.h)||0) + (parseFloat(am.h2)||0);
+            if (!pmAbsent) logPm += (parseFloat(pm.h)||0) + (parseFloat(pm.h2)||0);
         });
-        const amColor = logAm > schedAm ? '#991b1b' : (logAm < schedAm && logAm > 0 ? '#92400e' : '#166534');
-        const pmColor = logPm > schedPm ? '#991b1b' : (logPm < schedPm && logPm > 0 ? '#92400e' : '#166534');
+
+        const diffAm   = Math.round((logAm - schedAm) * 10) / 10;
+        const diffPm   = Math.round((logPm - schedPm) * 10) / 10;
+        const amColor  = diffAm === 0 ? '#166534' : '#991b1b';
+        const pmColor  = diffPm === 0 ? '#166534' : '#991b1b';
+        const fmtDiff  = v => (v > 0 ? '+' : '') + v + 'h';
+
         html += `<tr>
             <td style="font-weight:600;">${escHtml(op.name)}</td>
             <td style="text-align:center;">${schedAm}h</td>
             <td style="text-align:center;">${schedPm}h</td>
-            <td style="text-align:center;color:${amColor};font-weight:700;">${logAm}h</td>
-            <td style="text-align:center;color:${pmColor};font-weight:700;">${logPm}h</td>
+            <td style="text-align:center;color:${amColor};font-weight:700;">${fmtDiff(diffAm)}</td>
+            <td style="text-align:center;color:${pmColor};font-weight:700;">${fmtDiff(diffPm)}</td>
         </tr>`;
     });
     html += `</tbody></table>`;
     document.getElementById('pp-labour-wrap').innerHTML = html;
+}
+
+// ── Division allocation ───────────────────────────────────────────────
+function renderDivisionAllocation() {
+    // division name → day → total hours (AM + PM combined)
+    const alloc = {};
+    DIVISIONS.forEach(div => {
+        alloc[div.name] = {};
+        DAYS.forEach(d => { alloc[div.name][d] = 0; });
+    });
+
+    OPERATORS.forEach(op => {
+        DAYS.forEach(day => {
+            SHIFTS.forEach(shift => {
+                const cell = getCell(op.id, day, shift);
+                [['m','h'],['m2','h2']].forEach(([mk,hk]) => {
+                    const mkey = cell[mk];
+                    const hrs  = parseFloat(cell[hk]) || 0;
+                    const m    = machineByKey[mkey];
+                    if (m && hrs > 0 && alloc[m.division] !== undefined) {
+                        alloc[m.division][day] += hrs;
+                    }
+                });
+            });
+        });
+    });
+
+    let html = `<table style="width:100%;border-collapse:collapse;font-size:0.78rem;">
+        <thead><tr style="background:#1e293b;color:#e2e8f0;">
+            <th style="padding:8px 14px;text-align:left;font-size:0.75rem;">Area</th>
+            ${DAYS.map(d => `<th style="padding:8px 12px;text-align:center;font-size:0.75rem;">${d.charAt(0).toUpperCase()+d.slice(1)}</th>`).join('')}
+            <th style="padding:8px 12px;text-align:center;font-size:0.75rem;">Total</th>
+        </tr></thead><tbody>`;
+
+    DIVISIONS.forEach((div, i) => {
+        const hue  = div.hue;
+        const row  = alloc[div.name] || {};
+        const total = DAYS.reduce((s, d) => s + (row[d] || 0), 0);
+        const rowBg = i % 2 === 0 ? '#f8fafc' : 'white';
+        html += `<tr style="background:${rowBg};">
+            <td style="padding:8px 14px;font-weight:700;border-bottom:1px solid #f1f5f9;">
+                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:hsl(${hue},65%,60%);margin-right:7px;vertical-align:middle;flex-shrink:0;"></span>
+                ${escHtml(div.name)}
+            </td>`;
+        DAYS.forEach(d => {
+            const v  = row[d] || 0;
+            const bg = v > 0 ? `hsl(${hue},60%,92%)` : '';
+            const fg = v > 0 ? `hsl(${hue},55%,28%)` : '#cbd5e1';
+            html += `<td style="padding:7px 10px;text-align:center;font-weight:700;background:${bg};color:${fg};border-bottom:1px solid #f1f5f9;">${v > 0 ? v+'h' : '–'}</td>`;
+        });
+        const totalBg = total > 0 ? `hsl(${hue},55%,88%)` : '';
+        const totalFg = total > 0 ? `hsl(${hue},55%,25%)` : '#cbd5e1';
+        html += `<td style="padding:7px 12px;text-align:center;font-weight:800;background:${totalBg};color:${totalFg};border-bottom:1px solid #f1f5f9;">${total > 0 ? total+'h' : '–'}</td>`;
+        html += `</tr>`;
+    });
+
+    html += `</tbody></table>`;
+    document.getElementById('pp-division-wrap').innerHTML = html;
 }
 
 // ── Escape HTML ───────────────────────────────────────────────────────
