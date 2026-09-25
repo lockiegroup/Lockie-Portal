@@ -410,6 +410,9 @@ function renderGrid() {
             html += `<td class="pp-day-cell">`;
 
             SHIFTS.forEach(shift => {
+                const scheduled = getScheduled(op, day, shift);
+                if (scheduled === 0) return; // no work this shift — hide entirely
+
                 const cell    = getCell(op.id, day, shift);
                 const show2   = shouldShowSlot2(op, day, shift);
                 const shiftLabel = shift.toUpperCase();
