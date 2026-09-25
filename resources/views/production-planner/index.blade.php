@@ -135,26 +135,7 @@
         <button onclick="printWeek()" style="background:#475569;color:white;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:0.8125rem;font-weight:600;">&#128438; Print</button>
     </div>
 
-    {{-- Legend --}}
     @php $divHueMap = $divisions->pluck('hue', 'name')->toArray(); @endphp
-    <div id="pp-legend">
-        <span class="pp-legend-chip" style="background:#f1f5f9;color:#475569;">Unassigned</span>
-        <span class="pp-legend-chip" style="background:#fef3c7;color:#92400e;">Holiday</span>
-        <span class="pp-legend-chip" style="background:#fee2e2;color:#991b1b;">Sick</span>
-        @foreach($machines->groupBy('division') as $division => $divMachines)
-            @php $h = $divHueMap[$division] ?? 220; @endphp
-            <span class="pp-legend-chip"
-                style="background:hsl({{ $h }},70%,88%);color:hsl({{ $h }},60%,25%);font-weight:800;">
-                {{ $division }}
-            </span>
-            @foreach($divMachines as $m)
-                <span class="pp-legend-chip"
-                    style="background:hsl({{ $h }},65%,91%);color:hsl({{ $h }},55%,30%);">
-                    {{ $m->name }}
-                </span>
-            @endforeach
-        @endforeach
-    </div>
 
     {{-- Grid --}}
     <div id="pp-table-wrap">
