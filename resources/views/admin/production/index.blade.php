@@ -83,6 +83,7 @@
                 ];
             @endphp
 
+            <div style="overflow-x:auto;">
             <table class="ps-table" style="min-width:700px;">
                 <thead>
                     <tr>
@@ -178,6 +179,7 @@
                 @endforelse
                 </tbody>
             </table>
+            </div>{{-- /overflow-x:auto --}}
 
             <div class="ps-form">
                 <h4>Add Operator</h4>
