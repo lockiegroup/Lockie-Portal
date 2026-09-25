@@ -33,8 +33,9 @@ class User extends Authenticatable
         'amazon'           => 'Amazon & Xero',
         'key_accounts'     => 'Key Accounts',
         'crm'              => 'Customer Insights (CRM)',
-        'factory_training' => 'Factory Training',
-        'reminders'        => 'Order Reminders',
+        'factory_training'   => 'Factory Training',
+        'reminders'          => 'Order Reminders',
+        'production_planner' => 'Production Planner',
     ];
 
     protected $fillable = ['name', 'email', 'password', 'role', 'is_active', 'permissions', 'modules', 'last_login_at', 'operator_pin'];

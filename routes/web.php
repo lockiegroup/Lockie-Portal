@@ -32,6 +32,8 @@ use App\Http\Controllers\TabletController;
 use App\Http\Controllers\RackingController;
 use App\Http\Controllers\TenderRadarController;
 use App\Http\Controllers\HistoricalContractController;
+use App\Http\Controllers\ProductionPlannerController;
+use App\Http\Controllers\Admin\ProductionSettingsController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn() => redirect()->route('login'));
@@ -348,6 +350,24 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::put('/designs/{design}', [EnvelopeSettingsController::class, 'updateDesign'])->name('designs.update');
         Route::delete('/designs/{design}', [EnvelopeSettingsController::class, 'destroyDesign'])->name('designs.destroy');
         Route::post('/designs/reorder', [EnvelopeSettingsController::class, 'reorderDesigns'])->name('designs.reorder');
+    });
+
+    // Production Planner
+    Route::prefix('production-planner')->name('production-planner.')->middleware('module:production_planner')->group(function () {
+        Route::get('/', [ProductionPlannerController::class, 'index'])->name('index');
+        Route::get('/week/{weekKey}', [ProductionPlannerController::class, 'loadWeek'])->name('week.load');
+        Route::put('/week/{weekKey}', [ProductionPlannerController::class, 'saveWeek'])->name('week.save');
+    });
+
+    // Admin — production planner settings
+    Route::prefix('admin/production')->name('admin.production.')->middleware('can:manage_users')->group(function () {
+        Route::get('/', [ProductionSettingsController::class, 'index'])->name('index');
+        Route::post('/operators', [ProductionSettingsController::class, 'storeOperator'])->name('operators.store');
+        Route::put('/operators/{operator}', [ProductionSettingsController::class, 'updateOperator'])->name('operators.update');
+        Route::delete('/operators/{operator}', [ProductionSettingsController::class, 'destroyOperator'])->name('operators.destroy');
+        Route::post('/machines', [ProductionSettingsController::class, 'storeMachine'])->name('machines.store');
+        Route::put('/machines/{machine}', [ProductionSettingsController::class, 'updateMachine'])->name('machines.update');
+        Route::delete('/machines/{machine}', [ProductionSettingsController::class, 'destroyMachine'])->name('machines.destroy');
     });
 
     // Action Plans

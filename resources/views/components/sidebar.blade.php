@@ -6,7 +6,7 @@
 
     $activeFinance    = request()->routeIs('sales*') || request()->routeIs('amazon.*');
     $activeStock      = request()->routeIs('stock.*') || $isWatchlistSection;
-    $activePlanning   = request()->routeIs('key-actions.*') || request()->routeIs('action-plans.*') || request()->routeIs('ab-testing.*') || request()->routeIs('tender-radar.*');
+    $activePlanning   = request()->routeIs('key-actions.*') || request()->routeIs('action-plans.*') || request()->routeIs('ab-testing.*') || request()->routeIs('tender-radar.*') || request()->routeIs('production-planner.*');
     $activeCustomers  = request()->routeIs('key-accounts.*') || request()->routeIs('crm.*') || request()->routeIs('reminders.*');
     $activeOperations = request()->routeIs('church-envelopes.*') || request()->routeIs('policies.*') || request()->routeIs('training.*') || request()->routeIs('letter-filter.*') || request()->routeIs('racking.*') || $isPrintSection;
     $activeAdmin      = request()->routeIs('admin.*') || request()->routeIs('imports.*');
@@ -137,6 +137,18 @@
                 </svg>
                 <span class="sb-label">Tender Radar</span>
             </a>
+            @if($user->hasModule('production_planner'))
+            <a href="{{ route('production-planner.index') }}" class="sb-item{{ request()->routeIs('production-planner.*') ? ' sb-active' : '' }}" data-tip="Production Planner">
+                <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="3" width="20" height="18" rx="2"/>
+                    <line x1="2" y1="9" x2="22" y2="9"/>
+                    <line x1="2" y1="15" x2="22" y2="15"/>
+                    <line x1="8" y1="9" x2="8" y2="21"/>
+                    <line x1="14" y1="9" x2="14" y2="21"/>
+                </svg>
+                <span class="sb-label">Production Planner</span>
+            </a>
+            @endif
         </div>
         @endif
 
@@ -326,6 +338,18 @@
                     <polyline points="22,6 12,13 2,6"/>
                 </svg>
                 <span class="sb-label">Envelope Settings</span>
+            </a>
+            @endcan
+            @can('manage_users')
+            <a href="{{ route('admin.production.index') }}" class="sb-item{{ request()->routeIs('admin.production*') ? ' sb-active' : '' }}" data-tip="Production Settings">
+                <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="3" width="20" height="18" rx="2"/>
+                    <line x1="2" y1="9" x2="22" y2="9"/>
+                    <line x1="2" y1="15" x2="22" y2="15"/>
+                    <line x1="8" y1="9" x2="8" y2="21"/>
+                    <line x1="14" y1="9" x2="14" y2="21"/>
+                </svg>
+                <span class="sb-label">Production Settings</span>
             </a>
             @endcan
         </div>
