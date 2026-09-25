@@ -59,7 +59,7 @@
 .ps-flash-error   { background:#fee2e2; color:#991b1b; border:1px solid #fecaca; }
 
 .ps-inline-form { display:none; }
-.ps-inline-form.open { display:block; }
+.ps-inline-form.open { display:table-row; }
 </style>
 
 <div class="ps-wrap">
