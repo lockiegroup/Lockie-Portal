@@ -91,13 +91,17 @@
                         @foreach($schedDays as $dk => $dl)
                             <th style="text-align:center;min-width:90px;">{{ $dl }}<br><span style="font-size:.68rem;color:#94a3b8;font-weight:500;">AM / PM</span></th>
                         @endforeach
+                        <th style="text-align:center;">Total/wk</th>
                         <th>Active</th>
                         <th></th>
                     </tr>
                 </thead>
                 <tbody>
                 @forelse($operators as $op)
-                    @php $sched = $op->schedule ?? []; @endphp
+                    @php
+                        $sched = $op->schedule ?? [];
+                        $weeklyTotal = collect($schedDays)->sum(fn($dl, $dk) => ($sched[$dk]['am'] ?? 4) + ($sched[$dk]['pm'] ?? 4));
+                    @endphp
                     <tr>
                         <td style="font-weight:600;">{{ $op->name }}</td>
                         @foreach($schedDays as $dk => $dl)
@@ -105,6 +109,7 @@
                                 {{ $sched[$dk]['am'] ?? 4 }}h / {{ $sched[$dk]['pm'] ?? 4 }}h
                             </td>
                         @endforeach
+                        <td style="text-align:center;font-weight:700;color:#1e293b;">{{ $weeklyTotal }}h</td>
                         <td>
                             @if($op->is_active)
                                 <span class="ps-active-yes">Yes</span>
@@ -125,7 +130,7 @@
                     </tr>
                     {{-- Inline edit row --}}
                     <tr id="op-{{ $op->id }}" class="ps-inline-form">
-                        <td colspan="{{ count($schedDays) + 3 }}" style="padding:0;">
+                        <td colspan="{{ count($schedDays) + 4 }}" style="padding:0;">
                             <form method="POST" action="{{ route('admin.production.operators.update', $op) }}"
                                 style="padding:14px 16px;background:#f0f9ff;border-bottom:1px solid #e2e8f0;">
                                 @csrf @method('PUT')
@@ -166,8 +171,12 @@
                                         </select>
                                     </div>
                                     <div style="display:flex;gap:6px;align-items:flex-end;padding-bottom:2px;">
-                                        <button type="submit" class="ps-btn ps-btn-primary ps-btn-sm">Save</button>
-                                        <button type="button" class="ps-btn ps-btn-sm" style="background:#f1f5f9;color:#475569;"
+                                        <div class="ps-form-group">
+                                            <label>Total/wk</label>
+                                            <span id="total-{{ $op->id }}" style="font-size:.9rem;font-weight:700;color:#1e293b;padding:5px 8px;display:inline-block;">{{ $weeklyTotal }}h</span>
+                                        </div>
+                                        <button type="submit" class="ps-btn ps-btn-primary ps-btn-sm" style="align-self:flex-end;">Save</button>
+                                        <button type="button" class="ps-btn ps-btn-sm" style="align-self:flex-end;background:#f1f5f9;color:#475569;"
                                             onclick="psToggleEdit('op-{{ $op->id }}')">Cancel</button>
                                     </div>
                                 </div>
@@ -175,7 +184,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="{{ count($schedDays) + 3 }}" style="padding:16px;text-align:center;color:#94a3b8;">No operators yet.</td></tr>
+                    <tr><td colspan="{{ count($schedDays) + 4 }}" style="padding:16px;text-align:center;color:#94a3b8;">No operators yet.</td></tr>
                 @endforelse
                 </tbody>
             </table>
@@ -367,6 +376,25 @@ function psHuePreview(input, previewId) {
     var el = document.getElementById(previewId);
     if (el) el.style.background = 'hsl(' + input.value + ',65%,70%)';
 }
+function psUpdateTotal(form, totalId) {
+    var inputs = form.querySelectorAll('input[type=number][name^=schedule_]');
+    var sum = 0;
+    inputs.forEach(function(inp) { sum += parseFloat(inp.value) || 0; });
+    var el = document.getElementById(totalId);
+    if (el) el.textContent = sum + 'h';
+}
+// Attach live total listeners to all operator schedule inputs
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('input[type=number][name^=schedule_]').forEach(function(inp) {
+        inp.addEventListener('input', function() {
+            var form = this.closest('form');
+            if (!form) return;
+            // Find the total span in this form (id starts with "total-")
+            var totalSpan = form.querySelector('[id^=total-]');
+            if (totalSpan) psUpdateTotal(form, totalSpan.id);
+        });
+    });
+});
 </script>
 
 </x-layout>

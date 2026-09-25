@@ -326,20 +326,28 @@ function validateCell(opId, day, shift) {
         slot2.classList.toggle('visible', show);
     }
 
+    // Determine validation state
+    // scheduled=0 means no work this shift — any allocation is an error
+    const isOver  = (scheduled === 0 && total > 0) || (scheduled > 0 && total > scheduled);
+    const isUnder = !isOver && scheduled > 0 && total > 0 && total < scheduled;
+
     [inp1, inp2].forEach(inp => {
         if (!inp) return;
         inp.classList.remove('over','under');
-        if (scheduled > 0 && total > scheduled) inp.classList.add('over');
-        else if (scheduled > 0 && total > 0 && total < scheduled) inp.classList.add('under');
+        if (isOver)  inp.classList.add('over');
+        if (isUnder) inp.classList.add('under');
     });
 
     if (badge) {
         badge.textContent = '';
         badge.className   = 'pp-badge';
-        if (scheduled > 0 && total > scheduled) {
+        if (scheduled === 0 && total > 0) {
+            badge.textContent = `not scheduled`;
+            badge.className  += ' over';
+        } else if (scheduled > 0 && total > scheduled) {
             badge.textContent = `+${(total-scheduled).toFixed(1)}h over`;
             badge.className  += ' over';
-        } else if (scheduled > 0 && total > 0 && total < scheduled) {
+        } else if (isUnder) {
             badge.textContent = `${(scheduled-total).toFixed(1)}h under`;
             badge.className  += ' under';
         }
@@ -362,13 +370,20 @@ function copyMonToWeek(opId) {
 }
 
 // ── Format scheduled hours for operator cell ──────────────────────────
+function weeklyTotal(op) {
+    const s = op.schedule || {};
+    const days = ['mon','tue','wed','thu','fri'];
+    return days.reduce((sum, d) => sum + (s[d]?.am ?? 4) + (s[d]?.pm ?? 4), 0);
+}
+
 function fmtSched(op) {
     const s = op.schedule || {};
     const days = ['mon','tue','wed','thu','fri'];
     const monAm = s.mon?.am ?? 4, monPm = s.mon?.pm ?? 4;
     const allSame = days.every(d => (s[d]?.am ?? 4) === monAm && (s[d]?.pm ?? 4) === monPm);
-    if (allSame) return `${monAm}h AM · ${monPm}h PM`;
-    return days.map((d,i) => `${'MTWRF'[i]}:${s[d]?.am??4}/${s[d]?.pm??4}`).join(' ');
+    const total = weeklyTotal(op);
+    const perDay = allSame ? `${monAm}h AM · ${monPm}h PM` : days.map((d,i) => `${'MTWRF'[i]}:${s[d]?.am??4}/${s[d]?.pm??4}`).join(' ');
+    return `${perDay} <span style="font-weight:700;color:#1e293b;">(${total}h/wk)</span>`;
 }
 
 // ── Render full grid ─────────────────────────────────────────────────
