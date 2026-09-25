@@ -368,6 +368,9 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::post('/machines', [ProductionSettingsController::class, 'storeMachine'])->name('machines.store');
         Route::put('/machines/{machine}', [ProductionSettingsController::class, 'updateMachine'])->name('machines.update');
         Route::delete('/machines/{machine}', [ProductionSettingsController::class, 'destroyMachine'])->name('machines.destroy');
+        Route::post('/divisions', [ProductionSettingsController::class, 'storeDivision'])->name('divisions.store');
+        Route::put('/divisions/{division}', [ProductionSettingsController::class, 'updateDivision'])->name('divisions.update');
+        Route::delete('/divisions/{division}', [ProductionSettingsController::class, 'destroyDivision'])->name('divisions.destroy');
     });
 
     // Action Plans

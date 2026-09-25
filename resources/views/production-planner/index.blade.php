@@ -135,18 +135,13 @@
     </div>
 
     {{-- Legend --}}
-    @php
-    $divisionHues = [
-        'Lockie' => 22, 'JW' => 130, 'A1' => 200,
-        'Hammond & Harper' => 270, 'Warehousing' => 170, 'General' => 220,
-    ];
-    @endphp
+    @php $divHueMap = $divisions->pluck('hue', 'name')->toArray(); @endphp
     <div id="pp-legend">
         <span class="pp-legend-chip" style="background:#f1f5f9;color:#475569;">Unassigned</span>
         <span class="pp-legend-chip" style="background:#fef3c7;color:#92400e;">Holiday</span>
         <span class="pp-legend-chip" style="background:#fee2e2;color:#991b1b;">Sick</span>
         @foreach($machines->groupBy('division') as $division => $divMachines)
-            @php $h = $divisionHues[$division] ?? 220; @endphp
+            @php $h = $divHueMap[$division] ?? 220; @endphp
             <span class="pp-legend-chip"
                 style="background:hsl({{ $h }},70%,88%);color:hsl({{ $h }},60%,25%);font-weight:800;">
                 {{ $division }}
@@ -202,15 +197,10 @@ const CSRF      = document.querySelector('meta[name=csrf-token]').content;
 const DAYS    = ['mon','tue','wed','thu','fri'];
 const SHIFTS  = ['am','pm'];
 
-// Division → hue mapping (single colour per division)
-const DIV_HUES = {
-    'Lockie':           22,
-    'JW':              130,
-    'A1':              200,
-    'Hammond & Harper':270,
-    'Warehousing':     170,
-    'General':         220,
-};
+// Division → hue mapping (loaded from DB)
+const DIVISIONS = @json($divisions);
+const DIV_HUES  = {};
+DIVISIONS.forEach(d => { DIV_HUES[d.name] = d.hue; });
 function divHue(division) { return DIV_HUES[division] ?? 220; }
 
 const machineByKey = {};

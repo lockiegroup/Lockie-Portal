@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\ProductionDivision;
 use App\Models\ProductionMachine;
 use App\Models\ProductionOperator;
 use Illuminate\Http\Request;
@@ -13,8 +14,9 @@ class ProductionSettingsController extends Controller
     {
         $operators = ProductionOperator::orderBy('sort_order')->orderBy('id')->get();
         $machines  = ProductionMachine::orderBy('sort_order')->orderBy('id')->get();
+        $divisions = ProductionDivision::orderBy('sort_order')->orderBy('id')->get();
 
-        return view('admin.production.index', compact('operators', 'machines'));
+        return view('admin.production.index', compact('operators', 'machines', 'divisions'));
     }
 
     private const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri'];
@@ -30,6 +32,8 @@ class ProductionSettingsController extends Controller
         }
         return $schedule;
     }
+
+    // ── Operators ────────────────────────────────────────────────────────
 
     public function storeOperator(Request $request)
     {
@@ -76,12 +80,14 @@ class ProductionSettingsController extends Controller
         return redirect()->route('admin.production.index')->with('success', 'Operator deleted.');
     }
 
+    // ── Machines ─────────────────────────────────────────────────────────
+
     public function storeMachine(Request $request)
     {
         $data = $request->validate([
             'key'      => ['required', 'string', 'max:50', 'unique:production_machines,key'],
             'name'     => ['required', 'string', 'max:100'],
-            'division' => ['required', 'string', 'max:50'],
+            'division' => ['required', 'string', 'max:100'],
             'hue'      => ['required', 'integer', 'min:0', 'max:359'],
         ]);
 
@@ -96,7 +102,7 @@ class ProductionSettingsController extends Controller
         $data = $request->validate([
             'key'       => ['required', 'string', 'max:50', 'unique:production_machines,key,' . $machine->id],
             'name'      => ['required', 'string', 'max:100'],
-            'division'  => ['required', 'string', 'max:50'],
+            'division'  => ['required', 'string', 'max:100'],
             'hue'       => ['required', 'integer', 'min:0', 'max:359'],
             'is_active' => ['sometimes', 'boolean'],
         ]);
@@ -108,9 +114,51 @@ class ProductionSettingsController extends Controller
 
     public function destroyMachine(ProductionMachine $machine)
     {
-        // Soft-disable instead of hard delete so historical plan data stays valid
         $machine->update(['is_active' => false]);
 
         return redirect()->route('admin.production.index')->with('success', 'Machine deactivated.');
+    }
+
+    // ── Divisions ────────────────────────────────────────────────────────
+
+    public function storeDivision(Request $request)
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:100', 'unique:production_divisions,name'],
+            'hue'  => ['required', 'integer', 'min:0', 'max:359'],
+        ]);
+
+        $maxOrder = ProductionDivision::max('sort_order') ?? 0;
+        ProductionDivision::create(array_merge($data, ['sort_order' => $maxOrder + 1]));
+
+        return redirect()->route('admin.production.index')->with('success', 'Division added.');
+    }
+
+    public function updateDivision(Request $request, ProductionDivision $division)
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:100', 'unique:production_divisions,name,' . $division->id],
+            'hue'  => ['required', 'integer', 'min:0', 'max:359'],
+        ]);
+
+        $division->update($data);
+
+        // Sync hue on all machines in this division
+        ProductionMachine::where('division', $division->getOriginal('name'))
+            ->update(['division' => $data['name'], 'hue' => $data['hue']]);
+
+        return redirect()->route('admin.production.index')->with('success', 'Division updated.');
+    }
+
+    public function destroyDivision(ProductionDivision $division)
+    {
+        if (ProductionMachine::where('division', $division->name)->exists()) {
+            return redirect()->route('admin.production.index')
+                ->with('error', 'Cannot delete division — machines are assigned to it.');
+        }
+
+        $division->delete();
+
+        return redirect()->route('admin.production.index')->with('success', 'Division deleted.');
     }
 }
