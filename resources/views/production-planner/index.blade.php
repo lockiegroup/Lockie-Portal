@@ -72,8 +72,9 @@
 
 /* Day cell — two halves stacked */
 .pp-day-cell { padding:0; vertical-align:top; }
+.pp-day-cell-inner { display:flex; flex-direction:column; height:100%; }
 
-.pp-shift-block { padding:5px 7px; }
+.pp-shift-block { padding:5px 7px; flex:1; }
 .pp-shift-block.am { background:var(--pp-am-bg); border-bottom:1px solid #e8e0c8; }
 .pp-shift-block.pm { background:var(--pp-pm-bg); }
 
@@ -407,7 +408,7 @@ function renderGrid() {
 
         // One cell per day
         DAYS.forEach(day => {
-            html += `<td class="pp-day-cell">`;
+            html += `<td class="pp-day-cell"><div class="pp-day-cell-inner">`;
 
             SHIFTS.forEach(shift => {
                 const scheduled = getScheduled(op, day, shift);
@@ -452,7 +453,7 @@ function renderGrid() {
                 </div>`;
             });
 
-            html += `</td>`;
+            html += `</div></td>`;
         });
 
         html += `</tr>`;
