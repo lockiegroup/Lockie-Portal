@@ -112,11 +112,17 @@ class SyncUnleashedImports extends Command
         DB::statement('TRUNCATE TABLE sales_lines');
 
         for ($y = $startYear; $y <= $endYear; $y++) {
-            $yFrom = max($from, "{$y}-01-01");
-            $yTo   = min($to, "{$y}-12-31");
-            // Pad endDate +1 day because Unleashed treats it as exclusive
+            $yFrom    = max($from, "{$y}-01-01");
+            $yTo      = min($to, "{$y}-12-31");
+            // +1 day on endDate because Unleashed treats it as exclusive
             $yToFetch = Carbon::parse($yTo)->addDay()->toDateString();
-            $orders = $this->unleashed->fetchByDateRange('SalesOrders', [], $yFrom, $yToFetch);
+            // Use path-based pagination (same as Python reference script) with date params.
+            // fetchByDateRange only fetches pageNumber=1 and has chunk-boundary gaps;
+            // fetchAllPages walks every page reliably.
+            $orders = $this->fetchAllPages('SalesOrders', [
+                'startDate' => $yFrom,
+                'endDate'   => $yToFetch,
+            ], 200);
             $rows   = [];
 
             foreach ($orders as $o) {
@@ -168,14 +174,16 @@ class SyncUnleashedImports extends Command
             foreach (array_chunk($rows, 1000) as $chunk) {
                 DB::table('sales_lines')->insert($chunk);
             }
-            $total += count($rows);
+            $yearLines = count($rows);
+            $total    += $yearLines;
             unset($rows);
-            $this->line("  {$y}: inserted (running total: {$total} rows)");
+            $this->line("  {$y}: " . count($orders) . " orders → {$yearLines} lines (running total: {$total} lines)");
         }
         unset($seenGuids);
 
-        ActivityLog::record('imports.sales', "Auto-synced {$total} sales line(s) from Unleashed API");
-        $this->info("Sales sync complete: {$total} rows.");
+        $orderCount = DB::table('sales_lines')->distinct()->count('order_no');
+        ActivityLog::record('imports.sales', "Auto-synced {$orderCount} orders / {$total} lines from Unleashed API");
+        $this->info("Sales sync complete: {$orderCount} orders, {$total} lines.");
     }
 
     private function syncCredits(array $substitutions): void
