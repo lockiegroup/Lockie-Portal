@@ -73,7 +73,7 @@
             return `<div class="flex items-center justify-center py-24">
                 <div class="text-center">
                     <div class="inline-block w-10 h-10 border-4 border-slate-200 border-t-sky-500 rounded-full animate-spin mb-4"></div>
-                    <p class="text-slate-500 text-sm">Fetching data from Unleashed…</p>
+                    <p class="text-slate-500 text-sm">Loading sales data…</p>
                 </div>
             </div>`;
         }
@@ -110,8 +110,9 @@
         function renderResults(data, from, to) {
             const counts  = data.counts || {};
             const sections = [
-                { key: 'salesByWarehouse',  countKey: 'sales',   title: 'Sales Enquiry by Warehouse',  note: 'All non-cancelled orders by order date',  dot: 'bg-sky-500', cardLabel: 'Sales Enquiry',  cardCls: 'text-slate-800', unit: 'orders'  },
-                { key: 'creditsByWarehouse', countKey: 'credits', title: 'Credit Enquiry by Warehouse', note: 'All credit notes including free credits', dot: 'bg-red-500', cardLabel: 'Credit Enquiry', cardCls: 'text-red-500',   unit: 'credits' },
+                { key: 'salesByWarehouse',   countKey: 'sales',    title: 'Sales Enquiry by Warehouse',  note: 'All non-cancelled orders by order date',   dot: 'bg-sky-500',   cardLabel: 'Sales Enquiry',   cardCls: 'text-slate-800', unit: 'orders'   },
+                { key: 'creditsByWarehouse',  countKey: 'credits',  title: 'Credit Enquiry by Warehouse', note: 'All credit notes including free credits',  dot: 'bg-red-500',   cardLabel: 'Credit Enquiry',  cardCls: 'text-red-500',   unit: 'credits'  },
+                { key: 'invoicesByWarehouse', countKey: 'invoices', title: 'Invoicing by Warehouse',      note: 'All non-deleted invoices by invoice date', dot: 'bg-emerald-500', cardLabel: 'Invoicing',     cardCls: 'text-emerald-600', unit: 'invoices' },
             ];
 
             const totals = {};
@@ -139,7 +140,7 @@
                         <h2 class="font-semibold text-slate-800">${s.title}</h2>
                         <span class="text-slate-400 text-xs ml-2">${s.note}</span>
                         <div class="ml-auto flex items-center gap-4">
-                            <span class="text-slate-400 text-sm">${fmtInt(counts[s.countKey] ?? 0)} of ${fmtInt(counts.salesRaw ?? 0)} ${s.unit} (excl. cancelled)</span>
+                            <span class="text-slate-400 text-sm">${fmtInt(counts[s.countKey] ?? 0)} ${s.unit}</span>
                             <span class="text-slate-300 text-sm">|</span>
                             <span class="text-slate-400 text-sm">${escHtml(from)} — ${escHtml(to)}</span>
                         </div>
@@ -159,17 +160,9 @@
                 </div>`;
             }).join('');
 
-            const statuses    = data.debug?.statuses || {};
-            const subTotals   = data.debug?.statusSubTotals || {};
-            const statusHtml = Object.entries(statuses).sort((a,b)=>b[1]-a[1]).map(([s,n])=>{
-                const sub = subTotals[s] != null ? ` £${fmt(subTotals[s])}` : '';
-                return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-slate-100 text-slate-600"><b>${n}</b> ${escHtml(s)}${sub}</span>`;
-            }).join(' ');
-            const fixedCount  = counts.salesFixed  ?? '?';
-            const customCount = counts.salesCustom ?? '?';
-            const debugHtml = `<div class="text-xs text-slate-400 mb-6">Orders by status (net): ${statusHtml || '—'} &nbsp;·&nbsp; API: ${fixedCount} fixed + ${customCount} custom (before dedup) &nbsp;·&nbsp; dates: ${escHtml(data.debug?.apiFrom||'')} → ${escHtml(data.debug?.apiTo||'')}</div>`;
+            const debugHtml = `<div class="text-xs text-slate-400 mb-6">Data source: sales_lines / credits_lines / invoice_lines &nbsp;·&nbsp; period: ${escHtml(from)} — ${escHtml(to)}</div>`;
 
-            return `<div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">${cards}</div>${debugHtml}${tables}`;
+            return `<div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">${cards}</div>${debugHtml}${tables}`;
         }
 
         // ── Data loading ───────────────────────────────────────────────────────

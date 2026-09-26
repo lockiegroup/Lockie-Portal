@@ -59,16 +59,38 @@ class SalesController extends Controller
             }
             arsort($creditsByWarehouse);
 
-            $totalOrders  = DB::table('sales_lines')->whereBetween('order_date', [$from, $to])->where('status', '!=', 'deleted')->distinct()->count('order_no');
-            $totalCredits = DB::table('credits_lines')->whereBetween('credit_date', [$from, $to])->count();
+            $invoiceRows = DB::table('invoice_lines')
+                ->whereBetween('invoice_date', [$from, $to])
+                ->where('status', '!=', 'deleted')
+                ->select('warehouse', DB::raw('COUNT(DISTINCT invoice_no) as invoice_count'), DB::raw('SUM(sub_total) as sub_total'))
+                ->groupBy('warehouse')
+                ->get();
+
+            $invoicesByWarehouse = [];
+            foreach ($invoiceRows as $row) {
+                $name = $row->warehouse ?: 'No Warehouse';
+                $invoicesByWarehouse[$name] = [
+                    'count' => (int) $row->invoice_count,
+                    'sub'   => (float) $row->sub_total,
+                    'tax'   => 0.0,
+                    'total' => (float) $row->sub_total,
+                ];
+            }
+            arsort($invoicesByWarehouse);
+
+            $totalOrders   = DB::table('sales_lines')->whereBetween('order_date', [$from, $to])->where('status', '!=', 'deleted')->distinct()->count('order_no');
+            $totalCredits  = DB::table('credits_lines')->whereBetween('credit_date', [$from, $to])->count();
+            $totalInvoices = DB::table('invoice_lines')->whereBetween('invoice_date', [$from, $to])->where('status', '!=', 'deleted')->distinct()->count('invoice_no');
 
             return response()->json([
-                'success'            => true,
-                'salesByWarehouse'   => $salesByWarehouse,
-                'creditsByWarehouse' => $creditsByWarehouse,
-                'counts'             => [
-                    'sales'   => $totalOrders,
-                    'credits' => $totalCredits,
+                'success'              => true,
+                'salesByWarehouse'     => $salesByWarehouse,
+                'creditsByWarehouse'   => $creditsByWarehouse,
+                'invoicesByWarehouse'  => $invoicesByWarehouse,
+                'counts'               => [
+                    'sales'    => $totalOrders,
+                    'credits'  => $totalCredits,
+                    'invoices' => $totalInvoices,
                 ],
                 'debug' => [
                     'source' => 'sales_lines',

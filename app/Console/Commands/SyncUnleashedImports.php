@@ -14,7 +14,8 @@ class SyncUnleashedImports extends Command
     protected $signature = 'imports:sync-unleashed
                             {--from= : Start date (Y-m-d). Defaults to 3 years ago. Use 2001-01-01 for full history.}
                             {--sales-only : Only sync sales orders}
-                            {--credits-only : Only sync credit notes}';
+                            {--credits-only : Only sync credit notes}
+                            {--invoices-only : Only sync invoices}';
 
     protected $description = 'Pull sales orders and credit notes from Unleashed API and sync into sales_lines / credits_lines';
 
@@ -32,10 +33,12 @@ class SyncUnleashedImports extends Command
             config('services.unleashed.key')
         );
         $this->unleashed = $unleashed;
-        $salesOnly   = $this->option('sales-only');
-        $creditsOnly = $this->option('credits-only');
-        $doSales     = !$creditsOnly;
-        $doCredits   = !$salesOnly;
+        $salesOnly    = $this->option('sales-only');
+        $creditsOnly  = $this->option('credits-only');
+        $invoicesOnly = $this->option('invoices-only');
+        $doSales    = !$creditsOnly && !$invoicesOnly;
+        $doCredits  = !$salesOnly  && !$invoicesOnly;
+        $doInvoices = !$salesOnly  && !$creditsOnly;
 
         $fromOption = $this->option('from');
         $from = $fromOption ? Carbon::parse($fromOption)->toDateString() : '2021-01-01';
@@ -49,8 +52,9 @@ class SyncUnleashedImports extends Command
         ])->all();
 
         try {
-            if ($doSales)   $this->syncSales($from, $to, $substitutions);
-            if ($doCredits) $this->syncCredits($substitutions);
+            if ($doSales)    $this->syncSales($from, $to, $substitutions);
+            if ($doCredits)  $this->syncCredits($substitutions);
+            if ($doInvoices) $this->syncInvoices($from, $to);
         } catch (\Throwable $e) {
             $this->error('Sync failed: ' . $e->getMessage());
             ActivityLog::record('imports.sales.error', 'Auto-sync failed: ' . substr($e->getMessage(), 0, 250));
@@ -246,5 +250,77 @@ class SyncUnleashedImports extends Command
 
         ActivityLog::record('imports.credits', "Auto-synced {$count} credit line(s) from Unleashed API");
         $this->info("Credits sync complete: {$count} rows.");
+    }
+
+    private function syncInvoices(string $from, string $to): void
+    {
+        $this->info('Fetching invoices…');
+        $startYear = (int) Carbon::parse($from)->format('Y');
+        $endYear   = (int) Carbon::parse($to)->format('Y');
+        $now       = now()->toDateTimeString();
+        $total     = 0;
+        $seenGuids = [];
+
+        DB::statement('TRUNCATE TABLE invoice_lines');
+
+        for ($y = $startYear; $y <= $endYear; $y++) {
+            $yFrom    = max($from, "{$y}-01-01");
+            $yTo      = min($to, "{$y}-12-31");
+            $yToFetch = Carbon::parse($yTo)->addDay()->toDateString();
+
+            $invoices = $this->fetchAllPages('SalesInvoices', [
+                'startDate' => $yFrom,
+                'endDate'   => $yToFetch,
+            ], 200);
+
+            $rows = [];
+            foreach ($invoices as $inv) {
+                $guid = $inv['Guid'] ?? null;
+                if ($guid && isset($seenGuids[$guid])) continue;
+                if ($guid) $seenGuids[$guid] = true;
+
+                $status = strtolower(trim($inv['InvoiceStatus'] ?? $inv['Status'] ?? ''));
+                if ($status === 'deleted') continue;
+
+                $invoiceDate = $this->unleashed->parseDate($inv['InvoiceDate'] ?? null);
+                if (!$invoiceDate) continue;
+
+                $cust = $inv['Customer'] ?? [];
+                $code = $cust['CustomerCode'] ?? '';
+                $wh   = ($inv['Warehouse'] ?? [])['WarehouseName'] ?? '';
+
+                foreach ($inv['InvoiceLines'] ?? [] as $ln) {
+                    $rows[] = [
+                        'invoice_no'    => substr(trim($inv['InvoiceNumber'] ?? ''), 0, 50) ?: null,
+                        'invoice_date'  => $invoiceDate,
+                        'customer_code' => substr(trim($code), 0, 100) ?: null,
+                        'customer'      => substr(trim($cust['CustomerName'] ?? ''), 0, 255) ?: null,
+                        'warehouse'     => substr(trim($wh), 0, 100) ?: null,
+                        'product_code'  => substr(trim(($ln['Product'] ?? [])['ProductCode'] ?? ''), 0, 100) ?: null,
+                        'quantity'      => (float)($ln['InvoiceQuantity'] ?? 0),
+                        'sub_total'     => (float)($ln['LineTotal'] ?? 0),
+                        'status'        => substr($status, 0, 50) ?: null,
+                        'created_at'    => $now,
+                        'updated_at'    => $now,
+                    ];
+                }
+            }
+
+            $yearInvoices = count($invoices);
+            unset($invoices);
+
+            foreach (array_chunk($rows, 1000) as $chunk) {
+                DB::table('invoice_lines')->insert($chunk);
+            }
+            $yearLines = count($rows);
+            $total    += $yearLines;
+            unset($rows);
+            $this->line("  {$y}: {$yearInvoices} invoices → {$yearLines} lines (running total: {$total} lines)");
+        }
+        unset($seenGuids);
+
+        $invoiceCount = DB::table('invoice_lines')->distinct()->count('invoice_no');
+        ActivityLog::record('imports.invoices', "Auto-synced {$invoiceCount} invoices / {$total} lines from Unleashed API");
+        $this->info("Invoices sync complete: {$invoiceCount} invoices, {$total} lines.");
     }
 }
