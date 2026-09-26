@@ -110,9 +110,8 @@
         function renderResults(data, from, to) {
             const counts  = data.counts || {};
             const sections = [
-                { key: 'salesByWarehouse',   countKey: 'sales',    title: 'Sales Enquiry by Warehouse',  note: 'All non-cancelled orders by order date',   dot: 'bg-sky-500',   cardLabel: 'Sales Enquiry',   cardCls: 'text-slate-800', unit: 'orders'   },
-                { key: 'creditsByWarehouse',  countKey: 'credits',  title: 'Credit Enquiry by Warehouse', note: 'All credit notes including free credits',  dot: 'bg-red-500',   cardLabel: 'Credit Enquiry',  cardCls: 'text-red-500',   unit: 'credits'  },
-                { key: 'invoicesByWarehouse', countKey: 'invoices', title: 'Invoicing by Warehouse',      note: 'All non-deleted invoices by invoice date', dot: 'bg-emerald-500', cardLabel: 'Invoicing',     cardCls: 'text-emerald-600', unit: 'invoices' },
+                { key: 'salesByWarehouse',  countKey: 'sales',   title: 'Sales Enquiry by Warehouse',  note: 'All non-cancelled orders by order date',  dot: 'bg-sky-500', cardLabel: 'Sales Enquiry',  cardCls: 'text-slate-800', unit: 'orders'  },
+                { key: 'creditsByWarehouse', countKey: 'credits', title: 'Credit Enquiry by Warehouse', note: 'All credit notes including free credits', dot: 'bg-red-500', cardLabel: 'Credit Enquiry', cardCls: 'text-red-500',   unit: 'credits' },
             ];
 
             const totals = {};
@@ -162,7 +161,7 @@
 
             const debugHtml = `<div class="text-xs text-slate-400 mb-6">Data source: sales_lines / credits_lines / invoice_lines &nbsp;·&nbsp; period: ${escHtml(from)} — ${escHtml(to)}</div>`;
 
-            return `<div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">${cards}</div>${debugHtml}${tables}`;
+            return `<div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">${cards}</div>${debugHtml}${tables}`;
         }
 
         // ── Data loading ───────────────────────────────────────────────────────

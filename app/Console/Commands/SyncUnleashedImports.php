@@ -14,8 +14,7 @@ class SyncUnleashedImports extends Command
     protected $signature = 'imports:sync-unleashed
                             {--from= : Start date (Y-m-d). Defaults to 3 years ago. Use 2001-01-01 for full history.}
                             {--sales-only : Only sync sales orders}
-                            {--credits-only : Only sync credit notes}
-                            {--invoices-only : Only sync invoices}';
+                            {--credits-only : Only sync credit notes}';
 
     protected $description = 'Pull sales orders and credit notes from Unleashed API and sync into sales_lines / credits_lines';
 
@@ -33,12 +32,10 @@ class SyncUnleashedImports extends Command
             config('services.unleashed.key')
         );
         $this->unleashed = $unleashed;
-        $salesOnly    = $this->option('sales-only');
-        $creditsOnly  = $this->option('credits-only');
-        $invoicesOnly = $this->option('invoices-only');
-        $doSales    = !$creditsOnly && !$invoicesOnly;
-        $doCredits  = !$salesOnly  && !$invoicesOnly;
-        $doInvoices = !$salesOnly  && !$creditsOnly;
+        $salesOnly   = $this->option('sales-only');
+        $creditsOnly = $this->option('credits-only');
+        $doSales     = !$creditsOnly;
+        $doCredits   = !$salesOnly;
 
         $fromOption = $this->option('from');
         $from = $fromOption ? Carbon::parse($fromOption)->toDateString() : '2021-01-01';
@@ -52,9 +49,8 @@ class SyncUnleashedImports extends Command
         ])->all();
 
         try {
-            if ($doSales)    $this->syncSales($from, $to, $substitutions);
-            if ($doCredits)  $this->syncCredits($substitutions);
-            if ($doInvoices) $this->syncInvoices($from, $to);
+            if ($doSales)   $this->syncSales($from, $to, $substitutions);
+            if ($doCredits) $this->syncCredits($substitutions);
         } catch (\Throwable $e) {
             $this->error('Sync failed: ' . $e->getMessage());
             ActivityLog::record('imports.sales.error', 'Auto-sync failed: ' . substr($e->getMessage(), 0, 250));
@@ -250,59 +246,5 @@ class SyncUnleashedImports extends Command
 
         ActivityLog::record('imports.credits', "Auto-synced {$count} credit line(s) from Unleashed API");
         $this->info("Credits sync complete: {$count} rows.");
-    }
-
-    private function syncInvoices(string $from, string $to): void
-    {
-        $this->info('Fetching all invoices…');
-        $invoices = $this->fetchAllPages('SalesInvoices', [], 1000);
-        $this->line('  ' . count($invoices) . ' invoices fetched');
-
-        $now        = now()->toDateTimeString();
-        $insertRows = [];
-
-        foreach ($invoices as $inv) {
-            // SalesInvoices returns sales order fields; CompletedDate = the invoice/dispatch date
-            $status = strtolower(trim($inv['OrderStatus'] ?? ''));
-            if ($status === 'deleted') continue;
-
-            // Use CompletedDate (= Unleashed's "Invoice Date") not OrderDate
-            $invoiceDate = $this->unleashed->parseDate($inv['CompletedDate'] ?? null);
-            if (!$invoiceDate) continue;
-
-            // PHP-side date filter to match the configured $from window
-            if ($invoiceDate < $from) continue;
-
-            $cust = $inv['Customer'] ?? [];
-            $code = $cust['CustomerCode'] ?? '';
-            $wh   = ($inv['Warehouse'] ?? [])['WarehouseName'] ?? '';
-
-            $insertRows[] = [
-                'invoice_no'    => substr(trim($inv['OrderNumber'] ?? ''), 0, 50) ?: null,
-                'invoice_date'  => $invoiceDate,
-                'customer_code' => substr(trim($code), 0, 100) ?: null,
-                'customer'      => substr(trim($cust['CustomerName'] ?? ''), 0, 255) ?: null,
-                'warehouse'     => substr(trim($wh), 0, 100) ?: null,
-                'product_code'  => null,
-                'quantity'      => 0,
-                'sub_total'     => (float)($inv['SubTotal'] ?? 0),
-                'status'        => substr($status, 0, 50) ?: null,
-                'created_at'    => $now,
-                'updated_at'    => $now,
-            ];
-        }
-        unset($invoices);
-
-        $count = count($insertRows);
-        $this->info("Inserting {$count} invoice rows…");
-
-        DB::statement('TRUNCATE TABLE invoice_lines');
-        foreach (array_chunk($insertRows, 4000) as $chunk) {
-            DB::table('invoice_lines')->insert($chunk);
-        }
-        unset($insertRows);
-
-        ActivityLog::record('imports.invoices', "Auto-synced {$count} invoice(s) from Unleashed API");
-        $this->info("Invoices sync complete: {$count} rows.");
     }
 }
