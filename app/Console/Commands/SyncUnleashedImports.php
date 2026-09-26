@@ -60,13 +60,28 @@ class SyncUnleashedImports extends Command
         return 0;
     }
 
+    private function fetchAllPages(string $endpoint, array $params = [], int $pageSize = 200): array
+    {
+        $items = [];
+        $page  = 1;
+        do {
+            $data     = $this->unleashed->get($endpoint, array_merge($params, ['pageSize' => $pageSize, 'pageNumber' => $page]));
+            $fetched  = $data['Items'] ?? [];
+            $items    = array_merge($items, $fetched);
+            $maxPages = (int) ($data['Pagination']['NumberOfPages'] ?? 1);
+            $this->line("    page {$page}/{$maxPages} (" . count($items) . " total)");
+            $page++;
+        } while ($page <= $maxPages);
+        return $items;
+    }
+
     private function syncSales(string $from, string $to, array $substitutions): void
     {
-        // Customer type lookup (not always present on order lines)
+        // Customer type lookup
         $this->info('Fetching customers…');
-        $customers     = $this->unleashed->paginateFast('Customers', ['includeObsolete' => 'true'], 1000);
-        $ctypeByCode   = [];
-        $ctypeByGuid   = [];
+        $customers   = $this->fetchAllPages('Customers', ['includeObsolete' => 'true'], 200);
+        $ctypeByCode = [];
+        $ctypeByGuid = [];
         foreach ($customers as $c) {
             $code = $c['CustomerCode'] ?? null;
             $guid = $c['Guid'] ?? null;
@@ -77,7 +92,7 @@ class SyncUnleashedImports extends Command
 
         // Product group lookup
         $this->info('Fetching products…');
-        $products = $this->unleashed->paginateFast('Products', ['includeObsolete' => 'true'], 1000);
+        $products = $this->fetchAllPages('Products', ['includeObsolete' => 'true'], 200);
         $pgroup   = [];
         foreach ($products as $p) {
             $code = $p['ProductCode'] ?? null;
@@ -166,7 +181,7 @@ class SyncUnleashedImports extends Command
     private function syncCredits(array $substitutions): void
     {
         $this->info('Fetching credit notes…');
-        $credits = $this->unleashed->paginateFast('CreditNotes', [], 500);
+        $credits = $this->fetchAllPages('CreditNotes', [], 200);
         $this->line('  ' . count($credits) . ' credit notes fetched');
 
         $now        = now()->toDateTimeString();
