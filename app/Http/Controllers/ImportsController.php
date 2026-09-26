@@ -348,6 +348,53 @@ class ImportsController extends Controller
         return array_map(fn($line) => str_getcsv($line, $delimiter), $lines);
     }
 
+    public function downloadSales(): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        abort_unless(auth()->user()->can('imports'), 403);
+
+        $filename = 'sales-lines-' . now()->format('Y-m-d') . '.csv';
+
+        return response()->streamDownload(function () {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, ['Order No.', 'Order Date', 'Required Date', 'Completed Date', 'Warehouse',
+                           'Customer Code', 'Customer', 'Customer Type', 'Product Code', 'Product Group',
+                           'Status', 'Quantity', 'Sub Total']);
+            DB::table('sales_lines')->orderBy('order_date', 'desc')->orderBy('id')->chunk(2000, function ($rows) use ($out) {
+                foreach ($rows as $row) {
+                    fputcsv($out, [
+                        $row->order_no, $row->order_date, $row->required_date, $row->completed_date,
+                        $row->warehouse, $row->customer_code, $row->customer, $row->customer_type,
+                        $row->product_code, $row->product_group, $row->status,
+                        $row->quantity, $row->sub_total,
+                    ]);
+                }
+            });
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv']);
+    }
+
+    public function downloadCredits(): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        abort_unless(auth()->user()->can('imports'), 403);
+
+        $filename = 'credits-lines-' . now()->format('Y-m-d') . '.csv';
+
+        return response()->streamDownload(function () {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, ['Credit Number', 'Credit Date', 'Customer Code', 'Product Code',
+                           'Quantity', 'Warehouse', 'Sub Total', 'Status']);
+            DB::table('credits_lines')->orderBy('credit_date', 'desc')->orderBy('id')->chunk(2000, function ($rows) use ($out) {
+                foreach ($rows as $row) {
+                    fputcsv($out, [
+                        $row->credit_no, $row->credit_date, $row->customer_code, $row->product_code,
+                        $row->quantity, $row->warehouse, $row->sub_total, $row->status,
+                    ]);
+                }
+            });
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv']);
+    }
+
     private function parseDate(mixed $raw, string $ext): ?\DateTime
     {
         if ($raw === null || $raw === '') return null;

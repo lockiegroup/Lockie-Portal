@@ -203,7 +203,9 @@ Route::middleware(['auth', 'otp'])->group(function () {
     // Shared imports
     Route::get('/imports', [ImportsController::class, 'index'])->name('imports.index');
     Route::post('/imports/sales', [ImportsController::class, 'storeSales'])->name('imports.sales');
+    Route::get('/imports/sales/download', [ImportsController::class, 'downloadSales'])->name('imports.sales.download');
     Route::post('/imports/credits', [ImportsController::class, 'storeCredits'])->name('imports.credits');
+    Route::get('/imports/credits/download', [ImportsController::class, 'downloadCredits'])->name('imports.credits.download');
     Route::post('/imports/substitutions', [ImportsController::class, 'storeSubstitution'])->name('imports.substitutions.store');
     Route::delete('/imports/substitutions/{substitution}', [ImportsController::class, 'destroySubstitution'])->name('imports.substitutions.destroy');
 

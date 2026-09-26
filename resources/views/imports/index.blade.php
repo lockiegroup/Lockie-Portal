@@ -26,9 +26,16 @@
             <div class="mb-3">
                 <div class="flex flex-wrap items-start justify-between gap-x-4 gap-y-1 mb-1">
                     <h2 class="text-base font-semibold text-slate-800">Sales Enquiry Import</h2>
-                    @if($salesFrom)
-                    <span class="text-xs text-slate-400 whitespace-nowrap">Data covers: <span class="text-slate-500 font-medium">{{ $salesFrom }} – {{ $salesTo }}</span></span>
-                    @endif
+                    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                        @if($salesFrom)
+                        <span class="text-xs text-slate-400 whitespace-nowrap">Data covers: <span class="text-slate-500 font-medium">{{ $salesFrom }} – {{ $salesTo }}</span></span>
+                        @endif
+                        @if($salesFrom)
+                        <a href="{{ route('imports.sales.download') }}" style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:6px;font-size:0.75rem;font-weight:600;background:#f1f5f9;color:#475569;text-decoration:none;border:1px solid #e2e8f0;">
+                            &#8595; Download Current
+                        </a>
+                        @endif
+                    </div>
                 </div>
                 <p class="text-sm text-slate-500">Export from <strong>Reports → Sales → Sales Enquiry</strong> in Unleashed.</p>
                 <p class="text-xs text-slate-400 mt-0.5">Required columns: Order No., Order Date, Required Date, Completed Date, Warehouse, Customer Code, Customer, Customer Type, Product Code, Product Group, Status, Quantity, Sub Total</p>
@@ -97,9 +104,16 @@
             <div class="mb-3">
                 <div class="flex flex-wrap items-start justify-between gap-x-4 gap-y-1 mb-1">
                     <h2 class="text-base font-semibold text-slate-800">Credits Import</h2>
-                    @if($creditsFrom)
-                    <span class="text-xs text-slate-400 whitespace-nowrap">Data covers: <span class="text-slate-500 font-medium">{{ $creditsFrom }} – {{ $creditsTo }}</span></span>
-                    @endif
+                    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                        @if($creditsFrom)
+                        <span class="text-xs text-slate-400 whitespace-nowrap">Data covers: <span class="text-slate-500 font-medium">{{ $creditsFrom }} – {{ $creditsTo }}</span></span>
+                        @endif
+                        @if($creditsFrom)
+                        <a href="{{ route('imports.credits.download') }}" style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:6px;font-size:0.75rem;font-weight:600;background:#f1f5f9;color:#475569;text-decoration:none;border:1px solid #e2e8f0;">
+                            &#8595; Download Current
+                        </a>
+                        @endif
+                    </div>
                 </div>
                 <p class="text-sm text-slate-500">Export from <strong>Reports → Purchases → Credit Notes</strong> in Unleashed.</p>
                 <p class="text-xs text-slate-400 mt-0.5">Required columns: Credit Number, Credit Date, Customer Code, Product Code, Quantity, Warehouse, Sub Total, Status</p>
