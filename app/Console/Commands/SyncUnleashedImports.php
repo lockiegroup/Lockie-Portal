@@ -60,12 +60,14 @@ class SyncUnleashedImports extends Command
         return 0;
     }
 
+    // Unleashed uses the page number in the URL path: /Endpoint/1, /Endpoint/2, …
     private function fetchAllPages(string $endpoint, array $params = [], int $pageSize = 200): array
     {
-        $items = [];
-        $page  = 1;
+        $items    = [];
+        $page     = 1;
+        $maxPages = 1;
         do {
-            $data     = $this->unleashed->get($endpoint, array_merge($params, ['pageSize' => $pageSize, 'pageNumber' => $page]));
+            $data     = $this->unleashed->get("{$endpoint}/{$page}", array_merge($params, ['pageSize' => $pageSize]));
             $fetched  = $data['Items'] ?? [];
             $items    = array_merge($items, $fetched);
             $maxPages = (int) ($data['Pagination']['NumberOfPages'] ?? 1);
@@ -110,9 +112,11 @@ class SyncUnleashedImports extends Command
         DB::statement('TRUNCATE TABLE sales_lines');
 
         for ($y = $startYear; $y <= $endYear; $y++) {
-            $yFrom  = max($from, "{$y}-01-01");
-            $yTo    = min($to, "{$y}-12-31");
-            $orders = $this->unleashed->fetchByDateRange('SalesOrders', [], $yFrom, $yTo);
+            $yFrom = max($from, "{$y}-01-01");
+            $yTo   = min($to, "{$y}-12-31");
+            // Pad endDate +1 day because Unleashed treats it as exclusive
+            $yToFetch = Carbon::parse($yTo)->addDay()->toDateString();
+            $orders = $this->unleashed->fetchByDateRange('SalesOrders', [], $yFrom, $yToFetch);
             $rows   = [];
 
             foreach ($orders as $o) {
@@ -132,12 +136,12 @@ class SyncUnleashedImports extends Command
                 $orderStatus = $o['CustomOrderStatus'] ?: ($o['OrderStatus'] ?? '');
 
                 foreach ($o['SalesOrderLines'] ?? [] as $ln) {
-                    $rawPc = strtoupper(trim(($ln['Product'] ?? [])['ProductCode'] ?? ''));
-                    $pg    = $pgroup[$rawPc] ?? '';
+                    $rawPc = trim(($ln['Product'] ?? [])['ProductCode'] ?? '');
+                    $pg    = $pgroup[$rawPc] ?? $pgroup[strtoupper($rawPc)] ?? '';
                     $pc    = $rawPc;
                     foreach ($substitutions as $sub) {
-                        if ($pc && str_contains($pc, $sub['find'])) {
-                            $pc = str_replace($sub['find'], $sub['replace'], $pc);
+                        if ($pc && str_contains(strtoupper($pc), $sub['find'])) {
+                            $pc = str_ireplace($sub['find'], $sub['replace'], $pc);
                         }
                     }
                     $rows[] = [
@@ -152,8 +156,8 @@ class SyncUnleashedImports extends Command
                         'product_code'   => substr($pc, 0, 100) ?: null,
                         'product_group'  => substr($pg, 0, 100) ?: null,
                         'status'         => substr(strtolower(trim($orderStatus)), 0, 50) ?: null,
-                        'quantity'       => max(0, (float)($ln['OrderQuantity'] ?? 0)),
-                        'sub_total'      => max(0, (float)($ln['LineTotal'] ?? 0)),
+                        'quantity'       => (float)($ln['OrderQuantity'] ?? 0),
+                        'sub_total'      => (float)($ln['LineTotal'] ?? 0),
                         'created_at'     => $now,
                         'updated_at'     => $now,
                     ];
@@ -198,11 +202,11 @@ class SyncUnleashedImports extends Command
                 $total = (float)($ln['LineTotal'] ?? 0);
                 if ($qty === 0.0 && $total === 0.0) continue;
 
-                $rawPc = strtoupper(trim(($ln['Product'] ?? [])['ProductCode'] ?? ''));
+                $rawPc = trim(($ln['Product'] ?? [])['ProductCode'] ?? '');
                 $pc    = $rawPc;
                 foreach ($substitutions as $sub) {
-                    if ($pc && str_contains($pc, $sub['find'])) {
-                        $pc = str_replace($sub['find'], $sub['replace'], $pc);
+                    if ($pc && str_contains(strtoupper($pc), $sub['find'])) {
+                        $pc = str_ireplace($sub['find'], $sub['replace'], $pc);
                     }
                 }
 
@@ -211,9 +215,9 @@ class SyncUnleashedImports extends Command
                     'credit_date'    => $creditDate,
                     'customer_code'  => substr(trim($code), 0, 100) ?: null,
                     'product_code'   => substr($pc, 0, 100) ?: null,
-                    'quantity'       => max(0, $qty),
+                    'quantity'       => $qty,
                     'warehouse'      => substr(trim($wh), 0, 100) ?: null,
-                    'sub_total'      => max(0, $total),
+                    'sub_total'      => $total,
                     'status'         => substr($status, 0, 50) ?: null,
                     'created_at'     => $now,
                     'updated_at'     => $now,
