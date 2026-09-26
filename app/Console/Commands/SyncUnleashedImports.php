@@ -254,73 +254,55 @@ class SyncUnleashedImports extends Command
 
     private function syncInvoices(string $from, string $to): void
     {
-        $this->info('Fetching invoices…');
-        $startYear = (int) Carbon::parse($from)->format('Y');
-        $endYear   = (int) Carbon::parse($to)->format('Y');
-        $now       = now()->toDateTimeString();
-        $total     = 0;
-        $seenGuids = [];
+        $this->info('Fetching all invoices…');
+        $invoices = $this->fetchAllPages('SalesInvoices', [], 1000);
+        $this->line('  ' . count($invoices) . ' invoices fetched');
+
+        $now        = now()->toDateTimeString();
+        $insertRows = [];
+
+        foreach ($invoices as $inv) {
+            $status = strtolower(trim($inv['InvoiceStatus'] ?? $inv['Status'] ?? ''));
+            if ($status === 'deleted') continue;
+
+            $invoiceDate = $this->unleashed->parseDate($inv['InvoiceDate'] ?? null);
+            if (!$invoiceDate) continue;
+
+            // PHP-side date filter to match the configured $from window
+            if ($invoiceDate < $from) continue;
+
+            $cust = $inv['Customer'] ?? [];
+            $code = $cust['CustomerCode'] ?? '';
+            $wh   = ($inv['Warehouse'] ?? [])['WarehouseName'] ?? '';
+
+            // List endpoint does not include InvoiceLines — one row per invoice
+            // using the header-level SubTotal, which is all the sales page needs.
+            $insertRows[] = [
+                'invoice_no'    => substr(trim($inv['InvoiceNumber'] ?? ''), 0, 50) ?: null,
+                'invoice_date'  => $invoiceDate,
+                'customer_code' => substr(trim($code), 0, 100) ?: null,
+                'customer'      => substr(trim($cust['CustomerName'] ?? ''), 0, 255) ?: null,
+                'warehouse'     => substr(trim($wh), 0, 100) ?: null,
+                'product_code'  => null,
+                'quantity'      => 0,
+                'sub_total'     => (float)($inv['SubTotal'] ?? 0),
+                'status'        => substr($status, 0, 50) ?: null,
+                'created_at'    => $now,
+                'updated_at'    => $now,
+            ];
+        }
+        unset($invoices);
+
+        $count = count($insertRows);
+        $this->info("Inserting {$count} invoice rows…");
 
         DB::statement('TRUNCATE TABLE invoice_lines');
-
-        for ($y = $startYear; $y <= $endYear; $y++) {
-            $yFrom    = max($from, "{$y}-01-01");
-            $yTo      = min($to, "{$y}-12-31");
-            $yToFetch = Carbon::parse($yTo)->addDay()->toDateString();
-
-            $invoices = $this->fetchAllPages('SalesInvoices', [
-                'startDate' => $yFrom,
-                'endDate'   => $yToFetch,
-            ], 200);
-
-            $rows = [];
-            foreach ($invoices as $inv) {
-                $guid = $inv['Guid'] ?? null;
-                if ($guid && isset($seenGuids[$guid])) continue;
-                if ($guid) $seenGuids[$guid] = true;
-
-                $status = strtolower(trim($inv['InvoiceStatus'] ?? $inv['Status'] ?? ''));
-                if ($status === 'deleted') continue;
-
-                $invoiceDate = $this->unleashed->parseDate($inv['InvoiceDate'] ?? null);
-                if (!$invoiceDate) continue;
-
-                $cust = $inv['Customer'] ?? [];
-                $code = $cust['CustomerCode'] ?? '';
-                $wh   = ($inv['Warehouse'] ?? [])['WarehouseName'] ?? '';
-
-                // List endpoint does not include InvoiceLines — insert one row per invoice
-                // using the header-level SubTotal, which is all the sales page needs.
-                $rows[] = [
-                    'invoice_no'    => substr(trim($inv['InvoiceNumber'] ?? ''), 0, 50) ?: null,
-                    'invoice_date'  => $invoiceDate,
-                    'customer_code' => substr(trim($code), 0, 100) ?: null,
-                    'customer'      => substr(trim($cust['CustomerName'] ?? ''), 0, 255) ?: null,
-                    'warehouse'     => substr(trim($wh), 0, 100) ?: null,
-                    'product_code'  => null,
-                    'quantity'      => 0,
-                    'sub_total'     => (float)($inv['SubTotal'] ?? 0),
-                    'status'        => substr($status, 0, 50) ?: null,
-                    'created_at'    => $now,
-                    'updated_at'    => $now,
-                ];
-            }
-
-            $yearInvoices = count($invoices);
-            unset($invoices);
-
-            foreach (array_chunk($rows, 1000) as $chunk) {
-                DB::table('invoice_lines')->insert($chunk);
-            }
-            $yearLines = count($rows);
-            $total    += $yearLines;
-            unset($rows);
-            $this->line("  {$y}: {$yearInvoices} invoices → {$yearLines} lines (running total: {$total} lines)");
+        foreach (array_chunk($insertRows, 4000) as $chunk) {
+            DB::table('invoice_lines')->insert($chunk);
         }
-        unset($seenGuids);
+        unset($insertRows);
 
-        $invoiceCount = DB::table('invoice_lines')->distinct()->count('invoice_no');
-        ActivityLog::record('imports.invoices', "Auto-synced {$invoiceCount} invoices / {$total} lines from Unleashed API");
-        $this->info("Invoices sync complete: {$invoiceCount} invoices, {$total} lines.");
+        ActivityLog::record('imports.invoices', "Auto-synced {$count} invoice(s) from Unleashed API");
+        $this->info("Invoices sync complete: {$count} rows.");
     }
 }
