@@ -39,7 +39,7 @@ class SyncUnleashedImports extends Command
 
         $fromOption = $this->option('from');
         $from = $fromOption ? Carbon::parse($fromOption)->toDateString() : '2021-01-01';
-        $to   = now()->toDateString();
+        $to   = now()->subDay()->toDateString();
 
         $this->info("Unleashed import sync: {$from} → {$to}");
 
