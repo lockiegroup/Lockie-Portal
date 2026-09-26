@@ -99,83 +99,79 @@ class SyncUnleashedImports extends Command
             if ($code) $pgroup[$code] = ($p['ProductGroup']['GroupName'] ?? '');
         }
 
-        // Fetch sales orders year-by-year (avoids overwhelming Http::pool with 1000+ parallel chunks)
-        $this->info('Fetching sales orders…');
+        $this->info('Fetching and inserting sales orders year by year…');
         $startYear = (int) Carbon::parse($from)->format('Y');
         $endYear   = (int) Carbon::parse($to)->format('Y');
-        $seen      = [];
-        $orders    = [];
-        for ($y = $startYear; $y <= $endYear; $y++) {
-            $yFrom = max($from, "{$y}-01-01");
-            $yTo   = min($to, "{$y}-12-31");
-            $chunk = $this->unleashed->fetchByDateRange('SalesOrders', [], $yFrom, $yTo);
-            foreach ($chunk as $o) {
-                $guid = $o['Guid'] ?? null;
-                if ($guid && isset($seen[$guid])) continue;
-                if ($guid) $seen[$guid] = true;
-                $orders[] = $o;
-            }
-            $this->line("  {$y}: " . count($chunk) . " orders (running total: " . count($orders) . ")");
-        }
+        $now       = now()->toDateTimeString();
+        $total     = 0;
+        $seenGuids = [];
 
-        $now        = now()->toDateTimeString();
-        $insertRows = [];
-
-        foreach ($orders as $o) {
-            if (strtolower($o['OrderStatus'] ?? '') === 'deleted') continue;
-
-            $orderDate = $this->unleashed->parseDate($o['OrderDate'] ?? null);
-            if (!$orderDate) continue;
-
-            $cust       = $o['Customer'] ?? [];
-            $code       = $cust['CustomerCode'] ?? '';
-            $typ        = $ctypeByCode[$code] ?? ($ctypeByGuid[$cust['Guid'] ?? ''] ?? '');
-            $wh         = ($o['Warehouse'] ?? [])['WarehouseName'] ?? '';
-            $orderStatus = $o['CustomOrderStatus'] ?: ($o['OrderStatus'] ?? '');
-
-            foreach ($o['SalesOrderLines'] ?? [] as $ln) {
-                // Look up product group BEFORE applying substitutions
-                $rawPc = strtoupper(trim(($ln['Product'] ?? [])['ProductCode'] ?? ''));
-                $pg    = $pgroup[$rawPc] ?? '';
-
-                $pc = $rawPc;
-                foreach ($substitutions as $sub) {
-                    if ($pc && str_contains($pc, $sub['find'])) {
-                        $pc = str_replace($sub['find'], $sub['replace'], $pc);
-                    }
-                }
-
-                $insertRows[] = [
-                    'order_no'       => substr(trim($o['OrderNumber'] ?? ''), 0, 50) ?: null,
-                    'order_date'     => $orderDate,
-                    'required_date'  => $this->unleashed->parseDate($o['RequiredDate'] ?? null),
-                    'completed_date' => $this->unleashed->parseDate($o['CompletedDate'] ?? null),
-                    'warehouse'      => substr(trim($wh), 0, 100) ?: null,
-                    'customer_code'  => substr(trim($code), 0, 100) ?: null,
-                    'customer'       => substr(trim($cust['CustomerName'] ?? ''), 0, 255) ?: null,
-                    'customer_type'  => substr(trim($typ), 0, 100) ?: null,
-                    'product_code'   => substr($pc, 0, 100) ?: null,
-                    'product_group'  => substr($pg, 0, 100) ?: null,
-                    'status'         => substr(strtolower(trim($orderStatus)), 0, 50) ?: null,
-                    'quantity'       => max(0, (float)($ln['OrderQuantity'] ?? 0)),
-                    'sub_total'      => max(0, (float)($ln['LineTotal'] ?? 0)),
-                    'created_at'     => $now,
-                    'updated_at'     => $now,
-                ];
-            }
-        }
-
-        $count = count($insertRows);
-        $this->info("Inserting {$count} sales rows…");
-
+        // Truncate once up front, then process one year at a time to keep memory low
         DB::statement('TRUNCATE TABLE sales_lines');
-        foreach (array_chunk($insertRows, 4000) as $chunk) {
-            DB::table('sales_lines')->insert($chunk);
-        }
-        unset($insertRows);
 
-        ActivityLog::record('imports.sales', "Auto-synced {$count} sales line(s) from Unleashed API");
-        $this->info("Sales sync complete: {$count} rows.");
+        for ($y = $startYear; $y <= $endYear; $y++) {
+            $yFrom  = max($from, "{$y}-01-01");
+            $yTo    = min($to, "{$y}-12-31");
+            $orders = $this->unleashed->fetchByDateRange('SalesOrders', [], $yFrom, $yTo);
+            $rows   = [];
+
+            foreach ($orders as $o) {
+                $guid = $o['Guid'] ?? null;
+                if ($guid && isset($seenGuids[$guid])) continue;
+                if ($guid) $seenGuids[$guid] = true;
+
+                if (strtolower($o['OrderStatus'] ?? '') === 'deleted') continue;
+
+                $orderDate = $this->unleashed->parseDate($o['OrderDate'] ?? null);
+                if (!$orderDate) continue;
+
+                $cust        = $o['Customer'] ?? [];
+                $code        = $cust['CustomerCode'] ?? '';
+                $typ         = $ctypeByCode[$code] ?? ($ctypeByGuid[$cust['Guid'] ?? ''] ?? '');
+                $wh          = ($o['Warehouse'] ?? [])['WarehouseName'] ?? '';
+                $orderStatus = $o['CustomOrderStatus'] ?: ($o['OrderStatus'] ?? '');
+
+                foreach ($o['SalesOrderLines'] ?? [] as $ln) {
+                    $rawPc = strtoupper(trim(($ln['Product'] ?? [])['ProductCode'] ?? ''));
+                    $pg    = $pgroup[$rawPc] ?? '';
+                    $pc    = $rawPc;
+                    foreach ($substitutions as $sub) {
+                        if ($pc && str_contains($pc, $sub['find'])) {
+                            $pc = str_replace($sub['find'], $sub['replace'], $pc);
+                        }
+                    }
+                    $rows[] = [
+                        'order_no'       => substr(trim($o['OrderNumber'] ?? ''), 0, 50) ?: null,
+                        'order_date'     => $orderDate,
+                        'required_date'  => $this->unleashed->parseDate($o['RequiredDate'] ?? null),
+                        'completed_date' => $this->unleashed->parseDate($o['CompletedDate'] ?? null),
+                        'warehouse'      => substr(trim($wh), 0, 100) ?: null,
+                        'customer_code'  => substr(trim($code), 0, 100) ?: null,
+                        'customer'       => substr(trim($cust['CustomerName'] ?? ''), 0, 255) ?: null,
+                        'customer_type'  => substr(trim($typ), 0, 100) ?: null,
+                        'product_code'   => substr($pc, 0, 100) ?: null,
+                        'product_group'  => substr($pg, 0, 100) ?: null,
+                        'status'         => substr(strtolower(trim($orderStatus)), 0, 50) ?: null,
+                        'quantity'       => max(0, (float)($ln['OrderQuantity'] ?? 0)),
+                        'sub_total'      => max(0, (float)($ln['LineTotal'] ?? 0)),
+                        'created_at'     => $now,
+                        'updated_at'     => $now,
+                    ];
+                }
+            }
+            unset($orders);
+
+            foreach (array_chunk($rows, 1000) as $chunk) {
+                DB::table('sales_lines')->insert($chunk);
+            }
+            $total += count($rows);
+            unset($rows);
+            $this->line("  {$y}: inserted (running total: {$total} rows)");
+        }
+        unset($seenGuids);
+
+        ActivityLog::record('imports.sales', "Auto-synced {$total} sales line(s) from Unleashed API");
+        $this->info("Sales sync complete: {$total} rows.");
     }
 
     private function syncCredits(array $substitutions): void
