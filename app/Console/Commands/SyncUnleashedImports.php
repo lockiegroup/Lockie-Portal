@@ -289,21 +289,21 @@ class SyncUnleashedImports extends Command
                 $code = $cust['CustomerCode'] ?? '';
                 $wh   = ($inv['Warehouse'] ?? [])['WarehouseName'] ?? '';
 
-                foreach ($inv['InvoiceLines'] ?? [] as $ln) {
-                    $rows[] = [
-                        'invoice_no'    => substr(trim($inv['InvoiceNumber'] ?? ''), 0, 50) ?: null,
-                        'invoice_date'  => $invoiceDate,
-                        'customer_code' => substr(trim($code), 0, 100) ?: null,
-                        'customer'      => substr(trim($cust['CustomerName'] ?? ''), 0, 255) ?: null,
-                        'warehouse'     => substr(trim($wh), 0, 100) ?: null,
-                        'product_code'  => substr(trim(($ln['Product'] ?? [])['ProductCode'] ?? ''), 0, 100) ?: null,
-                        'quantity'      => (float)($ln['InvoiceQuantity'] ?? 0),
-                        'sub_total'     => (float)($ln['LineTotal'] ?? 0),
-                        'status'        => substr($status, 0, 50) ?: null,
-                        'created_at'    => $now,
-                        'updated_at'    => $now,
-                    ];
-                }
+                // List endpoint does not include InvoiceLines — insert one row per invoice
+                // using the header-level SubTotal, which is all the sales page needs.
+                $rows[] = [
+                    'invoice_no'    => substr(trim($inv['InvoiceNumber'] ?? ''), 0, 50) ?: null,
+                    'invoice_date'  => $invoiceDate,
+                    'customer_code' => substr(trim($code), 0, 100) ?: null,
+                    'customer'      => substr(trim($cust['CustomerName'] ?? ''), 0, 255) ?: null,
+                    'warehouse'     => substr(trim($wh), 0, 100) ?: null,
+                    'product_code'  => null,
+                    'quantity'      => 0,
+                    'sub_total'     => (float)($inv['SubTotal'] ?? 0),
+                    'status'        => substr($status, 0, 50) ?: null,
+                    'created_at'    => $now,
+                    'updated_at'    => $now,
+                ];
             }
 
             $yearInvoices = count($invoices);
