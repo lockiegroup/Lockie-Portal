@@ -261,6 +261,17 @@ class SyncUnleashedImports extends Command
         $now        = now()->toDateTimeString();
         $insertRows = [];
 
+        // DEBUG: dump first invoice keys and values, then exit
+        if (!empty($invoices)) {
+            $first = $invoices[0];
+            $this->line('DEBUG first invoice keys: ' . implode(', ', array_keys($first)));
+            foreach (['InvoiceDate', 'InvoiceNumber', 'InvoiceStatus', 'Status', 'SubTotal', 'Customer', 'Warehouse'] as $k) {
+                $v = $first[$k] ?? '(missing)';
+                $this->line("  {$k}: " . (is_array($v) ? json_encode($v) : $v));
+            }
+            return;
+        }
+
         foreach ($invoices as $inv) {
             $status = strtolower(trim($inv['InvoiceStatus'] ?? $inv['Status'] ?? ''));
             if ($status === 'deleted') continue;
