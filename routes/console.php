@@ -32,4 +32,4 @@ Schedule::command('tender:alert')->dailyAt('07:30');
 
 // Auto-sync sales orders and credit notes from Unleashed API daily at 07:30
 // Default pulls last 3 years. Run manually with --from=2001-01-01 for full history.
-Schedule::command('imports:sync-unleashed')->dailyAt('07:30');
+Schedule::command('imports:sync-unleashed --from=2021-01-01')->dailyAt('07:30');

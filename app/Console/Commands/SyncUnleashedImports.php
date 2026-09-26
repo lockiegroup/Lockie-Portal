@@ -38,7 +38,7 @@ class SyncUnleashedImports extends Command
         $doCredits   = !$salesOnly;
 
         $fromOption = $this->option('from');
-        $from = $fromOption ? Carbon::parse($fromOption)->toDateString() : now()->subYears(3)->toDateString();
+        $from = $fromOption ? Carbon::parse($fromOption)->toDateString() : '2021-01-01';
         $to   = now()->toDateString();
 
         $this->info("Unleashed import sync: {$from} → {$to}");
