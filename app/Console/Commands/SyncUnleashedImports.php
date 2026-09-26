@@ -261,22 +261,12 @@ class SyncUnleashedImports extends Command
         $now        = now()->toDateTimeString();
         $insertRows = [];
 
-        // DEBUG: dump first invoice keys and values, then exit
-        if (!empty($invoices)) {
-            $first = $invoices[0];
-            $this->line('DEBUG first invoice keys: ' . implode(', ', array_keys($first)));
-            foreach (['InvoiceDate', 'InvoiceNumber', 'InvoiceStatus', 'Status', 'SubTotal', 'Customer', 'Warehouse'] as $k) {
-                $v = $first[$k] ?? '(missing)';
-                $this->line("  {$k}: " . (is_array($v) ? json_encode($v) : $v));
-            }
-            return;
-        }
-
         foreach ($invoices as $inv) {
-            $status = strtolower(trim($inv['InvoiceStatus'] ?? $inv['Status'] ?? ''));
+            // SalesInvoices returns sales order fields (OrderStatus, OrderDate, OrderNumber)
+            $status = strtolower(trim($inv['OrderStatus'] ?? ''));
             if ($status === 'deleted') continue;
 
-            $invoiceDate = $this->unleashed->parseDate($inv['InvoiceDate'] ?? null);
+            $invoiceDate = $this->unleashed->parseDate($inv['OrderDate'] ?? null);
             if (!$invoiceDate) continue;
 
             // PHP-side date filter to match the configured $from window
@@ -286,10 +276,8 @@ class SyncUnleashedImports extends Command
             $code = $cust['CustomerCode'] ?? '';
             $wh   = ($inv['Warehouse'] ?? [])['WarehouseName'] ?? '';
 
-            // List endpoint does not include InvoiceLines — one row per invoice
-            // using the header-level SubTotal, which is all the sales page needs.
             $insertRows[] = [
-                'invoice_no'    => substr(trim($inv['InvoiceNumber'] ?? ''), 0, 50) ?: null,
+                'invoice_no'    => substr(trim($inv['OrderNumber'] ?? ''), 0, 50) ?: null,
                 'invoice_date'  => $invoiceDate,
                 'customer_code' => substr(trim($code), 0, 100) ?: null,
                 'customer'      => substr(trim($cust['CustomerName'] ?? ''), 0, 255) ?: null,
