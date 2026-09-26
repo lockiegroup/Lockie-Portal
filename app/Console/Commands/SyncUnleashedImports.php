@@ -84,10 +84,24 @@ class SyncUnleashedImports extends Command
             if ($code) $pgroup[$code] = ($p['ProductGroup']['GroupName'] ?? '');
         }
 
-        // Fetch sales orders in parallel weekly chunks across the date range
+        // Fetch sales orders year-by-year (avoids overwhelming Http::pool with 1000+ parallel chunks)
         $this->info('Fetching sales orders…');
-        $orders = $this->unleashed->fetchByDateRange('SalesOrders', [], $from, $to);
-        $this->line('  ' . count($orders) . ' orders fetched');
+        $startYear = (int) Carbon::parse($from)->format('Y');
+        $endYear   = (int) Carbon::parse($to)->format('Y');
+        $seen      = [];
+        $orders    = [];
+        for ($y = $startYear; $y <= $endYear; $y++) {
+            $yFrom = max($from, "{$y}-01-01");
+            $yTo   = min($to, "{$y}-12-31");
+            $chunk = $this->unleashed->fetchByDateRange('SalesOrders', [], $yFrom, $yTo);
+            foreach ($chunk as $o) {
+                $guid = $o['Guid'] ?? null;
+                if ($guid && isset($seen[$guid])) continue;
+                if ($guid) $seen[$guid] = true;
+                $orders[] = $o;
+            }
+            $this->line("  {$y}: " . count($chunk) . " orders (running total: " . count($orders) . ")");
+        }
 
         $now        = now()->toDateTimeString();
         $insertRows = [];
