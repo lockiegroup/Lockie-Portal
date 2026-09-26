@@ -29,3 +29,7 @@ Schedule::command('amazon:sync --settlements --ads')->dailyAt('06:00');
 // Tender Radar: fetch new opportunities and score with AI, then send daily alert
 Schedule::command('tender:fetch --days=2')->dailyAt('07:00');
 Schedule::command('tender:alert')->dailyAt('07:30');
+
+// Auto-sync sales orders and credit notes from Unleashed API daily at 07:30
+// Default pulls last 3 years. Run manually with --from=2001-01-01 for full history.
+Schedule::command('imports:sync-unleashed')->dailyAt('07:30');
