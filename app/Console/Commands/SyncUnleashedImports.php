@@ -70,7 +70,8 @@ class SyncUnleashedImports extends Command
             $data     = $this->unleashed->get("{$endpoint}/{$page}", array_merge($params, ['pageSize' => $pageSize]));
             $fetched  = $data['Items'] ?? [];
             $items    = array_merge($items, $fetched);
-            $maxPages = (int) ($data['Pagination']['NumberOfPages'] ?? 1);
+            // Unleashed can return NumberOfPages=0 for empty results; treat as 1
+            $maxPages = max(1, (int) ($data['Pagination']['NumberOfPages'] ?? 1));
             $this->line("    page {$page}/{$maxPages} (" . count($items) . " total)");
             $page++;
         } while ($page <= $maxPages);
@@ -174,10 +175,11 @@ class SyncUnleashedImports extends Command
             foreach (array_chunk($rows, 1000) as $chunk) {
                 DB::table('sales_lines')->insert($chunk);
             }
-            $yearLines = count($rows);
-            $total    += $yearLines;
-            unset($rows);
-            $this->line("  {$y}: " . count($orders) . " orders → {$yearLines} lines (running total: {$total} lines)");
+            $yearOrders = count($orders);
+            $yearLines  = count($rows);
+            $total     += $yearLines;
+            unset($orders, $rows);
+            $this->line("  {$y}: {$yearOrders} orders → {$yearLines} lines (running total: {$total} lines)");
         }
         unset($seenGuids);
 
