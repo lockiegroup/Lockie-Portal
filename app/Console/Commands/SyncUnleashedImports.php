@@ -262,11 +262,12 @@ class SyncUnleashedImports extends Command
         $insertRows = [];
 
         foreach ($invoices as $inv) {
-            // SalesInvoices returns sales order fields (OrderStatus, OrderDate, OrderNumber)
+            // SalesInvoices returns sales order fields; CompletedDate = the invoice/dispatch date
             $status = strtolower(trim($inv['OrderStatus'] ?? ''));
             if ($status === 'deleted') continue;
 
-            $invoiceDate = $this->unleashed->parseDate($inv['OrderDate'] ?? null);
+            // Use CompletedDate (= Unleashed's "Invoice Date") not OrderDate
+            $invoiceDate = $this->unleashed->parseDate($inv['CompletedDate'] ?? null);
             if (!$invoiceDate) continue;
 
             // PHP-side date filter to match the configured $from window
