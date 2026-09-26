@@ -170,15 +170,15 @@ class SyncUnleashedImports extends Command
                     ];
                 }
             }
+            $yearOrders = count($orders);
             unset($orders);
 
             foreach (array_chunk($rows, 1000) as $chunk) {
                 DB::table('sales_lines')->insert($chunk);
             }
-            $yearOrders = count($orders);
-            $yearLines  = count($rows);
-            $total     += $yearLines;
-            unset($orders, $rows);
+            $yearLines = count($rows);
+            $total    += $yearLines;
+            unset($rows);
             $this->line("  {$y}: {$yearOrders} orders → {$yearLines} lines (running total: {$total} lines)");
         }
         unset($seenGuids);
