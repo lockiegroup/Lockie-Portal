@@ -38,7 +38,7 @@
                     </div>
                 </div>
                 <p class="text-sm text-slate-500">Export from <strong>Reports → Sales → Sales Enquiry</strong> in Unleashed.</p>
-                <p class="text-xs text-slate-400 mt-0.5">Required columns: Order No., Order Date, Required Date, Completed Date, Warehouse, Customer Code, Customer, Customer Type, Product Code, Product Group, Status, Quantity, Sub Total</p>
+                <p class="text-xs text-slate-400 mt-0.5">Required columns: Order No., Order Date, Required Date, Completed Date, Warehouse, Customer Code, Customer, Product Code, Status, Quantity, Sub Total</p>
             </div>
 
             <div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:0.75rem;margin-bottom:1rem;">
