@@ -70,10 +70,9 @@ class SalesController extends Controller
                     'sales'   => $totalOrders,
                     'credits' => $totalCredits,
                 ],
-                'debug' => [
-                    'source' => 'sales_lines',
-                    'from'   => $from,
-                    'to'     => $to,
+                'coverage' => [
+                    'sales'   => DB::table('sales_lines')->selectRaw('MIN(order_date) as min_d, MAX(order_date) as max_d')->first(),
+                    'credits' => DB::table('credits_lines')->selectRaw('MIN(credit_date) as min_d, MAX(credit_date) as max_d')->first(),
                 ],
             ]);
         } catch (\Throwable $e) {
