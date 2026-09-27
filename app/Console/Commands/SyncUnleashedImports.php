@@ -102,86 +102,80 @@ class SyncUnleashedImports extends Command
             if ($code) $pgroup[$code] = ($p['ProductGroup']['GroupName'] ?? '');
         }
 
-        $this->info('Fetching and inserting sales orders year by year…');
-        $startYear = (int) Carbon::parse($from)->format('Y');
-        $endYear   = (int) Carbon::parse($to)->format('Y');
+        // Fetch all orders in a single pass — Unleashed ignores date range params on this
+        // endpoint (same behaviour as SalesInvoices), so a year-by-year loop would fetch
+        // the full history on every iteration and duplicate any orders that lack a Guid.
+        $this->info('Fetching all sales orders…');
+        $allOrders = $this->fetchAllPages('SalesOrders', [], 1000);
+        $this->line('  ' . count($allOrders) . ' orders fetched');
+
         $now       = now()->toDateTimeString();
         $total     = 0;
         $seenGuids = [];
+        $rows      = [];
 
-        // Truncate once up front, then process one year at a time to keep memory low
         DB::statement('TRUNCATE TABLE sales_lines');
 
-        for ($y = $startYear; $y <= $endYear; $y++) {
-            $yFrom    = max($from, "{$y}-01-01");
-            $yTo      = min($to, "{$y}-12-31");
-            // +1 day on endDate because Unleashed treats it as exclusive
-            $yToFetch = Carbon::parse($yTo)->addDay()->toDateString();
-            // Use path-based pagination (same as Python reference script) with date params.
-            // fetchByDateRange only fetches pageNumber=1 and has chunk-boundary gaps;
-            // fetchAllPages walks every page reliably.
-            $orders = $this->fetchAllPages('SalesOrders', [
-                'startDate' => $yFrom,
-                'endDate'   => $yToFetch,
-            ], 200);
-            $rows   = [];
+        foreach ($allOrders as $o) {
+            $guid = $o['Guid'] ?? null;
+            if ($guid) {
+                if (isset($seenGuids[$guid])) continue;
+                $seenGuids[$guid] = true;
+            }
 
-            foreach ($orders as $o) {
-                $guid = $o['Guid'] ?? null;
-                if ($guid && isset($seenGuids[$guid])) continue;
-                if ($guid) $seenGuids[$guid] = true;
+            if (strtolower($o['OrderStatus'] ?? '') === 'deleted') continue;
 
-                if (strtolower($o['OrderStatus'] ?? '') === 'deleted') continue;
+            $orderDate = $this->unleashed->parseDate($o['OrderDate'] ?? null);
+            if (!$orderDate || $orderDate < $from || $orderDate > $to) continue;
 
-                $orderDate = $this->unleashed->parseDate($o['OrderDate'] ?? null);
-                if (!$orderDate) continue;
+            $cust        = $o['Customer'] ?? [];
+            $code        = $cust['CustomerCode'] ?? '';
+            $typ         = $ctypeByCode[$code] ?? ($ctypeByGuid[$cust['Guid'] ?? ''] ?? '');
+            $wh          = ($o['Warehouse'] ?? [])['WarehouseName'] ?? '';
+            $orderStatus = $o['CustomOrderStatus'] ?: ($o['OrderStatus'] ?? '');
 
-                $cust        = $o['Customer'] ?? [];
-                $code        = $cust['CustomerCode'] ?? '';
-                $typ         = $ctypeByCode[$code] ?? ($ctypeByGuid[$cust['Guid'] ?? ''] ?? '');
-                $wh          = ($o['Warehouse'] ?? [])['WarehouseName'] ?? '';
-                $orderStatus = $o['CustomOrderStatus'] ?: ($o['OrderStatus'] ?? '');
-
-                foreach ($o['SalesOrderLines'] ?? [] as $ln) {
-                    $rawPc = trim(($ln['Product'] ?? [])['ProductCode'] ?? '');
-                    $pg    = $pgroup[$rawPc] ?? $pgroup[strtoupper($rawPc)] ?? '';
-                    $pc    = $rawPc;
-                    foreach ($substitutions as $sub) {
-                        if ($pc && str_contains(strtoupper($pc), $sub['find'])) {
-                            $pc = str_ireplace($sub['find'], $sub['replace'], $pc);
-                        }
+            foreach ($o['SalesOrderLines'] ?? [] as $ln) {
+                $rawPc = trim(($ln['Product'] ?? [])['ProductCode'] ?? '');
+                $pg    = $pgroup[$rawPc] ?? $pgroup[strtoupper($rawPc)] ?? '';
+                $pc    = $rawPc;
+                foreach ($substitutions as $sub) {
+                    if ($pc && str_contains(strtoupper($pc), $sub['find'])) {
+                        $pc = str_ireplace($sub['find'], $sub['replace'], $pc);
                     }
-                    $rows[] = [
-                        'order_no'       => substr(trim($o['OrderNumber'] ?? ''), 0, 50) ?: null,
-                        'order_date'     => $orderDate,
-                        'required_date'  => $this->unleashed->parseDate($o['RequiredDate'] ?? null),
-                        'completed_date' => $this->unleashed->parseDate($o['CompletedDate'] ?? null),
-                        'warehouse'      => substr(trim($wh), 0, 100) ?: null,
-                        'customer_code'  => substr(trim($code), 0, 100) ?: null,
-                        'customer'       => substr(trim($cust['CustomerName'] ?? ''), 0, 255) ?: null,
-                        'customer_type'  => substr(trim($typ), 0, 100) ?: null,
-                        'product_code'   => substr($pc, 0, 100) ?: null,
-                        'product_group'  => substr($pg, 0, 100) ?: null,
-                        'status'         => substr(strtolower(trim($orderStatus)), 0, 50) ?: null,
-                        'quantity'       => (float)($ln['OrderQuantity'] ?? 0),
-                        'sub_total'      => (float)($ln['LineTotal'] ?? 0),
-                        'created_at'     => $now,
-                        'updated_at'     => $now,
-                    ];
+                }
+                $rows[] = [
+                    'order_no'       => substr(trim($o['OrderNumber'] ?? ''), 0, 50) ?: null,
+                    'order_date'     => $orderDate,
+                    'required_date'  => $this->unleashed->parseDate($o['RequiredDate'] ?? null),
+                    'completed_date' => $this->unleashed->parseDate($o['CompletedDate'] ?? null),
+                    'warehouse'      => substr(trim($wh), 0, 100) ?: null,
+                    'customer_code'  => substr(trim($code), 0, 100) ?: null,
+                    'customer'       => substr(trim($cust['CustomerName'] ?? ''), 0, 255) ?: null,
+                    'customer_type'  => substr(trim($typ), 0, 100) ?: null,
+                    'product_code'   => substr($pc, 0, 100) ?: null,
+                    'product_group'  => substr($pg, 0, 100) ?: null,
+                    'status'         => substr(strtolower(trim($orderStatus)), 0, 50) ?: null,
+                    'quantity'       => (float)($ln['OrderQuantity'] ?? 0),
+                    'sub_total'      => (float)($ln['LineTotal'] ?? 0),
+                    'created_at'     => $now,
+                    'updated_at'     => $now,
+                ];
+
+                // Flush in chunks to keep memory low
+                if (count($rows) >= 4000) {
+                    DB::table('sales_lines')->insert($rows);
+                    $total += count($rows);
+                    $rows   = [];
                 }
             }
-            $yearOrders = count($orders);
-            unset($orders);
-
-            foreach (array_chunk($rows, 1000) as $chunk) {
-                DB::table('sales_lines')->insert($chunk);
-            }
-            $yearLines = count($rows);
-            $total    += $yearLines;
-            unset($rows);
-            $this->line("  {$y}: {$yearOrders} orders → {$yearLines} lines (running total: {$total} lines)");
         }
-        unset($seenGuids);
+        unset($allOrders, $seenGuids);
+
+        if (!empty($rows)) {
+            DB::table('sales_lines')->insert($rows);
+            $total += count($rows);
+        }
+        unset($rows);
 
         $orderCount = DB::table('sales_lines')->distinct()->count('order_no');
         ActivityLog::record('imports.sales', "Auto-synced {$orderCount} orders / {$total} lines from Unleashed API");
