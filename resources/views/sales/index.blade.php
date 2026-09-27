@@ -163,7 +163,7 @@
             const fmtCov = r => (r && r.min_d) ? `${escHtml(r.min_d)} – ${escHtml(r.max_d)}` : 'No data';
             const debugHtml = `<div class="text-xs text-slate-400 mb-6 flex flex-wrap gap-x-6 gap-y-1">
                 <span>Sales data covers: <span class="text-slate-500 font-medium">${fmtCov(cov.sales)}</span></span>
-                <span>Credits data covers: <span class="text-slate-500 font-medium">${fmtCov(cov.credits)}</span></span>
+                <span>&nbsp; Credits data covers: <span class="text-slate-500 font-medium">${fmtCov(cov.credits)}</span></span>
             </div>`;
 
             return `<div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">${cards}</div>${debugHtml}${tables}`;
