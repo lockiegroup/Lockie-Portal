@@ -13,7 +13,6 @@
             <h1 class="text-2xl font-bold text-slate-800">{{ $customer ?: $customerCode }}</h1>
             <p style="font-size:0.875rem;color:#94a3b8;margin-top:3px;">
                 {{ $customerCode }}
-                @if($customerType) &bull; {{ $customerType }} @endif
                 @if($keyAccount)
                     &bull; <a href="{{ route('key-accounts.index') }}" style="color:#6366f1;text-decoration:none;">View Key Accounts &rarr;</a>
                 @endif
@@ -209,9 +208,6 @@
                             <tr style="border-bottom:1px solid #f1f5f9;">
                                 <td style="padding:10px 14px;">
                                     <p style="font-weight:600;color:#1e293b;">{{ $p['product_code'] }}</p>
-                                    @if($p['description'] && $p['description'] !== $p['product_code'])
-                                        <p style="font-size:0.75rem;color:#94a3b8;">{{ $p['description'] }}</p>
-                                    @endif
                                 </td>
                                 <td style="padding:10px 14px;text-align:right;font-weight:600;color:#334155;">
                                     £{{ number_format($p['total'], 0) }}

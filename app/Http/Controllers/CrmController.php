@@ -42,7 +42,6 @@ class CrmController extends Controller
             ->selectRaw("
                 customer_code,
                 MAX(customer) as customer,
-                MAX(customer_type) as customer_type,
                 SUM(CASE WHEN order_date >= ? THEN sub_total ELSE 0 END) as current_total,
                 SUM(CASE WHEN order_date >= ? AND order_date < ? THEN sub_total ELSE 0 END) as prev_total,
                 MIN(order_date) as first_order_date,
@@ -157,15 +156,14 @@ class CrmController extends Controller
         $check = DB::table('sales_lines')
             ->where('customer_code', $customerCode)
             ->where('sub_total', '>', 0)
-            ->selectRaw('MAX(customer) as customer, MAX(customer_type) as customer_type, COUNT(*) as cnt')
+            ->selectRaw('MAX(customer) as customer, COUNT(*) as cnt')
             ->first();
 
         $keyAccount = KeyAccount::with(['user', 'contacts.user', 'gifts'])->where('account_code', $customerCode)->first();
 
         abort_if((!$check || $check->cnt == 0) && !$keyAccount, 404);
 
-        $customer     = $check?->customer     ?? $keyAccount->name;
-        $customerType = $check?->customer_type ?? null;
+        $customer = $check?->customer ?? $keyAccount->name;
 
         $warehouses = DB::table('sales_lines')
             ->where('customer_code', $customerCode)
@@ -279,7 +277,6 @@ class CrmController extends Controller
             ->where('sub_total', '>', 0)
             ->selectRaw("
                 product_code,
-                MAX(product_group) as description,
                 SUM(sub_total) as total,
                 SUM(quantity) as qty,
                 COUNT(DISTINCT order_no) as orders
@@ -305,7 +302,6 @@ class CrmController extends Controller
 
         $topProducts = $prodQ->get()->map(fn($r) => [
             'product_code' => $r->product_code,
-            'description'  => $r->description ?: $r->product_code,
             'total'        => (float) $r->total - (float) ($creditProducts->get($r->product_code)?->total ?? 0),
             'qty'          => (float) $r->qty   - (float) ($creditProducts->get($r->product_code)?->qty   ?? 0),
             'orders'       => (int) $r->orders,
@@ -337,7 +333,7 @@ class CrmController extends Controller
         ])->values();
 
         return view('crm.show', compact(
-            'customerCode', 'customer', 'customerType', 'keyAccount',
+            'customerCode', 'customer', 'keyAccount',
             'byYear', 'byYearGross', 'topProducts', 'recentOrders',
             'total12m', 'totalPrev12', 'lastOrder',
             'warehouses', 'warehouse', 'expectedNext', 'avgDays'
@@ -366,7 +362,6 @@ class CrmController extends Controller
             ->selectRaw("
                 customer_code,
                 MAX(customer) as customer,
-                MAX(customer_type) as customer_type,
                 SUM(CASE WHEN order_date >= ? THEN sub_total ELSE 0 END) as current_total,
                 SUM(CASE WHEN order_date >= ? AND order_date < ? THEN sub_total ELSE 0 END) as prev_total,
                 MIN(order_date) as first_order_date,
@@ -458,7 +453,7 @@ class CrmController extends Controller
         return response()->streamDownload(function () use ($customers, $asOf) {
             $out = fopen('php://output', 'w');
             fputcsv($out, [
-                'Customer', 'Customer Code', 'Type',
+                'Customer', 'Customer Code',
                 'Last 12m (£)', 'Prev 12m (£)', 'Change (%)',
                 'Last Order', 'Avg Frequency (days)', 'Expected Next Order',
                 'Last Contact', 'Account Manager', 'Dropping Off', 'Overdue',
@@ -471,7 +466,6 @@ class CrmController extends Controller
                 fputcsv($out, [
                     $c->customer ?: $c->customer_code,
                     $c->customer_code,
-                    $c->customer_type ?? '',
                     number_format((float) $c->current_total, 2, '.', ''),
                     number_format((float) $c->prev_total,    2, '.', ''),
                     $pct,

@@ -80,28 +80,6 @@ class SyncUnleashedImports extends Command
 
     private function syncSales(string $from, string $to, array $substitutions): void
     {
-        // Customer type lookup
-        $this->info('Fetching customers…');
-        $customers   = $this->fetchAllPages('Customers', ['includeObsolete' => 'true'], 200);
-        $ctypeByCode = [];
-        $ctypeByGuid = [];
-        foreach ($customers as $c) {
-            $code = $c['CustomerCode'] ?? null;
-            $guid = $c['Guid'] ?? null;
-            $type = $c['CustomerType'] ?? '';
-            if ($code) $ctypeByCode[$code] = $type;
-            if ($guid) $ctypeByGuid[$guid] = $type;
-        }
-
-        // Product group lookup
-        $this->info('Fetching products…');
-        $products = $this->fetchAllPages('Products', ['includeObsolete' => 'true'], 200);
-        $pgroup   = [];
-        foreach ($products as $p) {
-            $code = $p['ProductCode'] ?? null;
-            if ($code) $pgroup[$code] = ($p['ProductGroup']['GroupName'] ?? '');
-        }
-
         // Fetch all orders in a single pass — Unleashed ignores date range params on this
         // endpoint (same behaviour as SalesInvoices), so a year-by-year loop would fetch
         // the full history on every iteration and duplicate any orders that lack a Guid.
@@ -130,13 +108,11 @@ class SyncUnleashedImports extends Command
 
             $cust        = $o['Customer'] ?? [];
             $code        = $cust['CustomerCode'] ?? '';
-            $typ         = $ctypeByCode[$code] ?? ($ctypeByGuid[$cust['Guid'] ?? ''] ?? '');
             $wh          = ($o['Warehouse'] ?? [])['WarehouseName'] ?? '';
             $orderStatus = $o['CustomOrderStatus'] ?: ($o['OrderStatus'] ?? '');
 
             foreach ($o['SalesOrderLines'] ?? [] as $ln) {
                 $rawPc = trim(($ln['Product'] ?? [])['ProductCode'] ?? '');
-                $pg    = $pgroup[$rawPc] ?? $pgroup[strtoupper($rawPc)] ?? '';
                 $pc    = $rawPc;
                 foreach ($substitutions as $sub) {
                     if ($pc && str_contains(strtoupper($pc), $sub['find'])) {
@@ -151,9 +127,7 @@ class SyncUnleashedImports extends Command
                     'warehouse'      => substr(trim($wh), 0, 100) ?: null,
                     'customer_code'  => substr(trim($code), 0, 100) ?: null,
                     'customer'       => substr(trim($cust['CustomerName'] ?? ''), 0, 255) ?: null,
-                    'customer_type'  => substr(trim($typ), 0, 100) ?: null,
                     'product_code'   => substr($pc, 0, 100) ?: null,
-                    'product_group'  => substr($pg, 0, 100) ?: null,
                     'status'         => substr(strtolower(trim($orderStatus)), 0, 50) ?: null,
                     'quantity'       => (float)($ln['OrderQuantity'] ?? 0),
                     'sub_total'      => (float)($ln['LineTotal'] ?? 0),
