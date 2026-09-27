@@ -160,7 +160,8 @@
             }).join('');
 
             const cov = data.coverage || {};
-            const fmtCov = r => (r && r.min_d) ? `${escHtml(r.min_d)} – ${escHtml(r.max_d)}` : 'No data';
+            const fmtD = s => { if (!s) return ''; const [y,m,d] = s.split('-'); return `${d}/${m}/${y}`; };
+            const fmtCov = r => (r && r.min_d) ? `${fmtD(r.min_d)} – ${fmtD(r.max_d)}` : 'No data';
             const debugHtml = `<div class="text-xs text-slate-400 mb-6 flex flex-wrap gap-x-6 gap-y-1">
                 <span>Sales data covers: <span class="text-slate-500 font-medium">${fmtCov(cov.sales)}</span></span>
                 <span>&nbsp; Credits data covers: <span class="text-slate-500 font-medium">${fmtCov(cov.credits)}</span></span>
