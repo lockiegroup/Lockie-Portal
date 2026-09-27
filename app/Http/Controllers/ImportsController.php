@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\StockWatchlistSubstitution;
 use App\Models\ActivityLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,12 +17,9 @@ class ImportsController extends Controller
     {
         abort_unless(auth()->user()->can('imports'), 403);
 
-        $user    = auth()->user();
-        $doKA    = $user->hasModule('key_accounts') || $user->can('key_accounts_admin');
-        $doStock = $user->can('stock_ordering');
-        $doCrm   = $user->hasModule('crm');
-
-        $substitutions = $doStock ? StockWatchlistSubstitution::orderBy('id')->get() : collect();
+        $user  = auth()->user();
+        $doKA  = $user->hasModule('key_accounts') || $user->can('key_accounts_admin');
+        $doCrm = $user->hasModule('crm');
 
         $salesFrom = $salesTo = null;
         $range = DB::table('sales_lines')
@@ -52,41 +48,12 @@ class ImportsController extends Controller
             ->first();
 
         return view('imports.index', compact(
-            'doKA', 'doStock', 'doCrm', 'substitutions',
+            'doKA', 'doCrm',
             'salesFrom', 'salesTo', 'lastImport',
             'creditsFrom', 'creditsTo', 'lastCreditsImport'
         ));
     }
 
-    public function storeSubstitution(Request $request): RedirectResponse
-    {
-        $user = auth()->user();
-        if (!$user->can('stock_ordering')) abort(403);
-
-        $data = $request->validate([
-            'find'    => ['required', 'string', 'max:100'],
-            'replace' => ['required', 'string', 'max:100'],
-        ]);
-
-        StockWatchlistSubstitution::create([
-            'find'    => strtoupper(trim($data['find'])),
-            'replace' => strtoupper(trim($data['replace'])),
-        ]);
-
-        ActivityLog::record('imports.substitution_added', "Added substitution rule: {$data['find']} → {$data['replace']}");
-
-        return back()->with('success', 'Substitution rule added.');
-    }
-
-    public function destroySubstitution(StockWatchlistSubstitution $substitution): RedirectResponse
-    {
-        $user = auth()->user();
-        if (!$user->can('stock_ordering')) abort(403);
-
-        $substitution->delete();
-
-        return back()->with('success', 'Substitution rule removed.');
-    }
 
     public function storeSales(Request $request): RedirectResponse
     {

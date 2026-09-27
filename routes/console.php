@@ -20,9 +20,6 @@ Schedule::command('print:fix-archive-labels', ['--include-completed'])->dailyAt(
 // Pre-fetch Key Account quarterly sales from Unleashed nightly
 Schedule::command('key-accounts:fetch-sales')->dailyAt('02:30');
 
-// Sync Stock Watchlist stock levels and PO data nightly
-Schedule::command('stock-watchlist:sync')->dailyAt('03:00');
-
 // Sync Amazon settlements and ad spend daily at 6am
 Schedule::command('amazon:sync --settlements --ads')->dailyAt('06:00');
 

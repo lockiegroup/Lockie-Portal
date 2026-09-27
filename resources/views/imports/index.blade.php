@@ -48,12 +48,6 @@
                     Updates Key Accounts sales
                 </span>
                 @endif
-                @if($doStock)
-                <span style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.25rem 0.625rem;border-radius:9999px;font-size:0.75rem;line-height:1rem;font-weight:500;background:#d1fae5;color:#047857;">
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                    Updates Stock Watchlist sales
-                </span>
-                @endif
                 @if($doCrm)
                 <span style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.25rem 0.625rem;border-radius:9999px;font-size:0.75rem;line-height:1rem;font-weight:500;background:#ede9fe;color:#6d28d9;">
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
@@ -126,12 +120,6 @@
                     Nets off Key Accounts sales
                 </span>
                 @endif
-                @if($doStock)
-                <span style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.25rem 0.625rem;border-radius:9999px;font-size:0.75rem;line-height:1rem;font-weight:500;background:#d1fae5;color:#047857;">
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                    Nets off Stock Watchlist usage
-                </span>
-                @endif
                 @if($doCrm)
                 <span style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.25rem 0.625rem;border-radius:9999px;font-size:0.75rem;line-height:1rem;font-weight:500;background:#ede9fe;color:#6d28d9;">
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
@@ -167,48 +155,6 @@
             @endif
         </div>
 
-        {{-- Substitution rules section (stock ordering users only) --}}
-        @if($doStock)
-        <div class="p-6">
-            <h3 class="text-sm font-semibold text-slate-700 mb-0.5">Product Code Substitution Rules</h3>
-            <p class="text-xs text-slate-400 mb-4">Remap product codes before matching against the Stock Watchlist. Applied to every import.</p>
-
-            @if($substitutions->isNotEmpty())
-            <div class="mb-4 divide-y divide-slate-100 border border-slate-200 rounded-lg overflow-hidden">
-                @foreach($substitutions as $sub)
-                <div class="flex items-center justify-between px-3 py-2 text-sm bg-white">
-                    <span class="font-mono text-slate-700 text-xs">{{ $sub->find }} <span class="text-slate-400 mx-1">→</span> {{ $sub->replace }}</span>
-                    <form action="{{ route('imports.substitutions.destroy', $sub) }}" method="POST">
-                        @csrf @method('DELETE')
-                        <button type="submit" class="text-red-400 hover:text-red-600 transition text-xs font-medium">Remove</button>
-                    </form>
-                </div>
-                @endforeach
-            </div>
-            @else
-            <p class="text-xs text-slate-400 mb-4">No substitution rules yet.</p>
-            @endif
-
-            <form action="{{ route('imports.substitutions.store') }}" method="POST" class="flex gap-2 items-end flex-wrap">
-                @csrf
-                <div>
-                    <label class="block text-xs font-medium text-slate-500 mb-1">Find</label>
-                    <input type="text" name="find" placeholder="e.g. OLD" required
-                        class="border border-slate-300 rounded-lg px-3 py-2 text-sm w-32 focus:outline-none focus:ring-2 focus:ring-sky-500">
-                </div>
-                <span class="text-slate-300 pb-2 text-lg leading-none">→</span>
-                <div>
-                    <label class="block text-xs font-medium text-slate-500 mb-1">Replace with</label>
-                    <input type="text" name="replace" placeholder="e.g. NEW" required
-                        class="border border-slate-300 rounded-lg px-3 py-2 text-sm w-32 focus:outline-none focus:ring-2 focus:ring-sky-500">
-                </div>
-                <button type="submit"
-                    class="px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-semibold hover:bg-slate-700 transition">
-                    Add Rule
-                </button>
-            </form>
-        </div>
-        @endif
 
     </div>
 

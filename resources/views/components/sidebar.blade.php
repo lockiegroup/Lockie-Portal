@@ -1,11 +1,10 @@
 @php
-    $isPrintSection     = request()->routeIs('print.*');
-    $isWatchlistSection = request()->routeIs('stock-watchlist.*');
-    $user               = auth()->user();
+    $isPrintSection = request()->routeIs('print.*');
+    $user           = auth()->user();
     $initials           = $user ? strtoupper(mb_substr($user->name ?? $user->email, 0, 2)) : '??';
 
     $activeFinance    = request()->routeIs('sales*') || request()->routeIs('amazon.*');
-    $activeStock      = request()->routeIs('stock.*') || $isWatchlistSection;
+    $activeStock      = request()->routeIs('stock.*');
     $activePlanning   = request()->routeIs('key-actions.*') || request()->routeIs('action-plans.*') || request()->routeIs('ab-testing.*') || request()->routeIs('tender-radar.*') || request()->routeIs('production-planner.*');
     $activeCustomers  = request()->routeIs('key-accounts.*') || request()->routeIs('crm.*') || request()->routeIs('reminders.*');
     $activeOperations = request()->routeIs('church-envelopes.*') || request()->routeIs('policies.*') || request()->routeIs('training.*') || request()->routeIs('letter-filter.*') || request()->routeIs('racking.*') || $isPrintSection;
@@ -74,14 +73,13 @@
         @endif
 
         {{-- STOCK --}}
-        @if($user->hasModule('stock') || $user->can('stock_ordering'))
+        @if($user->hasModule('stock'))
         <div style="height:1px;background:#1e293b;margin:10px 4px 2px;"></div>
         <button onclick="sbSection('stock')" class="sb-section-btn sb-label" data-tip="Stock">
             <span style="font-size:0.625rem;font-weight:700;text-transform:uppercase;">Stock</span>
             <svg id="sc-stock" style="width:10px;height:10px;flex-shrink:0;transition:transform 0.2s;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div id="ss-stock">
-            @if($user->hasModule('stock'))
             <a href="{{ route('stock.index') }}" class="sb-item{{ request()->routeIs('stock.*') ? ' sb-active' : '' }}" data-tip="Stock Overview">
                 <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
@@ -89,15 +87,6 @@
                 </svg>
                 <span class="sb-label">Stock Overview</span>
             </a>
-            @endif
-            @can('stock_ordering')
-            <a href="{{ route('stock-watchlist.index') }}" class="sb-item{{ $isWatchlistSection ? ' sb-active' : '' }}" data-tip="Stock Watchlist">
-                <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/>
-                </svg>
-                <span class="sb-label">Stock Watchlist</span>
-            </a>
-            @endcan
         </div>
         @endif
 
@@ -466,27 +455,6 @@
         if (ch) ch.style.transform = open ? '' : 'rotate(-90deg)';
     });
 
-    // Stock Watchlist accordion
-    var isWatchlist = {{ $isWatchlistSection ? 'true' : 'false' }};
-    var watchlistOpen = isWatchlist || localStorage.getItem('watchlist_open') === '1';
-    window.toggleWatchlist = function () {
-        var sub = document.getElementById('watchlist-sub');
-        var ch  = document.getElementById('watchlist-chevron');
-        if (!sub) return;
-        var nowOpen = sub.style.display !== 'none';
-        sub.style.display = nowOpen ? 'none' : 'block';
-        if (ch) ch.style.transform = nowOpen ? '' : 'rotate(180deg)';
-        localStorage.setItem('watchlist_open', nowOpen ? '0' : '1');
-    };
-    (function () {
-        var sub = document.getElementById('watchlist-sub');
-        var ch  = document.getElementById('watchlist-chevron');
-        if (!sub) return;
-        if (watchlistOpen) {
-            sub.style.display = 'block';
-            if (ch) ch.style.transform = 'rotate(180deg)';
-        }
-    })();
 
     // Print Schedule accordion
     var isPrint = {{ $isPrintSection ? 'true' : 'false' }};

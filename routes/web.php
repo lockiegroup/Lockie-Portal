@@ -17,7 +17,6 @@ use App\Http\Controllers\CrmController;
 use App\Http\Controllers\PolicyController;
 use App\Http\Controllers\Admin\PolicyController as AdminPolicyController;
 use App\Http\Controllers\Admin\ActivityLogController;
-use App\Http\Controllers\StockWatchlistController;
 use App\Http\Controllers\AmazonController;
 use App\Http\Controllers\ImportsController;
 use App\Http\Controllers\KeyAccountController;
@@ -159,29 +158,6 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::delete('/categories/{category}', [AdminPolicyController::class, 'destroyCategory'])->name('categories.destroy');
     });
 
-    // Stock Watchlist
-    Route::middleware('can:stock_ordering')->prefix('stock-watchlist')->name('stock-watchlist.')->group(function () {
-        Route::get('/', [StockWatchlistController::class, 'index'])->name('index');
-        Route::post('/sync', [StockWatchlistController::class, 'sync'])->name('sync');
-        Route::post('/sync-products', [StockWatchlistController::class, 'syncProducts'])->name('sync-products');
-        Route::post('/sales/filter', [StockWatchlistController::class, 'setDateFilter'])->name('sales.filter');
-        Route::get('/categories/{category}', [StockWatchlistController::class, 'showCategory'])->name('categories.show');
-        Route::post('/categories', [StockWatchlistController::class, 'storeCategory'])->name('categories.store');
-        Route::patch('/categories/{category}', [StockWatchlistController::class, 'updateCategory'])->name('categories.update');
-        Route::delete('/categories/{category}', [StockWatchlistController::class, 'destroyCategory'])->name('categories.destroy');
-        Route::post('/categories/{category}/items', [StockWatchlistController::class, 'storeItem'])->name('items.store');
-        Route::get('/categories/{category}/items/download', [StockWatchlistController::class, 'downloadItems'])->name('items.download');
-        Route::post('/categories/{category}/items/import', [StockWatchlistController::class, 'importItems'])->name('items.import');
-        Route::post('/categories/{category}/upload-shopify', [StockWatchlistController::class, 'uploadShopify'])->name('categories.upload-shopify');
-        Route::post('/categories/{category}/upload-amazon', [StockWatchlistController::class, 'uploadAmazon'])->name('categories.upload-amazon');
-        Route::post('/items/reorder', [StockWatchlistController::class, 'reorderItems'])->name('items.reorder');
-        Route::post('/categories/reorder', [StockWatchlistController::class, 'reorderCategories'])->name('categories.reorder');
-        Route::post('/items/clear-orders', [StockWatchlistController::class, 'clearOrders'])->name('items.clear-orders');
-        Route::post('/substitutions', [StockWatchlistController::class, 'storeSubstitution'])->name('substitutions.store');
-        Route::delete('/substitutions/{substitution}', [StockWatchlistController::class, 'destroySubstitution'])->name('substitutions.destroy');
-        Route::patch('/items/{item}', [StockWatchlistController::class, 'updateItem'])->name('items.update');
-        Route::delete('/items/{item}', [StockWatchlistController::class, 'destroyItem'])->name('items.destroy');
-    });
 
     // Amazon & Xero Reconciliation
     Route::prefix('amazon')->name('amazon.')->middleware('module:amazon')->group(function () {
@@ -206,8 +182,6 @@ Route::middleware(['auth', 'otp'])->group(function () {
     Route::get('/imports/sales/download', [ImportsController::class, 'downloadSales'])->name('imports.sales.download');
     Route::post('/imports/credits', [ImportsController::class, 'storeCredits'])->name('imports.credits');
     Route::get('/imports/credits/download', [ImportsController::class, 'downloadCredits'])->name('imports.credits.download');
-    Route::post('/imports/substitutions', [ImportsController::class, 'storeSubstitution'])->name('imports.substitutions.store');
-    Route::delete('/imports/substitutions/{substitution}', [ImportsController::class, 'destroySubstitution'])->name('imports.substitutions.destroy');
 
     // Key Accounts (admin management)
     Route::middleware('can:key_accounts_admin')->prefix('admin/key-accounts')->name('admin.key-accounts.')->group(function () {
