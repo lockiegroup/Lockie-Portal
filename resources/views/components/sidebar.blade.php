@@ -3,11 +3,10 @@
     $user           = auth()->user();
     $initials           = $user ? strtoupper(mb_substr($user->name ?? $user->email, 0, 2)) : '??';
 
-    $activeFinance    = request()->routeIs('sales*') || request()->routeIs('amazon.*');
-    $activeStock      = request()->routeIs('stock.*');
-    $activePlanning   = request()->routeIs('key-actions.*') || request()->routeIs('action-plans.*') || request()->routeIs('ab-testing.*') || request()->routeIs('tender-radar.*') || request()->routeIs('production-planner.*');
+    $activeFinance    = request()->routeIs('sales*') || request()->routeIs('amazon.*') || request()->routeIs('stock.*');
+    $activePlanning   = request()->routeIs('key-actions.*') || request()->routeIs('action-plans.*') || request()->routeIs('ab-testing.*') || request()->routeIs('tender-radar.*');
     $activeCustomers  = request()->routeIs('key-accounts.*') || request()->routeIs('crm.*') || request()->routeIs('reminders.*');
-    $activeOperations = request()->routeIs('church-envelopes.*') || request()->routeIs('policies.*') || request()->routeIs('training.*') || request()->routeIs('letter-filter.*') || request()->routeIs('racking.*') || $isPrintSection;
+    $activeOperations = request()->routeIs('church-envelopes.*') || request()->routeIs('policies.*') || request()->routeIs('training.*') || request()->routeIs('letter-filter.*') || request()->routeIs('racking.*') || request()->routeIs('production-planner.*') || $isPrintSection;
     $activeAdmin      = request()->routeIs('admin.*') || request()->routeIs('imports.*');
 
     $showKeyActions  = $user->isMaster() || $user->can('admin') || \App\Models\KeyActionGroup::whereHas('members', fn($q) => $q->where('user_id', $user->id))->exists();
@@ -45,7 +44,7 @@
         </a>
 
         {{-- FINANCE --}}
-        @if($user->hasModule('sales') || $user->hasModule('amazon'))
+        @if($user->hasModule('sales') || $user->hasModule('stock') || $user->hasModule('amazon'))
         <div style="height:1px;background:#1e293b;margin:10px 4px 2px;"></div>
         <button onclick="sbSection('finance')" class="sb-section-btn sb-label" data-tip="Finance">
             <span style="font-size:0.625rem;font-weight:700;text-transform:uppercase;">Finance</span>
@@ -60,6 +59,15 @@
                 <span class="sb-label">Sales</span>
             </a>
             @endif
+            @if($user->hasModule('stock'))
+            <a href="{{ route('stock.index') }}" class="sb-item{{ request()->routeIs('stock.*') ? ' sb-active' : '' }}" data-tip="Stock Overview">
+                <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
+                </svg>
+                <span class="sb-label">Stock Overview</span>
+            </a>
+            @endif
             @if($user->hasModule('amazon'))
             <a href="{{ route('amazon.index') }}" class="sb-item{{ request()->routeIs('amazon.*') ? ' sb-active' : '' }}" data-tip="Amazon &amp; Xero">
                 <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -69,24 +77,6 @@
                 <span class="sb-label">Amazon &amp; Xero</span>
             </a>
             @endif
-        </div>
-        @endif
-
-        {{-- STOCK --}}
-        @if($user->hasModule('stock'))
-        <div style="height:1px;background:#1e293b;margin:10px 4px 2px;"></div>
-        <button onclick="sbSection('stock')" class="sb-section-btn sb-label" data-tip="Stock">
-            <span style="font-size:0.625rem;font-weight:700;text-transform:uppercase;">Stock</span>
-            <svg id="sc-stock" style="width:10px;height:10px;flex-shrink:0;transition:transform 0.2s;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-        </button>
-        <div id="ss-stock">
-            <a href="{{ route('stock.index') }}" class="sb-item{{ request()->routeIs('stock.*') ? ' sb-active' : '' }}" data-tip="Stock Overview">
-                <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
-                </svg>
-                <span class="sb-label">Stock Overview</span>
-            </a>
         </div>
         @endif
 
@@ -126,18 +116,6 @@
                 </svg>
                 <span class="sb-label">Tender Radar</span>
             </a>
-            @if($user->hasModule('production_planner'))
-            <a href="{{ route('production-planner.index') }}" class="sb-item{{ request()->routeIs('production-planner.*') ? ' sb-active' : '' }}" data-tip="Production Planner">
-                <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="2" y="3" width="20" height="18" rx="2"/>
-                    <line x1="2" y1="9" x2="22" y2="9"/>
-                    <line x1="2" y1="15" x2="22" y2="15"/>
-                    <line x1="8" y1="9" x2="8" y2="21"/>
-                    <line x1="14" y1="9" x2="14" y2="21"/>
-                </svg>
-                <span class="sb-label">Production Planner</span>
-            </a>
-            @endif
         </div>
         @endif
 
@@ -188,6 +166,18 @@
             <svg id="sc-operations" style="width:10px;height:10px;flex-shrink:0;transition:transform 0.2s;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div id="ss-operations">
+            @if($user->hasModule('production_planner'))
+            <a href="{{ route('production-planner.index') }}" class="sb-item{{ request()->routeIs('production-planner.*') ? ' sb-active' : '' }}" data-tip="Production Planner">
+                <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="3" width="20" height="18" rx="2"/>
+                    <line x1="2" y1="9" x2="22" y2="9"/>
+                    <line x1="2" y1="15" x2="22" y2="15"/>
+                    <line x1="8" y1="9" x2="8" y2="21"/>
+                    <line x1="14" y1="9" x2="14" y2="21"/>
+                </svg>
+                <span class="sb-label">Production Planner</span>
+            </a>
+            @endif
             <a href="{{ route('racking.index') }}" class="sb-item{{ request()->routeIs('racking.*') ? ' sb-active' : '' }}" data-tip="Racking">
                 <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="2" y="3" width="20" height="4" rx="1"/><rect x="2" y="10" width="20" height="4" rx="1"/><rect x="2" y="17" width="20" height="4" rx="1"/>
@@ -419,7 +409,6 @@
     // Section collapsing
     var activeSections = {
         finance:    {{ $activeFinance    ? 'true' : 'false' }},
-        stock:      {{ $activeStock      ? 'true' : 'false' }},
         planning:   {{ $activePlanning   ? 'true' : 'false' }},
         customers:  {{ $activeCustomers  ? 'true' : 'false' }},
         operations: {{ $activeOperations ? 'true' : 'false' }},
@@ -446,7 +435,7 @@
     };
 
     // Apply initial states
-    ['finance', 'stock', 'planning', 'customers', 'operations', 'admin'].forEach(function (name) {
+    ['finance', 'planning', 'customers', 'operations', 'admin'].forEach(function (name) {
         var el = document.getElementById('ss-' + name);
         var ch = document.getElementById('sc-' + name);
         if (!el) return;
