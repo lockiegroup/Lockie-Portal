@@ -159,7 +159,7 @@
                 </div>`;
             }).join('');
 
-            const debugHtml = `<div class="text-xs text-slate-400 mb-6">Data source: sales_lines / credits_lines / invoice_lines &nbsp;·&nbsp; period: ${escHtml(from)} — ${escHtml(to)}</div>`;
+            const debugHtml = `<div class="text-xs text-slate-400 mb-6">Period: ${escHtml(from)} — ${escHtml(to)}</div>`;
 
             return `<div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">${cards}</div>${debugHtml}${tables}`;
         }
