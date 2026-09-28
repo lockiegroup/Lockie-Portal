@@ -96,11 +96,15 @@ let weeklyImgDataUrl = null, weeklyNatW = 0, weeklyNatH = 0;
 let specialImgDataUrl = null, specialNatW = 0, specialNatH = 0;
 
 // PDF layout constants (mm)
-// Page: 156 × 98 mm landscape. Each half: 78 × 98 mm portrait.
-// Envelope reading orientation: 98 mm wide × 78 mm tall (landscape in hand).
-// Content is drawn in reading space then rotated 90° CW for print.
-const PAGE_W = 156, PAGE_H = 98, ENV_W = 78, ENV_H = 98;
-const RW = 98, RH = 78; // reading space dimensions
+// Page: 156 × 98 mm landscape. Two portrait halves: 78 × 98 mm each.
+// Left slot x=0, right slot x=77.75 (per artwork — not exactly 78).
+// All text drawn with angle:-90 (90° CW) so it reads upright on the portrait envelope.
+// Centred text: startY = (SLOT_H - doc.getTextWidth(text)) / 2
+// Fixed-from-top text: startY = distMm (text runs downward from that point)
+const PAGE_W = 156, PAGE_H = 98;
+const SLOT_W = 78, SLOT_H = 98;
+const SLOT_RIGHT_X = 77.75; // right half origin
+const RW = 98, RH = 78; // reading-orientation preview dimensions
 
 // ── Auto-load Spiral.jpg ──────────────────────────────────────────────────────
 (function () {
@@ -169,12 +173,14 @@ function parseFile() {
             parsedRows = [];
             raw.slice(1).forEach(row => {
                 if (row.every(v => v === '' || v === null || v === undefined)) return;
-                const vt1 = String(row[vtCols[1]] ?? '').trim();
-                const vt6 = String(row[vtCols[6]] ?? '').trim();
-                const isSpec = String(row[7] ?? '').trim() !== '' || (vt6 !== '' && vt1 === '');
+                // Special day: col H (index 7) has a value AND col G (index 6) is empty
+                const colG = String(row[6] ?? '').trim();
+                const colH = String(row[7] ?? '').trim();
+                const isSpec = colH !== '' && colG === '';
                 const vts = [];
                 for (let i = 1; i <= 8; i++) vts.push(String(row[vtCols[i]] ?? '').trim());
-                const rawL = row[4], rawR = row[5];
+                // Col F (index 5) = left set number, col E (index 4) = right set number
+                const rawL = row[5], rawR = row[4];
                 parsedRows.push({
                     day: String(row[1]??'').trim(), month: String(row[2]??'').trim(), year: String(row[3]??'').trim(),
                     setLeft:  (rawL !== '' && rawL !== null) ? parseInt(rawL)  : null,
@@ -213,14 +219,15 @@ function showStatus(id, msg, type) {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function getOfferingLines(row) {
-    if (row.isSpecial) return [row.vts[5], row.vts[6]].filter(Boolean);
-    return row.vts.filter(Boolean).slice(0, 2);
+    // Return ALL non-empty VT lines (1–8); never drop a line
+    return row.vts.filter(Boolean);
 }
 function buildDate(row) { return [row.day, row.month, row.year].filter(Boolean).join(' '); }
 function sanitise(str) { return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'envelopes'; }
 
-// Image box — matched to InDesign guide box (portrait coords, mm)
-const IMG_BOX_X = 14, IMG_BOX_Y = 7, IMG_BOX_W = 45, IMG_BOX_H = 36;
+// Image frame — matched to InDesign artwork (portrait PDF coords, mm)
+// x: 18.2–50.8 (w=32.6), y from top: 98−80.9=17.1 → 98−62.1=35.9 (h=18.8)
+const IMG_BOX_X = 18.2, IMG_BOX_Y = 17.1, IMG_BOX_W = 32.6, IMG_BOX_H = 18.8;
 
 function imgAspect(isSpec) {
     const nw = isSpec ? specialNatW : weeklyNatW;
@@ -394,13 +401,20 @@ async function buildImgCanvas(isSpec, imgDataUrl) {
     return { canvas, dW, dH };
 }
 
-function drawEnvPdf(doc, row, xBase, setNum, imgCanvasData) {
+function drawEnvPdf(doc, row, slotX, setNum, imgCanvasData) {
     const isSpec = row.isSpecial;
 
-    // Image — upper-left guide box
+    // All text is solid black
+    doc.setTextColor(0, 0, 0);
+
+    // centredY: compute startY so text (running downward with angle:-90) is centred
+    // on the 98mm face height.  NEVER use align:'center' on rotated text.
+    function cY(text) { return (SLOT_H - doc.getTextWidth(text)) / 2; }
+
+    // ── Image ────────────────────────────────────────────────────────────────
     if (imgCanvasData) {
         const { canvas, dW, dH } = imgCanvasData;
-        const imgX = xBase + IMG_BOX_X + (IMG_BOX_W - dW) / 2;
+        const imgX = slotX + IMG_BOX_X + (IMG_BOX_W - dW) / 2;
         const imgY = IMG_BOX_Y + (IMG_BOX_H - dH) / 2;
         try {
             const alias = (isSpec ? 'sp' : 'wk') + Math.round(dW * 10);
@@ -409,73 +423,67 @@ function drawEnvPdf(doc, row, xBase, setNum, imgCanvasData) {
         } catch(_) {}
     }
 
-    // Set number — bottom-left of reading portrait; angle:-90 so it reads upright
+    // ── Set number — 20pt, baseline slotX+6.9, fixed 10.3mm from top ────────
     if (setNum !== null) {
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(10);
-        doc.setTextColor(17, 17, 17);
-        doc.text(String(setNum), xBase + 5, 8, { angle: -90, align: 'left' });
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(20);
+        doc.text(String(setNum), slotX + 6.9, 10.3, { angle: -90 });
     }
 
-    // Church name — rightmost column, full height, rotated 90° CW; mixed case as entered
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(17, 17, 17);
-    {
-        const churchText = row.church;
-        const targetMM = 88;
-        const maxPt = 13;
-        let pt = maxPt;
-        doc.setFontSize(pt);
-        while (pt > 6 && doc.getTextWidth(churchText) > targetMM) {
-            pt -= 0.5;
-            doc.setFontSize(pt);
-        }
-    }
-    doc.text(row.church, xBase + 70, 49, { angle: -90, align: 'center' });
-
-    // Town — mixed case as entered
-    if (row.town) {
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(8.5);
-        doc.text(row.town, xBase + 42, 70, { angle: -90, align: 'center' });
-    }
-
-    // Diocese lines — stepping left from town, max span 30mm (±15mm from y=70)
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(51, 51, 51);
-    [row.diocese1, row.diocese2, row.diocese3].filter(Boolean).forEach((d, i) => {
-        let pt = 6.5;
-        doc.setFontSize(pt);
-        while (pt > 4 && doc.getTextWidth(d) > 30) {
-            pt -= 0.25;
-            doc.setFontSize(pt);
-        }
-        doc.text(d, xBase + 30 - i * 4, 70, { angle: -90, align: 'center' });
-    });
-
-    // Date — leftmost column
+    // ── Date — 11pt, baseline slotX+8.2, fixed 57.5mm from top ──────────────
     const date = buildDate(row);
     if (date) {
-        doc.setFont('helvetica', 'bold');
+        doc.setFont('helvetica', 'normal');
         doc.setFontSize(11);
-        doc.setTextColor(17, 17, 17);
-        doc.text(date.toUpperCase(), xBase + 8, 70, { angle: -90, align: 'center' });
+        doc.text(date.toUpperCase(), slotX + 8.2, 57.5, { angle: -90 });
     }
 
-    // Offering lines — between date and diocese, max span 30mm
-    const offeringLines = getOfferingLines(row);
-    if (offeringLines.length) {
-        doc.setFont('helvetica', 'italic');
-        doc.setTextColor(17, 17, 17);
+    // ── VT offering lines — all non-empty, 7.5pt Regular upright, centred ───
+    // Start at slotX+12, step +4.5mm per line
+    {
+        doc.setFont('helvetica', 'normal');
+        const offeringLines = getOfferingLines(row);
         offeringLines.forEach((line, i) => {
             let pt = 7.5;
             doc.setFontSize(pt);
-            while (pt > 4.5 && doc.getTextWidth(line) > 30) {
+            while (pt > 4.5 && doc.getTextWidth(line) > 88) {
                 pt -= 0.25;
                 doc.setFontSize(pt);
             }
-            doc.text(line, xBase + 20 - i * 4, 70, { angle: -90, align: 'center' });
+            doc.text(line, slotX + 12 + i * 4.5, cY(line), { angle: -90 });
         });
+    }
+
+    // ── Diocese — 6pt, baseline slotX+58.7 (−2.6mm per line), centred ───────
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6);
+    [row.diocese1, row.diocese2, row.diocese3].filter(Boolean).forEach((d, i) => {
+        let pt = 6;
+        doc.setFontSize(pt);
+        while (pt > 4 && doc.getTextWidth(d) > 88) {
+            pt -= 0.25;
+            doc.setFontSize(pt);
+        }
+        doc.text(d, slotX + 58.7 - i * 2.6, cY(d), { angle: -90 });
+    });
+
+    // ── Town — 11pt Bold, baseline slotX+61.3, centred ───────────────────────
+    if (row.town) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.text(row.town, slotX + 61.3, cY(row.town), { angle: -90 });
+    }
+
+    // ── Church — 15pt Bold, baseline slotX+65.9, centred, auto-shrink ────────
+    {
+        doc.setFont('helvetica', 'bold');
+        let pt = 15;
+        doc.setFontSize(pt);
+        while (pt > 6 && doc.getTextWidth(row.church) > 88) {
+            pt -= 0.5;
+            doc.setFontSize(pt);
+        }
+        doc.text(row.church, slotX + 65.9, cY(row.church), { angle: -90 });
     }
 }
 
@@ -505,8 +513,8 @@ async function generatePDF() {
             }
             const row = parsedRows[idx];
             const imgData = row.isSpecial ? specialImgData : weeklyImgData;
-            drawEnvPdf(doc, row, 0,     row.setLeft,  imgData);
-            drawEnvPdf(doc, row, ENV_W, row.setRight, imgData);
+            drawEnvPdf(doc, row, 0,            row.setLeft,  imgData);
+            drawEnvPdf(doc, row, SLOT_RIGHT_X, row.setRight, imgData);
         }
 
         st.textContent = `Done — ${parsedRows.length} pages saved.`;
