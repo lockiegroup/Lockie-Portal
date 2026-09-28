@@ -96,42 +96,43 @@ let weeklyImgDataUrl = null, weeklyNatW = 0, weeklyNatH = 0;
 let specialImgDataUrl = null, specialNatW = 0, specialNatH = 0;
 
 // PDF layout constants (mm)
-// Page: 156 × 98 mm landscape. Two portrait halves: 78 × 98 mm each.
-// Left slot x=0, right slot x=77.75 (per artwork — not exactly 78).
-// All text drawn with angle:-90 (90° CW) so it reads upright on the portrait envelope.
-// Centred text: startY = (SLOT_H - doc.getTextWidth(text)) / 2
-// Fixed-from-top text: startY = distMm (text runs downward from that point)
+// Page: 156×98 landscape. Two portrait halves: 78×98 each.
+// All text: angle:-90 (90° CW) → reads upright on the portrait envelope.
+// Images: pre-rotated 90° CW on canvas so they face the same way as text.
+// Centred text helper: startY = (SLOT_H − doc.getTextWidth(text)) / 2
 const PAGE_W = 156, PAGE_H = 98;
 const SLOT_W = 78, SLOT_H = 98;
-const SLOT_RIGHT_X = 77.75; // right half origin
-const RW = 98, RH = 78; // reading-orientation preview dimensions
+const SLOT_RIGHT_X = 77.75;
+
+// Weekly image frame (portrait PDF coords): x 18.2–50.8, y 17.1–35.9 mm
+const IMG_BOX_X = 18.2, IMG_BOX_Y = 17.1, IMG_BOX_W = 32.6, IMG_BOX_H = 18.8;
+// Special foot-logo frame: x 50.9–62.5, y 80.4–92.0 mm
+const SPEC_LOGO_X = 50.9, SPEC_LOGO_Y = 80.4, SPEC_LOGO_W = 11.6, SPEC_LOGO_H = 11.6;
+
+const S = 1.7; // px/mm for HTML preview
 
 // ── Auto-load Spiral.jpg ──────────────────────────────────────────────────────
 (function () {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = function () {
-        specialNatW = img.naturalWidth;
-        specialNatH = img.naturalHeight;
+        specialNatW = img.naturalWidth; specialNatH = img.naturalHeight;
         const c = document.createElement('canvas');
         c.width = specialNatW; c.height = specialNatH;
         c.getContext('2d').drawImage(img, 0, 0);
-        specialImgDataUrl = c.toDataURL('image/jpeg', 0.95);
+        specialImgDataUrl = c.toDataURL('image/png');
         document.getElementById('special-img-thumb').src = specialImgDataUrl;
         document.getElementById('special-img-preview').style.display = 'block';
         document.getElementById('special-img-label').textContent = 'Spiral.jpg (default)';
         updatePreview();
     };
-    img.onerror = function () {
-        document.getElementById('special-img-label').textContent = 'Choose image…';
-    };
+    img.onerror = function () { document.getElementById('special-img-label').textContent = 'Choose image…'; };
     img.src = '{{ asset('images/Spiral.jpg') }}';
 })();
 
 // ── Image upload ──────────────────────────────────────────────────────────────
 function handleImage(input, type) {
-    const file = input.files[0];
-    if (!file) return;
+    const file = input.files[0]; if (!file) return;
     const reader = new FileReader();
     reader.onload = function(e) {
         const url = e.target.result;
@@ -173,14 +174,12 @@ function parseFile() {
             parsedRows = [];
             raw.slice(1).forEach(row => {
                 if (row.every(v => v === '' || v === null || v === undefined)) return;
-                // Special day: col H (index 7) has a value AND col G (index 6) is empty
                 const colG = String(row[6] ?? '').trim();
                 const colH = String(row[7] ?? '').trim();
                 const isSpec = colH !== '' && colG === '';
                 const vts = [];
                 for (let i = 1; i <= 8; i++) vts.push(String(row[vtCols[i]] ?? '').trim());
-                // Col F (index 5) = left set number, col E (index 4) = right set number
-                const rawL = row[5], rawR = row[4];
+                const rawL = row[5], rawR = row[4]; // col F = left, col E = right
                 parsedRows.push({
                     day: String(row[1]??'').trim(), month: String(row[2]??'').trim(), year: String(row[3]??'').trim(),
                     setLeft:  (rawL !== '' && rawL !== null) ? parseInt(rawL)  : null,
@@ -218,34 +217,23 @@ function showStatus(id, msg, type) {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-function getOfferingLines(row) {
-    // Return ALL non-empty VT lines (1–8); never drop a line
-    return row.vts.filter(Boolean);
-}
 function buildDate(row) { return [row.day, row.month, row.year].filter(Boolean).join(' '); }
 function sanitise(str) { return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'envelopes'; }
 
-// Image frame — matched to InDesign artwork (portrait PDF coords, mm)
-// x: 18.2–50.8 (w=32.6), y from top: 98−80.9=17.1 → 98−62.1=35.9 (h=18.8)
-const IMG_BOX_X = 18.2, IMG_BOX_Y = 17.1, IMG_BOX_W = 32.6, IMG_BOX_H = 18.8;
-
-function imgAspect(isSpec) {
-    const nw = isSpec ? specialNatW : weeklyNatW;
-    const nh = isSpec ? specialNatH : weeklyNatH;
-    return (nw && nh) ? nw / nh : IMG_BOX_W / IMG_BOX_H;
+// Fit natural-orientation image (no rotation) into preview reading-frame (boxW×boxH)
+function fitNatural(nw, nh, boxW, boxH) {
+    if (!nw || !nh) return { dW: boxW, dH: boxH };
+    const scale = Math.min(boxW / nw, boxH / nh);
+    return { dW: nw * scale, dH: nh * scale };
 }
-// Compute display W/H within the fixed box, maintaining aspect ratio
-function imgDisplayDims(isSpec) {
-    const asp = imgAspect(isSpec);
-    let dW, dH;
-    if (asp >= IMG_BOX_W / IMG_BOX_H) { dW = IMG_BOX_W; dH = IMG_BOX_W / asp; }
-    else                               { dH = IMG_BOX_H; dW = IMG_BOX_H * asp; }
-    return { dW, dH };
+// Fit after 90° CW rotation: natural dims nW×nH → rotated visual nH×nW → fit into PDF boxW×boxH
+function fitRotated(nw, nh, boxW, boxH) {
+    if (!nw || !nh) return { dW: boxW, dH: boxH };
+    const scale = Math.min(boxW / nh, boxH / nw);
+    return { dW: nh * scale, dH: nw * scale };
 }
 
-// ── Preview (HTML, reading orientation) ───────────────────────────────────────
-const S = 1.7; // px per mm for preview
-
+// ── HTML Preview (reading orientation: 98mm wide × 78mm tall) ─────────────────
 function updatePreview() {
     if (!parsedRows.length) return;
     const container = document.getElementById('preview-cards');
@@ -269,95 +257,97 @@ function updatePreview() {
 }
 
 function buildEnvHtml(row, setNum) {
-    // Show the envelope in READING orientation — how it looks when held in hand.
-    // This matches the InDesign artwork exactly.
-    //
-    // PDF coordinate → reading coordinate transform (90° CW rotation of landscape half):
-    //   reading_x = y_pdf          (PDF y-axis → reading left-right)
-    //   reading_y = 78 - x_pdf     (PDF x-axis inverted → reading top-bottom)
-    //
-    // Reading card dimensions: 98mm wide × 78mm tall (landscape)
-    const RW = ENV_H * S;  // 98mm × 1.7 = 166.6px
-    const RH = ENV_W * S;  // 78mm × 1.7 = 132.6px
+    // Reading orientation: 98mm wide × 78mm tall (landscape in hand)
+    // PDF-to-reading transform: reading_x = PDF_y, reading_y = SLOT_W − PDF_x
+    const RW = SLOT_H * S;  // 98 × 1.7 = 166.6 px
+    const RH = SLOT_W * S;  // 78 × 1.7 = 132.6 px
+    const rY = xPdf => (SLOT_W - xPdf) * S;           // reading top from PDF x-baseline
+    const rCX = yPdf => (yPdf / SLOT_H) * RW;         // reading center-x from PDF y-baseline
 
     const isSpec = row.isSpecial;
-    const imgSrc = isSpec ? specialImgDataUrl : weeklyImgDataUrl;
-
     const env = document.createElement('div');
     env.style.cssText = `position:relative;width:${RW}px;height:${RH}px;overflow:hidden;background:white;flex-shrink:0;`;
 
-    // Coordinate mapping for reading-orientation preview (landscape card 98×78mm):
-    //   reading_y = (78 - x_pdf) * S   — vertical position of the text strip
-    //   reading_x_center = (y_pdf / 98) * RW — horizontal center of text
-    //     church (y_pdf=49) → center at 49/98 * RW = 50% (middle)
-    //     all others (y_pdf=70) → center at 70/98 * RW ≈ 71% (right portion, below image)
-    const rY = (x_pdf) => (78 - x_pdf) * S;
-    const CHURCH_CX = (49 / 98) * RW;   // center-x for church band
-    const OTHER_CX  = (70 / 98) * RW;   // center-x for all other bands
-
-    // halfMaxMM: max half-width in mm each side of y_pdf=70 centre (maps to reading x)
-    function band(text, x_pdf, y_pdf_center, fsizePx, bold, italic, color, halfMaxMM) {
-        const cx = (y_pdf_center === 49) ? CHURCH_CX : OTHER_CX;
-        const halfW = (halfMaxMM !== undefined ? halfMaxMM : 44) * S;
+    // band: place centred text at a PDF (xBaseline, yCenter) position
+    function band(text, xPdf, yCentre, fsizePx, bold, fontFamily, maxHalfMM) {
+        const cx = rCX(yCentre);
+        const halfW = (maxHalfMM ?? 44) * S;
         const el = document.createElement('div');
-        el.style.cssText = `position:absolute;` +
-            `top:${rY(x_pdf)}px;` +
+        el.style.cssText = `position:absolute;top:${rY(xPdf)}px;` +
             `left:${Math.max(0, cx - halfW)}px;width:${Math.min(RW, halfW * 2)}px;` +
-            `font-family:Arial,sans-serif;font-weight:${bold?'700':'400'};` +
-            `font-style:${italic?'italic':'normal'};font-size:${fsizePx}px;` +
-            `color:${color||'#111'};text-align:center;white-space:nowrap;overflow:hidden;line-height:1;`;
+            `font-family:${fontFamily||'Arial,sans-serif'};font-weight:${bold?'700':'400'};` +
+            `font-size:${fsizePx}px;color:#111;text-align:center;white-space:nowrap;overflow:hidden;line-height:1;`;
         el.textContent = text;
         env.appendChild(el);
     }
 
-    // Church — centred at y_pdf=49, mixed case as entered
-    band(row.church, 70, 49, 6 * S, true, false, '#111', 44);
-
-    // Town — mixed case as entered, 30mm cap
-    if (row.town) band(row.town, 42, 70, 4.5 * S, true, false, '#111', 15);
-
-    // Diocese lines — 15mm each side = 30mm max span
-    [row.diocese1, row.diocese2, row.diocese3].filter(Boolean).forEach((d, i) => {
-        band(d, 30 - i * 4, 70, 3.2 * S, false, false, '#555', 15);
-    });
-
-    // Offering lines — 15mm each side = 30mm max span
-    const offeringLines = getOfferingLines(row);
-    offeringLines.forEach((line, i) => {
-        band(line, 20 - i * 4, 70, 3.8 * S, false, true, '#111', 15);
-    });
-
-    // Date — 15mm each side
-    const date = buildDate(row);
-    if (date) band(date.toUpperCase(), 8, 70, 4.5 * S, true, false, '#111', 15);
-
-    // Cross image — PDF: x=14–59, y=7–43 (image box centre).
-    // In reading coords: reading_x = y_pdf, reading_y = 78 - x_pdf.
-    // The image dimensions swap: reading_width = dH, reading_height = dW.
-    const { dW, dH } = imgDisplayDims(isSpec);
-    const imgPdfCx = IMG_BOX_X + (IMG_BOX_W - dW) / 2;
-    const imgPdfCy = IMG_BOX_Y + (IMG_BOX_H - dH) / 2;
-    if (imgSrc) {
-        // Image rotated 90° CCW so it appears upright in reading portrait
-        const rLeft = imgPdfCy * S;
-        const rTop  = (78 - imgPdfCx - dW) * S;
-        const visW  = dH * S; // visual width  (reading x = PDF y direction)
-        const visH  = dW * S; // visual height (reading y = PDF x direction)
+    // ── Image ────────────────────────────────────────────────────────────────
+    if (!isSpec && weeklyImgDataUrl) {
+        // Weekly image: natural (portrait) shown in reading portrait frame
+        // Reading frame: 18.8mm wide × 32.6mm tall (from PDF frame rotated into reading)
+        const prevBoxW = IMG_BOX_H, prevBoxH = IMG_BOX_W; // reading frame dims
+        const { dW, dH } = fitNatural(weeklyNatW, weeklyNatH, prevBoxW, prevBoxH);
+        // Frame centre in reading coords:  cx=IMG_BOX_Y+IMG_BOX_H/2, cy from PDF x centre
+        const frameCX = (IMG_BOX_Y + IMG_BOX_H / 2) * S;
+        const frameCY = (SLOT_W - (IMG_BOX_X + IMG_BOX_W / 2)) * S;
         const imgEl = document.createElement('img');
-        imgEl.src = imgSrc;
-        // CSS rotate(-90deg) rotates element CCW; element dims must be swapped vs visual
+        imgEl.src = weeklyImgDataUrl;
         imgEl.style.cssText = `position:absolute;` +
-            `left:${rLeft + (visW - visH) / 2}px;top:${rTop + (visH - visW) / 2}px;` +
-            `width:${visH}px;height:${visW}px;` +
-            `transform:rotate(-90deg);transform-origin:center;object-fit:contain;`;
+            `left:${frameCX - dW/2*S}px;top:${frameCY - dH/2*S}px;` +
+            `width:${dW*S}px;height:${dH*S}px;object-fit:contain;`;
+        env.appendChild(imgEl);
+    }
+    if (isSpec && specialImgDataUrl) {
+        // Special foot logo: natural image in small reading frame
+        const prevBoxW = SPEC_LOGO_H, prevBoxH = SPEC_LOGO_W;
+        const { dW, dH } = fitNatural(specialNatW, specialNatH, prevBoxW, prevBoxH);
+        const frameCX = (SPEC_LOGO_Y + SPEC_LOGO_H / 2) * S;
+        const frameCY = (SLOT_W - (SPEC_LOGO_X + SPEC_LOGO_W / 2)) * S;
+        const imgEl = document.createElement('img');
+        imgEl.src = specialImgDataUrl;
+        imgEl.style.cssText = `position:absolute;` +
+            `left:${frameCX - dW/2*S}px;top:${frameCY - dH/2*S}px;` +
+            `width:${dW*S}px;height:${dH*S}px;object-fit:contain;`;
         env.appendChild(imgEl);
     }
 
-    // Set number — bottom-left of reading card (matches angle:-90 in PDF)
+    // ── Text (all centred on yCentre = PDF y-baseline) ────────────────────
+    // Church — 15pt bold, PDF x-baseline=65.9, centred on face (y=49)
+    band(row.church, 65.9, 49, 6*S, true, null, 44);
+
+    // Town — 11pt bold, x=61.3, y=70
+    if (row.town) band(row.town, 61.3, 70, 4.5*S, true, null, 44);
+
+    // Diocese — 6pt, x=58.7/56.1/53.5, y=70 (first line = highest x)
+    [row.diocese1, row.diocese2, row.diocese3].filter(Boolean).forEach((d, i) => {
+        band(d, 58.7 - i*2.6, 70, 2.8*S, false, null, 44);
+    });
+
+    if (isSpec) {
+        // Special: blackletter title lines VT6-8, x=38.4/29.8/21.2
+        [row.vts[5], row.vts[6], row.vts[7]].filter(Boolean).forEach((t, i) => {
+            band(t, 38.4 - i*8.6, 49, 5*S, false, "'UnifrakturMaguntia',serif", 44);
+        });
+    } else {
+        // Gift text: VT1-8, 9pt, 3.9mm leading, block centred on x=31.5
+        const vts = row.vts.filter(Boolean);
+        const n = vts.length;
+        vts.forEach((line, i) => {
+            const xPdf = Math.max(11.2, 31.5 + ((n - 1) / 2 - i) * 3.9);
+            band(line, xPdf, 70, 3.8*S, false, null, 44);
+        });
+    }
+
+    // Date — 11pt, x=8.2, y=70
+    const date = buildDate(row);
+    if (date) band(date.toUpperCase(), 8.2, 70, 4.5*S, false, null, 44);
+
+    // Set number — x=6.9, y=10.3 from top → reading: bottom-left
     if (setNum !== null) {
         const sn = document.createElement('div');
-        sn.style.cssText = `position:absolute;left:${3*S}px;bottom:${3*S}px;` +
-            `font-family:Arial,sans-serif;font-weight:700;font-size:${3.5*S}px;color:#111;`;
+        sn.style.cssText = `position:absolute;` +
+            `left:${10.3*S}px;bottom:${(SLOT_W-6.9)*S - 6*S}px;` +
+            `font-family:Arial,sans-serif;font-weight:400;font-size:${4.5*S}px;color:#111;`;
         sn.textContent = String(setNum);
         env.appendChild(sn);
     }
@@ -365,144 +355,174 @@ function buildEnvHtml(row, setNum) {
     return env;
 }
 
-// ── PDF Generation ────────────────────────────────────────────────────────────
-// jsPDF native text (vector, infinitely sharp) for all text elements.
-// Canvas only for the small image box (18.8×32.6mm) — tiny PNG, no size issues.
-// Coordinates match the HTML preview (portrait 78×98mm per half, no angle rotation).
-
+// ── PDF helpers ───────────────────────────────────────────────────────────────
 function loadImage(src) {
     return new Promise(resolve => {
         const img = new Image();
-        img.onload  = () => resolve(img);
-        img.onerror = () => resolve(null);
-        img.src = src;
+        img.onload = () => resolve(img); img.onerror = () => resolve(null); img.src = src;
     });
 }
 
-// Build a small canvas for just the image box (18.8×32.6mm at high res)
-async function buildImgCanvas(isSpec, imgDataUrl) {
+function bufToBase64(buf) {
+    const bytes = new Uint8Array(buf);
+    let b = '', chunk = 32768;
+    for (let i = 0; i < bytes.byteLength; i += chunk)
+        b += String.fromCharCode(...bytes.subarray(i, Math.min(i + chunk, bytes.byteLength)));
+    return btoa(b);
+}
+
+async function loadFont(doc, url, filename, fontName, style) {
+    try {
+        const resp = await fetch(url);
+        if (!resp.ok) return false;
+        const b64 = bufToBase64(await resp.arrayBuffer());
+        doc.addFileToVFS(filename, b64);
+        doc.addFont(filename, fontName, style);
+        return true;
+    } catch(e) { console.warn('Font load failed:', filename, e.message); return false; }
+}
+
+// Pre-rotate image 90° CW on canvas + flatten onto white.
+// dW/dH are the PDF box dimensions (canvas is dW*ICPPM × dH*ICPPM pixels).
+async function buildRotatedImgCanvas(imgDataUrl, nw, nh, boxW, boxH) {
     if (!imgDataUrl) return null;
-    const ICPPM = 8; // high res for the small image only
-    const { dW, dH } = imgDisplayDims(isSpec);
+    const ICPPM = 8;
+    const { dW, dH } = fitRotated(nw, nh, boxW, boxH);
     const cW = Math.round(dW * ICPPM), cH = Math.round(dH * ICPPM);
     const canvas = document.createElement('canvas');
     canvas.width = cW; canvas.height = cH;
     const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, cW, cH);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, cW, cH);
     const imgEl = await loadImage(imgDataUrl);
     if (imgEl) {
-        // Rotate 90° CCW so the image appears upright in reading portrait orientation
+        // 90° CW: translate to center, rotate CW (+π/2 in canvas coords = CW)
         ctx.save();
         ctx.translate(cW / 2, cH / 2);
-        ctx.rotate(-Math.PI / 2);
+        ctx.rotate(Math.PI / 2);
+        // After CW rotation: x→down, y→left. Draw image filling canvas.
         ctx.drawImage(imgEl, -cH / 2, -cW / 2, cH, cW);
         ctx.restore();
     }
     return { canvas, dW, dH };
 }
 
-function drawEnvPdf(doc, row, slotX, setNum, imgCanvasData) {
+// ── PDF drawing ───────────────────────────────────────────────────────────────
+function drawEnvPdf(doc, row, slotX, setNum, weeklyCanvas, specialLogoCanvas, fonts) {
     const isSpec = row.isSpecial;
 
-    // All text is solid black
     doc.setTextColor(0, 0, 0);
+    const cY = text => (SLOT_H - doc.getTextWidth(text)) / 2; // centred along 98mm face
 
-    // centredY: compute startY so text (running downward with angle:-90) is centred
-    // on the 98mm face height.  NEVER use align:'center' on rotated text.
-    function cY(text) { return (SLOT_H - doc.getTextWidth(text)) / 2; }
-
-    // ── Image ────────────────────────────────────────────────────────────────
-    if (imgCanvasData) {
-        const { canvas, dW, dH } = imgCanvasData;
+    // ── Image ─────────────────────────────────────────────────────────────────
+    if (!isSpec && weeklyCanvas) {
+        const { canvas, dW, dH } = weeklyCanvas;
         const imgX = slotX + IMG_BOX_X + (IMG_BOX_W - dW) / 2;
         const imgY = IMG_BOX_Y + (IMG_BOX_H - dH) / 2;
-        try {
-            const alias = (isSpec ? 'sp' : 'wk') + Math.round(dW * 10);
-            doc.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG',
-                         imgX, imgY, dW, dH, alias, 'NONE');
-        } catch(_) {}
+        try { doc.addImage(canvas.toDataURL('image/png'), 'PNG', imgX, imgY, dW, dH, 'wk'+Math.round(dW*10), 'NONE'); } catch(_){}
+    }
+    if (isSpec && specialLogoCanvas) {
+        const { canvas, dW, dH } = specialLogoCanvas;
+        const imgX = slotX + SPEC_LOGO_X + (SPEC_LOGO_W - dW) / 2;
+        const imgY = SPEC_LOGO_Y + (SPEC_LOGO_H - dH) / 2;
+        try { doc.addImage(canvas.toDataURL('image/png'), 'PNG', imgX, imgY, dW, dH, 'spl'+Math.round(dW*10), 'NONE'); } catch(_){}
     }
 
-    // ── Set number — 20pt, baseline slotX+6.9, fixed 10.3mm from top ────────
+    // ── Set number — 20pt Medium, slotX+6.9, startY=10.3 ────────────────────
     if (setNum !== null) {
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(20);
+        doc.setFont(fonts.regular, 'normal'); doc.setFontSize(20);
         doc.text(String(setNum), slotX + 6.9, 10.3, { angle: -90 });
     }
 
-    // ── Date — 11pt, baseline slotX+8.2, fixed 57.5mm from top ──────────────
+    // ── Date — 11pt Medium, slotX+8.2, startY=57.5 ───────────────────────────
     const date = buildDate(row);
     if (date) {
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(11);
+        doc.setFont(fonts.regular, 'normal'); doc.setFontSize(11);
         doc.text(date.toUpperCase(), slotX + 8.2, 57.5, { angle: -90 });
     }
 
-    // ── VT offering lines — all non-empty, 7.5pt Regular upright, centred ───
-    // Start at slotX+12, step +4.5mm per line
-    {
-        doc.setFont('helvetica', 'normal');
-        const offeringLines = getOfferingLines(row);
-        offeringLines.forEach((line, i) => {
-            let pt = 7.5;
-            doc.setFontSize(pt);
-            while (pt > 4.5 && doc.getTextWidth(line) > 88) {
-                pt -= 0.25;
-                doc.setFontSize(pt);
-            }
-            doc.text(line, slotX + 12 + i * 4.5, cY(line), { angle: -90 });
+    if (isSpec) {
+        // ── Special: Blackletter title lines VT6-8, ~20pt, leading 8.6mm ────
+        // Line 1 (VT6) at slotX+38.4, line 2 at slotX+29.8, line 3 at slotX+21.2
+        const titleLines = [row.vts[5], row.vts[6], row.vts[7]].filter(Boolean);
+        doc.setFont(fonts.blackletter, 'normal');
+        titleLines.forEach((line, i) => {
+            let pt = 20; doc.setFontSize(pt);
+            while (pt > 8 && doc.getTextWidth(line) > 88) { pt -= 0.5; doc.setFontSize(pt); }
+            doc.text(line, slotX + 38.4 - i * 8.6, cY(line), { angle: -90 });
         });
+    } else {
+        // ── Gift text: VT1-8, 9pt Regular, 3.9mm leading, block centred on slotX+31.5
+        // First line at highest x; clamp low end to keep ≥3mm clear of date (8.2+3=11.2)
+        const vts = row.vts.filter(Boolean);
+        const n = vts.length;
+        if (n) {
+            doc.setFont(fonts.regular, 'normal');
+            vts.forEach((line, i) => {
+                let pt = 9; doc.setFontSize(pt);
+                while (pt > 5 && doc.getTextWidth(line) > 88) { pt -= 0.25; doc.setFontSize(pt); }
+                const xOff = Math.max(slotX + 11.2, slotX + 31.5 + ((n - 1) / 2 - i) * 3.9);
+                doc.text(line, xOff, cY(line), { angle: -90 });
+            });
+        }
     }
 
-    // ── Diocese — 6pt, baseline slotX+58.7 (−2.6mm per line), centred ───────
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(6);
+    // ── Diocese — 6pt Medium, slotX+58.7 (−2.6/line), centred ───────────────
+    doc.setFont(fonts.regular, 'normal'); doc.setFontSize(6);
     [row.diocese1, row.diocese2, row.diocese3].filter(Boolean).forEach((d, i) => {
-        let pt = 6;
-        doc.setFontSize(pt);
-        while (pt > 4 && doc.getTextWidth(d) > 88) {
-            pt -= 0.25;
-            doc.setFontSize(pt);
-        }
+        let pt = 6; doc.setFontSize(pt);
+        while (pt > 4 && doc.getTextWidth(d) > 88) { pt -= 0.25; doc.setFontSize(pt); }
         doc.text(d, slotX + 58.7 - i * 2.6, cY(d), { angle: -90 });
     });
 
-    // ── Town — 11pt Bold, baseline slotX+61.3, centred ───────────────────────
+    // ── Town — 11pt Bold, slotX+61.3, centred ────────────────────────────────
     if (row.town) {
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(11);
+        doc.setFont(fonts.bold, 'bold'); doc.setFontSize(11);
         doc.text(row.town, slotX + 61.3, cY(row.town), { angle: -90 });
     }
 
-    // ── Church — 15pt Bold, baseline slotX+65.9, centred, auto-shrink ────────
-    {
-        doc.setFont('helvetica', 'bold');
-        let pt = 15;
-        doc.setFontSize(pt);
-        while (pt > 6 && doc.getTextWidth(row.church) > 88) {
-            pt -= 0.5;
-            doc.setFontSize(pt);
-        }
-        doc.text(row.church, slotX + 65.9, cY(row.church), { angle: -90 });
-    }
+    // ── Church — 15pt Bold, slotX+65.9, centred, auto-shrink ─────────────────
+    doc.setFont(fonts.bold, 'bold');
+    let churchPt = 15; doc.setFontSize(churchPt);
+    while (churchPt > 6 && doc.getTextWidth(row.church) > 88) { churchPt -= 0.5; doc.setFontSize(churchPt); }
+    doc.text(row.church, slotX + 65.9, cY(row.church), { angle: -90 });
 }
 
+// ── Generate PDF ──────────────────────────────────────────────────────────────
 async function generatePDF() {
     if (!parsedRows.length) return;
     const btn = document.getElementById('generate-btn');
     const st  = document.getElementById('generate-status');
     btn.disabled = true; btn.textContent = 'Generating…';
     st.style.display = 'block'; st.style.color = '#64748b';
-    st.textContent = 'Preparing images…';
+    st.textContent = 'Loading fonts…';
     await new Promise(r => setTimeout(r, 30));
 
     try {
-        // Pre-render image canvases once (reused across all pages)
-        const weeklyImgData  = weeklyImgDataUrl  ? await buildImgCanvas(false, weeklyImgDataUrl)  : null;
-        const specialImgData = specialImgDataUrl ? await buildImgCanvas(true,  specialImgDataUrl) : null;
-
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ unit: 'mm', format: [PAGE_W, PAGE_H], orientation: 'landscape' });
+
+        // Load and embed fonts; fall back to built-in helvetica if files unavailable
+        const fonts = { regular: 'helvetica', bold: 'helvetica', blackletter: 'helvetica' };
+        const base = window.location.origin;
+        const latoRegOk = await loadFont(doc, base+'/fonts/Lato-Regular.ttf', 'Lato-Regular.ttf', 'Lato', 'normal');
+        const latoBldOk = await loadFont(doc, base+'/fonts/Lato-Bold.ttf',    'Lato-Bold.ttf',    'Lato', 'bold');
+        const blkOk     = await loadFont(doc, base+'/fonts/UnifrakturMaguntia.ttf', 'UnifrakturMaguntia.ttf', 'UnifrakturMaguntia', 'normal');
+        if (latoRegOk) { fonts.regular = 'Lato'; }
+        if (latoBldOk) { fonts.bold    = 'Lato'; }
+        if (blkOk)     { fonts.blackletter = 'UnifrakturMaguntia'; }
+
+        st.textContent = 'Preparing images…';
+        await new Promise(r => setTimeout(r, 0));
+
+        // Pre-render canvases once (reused across all pages)
+        const weeklyCanvas = weeklyImgDataUrl
+            ? await buildRotatedImgCanvas(weeklyImgDataUrl, weeklyNatW, weeklyNatH, IMG_BOX_W, IMG_BOX_H)
+            : null;
+        const specialLogoCanvas = specialImgDataUrl
+            ? await buildRotatedImgCanvas(specialImgDataUrl, specialNatW, specialNatH, SPEC_LOGO_W, SPEC_LOGO_H)
+            : null;
+
         const church = (parsedRows.find(r => !r.isSpecial) || parsedRows[0])?.church || 'envelopes';
 
         for (let idx = 0; idx < parsedRows.length; idx++) {
@@ -512,9 +532,8 @@ async function generatePDF() {
                 await new Promise(r => setTimeout(r, 0));
             }
             const row = parsedRows[idx];
-            const imgData = row.isSpecial ? specialImgData : weeklyImgData;
-            drawEnvPdf(doc, row, 0,            row.setLeft,  imgData);
-            drawEnvPdf(doc, row, SLOT_RIGHT_X, row.setRight, imgData);
+            drawEnvPdf(doc, row, 0,            row.setLeft,  weeklyCanvas, specialLogoCanvas, fonts);
+            drawEnvPdf(doc, row, SLOT_RIGHT_X, row.setRight, weeklyCanvas, specialLogoCanvas, fonts);
         }
 
         st.textContent = `Done — ${parsedRows.length} pages saved.`;
