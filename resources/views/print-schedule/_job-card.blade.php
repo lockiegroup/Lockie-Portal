@@ -13,7 +13,7 @@
 
     // Parse line comment for label generation
     $_lNum = ['start' => null, 'end' => null, 'defaultPack' => 100];
-    if ($job->line_comment && preg_match('/NUMBERED[:\s]+(?:[A-Z]+\s+)?(\d+)\s*[-–]+\s*(?:[A-Z]+\s+)?(\d+)/i', $job->line_comment, $_lm)) {
+    if ($job->line_comment && preg_match('/NUMBERS?(?:ED)?[:\s]+(?:[A-Za-z]+\s+)*(\d+)\s*[-–]+\s*(?:[A-Za-z]+\s+)*(\d+)/i', $job->line_comment, $_lm)) {
         $_lNum['start'] = (int)$_lm[1];
         $_lNum['end']   = (int)$_lm[2];
         $_lNum['defaultPack'] = $job->order_quantity > 0

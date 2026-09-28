@@ -1131,8 +1131,8 @@ class PrintScheduleController extends Controller
     {
         $result = ['num_start' => null, 'num_end' => null, 'num_prefix' => '', 'num_width' => 6, 'printed' => null];
 
-        // Handles "NUMBERED  L 060001 - L 260000" and "Numbered: 337001 - 347000"
-        if (preg_match('/NUMBERED[:\s]+([A-Z]+\s+)?(\d+)\s*[-–]+\s*(?:[A-Z]+\s+)?(\d+)/i', $text, $m)) {
+        // Handles "NUMBERED  L 060001 - L 260000", "Numbered: 337001 - 347000", "Numbers etc 1001 - 2000"
+        if (preg_match('/NUMBERS?(?:ED)?[:\s]+([A-Za-z]+\s+)?(\d+)\s*[-–]+\s*(?:[A-Za-z]+\s+)*(\d+)/i', $text, $m)) {
             $result['num_prefix'] = isset($m[1]) ? rtrim($m[1]) : '';  // e.g. "L" (no trailing space)
             $result['num_start']  = (int) $m[2];
             $result['num_end']    = (int) $m[3];
