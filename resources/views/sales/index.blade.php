@@ -12,6 +12,7 @@
             <div class="flex flex-wrap gap-2 mb-5">
                 <span class="text-slate-500 text-sm self-center mr-1">Quick:</span>
                 @foreach([
+                    'yesterday'    => 'Yesterday',
                     'this-week'    => 'This Week',
                     'this-month'   => 'This Month',
                     'last-month'   => 'Last Month',
@@ -207,6 +208,11 @@
             let from, to = new Date();
 
             switch (preset) {
+                case 'yesterday':
+                    from = new Date(today);
+                    from.setDate(today.getDate() - 1);
+                    to   = new Date(from);
+                    break;
                 case 'this-week': {
                     const day = today.getDay() || 7;
                     from = new Date(today);
