@@ -106,8 +106,8 @@ const SLOT_RIGHT_X = 77.75;
 
 // Weekly image frame (portrait PDF coords): x 18.2–50.8, y 17.1–35.9 mm
 const IMG_BOX_X = 18.2, IMG_BOX_Y = 17.1, IMG_BOX_W = 32.6, IMG_BOX_H = 18.8;
-// Special foot-logo frame: x 50.9–62.5, y 80.4–92.0 mm
-const SPEC_LOGO_X = 50.9, SPEC_LOGO_Y = 80.4, SPEC_LOGO_W = 11.6, SPEC_LOGO_H = 11.6;
+// Special foot-logo frame: x 47.9–59.5, y 79.0–90.6 mm (nudged from InDesign)
+const SPEC_LOGO_X = 47.9, SPEC_LOGO_Y = 79.0, SPEC_LOGO_W = 11.6, SPEC_LOGO_H = 11.6;
 
 const S = 1.7; // px/mm for HTML preview
 
@@ -268,12 +268,15 @@ function buildEnvHtml(row, setNum) {
     const env = document.createElement('div');
     env.style.cssText = `position:relative;width:${RW}px;height:${RH}px;overflow:hidden;background:white;flex-shrink:0;`;
 
-    // band: place centred text at a PDF (xBaseline, yCenter) position
+    // band: place centred text with PDF x-baseline → reading vertical, yCentre → reading horizontal.
+    // top is baseline-anchored: div top = rY(xPdf) - fsizePx*0.82 so text doesn't overlap
+    // at tight spacings (e.g. town 61.3 vs diocese 58.7 = 2.6mm apart).
     function band(text, xPdf, yCentre, fsizePx, bold, fontFamily, maxHalfMM) {
         const cx = rCX(yCentre);
         const halfW = (maxHalfMM ?? 44) * S;
+        const baseline = rY(xPdf);
         const el = document.createElement('div');
-        el.style.cssText = `position:absolute;top:${rY(xPdf)}px;` +
+        el.style.cssText = `position:absolute;top:${baseline - fsizePx * 0.82}px;` +
             `left:${Math.max(0, cx - halfW)}px;width:${Math.min(RW, halfW * 2)}px;` +
             `font-family:${fontFamily||'Arial,sans-serif'};font-weight:${bold?'700':'400'};` +
             `font-size:${fsizePx}px;color:#111;text-align:center;white-space:nowrap;overflow:hidden;line-height:1;`;
@@ -287,7 +290,7 @@ function buildEnvHtml(row, setNum) {
         // Reading frame: 18.8mm wide × 32.6mm tall (from PDF frame rotated into reading)
         const prevBoxW = IMG_BOX_H, prevBoxH = IMG_BOX_W; // reading frame dims
         const { dW, dH } = fitNatural(weeklyNatW, weeklyNatH, prevBoxW, prevBoxH);
-        // Frame centre in reading coords:  cx=IMG_BOX_Y+IMG_BOX_H/2, cy from PDF x centre
+        // Frame centre in reading coords: cx=IMG_BOX_Y+IMG_BOX_H/2, cy from PDF x centre
         const frameCX = (IMG_BOX_Y + IMG_BOX_H / 2) * S;
         const frameCY = (SLOT_W - (IMG_BOX_X + IMG_BOX_W / 2)) * S;
         const imgEl = document.createElement('img');
@@ -311,36 +314,36 @@ function buildEnvHtml(row, setNum) {
         env.appendChild(imgEl);
     }
 
-    // ── Text (all centred on yCentre = PDF y-baseline) ────────────────────
-    // Church — 15pt bold, PDF x-baseline=65.9, centred on face (y=49)
+    // ── Text — all centred on face (yCentre=49); gift text/date at yCentre=68.5 ──
+    // Church — 15pt bold, x-baseline=65.9, centred on face
     band(row.church, 65.9, 49, 6*S, true, null, 44);
 
-    // Town — 11pt bold, x=61.3, y=70
-    if (row.town) band(row.town, 61.3, 70, 4.5*S, true, null, 44);
+    // Town — 11pt bold, x=61.3, centred on face
+    if (row.town) band(row.town, 61.3, 49, 4.5*S, true, null, 44);
 
-    // Diocese — 6pt, x=58.7/56.1/53.5, y=70 (first line = highest x)
+    // Diocese — 6pt, x=58.7/56.1/53.5, centred on face (first line = highest x)
     [row.diocese1, row.diocese2, row.diocese3].filter(Boolean).forEach((d, i) => {
-        band(d, 58.7 - i*2.6, 70, 2.8*S, false, null, 44);
+        band(d, 58.7 - i*2.6, 49, 2.8*S, false, null, 44);
     });
 
     if (isSpec) {
-        // Special: blackletter title lines VT6-8, x=38.4/29.8/21.2
+        // Special: blackletter title lines VT6-8, x=38.4/29.8/21.2, centred on face
         [row.vts[5], row.vts[6], row.vts[7]].filter(Boolean).forEach((t, i) => {
             band(t, 38.4 - i*8.6, 49, 5*S, false, "'UnifrakturMaguntia',serif", 44);
         });
     } else {
-        // Gift text: VT1-8, 9pt, 3.9mm leading, block centred on x=31.5
+        // Gift text: VT1-8, 9pt, 3.9mm leading, block centred on x=31.5; centred at 68.5mm
         const vts = row.vts.filter(Boolean);
         const n = vts.length;
         vts.forEach((line, i) => {
             const xPdf = Math.max(11.2, 31.5 + ((n - 1) / 2 - i) * 3.9);
-            band(line, xPdf, 70, 3.8*S, false, null, 44);
+            band(line, xPdf, 68.5, 3.8*S, false, null, 44);
         });
     }
 
-    // Date — 11pt, x=8.2, y=70
+    // Date — 11pt, x=8.2, centred at 68.5mm (same column as gift text)
     const date = buildDate(row);
-    if (date) band(date.toUpperCase(), 8.2, 70, 4.5*S, false, null, 44);
+    if (date) band(date.toUpperCase(), 8.2, 68.5, 4.5*S, false, null, 44);
 
     // Set number — x=6.9, y=10.3 from top → reading: bottom-left
     if (setNum !== null) {
@@ -430,15 +433,16 @@ function drawEnvPdf(doc, row, slotX, setNum, weeklyCanvas, specialLogoCanvas, fo
 
     // ── Set number — 20pt Medium, slotX+6.9, startY=10.3 ────────────────────
     if (setNum !== null) {
-        doc.setFont(fonts.regular, 'normal'); doc.setFontSize(20);
+        doc.setFont(fonts.medium, 'normal'); doc.setFontSize(20);
         doc.text(String(setNum), slotX + 6.9, 10.3, { angle: -90 });
     }
 
-    // ── Date — 11pt Medium, slotX+8.2, startY=57.5 ───────────────────────────
+    // ── Date — 11pt Medium, slotX+8.2, centred at 68.5mm ────────────────────
     const date = buildDate(row);
     if (date) {
-        doc.setFont(fonts.regular, 'normal'); doc.setFontSize(11);
-        doc.text(date.toUpperCase(), slotX + 8.2, 57.5, { angle: -90 });
+        doc.setFont(fonts.medium, 'normal'); doc.setFontSize(11);
+        const dateY = 68.5 - doc.getTextWidth(date.toUpperCase()) / 2;
+        doc.text(date.toUpperCase(), slotX + 8.2, dateY, { angle: -90 });
     }
 
     if (isSpec) {
@@ -462,13 +466,15 @@ function drawEnvPdf(doc, row, slotX, setNum, weeklyCanvas, specialLogoCanvas, fo
                 let pt = 9; doc.setFontSize(pt);
                 while (pt > 5 && doc.getTextWidth(line) > 88) { pt -= 0.25; doc.setFontSize(pt); }
                 const xOff = Math.max(slotX + 11.2, slotX + 31.5 + ((n - 1) / 2 - i) * 3.9);
-                doc.text(line, xOff, cY(line), { angle: -90 });
+                // Centred at 68.5mm from top (below image frame which ends at 35.9mm)
+                const vtY = 68.5 - doc.getTextWidth(line) / 2;
+                doc.text(line, xOff, vtY, { angle: -90 });
             });
         }
     }
 
     // ── Diocese — 6pt Medium, slotX+58.7 (−2.6/line), centred ───────────────
-    doc.setFont(fonts.regular, 'normal'); doc.setFontSize(6);
+    doc.setFont(fonts.medium, 'normal'); doc.setFontSize(6);
     [row.diocese1, row.diocese2, row.diocese3].filter(Boolean).forEach((d, i) => {
         let pt = 6; doc.setFontSize(pt);
         while (pt > 4 && doc.getTextWidth(d) > 88) { pt -= 0.25; doc.setFontSize(pt); }
@@ -502,15 +508,36 @@ async function generatePDF() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ unit: 'mm', format: [PAGE_W, PAGE_H], orientation: 'landscape' });
 
-        // Load and embed fonts; fall back to built-in helvetica if files unavailable
-        const fonts = { regular: 'helvetica', bold: 'helvetica', blackletter: 'helvetica' };
+        // Load and embed fonts.
+        // Priority for body: HelveticaNeue-* (user-supplied) → Arimo (bundled) → helvetica.
+        // Medium weight used for number, date, diocese; Bold for church+town; Regular for gift text.
+        const fonts = { regular: 'helvetica', medium: 'helvetica', bold: 'helvetica', blackletter: 'helvetica' };
         const base = window.location.origin;
-        const latoRegOk = await loadFont(doc, base+'/fonts/Lato-Regular.ttf', 'Lato-Regular.ttf', 'Lato', 'normal');
-        const latoBldOk = await loadFont(doc, base+'/fonts/Lato-Bold.ttf',    'Lato-Bold.ttf',    'Lato', 'bold');
-        const blkOk     = await loadFont(doc, base+'/fonts/UnifrakturMaguntia.ttf', 'UnifrakturMaguntia.ttf', 'UnifrakturMaguntia', 'normal');
-        if (latoRegOk) { fonts.regular = 'Lato'; }
-        if (latoBldOk) { fonts.bold    = 'Lato'; }
-        if (blkOk)     { fonts.blackletter = 'UnifrakturMaguntia'; }
+
+        // Try Helvetica Neue first (user supplies these TTFs into public/fonts/)
+        const hnRegOk = await loadFont(doc, base+'/fonts/HelveticaNeue-Regular.ttf', 'HelveticaNeue-Regular.ttf', 'HelveticaNeue', 'normal');
+        const hnMedOk = await loadFont(doc, base+'/fonts/HelveticaNeue-Medium.ttf',  'HelveticaNeue-Medium.ttf',  'HelveticaNeueM', 'normal');
+        const hnBldOk = await loadFont(doc, base+'/fonts/HelveticaNeue-Bold.ttf',    'HelveticaNeue-Bold.ttf',    'HelveticaNeue', 'bold');
+        if (hnRegOk) fonts.regular = 'HelveticaNeue';
+        if (hnMedOk) fonts.medium  = 'HelveticaNeueM';
+        if (hnBldOk) fonts.bold    = 'HelveticaNeue';
+
+        // Fall back to Arimo (metric Helvetica clone, bundled) for any weight not loaded
+        if (!hnRegOk) {
+            const ok = await loadFont(doc, base+'/fonts/Arimo-Regular.ttf', 'Arimo-Regular.ttf', 'Arimo', 'normal');
+            if (ok) fonts.regular = 'Arimo';
+        }
+        if (!hnMedOk) {
+            const ok = await loadFont(doc, base+'/fonts/Arimo-Medium.ttf', 'Arimo-Medium.ttf', 'ArimoMed', 'normal');
+            if (ok) fonts.medium = 'ArimoMed';
+        }
+        if (!hnBldOk) {
+            const ok = await loadFont(doc, base+'/fonts/Arimo-Bold.ttf', 'Arimo-Bold.ttf', 'Arimo', 'bold');
+            if (ok) fonts.bold = 'Arimo';
+        }
+
+        const blkOk = await loadFont(doc, base+'/fonts/UnifrakturMaguntia.ttf', 'UnifrakturMaguntia.ttf', 'UnifrakturMaguntia', 'normal');
+        if (blkOk) fonts.blackletter = 'UnifrakturMaguntia';
 
         st.textContent = 'Preparing images…';
         await new Promise(r => setTimeout(r, 0));
