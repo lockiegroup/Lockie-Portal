@@ -279,7 +279,7 @@ function buildEnvHtml(row, setNum) {
         el.style.cssText = `position:absolute;top:${baseline - fsizePx * 0.82}px;` +
             `left:${Math.max(0, cx - halfW)}px;width:${Math.min(RW, halfW * 2)}px;` +
             `font-family:${fontFamily||'Arial,sans-serif'};font-weight:${bold?'700':'400'};` +
-            `font-size:${fsizePx}px;color:#111;text-align:center;white-space:nowrap;overflow:hidden;line-height:1;`;
+            `font-size:${fsizePx}px;color:#111;text-align:center;white-space:nowrap;overflow:visible;line-height:1;`;
         el.textContent = text;
         env.appendChild(el);
     }
