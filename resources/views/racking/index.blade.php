@@ -67,6 +67,37 @@
 .div-badge-jw { background:#fbd0b5;color:#92400e; }
 .div-badge-hh { background:#ddb8dd;color:#6b21a8; }
 .div-badge-xx { background:#e2e8f0;color:#475569; }
+
+/* ── Print ── */
+@media print {
+    @page { size: A4 landscape; margin: 8mm; }
+
+    body * { visibility: hidden; }
+    #rack-printable, #rack-printable * { visibility: visible; }
+    #rack-printable { position: fixed; inset: 0; padding: 0; }
+
+    .rack-row {
+        grid-template-columns: 38px 18px repeat(8, minmax(0,1fr));
+        gap: 1.5px;
+        margin-bottom: 1.5px;
+    }
+    .slot-card, .slot-empty { min-height: 36px; padding: 3px 4px; border-radius: 4px; cursor: default; }
+    .slot-card:hover { box-shadow: none; transform: none; }
+    .rack-bay-label { padding: .25rem .15rem; font-size: .65rem; }
+    .rack-level-label { font-size: .5rem; }
+    .rack-p-label { font-size: .55rem; }
+    .rack-floor-label, .rack-floor-bay { padding: .25rem; font-size: .55rem; }
+
+    /* Show print-only header */
+    .print-header { display: block !important; }
+
+    /* Remove interactive affordances */
+    .slot-card, .slot-empty { transition: none !important; }
+    button { cursor: default !important; }
+
+    /* Force background colours to print */
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+}
 </style>
 
 <main style="max-width:1400px;margin:0 auto;padding:1.5rem;">
@@ -83,6 +114,11 @@
         <a href="{{ route('racking.movements') }}" style="padding:.45rem .875rem;background:#fff;border:1px solid #e2e8f0;border-radius:7px;font-size:.8125rem;color:#374151;text-decoration:none;font-weight:600;">
             Movements
         </a>
+        <button onclick="window.print()"
+            style="padding:.45rem .875rem;background:#0f172a;color:#fff;border:none;border-radius:7px;font-size:.8125rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:.35rem;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            Print
+        </button>
     </div>
 </div>
 
@@ -149,6 +185,25 @@ function divBadgeClass($d) {
 @endphp
 
 {{-- Racking Grid: front-elevation view — Level 3 top, Level 1 bottom, A–H columns --}}
+<div id="rack-printable">
+
+{{-- Print-only header --}}
+<div style="display:none;" class="print-header">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;padding-bottom:4px;border-bottom:1.5px solid #1e293b;">
+        <div style="font-size:13pt;font-weight:700;color:#1e293b;">Lockie Group — Pallet Racking</div>
+        <div style="font-size:8pt;color:#64748b;">Printed: {{ now()->format('d/m/Y H:i') }}</div>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:6px;flex-wrap:wrap;">
+        <span style="font-size:7pt;font-weight:600;color:#374151;">Key:</span>
+        <span style="background:#fff;border:1px solid #d1d5db;border-radius:3px;padding:1px 6px;font-size:7pt;font-weight:600;color:#374151;">Lockie Church</span>
+        <span style="background:#fde8d3;border:1px solid #f9c9a0;border-radius:3px;padding:1px 6px;font-size:7pt;font-weight:600;color:#92400e;">JW Products</span>
+        <span style="background:#e8d5e8;border:1px solid #d4aed4;border-radius:3px;padding:1px 6px;font-size:7pt;font-weight:600;color:#6b21a8;">Hammond &amp; Harper</span>
+        <span style="background:#d4edda;border:1px solid #a3d9b1;border-radius:3px;padding:1px 6px;font-size:7pt;font-weight:600;color:#166534;">Available</span>
+        <span style="background:#c8c8c8;border:1px solid #a8a8a8;border-radius:3px;padding:1px 6px;font-size:7pt;font-weight:600;color:#374151;">Unusable</span>
+        <span style="margin-left:auto;font-size:7pt;color:#374151;">Filled: {{ $filledCount }} &nbsp;|&nbsp; Empty: {{ $emptyCount }} &nbsp;|&nbsp; Unusable: {{ $unusableCount }}</span>
+    </div>
+</div>
+
 <div style="overflow-x:auto;padding-bottom:.5rem;">
 <div style="min-width:780px;">
 
@@ -229,6 +284,8 @@ function divBadgeClass($d) {
 
 </div>
 </div>
+
+</div>{{-- /rack-printable --}}
 
 {{-- Slot Edit/Add Modal --}}
 <div id="slot-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:1rem;">
