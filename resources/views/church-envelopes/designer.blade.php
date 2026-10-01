@@ -452,7 +452,7 @@ async function buildRotatedImgCanvas(imgDataUrl, nw, nh, boxW, boxH) {
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, cW, cH);
-    const scale = Math.max(cW / sh, cH / sw);
+    const scale = Math.min(cW / sh, cH / sw);  // fit-inside: whole image visible, centred
     const dW = sh * scale, dH = sw * scale;
     ctx.drawImage(rot, (cW - dW) / 2, (cH - dH) / 2, dW, dH);
 
