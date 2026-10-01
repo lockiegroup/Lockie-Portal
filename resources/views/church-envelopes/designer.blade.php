@@ -92,7 +92,7 @@
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script>
 // ── Version marker (check in browser DevTools → Sources to confirm latest build) ──
-const DESIGNER_VERSION = 'box-coords-v6-2026-10-01';
+const DESIGNER_VERSION = 'reading-space-v7-2026-10-01';
 console.log('[envelope-designer] version:', DESIGNER_VERSION);
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -443,24 +443,32 @@ async function buildRotatedImgCanvas(imgDataUrl, nw, nh, boxW, boxH, fill = true
     const sw = bounds ? bounds.sw : nw; // cropped width
     const sh = bounds ? bounds.sh : nh; // cropped height
 
-    // Step 1: rotate cropped region 90° CW onto an intermediate canvas (sh wide × sw tall).
-    const rot = document.createElement('canvas');
-    rot.width = sh; rot.height = sw;
-    const rc = rot.getContext('2d');
-    rc.translate(sh, 0);
-    rc.rotate(Math.PI / 2);
-    rc.drawImage(imgEl, sx, sy, sw, sh, 0, 0, sw, sh);
+    const cW = Math.round(boxW * ICPPM);
+    const cH = Math.round(boxH * ICPPM);
+    // Reading-space dims: reading face is rotated 90° from PDF canvas, so swap axes.
+    // PDF x-axis → reading y-axis, PDF y-axis → reading x-axis.
+    // readW = cH (PDF height becomes reading width), readH = cW (PDF width becomes reading height).
+    const readW = cH, readH = cW;
 
-    // Step 2: fill-scale the rotated canvas (sh × sw) into the box (cW × cH).
-    const cW = Math.round(boxW * ICPPM), cH = Math.round(boxH * ICPPM);
+    // Step 1: scale opaque content into reading-space canvas (portrait reading orientation).
+    const readCanvas = document.createElement('canvas');
+    readCanvas.width = readW; readCanvas.height = readH;
+    const rc = readCanvas.getContext('2d');
+    rc.fillStyle = '#fff';
+    rc.fillRect(0, 0, readW, readH);
+    const rScale = fill ? Math.max(readW / sw, readH / sh) : Math.min(readW / sw, readH / sh);
+    const rdW = sw * rScale, rdH = sh * rScale;
+    rc.drawImage(imgEl, sx, sy, sw, sh, (readW - rdW) / 2, (readH - rdH) / 2, rdW, rdH);
+
+    // Step 2: rotate reading canvas 90° CW onto PDF-space canvas (cW × cH).
     const canvas = document.createElement('canvas');
     canvas.width = cW; canvas.height = cH;
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, cW, cH);
-    const scale = fill ? Math.max(cW / sh, cH / sw) : Math.min(cW / sh, cH / sw);
-    const dW = sh * scale, dH = sw * scale;
-    ctx.drawImage(rot, (cW - dW) / 2, (cH - dH) / 2, dW, dH);
+    ctx.translate(cW, 0);
+    ctx.rotate(Math.PI / 2);
+    ctx.drawImage(readCanvas, 0, 0);
 
     return { canvas, dW: boxW, dH: boxH };
 }
