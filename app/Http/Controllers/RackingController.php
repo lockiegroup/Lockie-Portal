@@ -209,6 +209,48 @@ class RackingController extends Controller
         return redirect()->route('racking.outside')->with('success', 'Moved to racking slot ' . $slotLabel . ' and logged.');
     }
 
+    public function move(Request $request, RackingItem $rackingItem): RedirectResponse
+    {
+        $data = $request->validate([
+            'to_bay'         => 'required|string|max:3',
+            'to_slot_number' => 'required|integer|min:1|max:10',
+        ]);
+
+        $occupied = RackingItem::where('bay', $data['to_bay'])
+            ->where('slot_number', $data['to_slot_number'])
+            ->where('id', '!=', $rackingItem->id)
+            ->exists();
+
+        if ($occupied) {
+            return redirect()->route('racking.index')
+                ->with('error', 'Slot ' . $data['to_bay'] . '-' . $data['to_slot_number'] . ' is already occupied. Choose a different slot.');
+        }
+
+        $fromLabel = $rackingItem->bay . '-' . $rackingItem->slot_number;
+        $toLabel   = $data['to_bay'] . '-' . $data['to_slot_number'];
+
+        $rackingItem->update([
+            'bay'         => $data['to_bay'],
+            'slot_number' => $data['to_slot_number'],
+            'sort_order'  => $data['to_slot_number'],
+        ]);
+
+        try {
+            StockMovement::create([
+                'moved_at'      => now(),
+                'description'   => $rackingItem->description,
+                'quantity'      => $rackingItem->quantity,
+                'from_location' => $fromLabel,
+                'to_location'   => $toLabel,
+                'notes'         => 'Moved within racking',
+                'moved_by'      => $this->mover(),
+                'action_type'   => 'moved',
+            ]);
+        } catch (\Throwable) {}
+
+        return redirect()->route('racking.index')->with('success', 'Moved from ' . $fromLabel . ' to ' . $toLabel . '.');
+    }
+
     public function updateSettings(Request $request): RedirectResponse
     {
         return redirect()->route('racking.index');

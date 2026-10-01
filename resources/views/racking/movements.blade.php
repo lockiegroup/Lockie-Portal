@@ -27,6 +27,7 @@ function actionBadge($type) {
         'moved-to-rack'  => ['bg'=>'#f0fdf4','color'=>'#166534','label'=>'→ Racking'],
         'outside-added'  => ['bg'=>'#fefce8','color'=>'#854d0e','label'=>'OS Added'],
         'outside-removed'=> ['bg'=>'#fef2f2','color'=>'#991b1b','label'=>'OS Removed'],
+        'moved'          => ['bg'=>'#eff6ff','color'=>'#1d4ed8','label'=>'Moved'],
         default          => ['bg'=>'#f1f5f9','color'=>'#475569','label'=>$type ?? 'Manual'],
     };
 }

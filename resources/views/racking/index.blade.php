@@ -74,8 +74,7 @@
 {{-- Header --}}
 <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1.25rem;">
     <div>
-        <h1 style="font-size:1.4rem;font-weight:700;color:#1e293b;margin:0 0 .2rem;">Pallet Racking</h1>
-        <p style="color:#64748b;font-size:0.8125rem;margin:0;">Click any slot to edit or fill it. Dashed = empty.</p>
+        <h1 style="font-size:1.4rem;font-weight:700;color:#1e293b;margin:0;">Pallet Racking</h1>
     </div>
     <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
         <a href="{{ route('racking.outside') }}" style="padding:.45rem .875rem;background:#fff;border:1px solid #e2e8f0;border-radius:7px;font-size:.8125rem;color:#374151;text-decoration:none;font-weight:600;">
@@ -84,10 +83,6 @@
         <a href="{{ route('racking.movements') }}" style="padding:.45rem .875rem;background:#fff;border:1px solid #e2e8f0;border-radius:7px;font-size:.8125rem;color:#374151;text-decoration:none;font-weight:600;">
             Movements
         </a>
-        <button onclick="document.getElementById('import-modal').style.display='flex'"
-            style="padding:.45rem .875rem;background:#fff;border:1px solid #e2e8f0;border-radius:7px;font-size:.8125rem;color:#374151;font-weight:600;cursor:pointer;">
-            Import XLSX
-        </button>
     </div>
 </div>
 
@@ -128,6 +123,11 @@
 $letters = ['A','B','C','D','E','F','G','H'];
 $levels  = [3, 2, 1];
 
+function fmtQty($q) {
+    if (!$q) return null;
+    $n = str_replace(',', '', $q);
+    return is_numeric($n) ? number_format((float)$n) : $q;
+}
 function slotCardClass($item) {
     if (!$item) return '';
     if ($item->is_unusable) return 'slot-unusable-bg';
@@ -192,7 +192,7 @@ function divBadgeClass($d) {
         <div style="font-size:.72rem;font-weight:600;color:#1e293b;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">{{ $item->description }}</div>
 
         @if($item->quantity)
-        <div style="font-size:.63rem;color:#64748b;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ $item->quantity }}</div>
+        <div style="font-size:.63rem;color:#64748b;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ fmtQty($item->quantity) }}</div>
         @endif
 
         @if($item->date_stored)
@@ -304,11 +304,49 @@ function divBadgeClass($d) {
 
             {{-- Move to Outside Storage --}}
             <div id="move-outside-wrap" style="display:none;margin-top:.75rem;padding-top:.75rem;border-top:1px solid #f1f5f9;">
-                <button type="button" id="move-outside-btn"
-                    onclick="moveToOutside()"
-                    style="width:100%;padding:.55rem;background:#fefce8;color:#854d0e;border:1px solid #fde68a;border-radius:8px;font-size:.8125rem;font-weight:600;cursor:pointer;">
-                    Send to Outside Storage
-                </button>
+                <div style="display:flex;gap:.5rem;">
+                    <button type="button" id="move-outside-btn"
+                        onclick="moveToOutside()"
+                        style="flex:1;padding:.55rem;background:#fefce8;color:#854d0e;border:1px solid #fde68a;border-radius:8px;font-size:.8125rem;font-weight:600;cursor:pointer;">
+                        Send to Outside Storage
+                    </button>
+                    <button type="button"
+                        onclick="toggleMoveSlot()"
+                        style="flex:1;padding:.55rem;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:8px;font-size:.8125rem;font-weight:600;cursor:pointer;">
+                        Move to Another Slot
+                    </button>
+                </div>
+
+                {{-- Move-slot picker (hidden until toggled) --}}
+                <div id="move-slot-wrap" style="display:none;margin-top:.75rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:.75rem;">
+                    <p style="font-size:.75rem;color:#64748b;margin:0 0 .5rem;font-weight:600;">Move to:</p>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.625rem;">
+                        <div>
+                            <label style="display:block;font-size:.7rem;font-weight:600;color:#374151;margin-bottom:.2rem;">Bay</label>
+                            <select id="move-to-bay" style="width:100%;border:1px solid #e2e8f0;border-radius:6px;padding:.4rem .6rem;font-size:.8125rem;color:#1e293b;">
+                                <optgroup label="Level 3">
+                                    @foreach(['A','B','C','D','E','F','G','H'] as $l)<option value="{{ $l }}3">{{ $l }}3</option>@endforeach
+                                </optgroup>
+                                <optgroup label="Level 2">
+                                    @foreach(['A','B','C','D','E','F','G','H'] as $l)<option value="{{ $l }}2">{{ $l }}2</option>@endforeach
+                                </optgroup>
+                                <optgroup label="Level 1">
+                                    @foreach(['A','B','C','D','E','F','G','H'] as $l)<option value="{{ $l }}1">{{ $l }}1</option>@endforeach
+                                </optgroup>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display:block;font-size:.7rem;font-weight:600;color:#374151;margin-bottom:.2rem;">Slot</label>
+                            <select id="move-to-slot" style="width:100%;border:1px solid #e2e8f0;border-radius:6px;padding:.4rem .6rem;font-size:.8125rem;color:#1e293b;">
+                                @for($p=1;$p<=$slots;$p++)<option value="{{ $p }}">P{{ $p }}</option>@endfor
+                            </select>
+                        </div>
+                    </div>
+                    <button type="button" onclick="confirmMoveSlot()"
+                        style="width:100%;padding:.5rem;background:#1d4ed8;color:#fff;border:none;border-radius:7px;font-size:.8125rem;font-weight:700;cursor:pointer;">
+                        Confirm Move
+                    </button>
+                </div>
             </div>
         </form>
 
@@ -321,6 +359,13 @@ function divBadgeClass($d) {
         {{-- Hidden move-to-outside form --}}
         <form id="move-outside-form" method="POST" style="display:none;">
             @csrf
+        </form>
+
+        {{-- Hidden move-within-racking form --}}
+        <form id="move-slot-form" method="POST" style="display:none;">
+            @csrf
+            <input type="hidden" name="to_bay" id="move-slot-bay-val">
+            <input type="hidden" name="to_slot_number" id="move-slot-num-val">
         </form>
     </div>
 </div>
@@ -350,6 +395,13 @@ function divBadgeClass($d) {
 <script>
 let currentItemId = null;
 
+function fmtQtyInput(val) {
+    if (!val) return val;
+    const stripped = val.replace(/,/g, '');
+    if (!/^\d+$/.test(stripped)) return val;
+    return parseInt(stripped, 10).toLocaleString('en-GB');
+}
+
 function openSlot(id, data) {
     currentItemId = id;
     const isNew = id === null;
@@ -363,7 +415,6 @@ function openSlot(id, data) {
     if (isNew) {
         form.action = '{{ route('racking.store') }}';
         document.getElementById('slot-method').value = 'POST';
-        // Inject bay + slot as hidden fields (only needed for store)
         setOrCreate(form, 'bay', data.bay);
         setOrCreate(form, 'slot_number', data.slot_number);
     } else {
@@ -373,20 +424,32 @@ function openSlot(id, data) {
         removeField(form, 'slot_number');
     }
 
-    document.getElementById('s-division').value = data.division || '';
-    document.getElementById('s-desc').value      = data.description || '';
-    document.getElementById('s-qty').value       = data.quantity || '';
-    document.getElementById('s-ref').value       = data.pallet_ref || '';
-    document.getElementById('s-date').value      = data.date_stored || '';
+    document.getElementById('s-division').value  = data.division || '';
+    document.getElementById('s-desc').value       = data.description || '';
+    document.getElementById('s-qty').value        = fmtQtyInput(data.quantity || '');
+    document.getElementById('s-ref').value        = data.pallet_ref || '';
+    document.getElementById('s-date').value       = data.date_stored || '';
     document.getElementById('s-unusable').checked = !!data.is_unusable;
     document.getElementById('s-outside').checked  = !!data.for_outside_storage;
     document.getElementById('s-notes').value      = data.notes || '';
 
     document.getElementById('clear-btn').style.display = isNew ? 'none' : '';
     document.getElementById('move-outside-wrap').style.display = isNew ? 'none' : '';
+    document.getElementById('move-slot-wrap').style.display = 'none';
     document.getElementById('slot-modal').style.display = 'flex';
     setTimeout(() => document.getElementById('s-division').focus(), 80);
 }
+
+// Format quantity input with commas while typing
+document.addEventListener('DOMContentLoaded', function() {
+    const qtyEl = document.getElementById('s-qty');
+    qtyEl.addEventListener('blur', function() {
+        this.value = fmtQtyInput(this.value);
+    });
+    qtyEl.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') this.value = fmtQtyInput(this.value);
+    });
+});
 
 function clearSlot() {
     if (!currentItemId) return;
@@ -404,8 +467,26 @@ function moveToOutside() {
     f.submit();
 }
 
+function toggleMoveSlot() {
+    const wrap = document.getElementById('move-slot-wrap');
+    wrap.style.display = wrap.style.display === 'none' ? 'block' : 'none';
+}
+
+function confirmMoveSlot() {
+    if (!currentItemId) return;
+    const bay  = document.getElementById('move-to-bay').value;
+    const slot = document.getElementById('move-to-slot').value;
+    if (!confirm('Move to ' + bay + ' Slot P' + slot + '? This will be logged.')) return;
+    const f = document.getElementById('move-slot-form');
+    f.action = '/racking/' + currentItemId + '/move';
+    document.getElementById('move-slot-bay-val').value  = bay;
+    document.getElementById('move-slot-num-val').value  = slot;
+    f.submit();
+}
+
 function closeModal() {
     document.getElementById('slot-modal').style.display = 'none';
+    document.getElementById('move-slot-wrap').style.display = 'none';
 }
 
 function setOrCreate(form, name, value) {
