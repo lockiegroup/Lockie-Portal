@@ -397,8 +397,32 @@ async function loadFont(doc, url, filename, fontName, style) {
     } catch(e) { console.warn('Font load failed:', filename, e.message); return false; }
 }
 
+// Returns tight bounding box {sx,sy,sw,sh} of all pixels with alpha>0.
+// Returns null if the image has no transparent pixels (treat as fully opaque).
+function opaqueBounds(imgEl) {
+    const iw = imgEl.naturalWidth, ih = imgEl.naturalHeight;
+    const tmp = document.createElement('canvas');
+    tmp.width = iw; tmp.height = ih;
+    tmp.getContext('2d').drawImage(imgEl, 0, 0, iw, ih);
+    const data = tmp.getContext('2d').getImageData(0, 0, iw, ih).data;
+    let minX = iw, maxX = -1, minY = ih, maxY = -1;
+    for (let y = 0; y < ih; y++) {
+        for (let x = 0; x < iw; x++) {
+            if (data[(y * iw + x) * 4 + 3] > 0) {
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+                if (y < minY) minY = y;
+                if (y > maxY) maxY = y;
+            }
+        }
+    }
+    if (maxX < 0) return null; // fully transparent
+    if (minX === 0 && minY === 0 && maxX === iw - 1 && maxY === ih - 1) return null; // already tight
+    return { sx: minX, sy: minY, sw: maxX - minX + 1, sh: maxY - minY + 1 };
+}
+
 // Pre-rotate image 90° CW and fill the box (InDesign Fill Frame Proportionally).
-// Two-step: rotate onto an intermediate nh×nw canvas, then fill-scale onto the box canvas.
+// Trims transparent padding from the source so fill-scale uses the opaque content area.
 // Canvas returned is exactly boxW×boxH mm at ICPPM px/mm — no whitespace bars.
 async function buildRotatedImgCanvas(imgDataUrl, nw, nh, boxW, boxH) {
     if (!imgDataUrl || !nw || !nh) return null;
@@ -406,25 +430,30 @@ async function buildRotatedImgCanvas(imgDataUrl, nw, nh, boxW, boxH) {
     const imgEl = await loadImage(imgDataUrl);
     if (!imgEl) return null;
 
-    // Step 1: rotate 90° CW onto an intermediate canvas (nh wide × nw tall).
-    const rot = document.createElement('canvas');
-    rot.width = nh; rot.height = nw;
-    const rc = rot.getContext('2d');
-    rc.translate(nh, 0);       // move origin to top-right
-    rc.rotate(Math.PI / 2);    // 90° CW: old bottom-left → new top-left
-    rc.drawImage(imgEl, 0, 0, nw, nh);
+    // Crop to opaque content — transparent padding inflates dimensions and shrinks fill.
+    const bounds = opaqueBounds(imgEl);
+    const sx = bounds ? bounds.sx : 0;
+    const sy = bounds ? bounds.sy : 0;
+    const sw = bounds ? bounds.sw : nw; // cropped width
+    const sh = bounds ? bounds.sh : nh; // cropped height
 
-    // Step 2: fill-scale the rotated canvas (nh × nw) into the box (cW × cH).
-    // scale = Math.max → image fills both dims, excess is clipped at canvas edges.
+    // Step 1: rotate cropped region 90° CW onto an intermediate canvas (sh wide × sw tall).
+    const rot = document.createElement('canvas');
+    rot.width = sh; rot.height = sw;
+    const rc = rot.getContext('2d');
+    rc.translate(sh, 0);
+    rc.rotate(Math.PI / 2);
+    rc.drawImage(imgEl, sx, sy, sw, sh, 0, 0, sw, sh);
+
+    // Step 2: fill-scale the rotated canvas (sh × sw) into the box (cW × cH).
     const cW = Math.round(boxW * ICPPM), cH = Math.round(boxH * ICPPM);
     const canvas = document.createElement('canvas');
     canvas.width = cW; canvas.height = cH;
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, cW, cH);
-    const scale = Math.max(cW / nh, cH / nw);
-    const dW = nh * scale, dH = nw * scale;
-    console.log(`[buildCanvas] nw=${nw} nh=${nh} rot=${rot.width}×${rot.height} box=${cW}×${cH} scale=${scale.toFixed(4)} draw=${dW.toFixed(1)}×${dH.toFixed(1)} offset=(${((cW-dW)/2).toFixed(1)},${((cH-dH)/2).toFixed(1)})`);
+    const scale = Math.max(cW / sh, cH / sw);
+    const dW = sh * scale, dH = sw * scale;
     ctx.drawImage(rot, (cW - dW) / 2, (cH - dH) / 2, dW, dH);
 
     return { canvas, dW: boxW, dH: boxH };
@@ -448,9 +477,6 @@ function drawEnvPdf(doc, row, slotX, setNum, weeklyCanvasBox, weeklyCanvasCent, 
             const bW = hasVt ? IMG_BOX_W  : IMG_CENT_W;
             const bH = hasVt ? IMG_BOX_H  : IMG_CENT_H;
             // Diagnostics: verify canvas dims and placement in browser console.
-            console.log(`[wkImg] canvas=${wc.canvas.width}×${wc.canvas.height}px  PDF=(${(slotX+bX).toFixed(2)},${bY},${bW},${bH})mm  ${hasVt?'box':'cent'}`);
-            // Debug rect: red border at exact box coords — shows if PDF coord system is right.
-            doc.setDrawColor(255, 0, 0); doc.setLineWidth(0.2); doc.rect(slotX + bX, bY, bW, bH);
             // JPEG + no alias: avoids any jsPDF PNG-specific sizing or alias-cache issue.
             try { doc.addImage(wc.canvas.toDataURL('image/jpeg', 0.9), 'JPEG', slotX + bX, bY, bW, bH); } catch(e){ console.error('[wkImg] addImage failed:', e); }
         }
