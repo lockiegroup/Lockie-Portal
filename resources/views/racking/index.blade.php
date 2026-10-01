@@ -82,10 +82,10 @@
     /* Hide everything inside main except the printable grid */
     main > *:not(#rack-printable) { display: none !important; }
 
-    /* Grid in print: tighter gaps and no horizontal scroll wrapper */
+    /* Grid in print: remove scroll/min-width constraints */
     #rack-printable { display: block; width: 100%; }
-    #rack-printable > div[style*="overflow-x"] { overflow: visible !important; }
-    #rack-printable > div[style*="overflow-x"] > div[style*="min-width"] { min-width: 0 !important; }
+    #rack-grid-scroll { overflow: visible !important; padding-bottom: 0 !important; }
+    #rack-grid-inner  { min-width: 0 !important; }
 
     .rack-row {
         grid-template-columns: 34px 16px repeat(8, minmax(0,1fr));
@@ -230,8 +230,8 @@ function divBadgeClass($d) {
     </div>
 </div>
 
-<div style="overflow-x:auto;padding-bottom:.5rem;">
-<div style="min-width:780px;">
+<div id="rack-grid-scroll" style="overflow-x:auto;padding-bottom:.5rem;">
+<div id="rack-grid-inner" style="min-width:780px;">
 
 @foreach($levels as $lvl)
 
@@ -593,6 +593,40 @@ document.getElementById('slot-modal').addEventListener('click', function(e) {
 });
 document.getElementById('import-modal').addEventListener('click', function(e) {
     if (e.target === this) this.style.display = 'none';
+});
+
+// ── Print: auto-zoom to fit one A4 landscape page ────────────────────────
+window.addEventListener('beforeprint', function () {
+    const wrap   = document.getElementById('rack-printable');
+    const scroll = document.getElementById('rack-grid-scroll');
+    const inner  = document.getElementById('rack-grid-inner');
+
+    // Clear any previous zoom so measurement is clean
+    wrap.style.zoom = '';
+
+    // Temporarily expose full content for accurate measurement
+    if (scroll) { scroll.style.overflow = 'visible'; scroll.style.paddingBottom = '0'; }
+    if (inner)  inner.style.minWidth = '0';
+
+    // A4 landscape usable area with 7mm margins (96 CSS px per inch)
+    const maxH = Math.floor(196 * 96 / 25.4); // ≈ 740 px
+    const maxW = Math.floor(283 * 96 / 25.4); // ≈ 1069 px
+
+    const h = wrap.scrollHeight;
+    const w = wrap.scrollWidth;
+
+    const scale = Math.min(maxH / h, maxW / w, 1);
+    if (scale < 1) wrap.style.zoom = scale.toFixed(4);
+});
+
+window.addEventListener('afterprint', function () {
+    const wrap   = document.getElementById('rack-printable');
+    const scroll = document.getElementById('rack-grid-scroll');
+    const inner  = document.getElementById('rack-grid-inner');
+
+    wrap.style.zoom = '';
+    if (scroll) { scroll.style.overflow = ''; scroll.style.paddingBottom = ''; }
+    if (inner)  inner.style.minWidth = '';
 });
 </script>
 </main>
