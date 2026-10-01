@@ -92,7 +92,7 @@
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script>
 // ── Version marker (check in browser DevTools → Sources to confirm latest build) ──
-const DESIGNER_VERSION = 'cover-box-v5-2026-10-01';
+const DESIGNER_VERSION = 'box-coords-v6-2026-10-01';
 console.log('[envelope-designer] version:', DESIGNER_VERSION);
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -109,8 +109,8 @@ const PAGE_W = 156, PAGE_H = 98;
 const SLOT_W = 78, SLOT_H = 98;
 const SLOT_RIGHT_X = 77.75;
 
-// Weekly image frame (portrait PDF coords): x 18.2–50.8, y 17.1–35.9 mm
-const IMG_BOX_X = 18.2, IMG_BOX_Y = 17.1, IMG_BOX_W = 32.6, IMG_BOX_H = 18.8;
+// Weekly image frame (PDF landscape coords): x 12–50, y 5–44 mm (38×39 mm)
+const IMG_BOX_X = 12.0, IMG_BOX_Y = 5.0, IMG_BOX_W = 38.0, IMG_BOX_H = 39.0;
 // Centred image frame used when there are no verse lines: spans the body of the face
 const IMG_CENT_X = 13.0, IMG_CENT_Y = 3.0, IMG_CENT_W = 44.0, IMG_CENT_H = 92.0;
 // Special foot-logo frame: x 47.9–59.5, y 79.0–90.6 mm (nudged from InDesign)
