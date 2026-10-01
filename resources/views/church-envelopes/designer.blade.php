@@ -393,29 +393,35 @@ async function loadFont(doc, url, filename, fontName, style) {
     } catch(e) { console.warn('Font load failed:', filename, e.message); return false; }
 }
 
-// Pre-rotate image 90° CW on canvas + flatten onto white, FILL the box (InDesign fill-frame).
-// Canvas is exactly boxW×boxH mm at ICPPM px/mm. Image is scaled to fill the frame
-// (largest dimension fills, the other is cropped centred — no whitespace bars).
+// Pre-rotate image 90° CW and fill the box (InDesign Fill Frame Proportionally).
+// Two-step: rotate onto an intermediate nh×nw canvas, then fill-scale onto the box canvas.
+// Canvas returned is exactly boxW×boxH mm at ICPPM px/mm — no whitespace bars.
 async function buildRotatedImgCanvas(imgDataUrl, nw, nh, boxW, boxH) {
-    if (!imgDataUrl) return null;
+    if (!imgDataUrl || !nw || !nh) return null;
     const ICPPM = 8;
+    const imgEl = await loadImage(imgDataUrl);
+    if (!imgEl) return null;
+
+    // Step 1: rotate 90° CW onto an intermediate canvas (nh wide × nw tall).
+    const rot = document.createElement('canvas');
+    rot.width = nh; rot.height = nw;
+    const rc = rot.getContext('2d');
+    rc.translate(nh, 0);       // move origin to top-right
+    rc.rotate(Math.PI / 2);    // 90° CW: old bottom-left → new top-left
+    rc.drawImage(imgEl, 0, 0, nw, nh);
+
+    // Step 2: fill-scale the rotated canvas (nh × nw) into the box (cW × cH).
+    // scale = Math.max → image fills both dims, excess is clipped at canvas edges.
     const cW = Math.round(boxW * ICPPM), cH = Math.round(boxH * ICPPM);
     const canvas = document.createElement('canvas');
     canvas.width = cW; canvas.height = cH;
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, cW, cH);
-    const imgEl = await loadImage(imgDataUrl);
-    if (imgEl) {
-        // After 90° CW rotation, natural nw maps to screen-height and nh to screen-width.
-        // Fill frame: scale = Math.max so the image fills completely (cropped centred).
-        const scale = Math.max(cW / nh, cH / nw);
-        ctx.save();
-        ctx.translate(cW / 2, cH / 2);
-        ctx.rotate(Math.PI / 2);
-        ctx.drawImage(imgEl, -(nw * scale) / 2, -(nh * scale) / 2, nw * scale, nh * scale);
-        ctx.restore();
-    }
+    const scale = Math.max(cW / nh, cH / nw);
+    const dW = nh * scale, dH = nw * scale;
+    ctx.drawImage(rot, (cW - dW) / 2, (cH - dH) / 2, dW, dH);
+
     return { canvas, dW: boxW, dH: boxH };
 }
 
