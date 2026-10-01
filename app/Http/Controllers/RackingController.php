@@ -7,6 +7,7 @@ use App\Models\RackingItem;
 use App\Models\StockMovement;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -14,6 +15,12 @@ use PhpOffice\PhpSpreadsheet\Shared\Date as XlsDate;
 
 class RackingController extends Controller
 {
+    private function mover(): string
+    {
+        $user = Auth::user();
+        return $user ? ($user->name ?? $user->email) : 'Unknown';
+    }
+
     // ── Main Racking ──────────────────────────────────────────────────────────
 
     public function index(): View
@@ -73,6 +80,8 @@ class RackingController extends Controller
                 'from_location' => null,
                 'to_location'   => $item->bay . '-' . $item->slot_number,
                 'notes'         => 'Slot filled',
+                'moved_by'      => $this->mover(),
+                'action_type'   => 'filled',
             ]);
         }
 
@@ -108,6 +117,8 @@ class RackingController extends Controller
                 'from_location' => $rackingItem->bay . '-' . $rackingItem->slot_number,
                 'to_location'   => null,
                 'notes'         => 'Slot cleared',
+                'moved_by'      => $this->mover(),
+                'action_type'   => 'cleared',
             ]);
         }
 
@@ -136,6 +147,8 @@ class RackingController extends Controller
             'from_location' => $slotLabel,
             'to_location'   => 'Outside Storage',
             'notes'         => 'Moved to outside storage',
+            'moved_by'      => $this->mover(),
+            'action_type'   => 'moved-outside',
         ]);
 
         $rackingItem->delete();
@@ -179,6 +192,8 @@ class RackingController extends Controller
             'from_location' => 'Outside Storage',
             'to_location'   => $slotLabel,
             'notes'         => 'Moved from outside storage',
+            'moved_by'      => $this->mover(),
+            'action_type'   => 'moved-to-rack',
         ]);
 
         $outsideStorageItem->delete();
@@ -201,7 +216,7 @@ class RackingController extends Controller
 
     public function storeOutside(Request $request): RedirectResponse
     {
-        OutsideStorageItem::create($request->validate([
+        $item = OutsideStorageItem::create($request->validate([
             'storage_date' => 'nullable|date',
             'colour'       => 'nullable|string|max:100',
             'quantity'     => 'nullable|string|max:100',
@@ -210,6 +225,20 @@ class RackingController extends Controller
             'return_date'  => 'nullable|date',
             'notes'        => 'nullable|string|max:500',
         ]));
+
+        if ($item->colour) {
+            StockMovement::create([
+                'moved_at'      => now(),
+                'description'   => $item->colour,
+                'quantity'      => $item->quantity,
+                'from_location' => null,
+                'to_location'   => 'Outside Storage',
+                'notes'         => 'Added to outside storage',
+                'moved_by'      => $this->mover(),
+                'action_type'   => 'outside-added',
+            ]);
+        }
+
         return redirect()->route('racking.outside')->with('success', 'Item added to outside storage.');
     }
 
@@ -229,6 +258,19 @@ class RackingController extends Controller
 
     public function destroyOutside(Request $request, OutsideStorageItem $outsideStorageItem): RedirectResponse
     {
+        if ($outsideStorageItem->colour) {
+            StockMovement::create([
+                'moved_at'      => now(),
+                'description'   => $outsideStorageItem->colour,
+                'quantity'      => $outsideStorageItem->quantity,
+                'from_location' => 'Outside Storage',
+                'to_location'   => null,
+                'notes'         => 'Removed from outside storage',
+                'moved_by'      => $this->mover(),
+                'action_type'   => 'outside-removed',
+            ]);
+        }
+
         $outsideStorageItem->delete();
         return redirect()->route('racking.outside')->with('success', 'Item removed.');
     }
@@ -237,26 +279,11 @@ class RackingController extends Controller
 
     public function movements(): View
     {
-        $movements = StockMovement::orderByDesc('moved_at')->orderByDesc('id')->get();
-        $bays      = RackingItem::bays();
-        return view('racking.movements', compact('movements', 'bays'));
+        $movements = StockMovement::orderByDesc('created_at')->orderByDesc('id')->get();
+        return view('racking.movements', compact('movements'));
     }
 
-    public function storeMovement(Request $request): RedirectResponse
-    {
-        StockMovement::create($request->validate([
-            'moved_at'      => 'required|date',
-            'description'   => 'required|string|max:500',
-            'colour'        => 'nullable|string|max:100',
-            'quantity'      => 'nullable|string|max:100',
-            'from_location' => 'nullable|string|max:50',
-            'to_location'   => 'nullable|string|max:50',
-            'notes'         => 'nullable|string|max:500',
-        ]));
-        return redirect()->route('racking.movements')->with('success', 'Movement recorded.');
-    }
-
-    public function destroyMovement(Request $request, StockMovement $stockMovement): RedirectResponse
+public function destroyMovement(Request $request, StockMovement $stockMovement): RedirectResponse
     {
         $stockMovement->delete();
         return redirect()->route('racking.movements')->with('success', 'Movement deleted.');

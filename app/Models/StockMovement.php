@@ -8,7 +8,7 @@ class StockMovement extends Model
 {
     protected $fillable = [
         'moved_at', 'description', 'colour', 'quantity',
-        'from_location', 'to_location', 'notes',
+        'from_location', 'to_location', 'notes', 'moved_by', 'action_type',
     ];
 
     protected $casts = [
