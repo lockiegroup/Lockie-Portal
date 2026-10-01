@@ -58,13 +58,15 @@
 }
 .slot-empty:hover { border-color:#94a3b8;background:#f1f5f9;color:#94a3b8; }
 
-/* ── Division colours ── */
-.slot-lc { background:#dcfce7;border-color:#86efac!important; }
-.slot-jw { background:#dbeafe;border-color:#93c5fd!important; }
-.slot-hh { background:#f3e8ff;border-color:#d8b4fe!important; }
-.div-badge-lc { background:#bbf7d0;color:#166534; }
-.div-badge-jw { background:#bfdbfe;color:#1e40af; }
-.div-badge-hh { background:#e9d5ff;color:#6b21a8; }
+/* ── Division colours (matches Excel key) ── */
+.slot-lc { background:#fff;border-color:#d1d5db!important; }              /* Lockie Church — white */
+.slot-jw { background:#fde8d3;border-color:#f9c9a0!important; }           /* JW Products — salmon */
+.slot-hh { background:#e8d5e8;border-color:#d4aed4!important; }           /* Hammond & Harper — lavender */
+.slot-avail { background:#d4edda;border-color:#a3d9b1!important; }        /* Available — green */
+.slot-unusable-bg { background:#c8c8c8;border-color:#a8a8a8!important;opacity:1!important; } /* Unusable — grey */
+.div-badge-lc { background:#e5e7eb;color:#374151; }
+.div-badge-jw { background:#fbd0b5;color:#92400e; }
+.div-badge-hh { background:#ddb8dd;color:#6b21a8; }
 .div-badge-xx { background:#e2e8f0;color:#475569; }
 </style>
 
@@ -113,11 +115,13 @@
         <div style="font-size:.75rem;color:#854d0e;font-weight:600;line-height:1.3;">For Outside<br>Storage</div>
     </div>
     {{-- Division legend --}}
-    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:.875rem 1.25rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
-        <span style="font-size:.75rem;color:#64748b;font-weight:600;">Key:</span>
-        <span class="div-lc" style="border-radius:5px;padding:3px 10px;font-size:.75rem;font-weight:600;">Lockie Church</span>
-        <span class="div-jw" style="border-radius:5px;padding:3px 10px;font-size:.75rem;font-weight:600;">JW Products</span>
-        <span class="div-hh" style="border-radius:5px;padding:3px 10px;font-size:.75rem;font-weight:600;">Hammond &amp; Harper</span>
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:.875rem 1.25rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
+        <span style="font-size:.75rem;color:#64748b;font-weight:600;margin-right:.25rem;">Key:</span>
+        <span style="background:#fff;border:1.5px solid #d1d5db;border-radius:5px;padding:3px 10px;font-size:.75rem;font-weight:600;color:#374151;">Lockie Church</span>
+        <span style="background:#fde8d3;border:1.5px solid #f9c9a0;border-radius:5px;padding:3px 10px;font-size:.75rem;font-weight:600;color:#92400e;">JW Products</span>
+        <span style="background:#e8d5e8;border:1.5px solid #d4aed4;border-radius:5px;padding:3px 10px;font-size:.75rem;font-weight:600;color:#6b21a8;">Hammond &amp; Harper</span>
+        <span style="background:#d4edda;border:1.5px solid #a3d9b1;border-radius:5px;padding:3px 10px;font-size:.75rem;font-weight:600;color:#166534;">Available</span>
+        <span style="background:#c8c8c8;border:1.5px solid #a8a8a8;border-radius:5px;padding:3px 10px;font-size:.75rem;font-weight:600;color:#374151;">Unusable</span>
     </div>
 </div>
 
@@ -126,12 +130,15 @@ $letters = ['A','B','C','D','E','F','G','H'];
 $levels  = [3, 2, 1];
 
 function slotCardClass($item) {
-    if (!$item || !$item->division) return '';
-    $d = strtolower($item->division);
+    if (!$item) return '';
+    if ($item->is_unusable) return 'slot-unusable-bg';
+    $desc = strtolower($item->description ?? '');
+    if (str_contains($desc, 'available')) return 'slot-avail';
+    $d = strtolower($item->division ?? '');
     if (str_contains($d, 'lockie'))  return 'slot-lc';
     if (str_contains($d, 'jw'))      return 'slot-jw';
     if (str_contains($d, 'hammond')) return 'slot-hh';
-    return '';
+    return 'slot-lc';
 }
 function divBadgeClass($d) {
     $d = strtolower($d ?? '');
@@ -172,7 +179,7 @@ function divBadgeClass($d) {
 
     @if($item)
     <button type="button"
-        class="slot-card {{ slotCardClass($item) }}{{ $item->is_unusable ? ' unusable' : '' }}{{ $item->for_outside_storage ? ' for-outside' : '' }}"
+        class="slot-card {{ slotCardClass($item) }}{{ $item->for_outside_storage ? ' for-outside' : '' }}"
         onclick="openSlot({{ $item->id }},{{ json_encode($iData) }})">
 
         @if($item->is_unusable)
