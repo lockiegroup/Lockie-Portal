@@ -1,4 +1,5 @@
 <x-layout title="Church Envelope Designer — Lockie Portal">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&display=swap">
 <main style="max-width:1100px;margin:0 auto;padding:2rem 1.5rem;">
 
     <div style="margin-bottom:1.5rem;">
@@ -106,6 +107,8 @@ const SLOT_RIGHT_X = 77.75;
 
 // Weekly image frame (portrait PDF coords): x 18.2–50.8, y 17.1–35.9 mm
 const IMG_BOX_X = 18.2, IMG_BOX_Y = 17.1, IMG_BOX_W = 32.6, IMG_BOX_H = 18.8;
+// Centred image frame used when there are no verse lines: spans the body of the face
+const IMG_CENT_X = 13.0, IMG_CENT_Y = 3.0, IMG_CENT_W = 44.0, IMG_CENT_H = 92.0;
 // Special foot-logo frame: x 47.9–59.5, y 79.0–90.6 mm (nudged from InDesign)
 const SPEC_LOGO_X = 47.9, SPEC_LOGO_Y = 79.0, SPEC_LOGO_W = 11.6, SPEC_LOGO_H = 11.6;
 
@@ -286,31 +289,36 @@ function buildEnvHtml(row, setNum) {
 
     // ── Image ────────────────────────────────────────────────────────────────
     if (!isSpec && weeklyImgDataUrl) {
-        // Weekly image: natural (portrait) shown in reading portrait frame
-        // Reading frame: 18.8mm wide × 32.6mm tall (from PDF frame rotated into reading)
-        const prevBoxW = IMG_BOX_H, prevBoxH = IMG_BOX_W; // reading frame dims
-        const { dW, dH } = fitNatural(weeklyNatW, weeklyNatH, prevBoxW, prevBoxH);
-        // Frame centre in reading coords: cx=IMG_BOX_Y+IMG_BOX_H/2, cy from PDF x centre
-        const frameCX = (IMG_BOX_Y + IMG_BOX_H / 2) * S;
-        const frameCY = (SLOT_W - (IMG_BOX_X + IMG_BOX_W / 2)) * S;
+        const hasVt = row.vts.some(v => v !== '');
+        // Reading frame dims (PDF frame rotated into reading orientation: swap W/H)
+        // With verses → upper frame; no verses → centred body frame.
+        const pBX = hasVt ? IMG_BOX_X  : IMG_CENT_X;
+        const pBY = hasVt ? IMG_BOX_Y  : IMG_CENT_Y;
+        const pBW = hasVt ? IMG_BOX_W  : IMG_CENT_W;
+        const pBH = hasVt ? IMG_BOX_H  : IMG_CENT_H;
+        // In reading orientation: PDF x→reading y (inverted), PDF y→reading x.
+        // Frame bounds: reading x = IMG_BOX_Y…IMG_BOX_Y+H, reading y = SLOT_W−(X+W)…SLOT_W−X
+        const frameCX = (pBY + pBH / 2) * S;                         // reading x centre
+        const frameCY = (SLOT_W - (pBX + pBW / 2)) * S;              // reading y centre
+        const fW = pBH * S, fH = pBW * S;                            // reading frame px dims
         const imgEl = document.createElement('img');
         imgEl.src = weeklyImgDataUrl;
-        imgEl.style.cssText = `position:absolute;` +
-            `left:${frameCX - dW/2*S}px;top:${frameCY - dH/2*S}px;` +
-            `width:${dW*S}px;height:${dH*S}px;object-fit:contain;`;
+        // object-fit:cover = fill frame (same as InDesign fill-frame proportionally)
+        imgEl.style.cssText = `position:absolute;overflow:hidden;` +
+            `left:${frameCX - fW/2}px;top:${frameCY - fH/2}px;` +
+            `width:${fW}px;height:${fH}px;object-fit:cover;`;
         env.appendChild(imgEl);
     }
     if (isSpec && specialImgDataUrl) {
-        // Special foot logo: natural image in small reading frame
-        const prevBoxW = SPEC_LOGO_H, prevBoxH = SPEC_LOGO_W;
-        const { dW, dH } = fitNatural(specialNatW, specialNatH, prevBoxW, prevBoxH);
+        // Special foot logo: reading frame = SPEC_LOGO_H wide × SPEC_LOGO_W tall
         const frameCX = (SPEC_LOGO_Y + SPEC_LOGO_H / 2) * S;
         const frameCY = (SLOT_W - (SPEC_LOGO_X + SPEC_LOGO_W / 2)) * S;
+        const fW = SPEC_LOGO_H * S, fH = SPEC_LOGO_W * S;
         const imgEl = document.createElement('img');
         imgEl.src = specialImgDataUrl;
         imgEl.style.cssText = `position:absolute;` +
-            `left:${frameCX - dW/2*S}px;top:${frameCY - dH/2*S}px;` +
-            `width:${dW*S}px;height:${dH*S}px;object-fit:contain;`;
+            `left:${frameCX - fW/2}px;top:${frameCY - fH/2}px;` +
+            `width:${fW}px;height:${fH}px;object-fit:cover;`;
         env.appendChild(imgEl);
     }
 
@@ -385,13 +393,13 @@ async function loadFont(doc, url, filename, fontName, style) {
     } catch(e) { console.warn('Font load failed:', filename, e.message); return false; }
 }
 
-// Pre-rotate image 90° CW on canvas + flatten onto white.
-// dW/dH are the PDF box dimensions (canvas is dW*ICPPM × dH*ICPPM pixels).
+// Pre-rotate image 90° CW on canvas + flatten onto white, FILL the box (InDesign fill-frame).
+// Canvas is exactly boxW×boxH mm at ICPPM px/mm. Image is scaled to fill the frame
+// (largest dimension fills, the other is cropped centred — no whitespace bars).
 async function buildRotatedImgCanvas(imgDataUrl, nw, nh, boxW, boxH) {
     if (!imgDataUrl) return null;
     const ICPPM = 8;
-    const { dW, dH } = fitRotated(nw, nh, boxW, boxH);
-    const cW = Math.round(dW * ICPPM), cH = Math.round(dH * ICPPM);
+    const cW = Math.round(boxW * ICPPM), cH = Math.round(boxH * ICPPM);
     const canvas = document.createElement('canvas');
     canvas.width = cW; canvas.height = cH;
     const ctx = canvas.getContext('2d');
@@ -399,36 +407,42 @@ async function buildRotatedImgCanvas(imgDataUrl, nw, nh, boxW, boxH) {
     ctx.fillRect(0, 0, cW, cH);
     const imgEl = await loadImage(imgDataUrl);
     if (imgEl) {
-        // 90° CW: translate to center, rotate CW (+π/2 in canvas coords = CW)
+        // After 90° CW rotation, natural nw maps to screen-height and nh to screen-width.
+        // Fill frame: scale = Math.max so the image fills completely (cropped centred).
+        const scale = Math.max(cW / nh, cH / nw);
         ctx.save();
         ctx.translate(cW / 2, cH / 2);
         ctx.rotate(Math.PI / 2);
-        // After CW rotation: x→down, y→left. Draw image filling canvas.
-        ctx.drawImage(imgEl, -cH / 2, -cW / 2, cH, cW);
+        ctx.drawImage(imgEl, -(nw * scale) / 2, -(nh * scale) / 2, nw * scale, nh * scale);
         ctx.restore();
     }
-    return { canvas, dW, dH };
+    return { canvas, dW: boxW, dH: boxH };
 }
 
 // ── PDF drawing ───────────────────────────────────────────────────────────────
-function drawEnvPdf(doc, row, slotX, setNum, weeklyCanvas, specialLogoCanvas, fonts) {
+function drawEnvPdf(doc, row, slotX, setNum, weeklyCanvasBox, weeklyCanvasCent, specialLogoCanvas, fonts) {
     const isSpec = row.isSpecial;
+    const hasVt  = row.vts.some(v => v !== '');
 
     doc.setTextColor(0, 0, 0);
     const cY = text => (SLOT_H - doc.getTextWidth(text)) / 2; // centred along 98mm face
 
     // ── Image ─────────────────────────────────────────────────────────────────
-    if (!isSpec && weeklyCanvas) {
-        const { canvas, dW, dH } = weeklyCanvas;
-        const imgX = slotX + IMG_BOX_X + (IMG_BOX_W - dW) / 2;
-        const imgY = IMG_BOX_Y + (IMG_BOX_H - dH) / 2;
-        try { doc.addImage(canvas.toDataURL('image/png'), 'PNG', imgX, imgY, dW, dH, 'wk'+Math.round(dW*10), 'NONE'); } catch(_){}
+    if (!isSpec) {
+        // No verses → centre image on face; otherwise use standard upper frame.
+        const wc = hasVt ? weeklyCanvasBox : weeklyCanvasCent;
+        if (wc) {
+            const bX = hasVt ? IMG_BOX_X  : IMG_CENT_X;
+            const bY = hasVt ? IMG_BOX_Y  : IMG_CENT_Y;
+            const bW = hasVt ? IMG_BOX_W  : IMG_CENT_W;
+            const bH = hasVt ? IMG_BOX_H  : IMG_CENT_H;
+            // Canvas is already clipped to bW×bH (fill-frame) — draw at exact frame position.
+            try { doc.addImage(wc.canvas.toDataURL('image/png'), 'PNG', slotX + bX, bY, bW, bH, 'wk'+(hasVt?'b':'c'), 'NONE'); } catch(_){}
+        }
     }
     if (isSpec && specialLogoCanvas) {
         const { canvas, dW, dH } = specialLogoCanvas;
-        const imgX = slotX + SPEC_LOGO_X + (SPEC_LOGO_W - dW) / 2;
-        const imgY = SPEC_LOGO_Y + (SPEC_LOGO_H - dH) / 2;
-        try { doc.addImage(canvas.toDataURL('image/png'), 'PNG', imgX, imgY, dW, dH, 'spl'+Math.round(dW*10), 'NONE'); } catch(_){}
+        try { doc.addImage(canvas.toDataURL('image/png'), 'PNG', slotX + SPEC_LOGO_X, SPEC_LOGO_Y, dW, dH, 'spl', 'NONE'); } catch(_){}
     }
 
     // ── Set number — 20pt Medium, slotX+6.9, startY=10.3 ────────────────────
@@ -542,9 +556,13 @@ async function generatePDF() {
         st.textContent = 'Preparing images…';
         await new Promise(r => setTimeout(r, 0));
 
-        // Pre-render canvases once (reused across all pages)
-        const weeklyCanvas = weeklyImgDataUrl
-            ? await buildRotatedImgCanvas(weeklyImgDataUrl, weeklyNatW, weeklyNatH, IMG_BOX_W, IMG_BOX_H)
+        // Pre-render canvases once (reused across all pages).
+        // Two weekly canvases: box frame (used when verse text present) and centred frame (no verses).
+        const weeklyCanvasBox  = weeklyImgDataUrl
+            ? await buildRotatedImgCanvas(weeklyImgDataUrl, weeklyNatW, weeklyNatH, IMG_BOX_W,  IMG_BOX_H)
+            : null;
+        const weeklyCanvasCent = weeklyImgDataUrl
+            ? await buildRotatedImgCanvas(weeklyImgDataUrl, weeklyNatW, weeklyNatH, IMG_CENT_W, IMG_CENT_H)
             : null;
         const specialLogoCanvas = specialImgDataUrl
             ? await buildRotatedImgCanvas(specialImgDataUrl, specialNatW, specialNatH, SPEC_LOGO_W, SPEC_LOGO_H)
@@ -559,8 +577,8 @@ async function generatePDF() {
                 await new Promise(r => setTimeout(r, 0));
             }
             const row = parsedRows[idx];
-            drawEnvPdf(doc, row, 0,            row.setLeft,  weeklyCanvas, specialLogoCanvas, fonts);
-            drawEnvPdf(doc, row, SLOT_RIGHT_X, row.setRight, weeklyCanvas, specialLogoCanvas, fonts);
+            drawEnvPdf(doc, row, 0,            row.setLeft,  weeklyCanvasBox, weeklyCanvasCent, specialLogoCanvas, fonts);
+            drawEnvPdf(doc, row, SLOT_RIGHT_X, row.setRight, weeklyCanvasBox, weeklyCanvasCent, specialLogoCanvas, fonts);
         }
 
         st.textContent = `Done — ${parsedRows.length} pages saved.`;
