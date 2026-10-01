@@ -598,8 +598,8 @@ async function generatePDF() {
         }
 
         // Old English Text MT (user-supplied) → UnifrakturMaguntia (bundled) → helvetica
-        const oeOk  = await loadFont(doc, base+'/fonts/OldEnglish.ttf', 'OldEnglish.ttf', 'OldEnglish', 'normal');
-        if (oeOk) { fonts.blackletter = 'OldEnglish'; }
+        const oeOk  = await loadFont(doc, base+'/fonts/OldeEnglish.ttf', 'OldeEnglish.ttf', 'OldeEnglish', 'normal');
+        if (oeOk) { fonts.blackletter = 'OldeEnglish'; }
         else {
             const blkOk = await loadFont(doc, base+'/fonts/UnifrakturMaguntia.ttf', 'UnifrakturMaguntia.ttf', 'UnifrakturMaguntia', 'normal');
             if (blkOk) fonts.blackletter = 'UnifrakturMaguntia';
