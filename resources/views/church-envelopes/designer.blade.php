@@ -92,7 +92,7 @@
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script>
 // ── Version marker (check in browser DevTools → Sources to confirm latest build) ──
-const DESIGNER_VERSION = 'fit-inside-v4-2026-10-01';
+const DESIGNER_VERSION = 'cover-box-v5-2026-10-01';
 console.log('[envelope-designer] version:', DESIGNER_VERSION);
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -309,7 +309,8 @@ function buildEnvHtml(row, setNum) {
         imgEl.src = weeklyImgDataUrl;
         imgEl.style.cssText = `position:absolute;overflow:hidden;` +
             `left:${frameCX - fW/2}px;top:${frameCY - fH/2}px;` +
-            `width:${fW}px;height:${fH}px;object-fit:contain;background:#fff;`;
+            `width:${fW}px;height:${fH}px;` +
+            `object-fit:${hasVt ? 'cover' : 'contain'};background:#fff;`;
         env.appendChild(imgEl);
     }
     if (isSpec && specialImgDataUrl) {
@@ -425,10 +426,11 @@ function opaqueBounds(imgEl) {
     return { sx: minX, sy: minY, sw: maxX - minX + 1, sh: maxY - minY + 1 };
 }
 
-// Pre-rotate image 90° CW and fill the box (InDesign Fill Frame Proportionally).
-// Trims transparent padding from the source so fill-scale uses the opaque content area.
-// Canvas returned is exactly boxW×boxH mm at ICPPM px/mm — no whitespace bars.
-async function buildRotatedImgCanvas(imgDataUrl, nw, nh, boxW, boxH) {
+// Pre-rotate image 90° CW and scale into box.
+// fill=true  → cover/crop (Math.max): frame is fully covered, edges may be clipped.
+// fill=false → contain/fit (Math.min): whole image visible, white bars on short axis.
+// Trims transparent padding before scaling so only opaque content drives the scale.
+async function buildRotatedImgCanvas(imgDataUrl, nw, nh, boxW, boxH, fill = true) {
     if (!imgDataUrl || !nw || !nh) return null;
     const ICPPM = 8;
     const imgEl = await loadImage(imgDataUrl);
@@ -456,7 +458,7 @@ async function buildRotatedImgCanvas(imgDataUrl, nw, nh, boxW, boxH) {
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, cW, cH);
-    const scale = Math.min(cW / sh, cH / sw);  // fit-inside: whole image visible, centred
+    const scale = fill ? Math.max(cW / sh, cH / sw) : Math.min(cW / sh, cH / sw);
     const dW = sh * scale, dH = sw * scale;
     ctx.drawImage(rot, (cW - dW) / 2, (cH - dH) / 2, dW, dH);
 
@@ -595,8 +597,13 @@ async function generatePDF() {
             if (ok) fonts.bold = 'Arimo';
         }
 
-        const blkOk = await loadFont(doc, base+'/fonts/UnifrakturMaguntia.ttf', 'UnifrakturMaguntia.ttf', 'UnifrakturMaguntia', 'normal');
-        if (blkOk) fonts.blackletter = 'UnifrakturMaguntia';
+        // Old English Text MT (user-supplied) → UnifrakturMaguntia (bundled) → helvetica
+        const oeOk  = await loadFont(doc, base+'/fonts/OldEnglish.ttf', 'OldEnglish.ttf', 'OldEnglish', 'normal');
+        if (oeOk) { fonts.blackletter = 'OldEnglish'; }
+        else {
+            const blkOk = await loadFont(doc, base+'/fonts/UnifrakturMaguntia.ttf', 'UnifrakturMaguntia.ttf', 'UnifrakturMaguntia', 'normal');
+            if (blkOk) fonts.blackletter = 'UnifrakturMaguntia';
+        }
 
         st.textContent = 'Preparing images…';
         await new Promise(r => setTimeout(r, 0));
@@ -604,10 +611,10 @@ async function generatePDF() {
         // Pre-render canvases once (reused across all pages).
         // Two weekly canvases: box frame (used when verse text present) and centred frame (no verses).
         const weeklyCanvasBox  = weeklyImgDataUrl
-            ? await buildRotatedImgCanvas(weeklyImgDataUrl, weeklyNatW, weeklyNatH, IMG_BOX_W,  IMG_BOX_H)
+            ? await buildRotatedImgCanvas(weeklyImgDataUrl, weeklyNatW, weeklyNatH, IMG_BOX_W,  IMG_BOX_H,  true)  // cover: crop to fill frame
             : null;
         const weeklyCanvasCent = weeklyImgDataUrl
-            ? await buildRotatedImgCanvas(weeklyImgDataUrl, weeklyNatW, weeklyNatH, IMG_CENT_W, IMG_CENT_H)
+            ? await buildRotatedImgCanvas(weeklyImgDataUrl, weeklyNatW, weeklyNatH, IMG_CENT_W, IMG_CENT_H, false) // contain: whole picture
             : null;
         const specialLogoCanvas = specialImgDataUrl
             ? await buildRotatedImgCanvas(specialImgDataUrl, specialNatW, specialNatH, SPEC_LOGO_W, SPEC_LOGO_H)
