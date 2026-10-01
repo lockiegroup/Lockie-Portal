@@ -91,6 +91,10 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script>
+// ── Version marker (check in browser DevTools → Sources to confirm latest build) ──
+const DESIGNER_VERSION = 'fill-frame-v3-2026-10-01';
+console.log('[envelope-designer] version:', DESIGNER_VERSION);
+
 // ── State ─────────────────────────────────────────────────────────────────────
 let parsedRows = [];
 let weeklyImgDataUrl = null, weeklyNatW = 0, weeklyNatH = 0;
@@ -442,8 +446,10 @@ function drawEnvPdf(doc, row, slotX, setNum, weeklyCanvasBox, weeklyCanvasCent, 
             const bY = hasVt ? IMG_BOX_Y  : IMG_CENT_Y;
             const bW = hasVt ? IMG_BOX_W  : IMG_CENT_W;
             const bH = hasVt ? IMG_BOX_H  : IMG_CENT_H;
-            // Canvas is already clipped to bW×bH (fill-frame) — draw at exact frame position.
-            try { doc.addImage(wc.canvas.toDataURL('image/png'), 'PNG', slotX + bX, bY, bW, bH, 'wk'+(hasVt?'b':'c'), 'NONE'); } catch(_){}
+            // Diagnostics: verify canvas dims and placement in browser console.
+            console.log(`[wkImg] canvas=${wc.canvas.width}×${wc.canvas.height}px  PDF=(${(slotX+bX).toFixed(2)},${bY},${bW},${bH})mm  ${hasVt?'box':'cent'}`);
+            // JPEG + no alias: avoids any jsPDF PNG-specific sizing or alias-cache issue.
+            try { doc.addImage(wc.canvas.toDataURL('image/jpeg', 0.9), 'JPEG', slotX + bX, bY, bW, bH); } catch(e){ console.error('[wkImg] addImage failed:', e); }
         }
     }
     if (isSpec && specialLogoCanvas) {
