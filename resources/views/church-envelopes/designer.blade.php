@@ -424,6 +424,7 @@ async function buildRotatedImgCanvas(imgDataUrl, nw, nh, boxW, boxH) {
     ctx.fillRect(0, 0, cW, cH);
     const scale = Math.max(cW / nh, cH / nw);
     const dW = nh * scale, dH = nw * scale;
+    console.log(`[buildCanvas] nw=${nw} nh=${nh} rot=${rot.width}×${rot.height} box=${cW}×${cH} scale=${scale.toFixed(4)} draw=${dW.toFixed(1)}×${dH.toFixed(1)} offset=(${((cW-dW)/2).toFixed(1)},${((cH-dH)/2).toFixed(1)})`);
     ctx.drawImage(rot, (cW - dW) / 2, (cH - dH) / 2, dW, dH);
 
     return { canvas, dW: boxW, dH: boxH };
@@ -448,6 +449,8 @@ function drawEnvPdf(doc, row, slotX, setNum, weeklyCanvasBox, weeklyCanvasCent, 
             const bH = hasVt ? IMG_BOX_H  : IMG_CENT_H;
             // Diagnostics: verify canvas dims and placement in browser console.
             console.log(`[wkImg] canvas=${wc.canvas.width}×${wc.canvas.height}px  PDF=(${(slotX+bX).toFixed(2)},${bY},${bW},${bH})mm  ${hasVt?'box':'cent'}`);
+            // Debug rect: red border at exact box coords — shows if PDF coord system is right.
+            doc.setDrawColor(255, 0, 0); doc.setLineWidth(0.2); doc.rect(slotX + bX, bY, bW, bH);
             // JPEG + no alias: avoids any jsPDF PNG-specific sizing or alias-cache issue.
             try { doc.addImage(wc.canvas.toDataURL('image/jpeg', 0.9), 'JPEG', slotX + bX, bY, bW, bH); } catch(e){ console.error('[wkImg] addImage failed:', e); }
         }
