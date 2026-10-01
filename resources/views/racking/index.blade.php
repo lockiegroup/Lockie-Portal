@@ -70,30 +70,56 @@
 
 /* ── Print ── */
 @media print {
-    @page { size: A4 landscape; margin: 8mm; }
+    @page { size: A4 landscape; margin: 7mm; }
 
-    body * { visibility: hidden; }
-    #rack-printable, #rack-printable * { visibility: visible; }
-    #rack-printable { position: fixed; inset: 0; padding: 0; }
+    /* Hide sidebar and layout chrome */
+    #sidebar, #sb-overlay, #mobile-topbar { display: none !important; }
+    #page-content { margin-left: 0 !important; }
+
+    /* Remove main padding and width cap */
+    main { padding: 0 !important; max-width: none !important; margin: 0 !important; }
+
+    /* Hide everything inside main except the printable grid */
+    main > *:not(#rack-printable) { display: none !important; }
+
+    /* Grid in print: tighter gaps and no horizontal scroll wrapper */
+    #rack-printable { display: block; width: 100%; }
+    #rack-printable > div[style*="overflow-x"] { overflow: visible !important; }
+    #rack-printable > div[style*="overflow-x"] > div[style*="min-width"] { min-width: 0 !important; }
 
     .rack-row {
-        grid-template-columns: 38px 18px repeat(8, minmax(0,1fr));
+        grid-template-columns: 34px 16px repeat(8, minmax(0,1fr));
         gap: 1.5px;
         margin-bottom: 1.5px;
     }
-    .slot-card, .slot-empty { min-height: 36px; padding: 3px 4px; border-radius: 4px; cursor: default; }
-    .slot-card:hover { box-shadow: none; transform: none; }
-    .rack-bay-label { padding: .25rem .15rem; font-size: .65rem; }
-    .rack-level-label { font-size: .5rem; }
-    .rack-p-label { font-size: .55rem; }
-    .rack-floor-label, .rack-floor-bay { padding: .25rem; font-size: .55rem; }
+    .slot-card, .slot-empty {
+        min-height: 30px;
+        padding: 2px 3px;
+        border-radius: 3px;
+        cursor: default;
+        transition: none !important;
+        box-shadow: none !important;
+        transform: none !important;
+    }
+    .slot-card:hover { box-shadow: none !important; transform: none !important; }
+
+    .rack-bay-label  { padding: .2rem .1rem; font-size: .6rem; border-radius: 3px; }
+    .rack-level-label { font-size: .48rem; border-radius: 3px; }
+    .rack-p-label    { font-size: .52rem; border-radius: 3px; }
+    .rack-floor-label, .rack-floor-bay { padding: .2rem; font-size: .52rem; border-radius: 3px; }
+
+    /* Slot text sizes */
+    .slot-card div[style*="font-size:.72rem"] { font-size: .6rem !important; }
+    .slot-card div[style*="font-size:.63rem"] { font-size: .55rem !important; }
+    .slot-card div[style*="font-size:.58rem"] { font-size: .5rem !important; }
+    .slot-card div[style*="font-size:.6rem"]  { font-size: .52rem !important; }
+    .div-badge-lc, .div-badge-jw, .div-badge-hh, .div-badge-xx { font-size: .48rem !important; padding: 0 3px !important; }
+
+    /* Level gap between sections */
+    div[style*="height:8px"] { height: 4px !important; }
 
     /* Show print-only header */
     .print-header { display: block !important; }
-
-    /* Remove interactive affordances */
-    .slot-card, .slot-empty { transition: none !important; }
-    button { cursor: default !important; }
 
     /* Force background colours to print */
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
