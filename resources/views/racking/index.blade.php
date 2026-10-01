@@ -51,12 +51,11 @@
 .slot-card.for-outside { border-color:#fde68a!important; }
 .slot-empty {
     width:100%;border-radius:6px;padding:6px 7px;cursor:pointer;
-    transition:box-shadow .12s;border:1.5px dashed #e2e8f0;
-    background:#f8fafc;text-align:center;font-family:inherit;min-height:52px;
-    box-sizing:border-box;display:flex;align-items:center;justify-content:center;
-    color:#cbd5e1;font-size:.7rem;font-weight:500;
+    transition:box-shadow .12s,background .12s;border:1.5px solid #bbf7d0;
+    background:#d4edda;text-align:center;font-family:inherit;min-height:52px;
+    box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;
 }
-.slot-empty:hover { border-color:#94a3b8;background:#f1f5f9;color:#94a3b8; }
+.slot-empty:hover { background:#bbf7d0;border-color:#86efac; }
 
 /* ── Division colours (matches Excel key) ── */
 .slot-lc { background:#fff;border-color:#d1d5db!important; }              /* Lockie Church — white */
@@ -204,7 +203,8 @@ function divBadgeClass($d) {
     @else
     <button type="button" class="slot-empty"
         onclick="openSlot(null,{bay:'{{ $bay }}',slot_number:{{ $p }}})">
-        + Add
+        <span style="color:#16a34a;font-weight:700;font-size:.7rem;">AVAILABLE</span>
+        <span style="display:block;margin-top:3px;color:#86efac;font-size:.9rem;line-height:1;">+</span>
     </button>
     @endif
     @endforeach
