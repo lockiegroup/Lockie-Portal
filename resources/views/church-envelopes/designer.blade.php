@@ -92,7 +92,7 @@
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script>
 // ── Version marker (check in browser DevTools → Sources to confirm latest build) ──
-const DESIGNER_VERSION = 'fill-frame-v3-2026-10-01';
+const DESIGNER_VERSION = 'fit-inside-v4-2026-10-01';
 console.log('[envelope-designer] version:', DESIGNER_VERSION);
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -307,10 +307,9 @@ function buildEnvHtml(row, setNum) {
         const fW = pBH * S, fH = pBW * S;                            // reading frame px dims
         const imgEl = document.createElement('img');
         imgEl.src = weeklyImgDataUrl;
-        // object-fit:cover = fill frame (same as InDesign fill-frame proportionally)
         imgEl.style.cssText = `position:absolute;overflow:hidden;` +
             `left:${frameCX - fW/2}px;top:${frameCY - fH/2}px;` +
-            `width:${fW}px;height:${fH}px;object-fit:cover;`;
+            `width:${fW}px;height:${fH}px;object-fit:contain;background:#fff;`;
         env.appendChild(imgEl);
     }
     if (isSpec && specialImgDataUrl) {
@@ -393,6 +392,11 @@ async function loadFont(doc, url, filename, fontName, style) {
         const b64 = bufToBase64(await resp.arrayBuffer());
         doc.addFileToVFS(filename, b64);
         doc.addFont(filename, fontName, style);
+        // Verify the font is usable; jsPDF may silently register an invalid font
+        // (e.g. "No unicode cmap") that crashes getTextWidth/text later.
+        doc.setFont(fontName, style);
+        doc.getTextWidth('A');
+        doc.setFont('helvetica', 'normal');
         return true;
     } catch(e) { console.warn('Font load failed:', filename, e.message); return false; }
 }
