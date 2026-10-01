@@ -73,16 +73,18 @@ class RackingController extends Controller
         $item = RackingItem::create($data);
 
         if ($item->description) {
-            StockMovement::create([
-                'moved_at'      => now(),
-                'description'   => $item->description,
-                'quantity'      => $item->quantity,
-                'from_location' => null,
-                'to_location'   => $item->bay . '-' . $item->slot_number,
-                'notes'         => 'Slot filled',
-                'moved_by'      => $this->mover(),
-                'action_type'   => 'filled',
-            ]);
+            try {
+                StockMovement::create([
+                    'moved_at'      => now(),
+                    'description'   => $item->description,
+                    'quantity'      => $item->quantity,
+                    'from_location' => null,
+                    'to_location'   => $item->bay . '-' . $item->slot_number,
+                    'notes'         => 'Slot filled',
+                    'moved_by'      => $this->mover(),
+                    'action_type'   => 'filled',
+                ]);
+            } catch (\Throwable) {}
         }
 
         return redirect()->route('racking.index')->with('success', 'Slot filled.');
@@ -110,16 +112,18 @@ class RackingController extends Controller
     public function destroy(Request $request, RackingItem $rackingItem): RedirectResponse
     {
         if ($rackingItem->description) {
-            StockMovement::create([
-                'moved_at'      => now(),
-                'description'   => $rackingItem->description,
-                'quantity'      => $rackingItem->quantity,
-                'from_location' => $rackingItem->bay . '-' . $rackingItem->slot_number,
-                'to_location'   => null,
-                'notes'         => 'Slot cleared',
-                'moved_by'      => $this->mover(),
-                'action_type'   => 'cleared',
-            ]);
+            try {
+                StockMovement::create([
+                    'moved_at'      => now(),
+                    'description'   => $rackingItem->description,
+                    'quantity'      => $rackingItem->quantity,
+                    'from_location' => $rackingItem->bay . '-' . $rackingItem->slot_number,
+                    'to_location'   => null,
+                    'notes'         => 'Slot cleared',
+                    'moved_by'      => $this->mover(),
+                    'action_type'   => 'cleared',
+                ]);
+            } catch (\Throwable) {}
         }
 
         $rackingItem->delete();
@@ -140,16 +144,18 @@ class RackingController extends Controller
             'notes'        => $rackingItem->notes,
         ]);
 
-        StockMovement::create([
-            'moved_at'      => now(),
-            'description'   => $rackingItem->description,
-            'quantity'      => $rackingItem->quantity,
-            'from_location' => $slotLabel,
-            'to_location'   => 'Outside Storage',
-            'notes'         => 'Moved to outside storage',
-            'moved_by'      => $this->mover(),
-            'action_type'   => 'moved-outside',
-        ]);
+        try {
+            StockMovement::create([
+                'moved_at'      => now(),
+                'description'   => $rackingItem->description,
+                'quantity'      => $rackingItem->quantity,
+                'from_location' => $slotLabel,
+                'to_location'   => 'Outside Storage',
+                'notes'         => 'Moved to outside storage',
+                'moved_by'      => $this->mover(),
+                'action_type'   => 'moved-outside',
+            ]);
+        } catch (\Throwable) {}
 
         $rackingItem->delete();
 
@@ -185,16 +191,18 @@ class RackingController extends Controller
             'notes'       => $outsideStorageItem->notes,
         ]);
 
-        StockMovement::create([
-            'moved_at'      => now(),
-            'description'   => $outsideStorageItem->colour,
-            'quantity'      => $outsideStorageItem->quantity,
-            'from_location' => 'Outside Storage',
-            'to_location'   => $slotLabel,
-            'notes'         => 'Moved from outside storage',
-            'moved_by'      => $this->mover(),
-            'action_type'   => 'moved-to-rack',
-        ]);
+        try {
+            StockMovement::create([
+                'moved_at'      => now(),
+                'description'   => $outsideStorageItem->colour,
+                'quantity'      => $outsideStorageItem->quantity,
+                'from_location' => 'Outside Storage',
+                'to_location'   => $slotLabel,
+                'notes'         => 'Moved from outside storage',
+                'moved_by'      => $this->mover(),
+                'action_type'   => 'moved-to-rack',
+            ]);
+        } catch (\Throwable) {}
 
         $outsideStorageItem->delete();
 
@@ -227,16 +235,18 @@ class RackingController extends Controller
         ]));
 
         if ($item->colour) {
-            StockMovement::create([
-                'moved_at'      => now(),
-                'description'   => $item->colour,
-                'quantity'      => $item->quantity,
-                'from_location' => null,
-                'to_location'   => 'Outside Storage',
-                'notes'         => 'Added to outside storage',
-                'moved_by'      => $this->mover(),
-                'action_type'   => 'outside-added',
-            ]);
+            try {
+                StockMovement::create([
+                    'moved_at'      => now(),
+                    'description'   => $item->colour,
+                    'quantity'      => $item->quantity,
+                    'from_location' => null,
+                    'to_location'   => 'Outside Storage',
+                    'notes'         => 'Added to outside storage',
+                    'moved_by'      => $this->mover(),
+                    'action_type'   => 'outside-added',
+                ]);
+            } catch (\Throwable) {}
         }
 
         return redirect()->route('racking.outside')->with('success', 'Item added to outside storage.');
@@ -259,16 +269,18 @@ class RackingController extends Controller
     public function destroyOutside(Request $request, OutsideStorageItem $outsideStorageItem): RedirectResponse
     {
         if ($outsideStorageItem->colour) {
-            StockMovement::create([
-                'moved_at'      => now(),
-                'description'   => $outsideStorageItem->colour,
-                'quantity'      => $outsideStorageItem->quantity,
-                'from_location' => 'Outside Storage',
-                'to_location'   => null,
-                'notes'         => 'Removed from outside storage',
-                'moved_by'      => $this->mover(),
-                'action_type'   => 'outside-removed',
-            ]);
+            try {
+                StockMovement::create([
+                    'moved_at'      => now(),
+                    'description'   => $outsideStorageItem->colour,
+                    'quantity'      => $outsideStorageItem->quantity,
+                    'from_location' => 'Outside Storage',
+                    'to_location'   => null,
+                    'notes'         => 'Removed from outside storage',
+                    'moved_by'      => $this->mover(),
+                    'action_type'   => 'outside-removed',
+                ]);
+            } catch (\Throwable) {}
         }
 
         $outsideStorageItem->delete();
