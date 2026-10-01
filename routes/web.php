@@ -86,6 +86,8 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::post('/outside-storage',                   [RackingController::class, 'storeOutside'])->name('outside.store');
         Route::put('/outside-storage/{outsideStorageItem}', [RackingController::class, 'updateOutside'])->name('outside.update');
         Route::delete('/outside-storage/{outsideStorageItem}', [RackingController::class, 'destroyOutside'])->name('outside.destroy');
+        Route::post('/{rackingItem}/move-outside',           [RackingController::class, 'moveToOutside'])->name('move-outside');
+        Route::post('/outside-storage/{outsideStorageItem}/move-to-rack', [RackingController::class, 'moveToRack'])->name('outside.move-to-rack');
         Route::get('/movements',                          [RackingController::class, 'movements'])->name('movements');
         Route::post('/movements',                         [RackingController::class, 'storeMovement'])->name('movements.store');
         Route::delete('/movements/{stockMovement}',       [RackingController::class, 'destroyMovement'])->name('movements.destroy');

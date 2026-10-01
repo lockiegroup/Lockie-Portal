@@ -217,12 +217,26 @@ function divClass($d) {
                     Cancel
                 </button>
             </div>
+
+            {{-- Move to Outside Storage --}}
+            <div id="move-outside-wrap" style="display:none;margin-top:.75rem;padding-top:.75rem;border-top:1px solid #f1f5f9;">
+                <button type="button" id="move-outside-btn"
+                    onclick="moveToOutside()"
+                    style="width:100%;padding:.55rem;background:#fefce8;color:#854d0e;border:1px solid #fde68a;border-radius:8px;font-size:.8125rem;font-weight:600;cursor:pointer;">
+                    Send to Outside Storage
+                </button>
+            </div>
         </form>
 
         {{-- Hidden clear form --}}
         <form id="clear-form" method="POST" style="display:none;">
             @csrf
             <input type="hidden" name="_method" value="DELETE">
+        </form>
+
+        {{-- Hidden move-to-outside form --}}
+        <form id="move-outside-form" method="POST" style="display:none;">
+            @csrf
         </form>
     </div>
 </div>
@@ -285,6 +299,7 @@ function openSlot(id, data) {
     document.getElementById('s-notes').value      = data.notes || '';
 
     document.getElementById('clear-btn').style.display = isNew ? 'none' : '';
+    document.getElementById('move-outside-wrap').style.display = isNew ? 'none' : '';
     document.getElementById('slot-modal').style.display = 'flex';
     setTimeout(() => document.getElementById('s-division').focus(), 80);
 }
@@ -294,6 +309,14 @@ function clearSlot() {
     if (!confirm('Clear this slot?')) return;
     const f = document.getElementById('clear-form');
     f.action = '/racking/' + currentItemId;
+    f.submit();
+}
+
+function moveToOutside() {
+    if (!currentItemId) return;
+    if (!confirm('Move this item to Outside Storage? The slot will be cleared and the move logged.')) return;
+    const f = document.getElementById('move-outside-form');
+    f.action = '/racking/' + currentItemId + '/move-outside';
     f.submit();
 }
 

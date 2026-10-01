@@ -36,7 +36,7 @@
                 <th style="padding:.7rem 1rem;text-align:left;font-weight:600;color:#374151;">Year</th>
                 <th style="padding:.7rem 1rem;text-align:left;font-weight:600;color:#374151;">Return Date</th>
                 <th style="padding:.7rem 1rem;text-align:left;font-weight:600;color:#374151;">Notes</th>
-                <th style="padding:.7rem;width:80px;"></th>
+                <th style="padding:.7rem;width:160px;"></th>
             </tr>
         </thead>
         <tbody>
@@ -56,6 +56,8 @@
             </td>
             <td style="padding:.65rem 1rem;color:#64748b;font-size:.75rem;">{{ $item->notes }}</td>
             <td style="padding:.5rem .75rem;text-align:right;white-space:nowrap;">
+                <button onclick="openMoveToRack({{ $item->id }}, {{ json_encode($item->colour) }})"
+                    style="font-size:.75rem;color:#854d0e;background:#fefce8;border:1px solid #fde68a;border-radius:5px;padding:3px 8px;cursor:pointer;margin-right:3px;font-weight:600;">→ Racking</button>
                 <button onclick="openEdit({{ $item->id }},{{ json_encode($item) }})"
                     style="font-size:.75rem;color:#475569;background:none;border:1px solid #e2e8f0;border-radius:5px;padding:3px 8px;cursor:pointer;margin-right:3px;">Edit</button>
                 <form action="{{ route('racking.outside.destroy', $item) }}" method="POST" style="display:inline;" onsubmit="return confirm('Remove this item?')">
@@ -140,6 +142,53 @@
     </div>
 </div>
 
+{{-- Move to Racking Modal --}}
+<div id="move-rack-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:1rem;">
+    <div style="background:#fff;border-radius:14px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.25);">
+        <div style="padding:1.25rem 1.5rem;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+                <h2 style="font-size:1rem;font-weight:700;color:#1e293b;margin:0;">Move to Racking</h2>
+                <p id="move-rack-desc" style="font-size:.8125rem;color:#64748b;margin:.25rem 0 0;"></p>
+            </div>
+            <button onclick="document.getElementById('move-rack-modal').style.display='none'" style="background:none;border:none;font-size:1.25rem;cursor:pointer;color:#64748b;">✕</button>
+        </div>
+        <form id="move-rack-form" method="POST" style="padding:1.5rem;">
+            @csrf
+            <p style="font-size:.875rem;color:#475569;margin:0 0 1rem;">Choose the racking slot to move this item into. The slot must be empty.</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 1rem;">
+                <div>
+                    <label style="{{ $lStyle }}">Bay</label>
+                    <select name="bay" id="move-rack-bay" style="{{ $fStyle }}">
+                        @foreach(['A','B','C','D','E','F','G','H'] as $letter)
+                            @foreach([1,2,3] as $level)
+                                <option value="{{ $letter.$level }}">{{ $letter.$level }}</option>
+                            @endforeach
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label style="{{ $lStyle }}">Slot</label>
+                    <select name="slot_number" id="move-rack-slot" style="{{ $fStyle }}">
+                        @for($s=1;$s<=4;$s++)<option value="{{ $s }}">Slot {{ $s }}</option>@endfor
+                    </select>
+                </div>
+            </div>
+            <div style="display:flex;justify-content:flex-end;gap:.75rem;margin-top:.25rem;">
+                <button type="button" onclick="document.getElementById('move-rack-modal').style.display='none'"
+                    style="padding:.6rem 1.25rem;background:#f1f5f9;color:#374151;border:1px solid #e2e8f0;border-radius:8px;font-size:.875rem;cursor:pointer;">Cancel</button>
+                <button type="submit"
+                    style="padding:.6rem 1.5rem;background:#0f172a;color:#fff;border:none;border-radius:8px;font-size:.875rem;font-weight:700;cursor:pointer;">Move to Racking</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if(session('error'))
+<div style="position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:.75rem 1.25rem;color:#991b1b;font-size:.875rem;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.1);">
+    {{ session('error') }}
+</div>
+@endif
+
 <script>
 function openEdit(id, item) {
     document.getElementById('edit-form').action = '/racking/outside-storage/' + id;
@@ -152,6 +201,16 @@ function openEdit(id, item) {
     document.getElementById('edit-notes').value    = item.notes    || '';
     document.getElementById('edit-modal').style.display = 'flex';
 }
+
+function openMoveToRack(id, description) {
+    document.getElementById('move-rack-form').action = '/racking/outside-storage/' + id + '/move-to-rack';
+    document.getElementById('move-rack-desc').textContent = description || '';
+    document.getElementById('move-rack-modal').style.display = 'flex';
+}
+
+document.getElementById('move-rack-modal').addEventListener('click', function(e) {
+    if (e.target === this) this.style.display = 'none';
+});
 </script>
 </main>
 </x-layout>

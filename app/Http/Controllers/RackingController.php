@@ -63,7 +63,19 @@ class RackingController extends Controller
         $data['for_outside_storage'] = $request->boolean('for_outside_storage');
         $data['sort_order']          = $data['slot_number'];
 
-        RackingItem::create($data);
+        $item = RackingItem::create($data);
+
+        if ($item->description) {
+            StockMovement::create([
+                'moved_at'      => now(),
+                'description'   => $item->description,
+                'quantity'      => $item->quantity,
+                'from_location' => null,
+                'to_location'   => $item->bay . '-' . $item->slot_number,
+                'notes'         => 'Slot filled',
+            ]);
+        }
+
         return redirect()->route('racking.index')->with('success', 'Slot filled.');
     }
 
@@ -88,8 +100,90 @@ class RackingController extends Controller
 
     public function destroy(Request $request, RackingItem $rackingItem): RedirectResponse
     {
+        if ($rackingItem->description) {
+            StockMovement::create([
+                'moved_at'      => now(),
+                'description'   => $rackingItem->description,
+                'quantity'      => $rackingItem->quantity,
+                'from_location' => $rackingItem->bay . '-' . $rackingItem->slot_number,
+                'to_location'   => null,
+                'notes'         => 'Slot cleared',
+            ]);
+        }
+
         $rackingItem->delete();
         return redirect()->route('racking.index')->with('success', 'Slot cleared.');
+    }
+
+    // ── Move Actions ──────────────────────────────────────────────────────────
+
+    public function moveToOutside(Request $request, RackingItem $rackingItem): RedirectResponse
+    {
+        $slotLabel = $rackingItem->bay . '-' . $rackingItem->slot_number;
+
+        OutsideStorageItem::create([
+            'storage_date' => $rackingItem->date_stored ?? now()->toDateString(),
+            'colour'       => $rackingItem->description,
+            'quantity'     => $rackingItem->quantity,
+            'ref'          => $rackingItem->pallet_ref,
+            'notes'        => $rackingItem->notes,
+        ]);
+
+        StockMovement::create([
+            'moved_at'      => now(),
+            'description'   => $rackingItem->description,
+            'quantity'      => $rackingItem->quantity,
+            'from_location' => $slotLabel,
+            'to_location'   => 'Outside Storage',
+            'notes'         => 'Moved to outside storage',
+        ]);
+
+        $rackingItem->delete();
+
+        return redirect()->route('racking.index')->with('success', 'Moved to outside storage and logged.');
+    }
+
+    public function moveToRack(Request $request, OutsideStorageItem $outsideStorageItem): RedirectResponse
+    {
+        $data = $request->validate([
+            'bay'         => 'required|string|max:3',
+            'slot_number' => 'required|integer|min:1|max:10',
+        ]);
+
+        $occupied = RackingItem::where('bay', $data['bay'])
+            ->where('slot_number', $data['slot_number'])
+            ->exists();
+
+        if ($occupied) {
+            return redirect()->route('racking.outside')
+                ->with('error', 'Slot ' . $data['bay'] . '-' . $data['slot_number'] . ' is already occupied. Choose a different slot.');
+        }
+
+        $slotLabel = $data['bay'] . '-' . $data['slot_number'];
+
+        RackingItem::create([
+            'bay'         => $data['bay'],
+            'slot_number' => $data['slot_number'],
+            'sort_order'  => $data['slot_number'],
+            'description' => $outsideStorageItem->colour,
+            'quantity'    => $outsideStorageItem->quantity,
+            'pallet_ref'  => $outsideStorageItem->ref,
+            'date_stored' => $outsideStorageItem->storage_date,
+            'notes'       => $outsideStorageItem->notes,
+        ]);
+
+        StockMovement::create([
+            'moved_at'      => now(),
+            'description'   => $outsideStorageItem->colour,
+            'quantity'      => $outsideStorageItem->quantity,
+            'from_location' => 'Outside Storage',
+            'to_location'   => $slotLabel,
+            'notes'         => 'Moved from outside storage',
+        ]);
+
+        $outsideStorageItem->delete();
+
+        return redirect()->route('racking.outside')->with('success', 'Moved to racking slot ' . $slotLabel . ' and logged.');
     }
 
     public function updateSettings(Request $request): RedirectResponse
