@@ -92,7 +92,7 @@
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script>
 // ── Version marker (check in browser DevTools → Sources to confirm latest build) ──
-const DESIGNER_VERSION = 'reading-space-v7-2026-10-01';
+const DESIGNER_VERSION = 'contain-box-v8-2026-10-01';
 console.log('[envelope-designer] version:', DESIGNER_VERSION);
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -619,7 +619,7 @@ async function generatePDF() {
         // Pre-render canvases once (reused across all pages).
         // Two weekly canvases: box frame (used when verse text present) and centred frame (no verses).
         const weeklyCanvasBox  = weeklyImgDataUrl
-            ? await buildRotatedImgCanvas(weeklyImgDataUrl, weeklyNatW, weeklyNatH, IMG_BOX_W,  IMG_BOX_H,  true)  // cover: crop to fill frame
+            ? await buildRotatedImgCanvas(weeklyImgDataUrl, weeklyNatW, weeklyNatH, IMG_BOX_W,  IMG_BOX_H,  false) // contain: whole picture, no crop
             : null;
         const weeklyCanvasCent = weeklyImgDataUrl
             ? await buildRotatedImgCanvas(weeklyImgDataUrl, weeklyNatW, weeklyNatH, IMG_CENT_W, IMG_CENT_H, false) // contain: whole picture
