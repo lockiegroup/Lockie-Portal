@@ -1,17 +1,71 @@
 <x-layout title="Racking — Lockie Portal">
 <style>
+/* ── Rack grid ── */
+.rack-row {
+    display:grid;
+    grid-template-columns: 64px 28px repeat(8, minmax(0,1fr));
+    gap:2px;
+    margin-bottom:2px;
+}
+.rack-bay-label {
+    background:#1e293b;color:#fff;border-radius:6px;
+    font-weight:700;font-size:.8rem;letter-spacing:.02em;
+    display:flex;align-items:center;justify-content:center;
+    padding:.4rem .2rem;text-align:center;
+}
+.rack-level-label {
+    background:#334155;color:#e2e8f0;border-radius:5px;
+    font-weight:700;font-size:.6rem;letter-spacing:.05em;
+    display:flex;align-items:center;justify-content:center;
+    padding:.2rem 0;text-align:center;
+    writing-mode:vertical-rl;transform:rotate(180deg);
+}
+.rack-p-label {
+    background:#f1f5f9;color:#94a3b8;border-radius:5px;
+    font-weight:700;font-size:.65rem;
+    display:flex;align-items:center;justify-content:center;
+}
+.rack-floor-label {
+    background:#0f172a;color:#94a3b8;border-radius:6px;
+    font-weight:800;font-size:.6rem;letter-spacing:.08em;
+    display:flex;align-items:center;justify-content:center;
+    padding:.4rem .2rem;text-align:center;
+}
+.rack-floor-bay {
+    background:#0f172a;color:#94a3b8;border-radius:6px;
+    font-weight:700;font-size:.75rem;
+    display:flex;align-items:center;justify-content:center;
+    padding:.4rem;
+}
+
+/* ── Slot cards ── */
 .slot-card {
-    flex:1;min-width:0;border-radius:9px;padding:10px 12px;cursor:pointer;transition:box-shadow .15s,transform .15s;border:1.5px solid #e2e8f0;background:#fff;text-align:left;font-family:inherit;
+    width:100%;border-radius:6px;padding:6px 7px;cursor:pointer;
+    transition:box-shadow .12s,transform .12s;
+    border:1.5px solid #e2e8f0;background:#fff;
+    text-align:left;font-family:inherit;min-height:52px;
+    box-sizing:border-box;
 }
-.slot-card:hover { box-shadow:0 4px 16px rgba(0,0,0,.1); transform:translateY(-1px); }
+.slot-card:hover { box-shadow:0 3px 12px rgba(0,0,0,.12); transform:translateY(-1px); }
+.slot-card.unusable { opacity:.6;border-color:#fca5a5!important; }
+.slot-card.for-outside { border-color:#fde68a!important; }
 .slot-empty {
-    flex:1;min-width:0;border-radius:9px;padding:10px 12px;cursor:pointer;transition:box-shadow .15s;border:1.5px dashed #cbd5e1;background:#f8fafc;text-align:left;font-family:inherit;
+    width:100%;border-radius:6px;padding:6px 7px;cursor:pointer;
+    transition:box-shadow .12s;border:1.5px dashed #e2e8f0;
+    background:#f8fafc;text-align:center;font-family:inherit;min-height:52px;
+    box-sizing:border-box;display:flex;align-items:center;justify-content:center;
+    color:#cbd5e1;font-size:.7rem;font-weight:500;
 }
-.slot-empty:hover { border-color:#94a3b8;background:#f1f5f9; }
-.div-lc { background:#dcfce7;color:#166534; }
-.div-jw { background:#dbeafe;color:#1e40af; }
-.div-hh { background:#f3e8ff;color:#6b21a8; }
-.div-xx { background:#f1f5f9;color:#475569; }
+.slot-empty:hover { border-color:#94a3b8;background:#f1f5f9;color:#94a3b8; }
+
+/* ── Division colours ── */
+.slot-lc { background:#dcfce7;border-color:#86efac!important; }
+.slot-jw { background:#dbeafe;border-color:#93c5fd!important; }
+.slot-hh { background:#f3e8ff;border-color:#d8b4fe!important; }
+.div-badge-lc { background:#bbf7d0;color:#166534; }
+.div-badge-jw { background:#bfdbfe;color:#1e40af; }
+.div-badge-hh { background:#e9d5ff;color:#6b21a8; }
+.div-badge-xx { background:#e2e8f0;color:#475569; }
 </style>
 
 <main style="max-width:1400px;margin:0 auto;padding:1.5rem;">
@@ -68,82 +122,105 @@
 </div>
 
 @php
-function divClass($d) {
+$letters = ['A','B','C','D','E','F','G','H'];
+$levels  = [3, 2, 1];
+
+function slotCardClass($item) {
+    if (!$item || !$item->division) return '';
+    $d = strtolower($item->division);
+    if (str_contains($d, 'lockie'))  return 'slot-lc';
+    if (str_contains($d, 'jw'))      return 'slot-jw';
+    if (str_contains($d, 'hammond')) return 'slot-hh';
+    return '';
+}
+function divBadgeClass($d) {
     $d = strtolower($d ?? '');
-    if (str_contains($d, 'lockie'))  return 'div-lc';
-    if (str_contains($d, 'jw'))      return 'div-jw';
-    if (str_contains($d, 'hammond')) return 'div-hh';
-    return 'div-xx';
+    if (str_contains($d, 'lockie'))  return 'div-badge-lc';
+    if (str_contains($d, 'jw'))      return 'div-badge-jw';
+    if (str_contains($d, 'hammond')) return 'div-badge-hh';
+    return 'div-badge-xx';
 }
 @endphp
 
-{{-- Bay Grid --}}
-<div style="display:flex;flex-direction:column;gap:.5rem;">
+{{-- Racking Grid: front-elevation view — Level 3 top, Level 1 bottom, A–H columns --}}
+<div style="overflow-x:auto;padding-bottom:.5rem;">
+<div style="min-width:780px;">
 
-@php $lastLetter = ''; @endphp
-@foreach($grid as $bay => $baySlots)
-@php
-    $letter = substr($bay, 0, 1);
-    if ($letter !== $lastLetter && $lastLetter !== '') {
-        echo '<div style="height:.25rem;"></div>';
-    }
-    $lastLetter = $letter;
-@endphp
+@foreach($levels as $lvl)
 
-<div style="display:flex;align-items:stretch;gap:.5rem;">
-    {{-- Bay label --}}
-    <div style="width:42px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#1e293b;color:#fff;border-radius:8px;font-weight:700;font-size:.9375rem;letter-spacing:.03em;">
-        {{ $bay }}
-    </div>
+{{-- Level header row: bay column labels --}}
+<div class="rack-row">
+    <div class="rack-bay-label" style="font-size:.68rem;writing-mode:initial;transform:none;">Level {{ $lvl }}</div>
+    <div></div>
+    @foreach($letters as $letter)
+    <div class="rack-bay-label">{{ $letter.$lvl }}</div>
+    @endforeach
+</div>
 
-    {{-- Slots --}}
-    @for($s = 1; $s <= $slots; $s++)
-    @php $item = $baySlots[$s] ?? null; @endphp
+{{-- P1–P4 rows --}}
+@for($p = 1; $p <= $slots; $p++)
+<div class="rack-row">
+    <div class="rack-level-label">Level {{ $lvl }}</div>
+    <div class="rack-p-label">P{{ $p }}</div>
+
+    @foreach($letters as $letter)
+    @php
+        $bay  = $letter . $lvl;
+        $item = $grid[$bay][$p] ?? null;
+        $iData = $item ? ['bay'=>$item->bay,'slot_number'=>$item->slot_number,'division'=>$item->division,'description'=>$item->description,'pallet_ref'=>$item->pallet_ref,'quantity'=>$item->quantity,'date_stored'=>$item->date_stored?->format('Y-m-d'),'is_unusable'=>$item->is_unusable,'for_outside_storage'=>$item->for_outside_storage,'notes'=>$item->notes] : null;
+    @endphp
 
     @if($item)
     <button type="button"
-        class="slot-card {{ $item->is_unusable ? 'slot-unusable' : '' }}"
-        style="{{ $item->is_unusable ? 'opacity:.6;border-color:#fca5a5;' : '' }}{{ $item->for_outside_storage ? 'border-color:#fde68a;' : '' }}"
-        onclick="openSlot({{ $item->id }},{{ json_encode(['bay'=>$item->bay,'slot_number'=>$item->slot_number,'division'=>$item->division,'description'=>$item->description,'pallet_ref'=>$item->pallet_ref,'quantity'=>$item->quantity,'date_stored'=>$item->date_stored?->format('Y-m-d'),'is_unusable'=>$item->is_unusable,'for_outside_storage'=>$item->for_outside_storage,'notes'=>$item->notes]) }})">
+        class="slot-card {{ slotCardClass($item) }}{{ $item->is_unusable ? ' unusable' : '' }}{{ $item->for_outside_storage ? ' for-outside' : '' }}"
+        onclick="openSlot({{ $item->id }},{{ json_encode($iData) }})">
 
-        @if($item->division)
-        <div class="{{ divClass($item->division) }}" style="border-radius:4px;padding:1px 7px;font-size:.65rem;font-weight:700;display:inline-block;margin-bottom:5px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ $item->division }}</div>
+        @if($item->is_unusable)
+            <div style="font-size:.6rem;color:#dc2626;font-weight:700;margin-bottom:2px;">UNUSABLE</div>
+        @elseif($item->for_outside_storage)
+            <div style="font-size:.6rem;color:#ca8a04;font-weight:700;margin-bottom:2px;">FOR OUTSIDE</div>
+        @elseif($item->division)
+            <div class="{{ divBadgeClass($item->division) }}" style="border-radius:3px;padding:1px 5px;font-size:.58rem;font-weight:700;display:inline-block;margin-bottom:3px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ $item->division }}</div>
         @endif
 
-        <div style="font-size:.75rem;font-weight:600;color:#1e293b;line-height:1.35;margin-bottom:3px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">{{ $item->description }}</div>
+        <div style="font-size:.72rem;font-weight:600;color:#1e293b;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">{{ $item->description }}</div>
 
         @if($item->quantity)
-        <div style="font-size:.7rem;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ $item->quantity }}</div>
-        @endif
-
-        @if($item->pallet_ref)
-        <div style="font-size:.65rem;color:#94a3b8;margin-top:2px;">{{ $item->pallet_ref }}</div>
+        <div style="font-size:.63rem;color:#64748b;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ $item->quantity }}</div>
         @endif
 
         @if($item->date_stored)
-        <div style="font-size:.65rem;color:#94a3b8;margin-top:2px;">{{ $item->date_stored->format('d/m/Y') }}</div>
-        @endif
-
-        @if($item->is_unusable)
-        <div style="font-size:.65rem;color:#dc2626;font-weight:700;margin-top:3px;">UNUSABLE</div>
-        @elseif($item->for_outside_storage)
-        <div style="font-size:.65rem;color:#ca8a04;font-weight:700;margin-top:3px;">FOR OUTSIDE</div>
+        <div style="font-size:.58rem;color:#94a3b8;margin-top:1px;">{{ $item->date_stored->format('d/m/y') }}</div>
         @endif
     </button>
 
     @else
-    <button type="button"
-        class="slot-empty"
-        onclick="openSlot(null,{bay:'{{ $bay }}',slot_number:{{ $s }}})">
-        <div style="font-size:.7rem;color:#cbd5e1;font-weight:500;">Slot {{ $s }}</div>
-        <div style="font-size:.8rem;color:#94a3b8;margin-top:4px;">+ Add</div>
+    <button type="button" class="slot-empty"
+        onclick="openSlot(null,{bay:'{{ $bay }}',slot_number:{{ $p }}})">
+        + Add
     </button>
     @endif
+    @endforeach
 
-    @endfor
 </div>
+@endfor
+
+@if($lvl > 1)
+<div style="height:8px;"></div>
+@endif
+
 @endforeach
 
+{{-- Floor label row --}}
+<div class="rack-row" style="margin-top:4px;">
+    <div class="rack-floor-label">FLOOR</div>
+    <div style="background:#0f172a;border-radius:5px;"></div>
+    @foreach($letters as $letter)
+    <div class="rack-floor-bay">{{ $letter }}</div>
+    @endforeach
+</div>
+
+</div>
 </div>
 
 {{-- Slot Edit/Add Modal --}}
