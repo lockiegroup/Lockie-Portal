@@ -359,9 +359,12 @@ function validateCell(opId, day, shift) {
 // ── Copy Mon → rest of week ──────────────────────────────────────────
 function copyMonToWeek(opId) {
     const opStr = String(opId);
+    const op = OPERATORS.find(o => String(o.id) === opStr);
     SHIFTS.forEach(shift => {
         const src = getCell(opId, 'mon', shift);
         DAYS.slice(1).forEach(day => {
+            // Skip days where the operator has no scheduled hours for this shift
+            if (op && getScheduled(op, day, shift) === 0) return;
             if (!assignments[opStr]) assignments[opStr] = {};
             if (!assignments[opStr][day]) assignments[opStr][day] = {};
             assignments[opStr][day][shift] = {...src};
