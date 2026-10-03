@@ -117,6 +117,7 @@
 .pp-bottom-table h3 { font-size:0.875rem; font-weight:700; padding:10px 14px; background:#f8fafc; border-bottom:1px solid var(--pp-border); margin:0; }
 .pp-bottom-table table { width:100%; border-collapse:collapse; font-size:0.78rem; }
 .pp-bottom-table th { padding:6px 10px; text-align:left; background:#f1f5f9; font-weight:700; border-bottom:1px solid var(--pp-border); }
+.pp-bottom-table th.pp-th-dark { background:#1e293b !important; color:#e2e8f0 !important; border-bottom:none !important; }
 .pp-bottom-table td { padding:6px 10px; border-bottom:1px solid #f1f5f9; }
 .pp-bottom-table tr:last-child td { border-bottom:none; }
 </style>
@@ -621,10 +622,10 @@ function renderDivisionAllocation() {
     });
 
     let html = `<table style="width:100%;border-collapse:collapse;font-size:0.78rem;">
-        <thead><tr style="background:#1e293b;color:#e2e8f0;">
-            <th style="padding:8px 14px;text-align:left;font-size:0.75rem;">Area</th>
-            ${DAYS.map(d => `<th style="padding:8px 12px;text-align:center;font-size:0.75rem;">${d.charAt(0).toUpperCase()+d.slice(1)}</th>`).join('')}
-            <th style="padding:8px 12px;text-align:center;font-size:0.75rem;">Total</th>
+        <thead><tr>
+            <th class="pp-th-dark" style="padding:8px 14px;text-align:left;font-size:0.75rem;">Area</th>
+            ${DAYS.map(d => `<th class="pp-th-dark" style="padding:8px 12px;text-align:center;font-size:0.75rem;">${d.charAt(0).toUpperCase()+d.slice(1)}</th>`).join('')}
+            <th class="pp-th-dark" style="padding:8px 12px;text-align:center;font-size:0.75rem;">Total</th>
         </tr></thead><tbody>`;
 
     DIVISIONS.forEach((div, i) => {
@@ -683,10 +684,10 @@ function renderOperatorDivision() {
     const fmt  = v => v > 0 ? v + 'h' : '<span style="color:#cbd5e1">–</span>';
 
     let html = `<table style="width:100%;border-collapse:collapse;font-size:0.78rem;">
-        <thead><tr style="background:#1e293b;color:#e2e8f0;">
-            <th style="padding:8px 14px;text-align:left;font-size:0.75rem;">Operator</th>
-            ${DIVISIONS.map(div => `<th style="padding:8px 12px;text-align:center;font-size:0.75rem;">${escHtml(div.name)}</th>`).join('')}
-            <th style="padding:8px 12px;text-align:center;font-size:0.75rem;">Total</th>
+        <thead><tr>
+            <th class="pp-th-dark" style="padding:8px 14px;text-align:left;font-size:0.75rem;">Operator</th>
+            ${DIVISIONS.map(div => `<th class="pp-th-dark" style="padding:8px 12px;text-align:center;font-size:0.75rem;">${escHtml(div.name)}</th>`).join('')}
+            <th class="pp-th-dark" style="padding:8px 12px;text-align:center;font-size:0.75rem;">Total</th>
         </tr></thead><tbody>`;
 
     OPERATORS.forEach((op, i) => {
