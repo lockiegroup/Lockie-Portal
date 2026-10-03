@@ -172,6 +172,19 @@
         <div id="pp-division-wrap"><p style="padding:12px;color:#94a3b8;font-size:0.8rem;">Loading…</p></div>
     </div>
 
+    {{-- Operator × Division breakdown --}}
+    <div class="pp-bottom-table" style="margin-top:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
+            <h3 style="margin:0;">Hours per Operator per Division</h3>
+            <button onclick="exportOperatorDivision()"
+                style="padding:.35rem .875rem;background:#0f172a;color:#fff;border:none;border-radius:7px;font-size:.8rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:.35rem;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Export CSV
+            </button>
+        </div>
+        <div id="pp-op-div-wrap"><p style="padding:12px;color:#94a3b8;font-size:0.8rem;">Loading…</p></div>
+    </div>
+
 </div>
 
 <script>
@@ -476,6 +489,7 @@ function renderGrid() {
     renderCoverage();
     renderLabour();
     renderDivisionAllocation();
+    renderOperatorDivision();
 }
 
 // ── onChange handler ─────────────────────────────────────────────────
@@ -497,6 +511,7 @@ window.ppChange = function(el) {
     renderCoverage();
     renderLabour();
     renderDivisionAllocation();
+    renderOperatorDivision();
     scheduleSave();
 };
 
@@ -637,6 +652,100 @@ function renderDivisionAllocation() {
     html += `</tbody></table>`;
     document.getElementById('pp-division-wrap').innerHTML = html;
 }
+
+// ── Operator × Division breakdown ─────────────────────────────────────
+function calcOperatorDivision() {
+    const data = {};
+    OPERATORS.forEach(op => {
+        data[op.id] = {};
+        DIVISIONS.forEach(div => { data[op.id][div.name] = 0; });
+    });
+    OPERATORS.forEach(op => {
+        DAYS.forEach(day => {
+            SHIFTS.forEach(shift => {
+                if (getScheduled(op, day, shift) === 0) return;
+                const cell = getCell(op.id, day, shift);
+                [['m','h'],['m2','h2']].forEach(([mk,hk]) => {
+                    const m   = machineByKey[cell[mk]];
+                    const hrs = parseFloat(cell[hk]) || 0;
+                    if (m && hrs > 0 && data[op.id][m.division] !== undefined) {
+                        data[op.id][m.division] += hrs;
+                    }
+                });
+            });
+        });
+    });
+    return data;
+}
+
+function renderOperatorDivision() {
+    const data = calcOperatorDivision();
+    const fmt  = v => v > 0 ? v + 'h' : '<span style="color:#cbd5e1">–</span>';
+
+    let html = `<table style="width:100%;border-collapse:collapse;font-size:0.78rem;">
+        <thead><tr style="background:#1e293b;color:#e2e8f0;">
+            <th style="padding:8px 14px;text-align:left;font-size:0.75rem;">Operator</th>
+            ${DIVISIONS.map(div => `<th style="padding:8px 12px;text-align:center;font-size:0.75rem;">${escHtml(div.name)}</th>`).join('')}
+            <th style="padding:8px 12px;text-align:center;font-size:0.75rem;">Total</th>
+        </tr></thead><tbody>`;
+
+    OPERATORS.forEach((op, i) => {
+        const row   = data[op.id];
+        const total = DIVISIONS.reduce((s, div) => s + (row[div.name] || 0), 0);
+        const rowBg = i % 2 === 0 ? '#f8fafc' : 'white';
+        html += `<tr style="background:${rowBg};">
+            <td style="padding:8px 14px;font-weight:600;border-bottom:1px solid #f1f5f9;">${escHtml(op.name)}</td>`;
+        DIVISIONS.forEach(div => {
+            const v   = row[div.name] || 0;
+            const hue = div.hue;
+            const bg  = v > 0 ? `hsl(${hue},60%,92%)` : '';
+            const fg  = v > 0 ? `hsl(${hue},55%,28%)` : '#cbd5e1';
+            html += `<td style="padding:7px 10px;text-align:center;font-weight:700;background:${bg};color:${fg};border-bottom:1px solid #f1f5f9;">${v > 0 ? v+'h' : '–'}</td>`;
+        });
+        const totalBg = total > 0 ? '#f1f5f9' : '';
+        html += `<td style="padding:7px 12px;text-align:center;font-weight:800;background:${totalBg};color:#1e293b;border-bottom:1px solid #f1f5f9;">${total > 0 ? total+'h' : '–'}</td></tr>`;
+    });
+
+    // Totals row
+    const colTotals = DIVISIONS.map(div => OPERATORS.reduce((s, op) => s + (data[op.id][div.name] || 0), 0));
+    const grandTotal = colTotals.reduce((s, t) => s + t, 0);
+    html += `<tr style="background:#f8fafc;border-top:2px solid #e2e8f0;">
+        <td style="padding:8px 14px;font-weight:800;color:#1e293b;">Total</td>
+        ${colTotals.map(v => `<td style="padding:7px 10px;text-align:center;font-weight:800;color:${v>0?'#1e293b':'#cbd5e1'};">${v > 0 ? v+'h' : '–'}</td>`).join('')}
+        <td style="padding:7px 12px;text-align:center;font-weight:800;color:#1e293b;">${grandTotal > 0 ? grandTotal+'h' : '–'}</td>
+    </tr>`;
+
+    html += `</tbody></table>`;
+    document.getElementById('pp-op-div-wrap').innerHTML = html;
+}
+
+window.exportOperatorDivision = function() {
+    const weekLabel = document.getElementById('pp-week-label').textContent.trim();
+    const data = calcOperatorDivision();
+
+    const header = ['Operator', ...DIVISIONS.map(d => d.name), 'Total'];
+    const rows   = [header];
+
+    OPERATORS.forEach(op => {
+        const row   = data[op.id];
+        const divHrs = DIVISIONS.map(div => row[div.name] || 0);
+        const total  = divHrs.reduce((s, v) => s + v, 0);
+        rows.push([op.name, ...divHrs, total]);
+    });
+
+    // Totals row
+    const colTotals  = DIVISIONS.map(div => OPERATORS.reduce((s, op) => s + (data[op.id][div.name] || 0), 0));
+    const grandTotal = colTotals.reduce((s, t) => s + t, 0);
+    rows.push(['Total', ...colTotals, grandTotal]);
+
+    const csv      = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+    const filename = 'production-' + weekLabel.replace(/[^a-z0-9]/gi, '-') + '.csv';
+    const blob     = new Blob([csv], { type: 'text/csv' });
+    const url      = URL.createObjectURL(blob);
+    const a        = Object.assign(document.createElement('a'), { href: url, download: filename });
+    a.click();
+    URL.revokeObjectURL(url);
+};
 
 // ── Print ─────────────────────────────────────────────────────────────
 window.printWeek = function() {
