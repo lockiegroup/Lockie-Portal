@@ -547,16 +547,19 @@ function renderLabour() {
         DAYS.forEach(day => {
             const am = getCell(op.id, day, 'am');
             const pm = getCell(op.id, day, 'pm');
-            const amAbsent = (am.m === 'holiday' || am.m === 'sick');
-            const pmAbsent = (pm.m === 'holiday' || pm.m === 'sick');
+            const amAbsent  = (am.m === 'holiday' || am.m === 'sick');
+            const pmAbsent  = (pm.m === 'holiday' || pm.m === 'sick');
+            const schedAmDay = getScheduled(op, day, 'am');
+            const schedPmDay = getScheduled(op, day, 'pm');
 
-            // Scheduled: exclude days where operator is on holiday/sick
-            if (!amAbsent) schedAm += getScheduled(op, day, 'am');
-            if (!pmAbsent) schedPm += getScheduled(op, day, 'pm');
+            // Scheduled: exclude absence days; also skip zero-scheduled shifts
+            if (!amAbsent && schedAmDay > 0) schedAm += schedAmDay;
+            if (!pmAbsent && schedPmDay > 0) schedPm += schedPmDay;
 
-            // Logged: only count real machine hours (not holiday/sick slots)
-            if (!amAbsent) logAm += (parseFloat(am.h)||0) + (parseFloat(am.h2)||0);
-            if (!pmAbsent) logPm += (parseFloat(pm.h)||0) + (parseFloat(pm.h2)||0);
+            // Logged: only count shifts that exist in the operator's schedule
+            // (zero-scheduled slots are hidden in the UI and may hold stale data)
+            if (!amAbsent && schedAmDay > 0) logAm += (parseFloat(am.h)||0) + (parseFloat(am.h2)||0);
+            if (!pmAbsent && schedPmDay > 0) logPm += (parseFloat(pm.h)||0) + (parseFloat(pm.h2)||0);
         });
 
         const diffAm   = Math.round((logAm - schedAm) * 10) / 10;
