@@ -36,6 +36,25 @@
     <div id="options-panel" style="display:none;background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:1.5rem;margin-bottom:1.5rem;">
         <h2 style="font-size:0.9375rem;font-weight:700;color:#1e293b;margin:0 0 0.75rem;">2. Images</h2>
         <div id="parse-summary" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:0.75rem 1rem;margin-bottom:1.25rem;font-size:0.8125rem;color:#166534;"></div>
+        {{-- Typography --}}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem;">
+            <div>
+                <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.4rem;">Church Name, Town &amp; Diocese Font</label>
+                <select id="church-font" onchange="churchFontChoice=this.value;updatePreview()"
+                    style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;background:#f8fafc;color:#374151;cursor:pointer;">
+                    <option value="arial">Arial</option>
+                    <option value="times">Times New Roman</option>
+                </select>
+            </div>
+            <div>
+                <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.4rem;">Verse Font</label>
+                <select id="verse-font" onchange="verseFontChoice=this.value;updatePreview()"
+                    style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;background:#f8fafc;color:#374151;cursor:pointer;">
+                    <option value="arial">Arial</option>
+                    <option value="times">Times New Roman</option>
+                </select>
+            </div>
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
             <div>
                 <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.4rem;">Weekly Envelope Image <span style="font-weight:400;color:#94a3b8;">(optional)</span></label>
@@ -99,6 +118,8 @@ console.log('[envelope-designer] version:', DESIGNER_VERSION);
 let parsedRows = [];
 let weeklyImgDataUrl = null, weeklyNatW = 0, weeklyNatH = 0;
 let specialImgDataUrl = null, specialNatW = 0, specialNatH = 0;
+let churchFontChoice = 'arial'; // 'arial' | 'times'
+let verseFontChoice  = 'arial';
 
 // PDF layout constants (mm)
 // Page: 156×98 landscape. Two portrait halves: 78×98 each.
@@ -326,16 +347,19 @@ function buildEnvHtml(row, setNum) {
         env.appendChild(imgEl);
     }
 
+    const churchFontCss = churchFontChoice === 'times' ? "'Times New Roman',serif" : 'Arial,sans-serif';
+    const verseFontCss  = verseFontChoice  === 'times' ? "'Times New Roman',serif" : 'Arial,sans-serif';
+
     // ── Text — all centred on face (yCentre=49); gift text/date at yCentre=68.5 ──
     // Church — 15pt bold, x-baseline=65.9, centred on face
-    band(row.church, 65.9, 49, 6*S, true, null, 44);
+    band(row.church, 65.9, 49, 6*S, true, churchFontCss, 44);
 
     // Town — 11pt bold, x=61.3, centred on face
-    if (row.town) band(row.town, 61.3, 49, 4.5*S, true, null, 44);
+    if (row.town) band(row.town, 61.3, 49, 4.5*S, true, churchFontCss, 44);
 
     // Diocese — 6pt, x=58.7/56.1/53.5, centred on face (first line = highest x)
     [row.diocese1, row.diocese2, row.diocese3].filter(Boolean).forEach((d, i) => {
-        band(d, 58.7 - i*2.6, 49, 2.8*S, false, null, 44);
+        band(d, 58.7 - i*2.6, 49, 2.8*S, false, churchFontCss, 44);
     });
 
     if (isSpec) {
@@ -349,7 +373,7 @@ function buildEnvHtml(row, setNum) {
         const n = vts.length;
         vts.forEach((line, i) => {
             const xPdf = Math.max(11.2, 31.5 + ((n - 1) / 2 - i) * 3.9);
-            band(line, xPdf, 68.5, 3.8*S, false, null, 44);
+            band(line, xPdf, 68.5, 3.8*S, false, verseFontCss, 44);
         });
     }
 
@@ -474,6 +498,17 @@ async function buildRotatedImgCanvas(imgDataUrl, nw, nh, boxW, boxH, fill = true
 }
 
 // ── PDF drawing ───────────────────────────────────────────────────────────────
+// Resolve the PDF font name+style to use based on user's font choice and desired weight.
+// 'arial' → use the loaded Helvetica/Arimo fonts; 'times' → use jsPDF built-in Times.
+function pdfFont(choice, fonts, weight) {
+    if (choice === 'times') {
+        return { name: 'times', style: weight === 'bold' ? 'bold' : 'normal' };
+    }
+    if (weight === 'bold')   return { name: fonts.bold,    style: 'bold' };
+    if (weight === 'medium') return { name: fonts.medium,  style: 'normal' };
+    return                          { name: fonts.regular, style: 'normal' };
+}
+
 function drawEnvPdf(doc, row, slotX, setNum, weeklyCanvasBox, weeklyCanvasCent, specialLogoCanvas, fonts) {
     const isSpec = row.isSpecial;
     const hasVt  = row.vts.some(v => v !== '');
@@ -530,7 +565,8 @@ function drawEnvPdf(doc, row, slotX, setNum, weeklyCanvasBox, weeklyCanvasCent, 
         const vts = row.vts.filter(Boolean);
         const n = vts.length;
         if (n) {
-            doc.setFont(fonts.regular, 'normal');
+            const vf = pdfFont(verseFontChoice, fonts, 'regular');
+            doc.setFont(vf.name, vf.style);
             vts.forEach((line, i) => {
                 let pt = 9; doc.setFontSize(pt);
                 while (pt > 5 && doc.getTextWidth(line) > 88) { pt -= 0.25; doc.setFontSize(pt); }
@@ -543,7 +579,8 @@ function drawEnvPdf(doc, row, slotX, setNum, weeklyCanvasBox, weeklyCanvasCent, 
     }
 
     // ── Diocese — 6pt Medium, slotX+58.7 (−2.6/line), centred ───────────────
-    doc.setFont(fonts.medium, 'normal'); doc.setFontSize(6);
+    const diocF = pdfFont(churchFontChoice, fonts, 'medium');
+    doc.setFont(diocF.name, diocF.style); doc.setFontSize(6);
     [row.diocese1, row.diocese2, row.diocese3].filter(Boolean).forEach((d, i) => {
         let pt = 6; doc.setFontSize(pt);
         while (pt > 4 && doc.getTextWidth(d) > 88) { pt -= 0.25; doc.setFontSize(pt); }
@@ -552,12 +589,14 @@ function drawEnvPdf(doc, row, slotX, setNum, weeklyCanvasBox, weeklyCanvasCent, 
 
     // ── Town — 11pt Bold, slotX+61.3, centred ────────────────────────────────
     if (row.town) {
-        doc.setFont(fonts.bold, 'bold'); doc.setFontSize(11);
+        const townF = pdfFont(churchFontChoice, fonts, 'bold');
+        doc.setFont(townF.name, townF.style); doc.setFontSize(11);
         doc.text(row.town, slotX + 61.3, cY(row.town), { angle: -90 });
     }
 
     // ── Church — 15pt Bold, slotX+65.9, centred, auto-shrink ─────────────────
-    doc.setFont(fonts.bold, 'bold');
+    const churchF = pdfFont(churchFontChoice, fonts, 'bold');
+    doc.setFont(churchF.name, churchF.style);
     let churchPt = 15; doc.setFontSize(churchPt);
     while (churchPt > 6 && doc.getTextWidth(row.church) > 88) { churchPt -= 0.5; doc.setFontSize(churchPt); }
     doc.text(row.church, slotX + 65.9, cY(row.church), { angle: -90 });
