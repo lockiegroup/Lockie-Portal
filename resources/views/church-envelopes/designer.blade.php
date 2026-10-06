@@ -42,16 +42,16 @@
                 <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.4rem;">Church Name, Town &amp; Diocese Font</label>
                 <select id="church-font" onchange="churchFontChoice=this.value;updatePreview()"
                     style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;background:#f8fafc;color:#374151;cursor:pointer;">
-                    <option value="arial">Arial</option>
                     <option value="times">Times New Roman</option>
+                    <option value="arial">Arial</option>
                 </select>
             </div>
             <div>
                 <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.4rem;">Verse Font</label>
                 <select id="verse-font" onchange="verseFontChoice=this.value;updatePreview()"
                     style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;background:#f8fafc;color:#374151;cursor:pointer;">
-                    <option value="arial">Arial</option>
                     <option value="times">Times New Roman</option>
+                    <option value="arial">Arial</option>
                 </select>
             </div>
         </div>
@@ -118,8 +118,8 @@ console.log('[envelope-designer] version:', DESIGNER_VERSION);
 let parsedRows = [];
 let weeklyImgDataUrl = null, weeklyNatW = 0, weeklyNatH = 0;
 let specialImgDataUrl = null, specialNatW = 0, specialNatH = 0;
-let churchFontChoice = 'arial'; // 'arial' | 'times'
-let verseFontChoice  = 'arial';
+let churchFontChoice = 'times'; // 'arial' | 'times'
+let verseFontChoice  = 'times';
 
 // PDF layout constants (mm)
 // Page: 156×98 landscape. Two portrait halves: 78×98 each.
