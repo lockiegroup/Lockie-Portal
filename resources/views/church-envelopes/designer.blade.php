@@ -37,10 +37,28 @@
         <h2 style="font-size:0.9375rem;font-weight:700;color:#1e293b;margin:0 0 0.75rem;">2. Images</h2>
         <div id="parse-summary" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:0.75rem 1rem;margin-bottom:1.25rem;font-size:0.8125rem;color:#166534;"></div>
         {{-- Typography --}}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+            <div>
+                <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.4rem;">Church Name Font</label>
+                <select id="church-font" onchange="churchFontChoice=this.value;updatePreview()"
+                    style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;background:#f8fafc;color:#374151;cursor:pointer;">
+                    <option value="times">Times New Roman</option>
+                    <option value="arial">Arial</option>
+                </select>
+            </div>
+            <div>
+                <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.4rem;">Town Font</label>
+                <select id="town-font" onchange="townFontChoice=this.value;updatePreview()"
+                    style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;background:#f8fafc;color:#374151;cursor:pointer;">
+                    <option value="times">Times New Roman</option>
+                    <option value="arial">Arial</option>
+                </select>
+            </div>
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem;">
             <div>
-                <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.4rem;">Church Name, Town &amp; Diocese Font</label>
-                <select id="church-font" onchange="churchFontChoice=this.value;updatePreview()"
+                <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.4rem;">Diocese Font</label>
+                <select id="diocese-font" onchange="dioceseFontChoice=this.value;updatePreview()"
                     style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;background:#f8fafc;color:#374151;cursor:pointer;">
                     <option value="times">Times New Roman</option>
                     <option value="arial">Arial</option>
@@ -50,8 +68,8 @@
                 <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.4rem;">Verse Font</label>
                 <select id="verse-font" onchange="verseFontChoice=this.value;updatePreview()"
                     style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;background:#f8fafc;color:#374151;cursor:pointer;">
-                    <option value="arial">Arial</option>
                     <option value="times">Times New Roman</option>
+                    <option value="arial">Arial</option>
                 </select>
             </div>
         </div>
@@ -118,8 +136,10 @@ console.log('[envelope-designer] version:', DESIGNER_VERSION);
 let parsedRows = [];
 let weeklyImgDataUrl = null, weeklyNatW = 0, weeklyNatH = 0;
 let specialImgDataUrl = null, specialNatW = 0, specialNatH = 0;
-let churchFontChoice = 'times'; // 'arial' | 'times'
-let verseFontChoice  = 'arial';
+let churchFontChoice  = 'times'; // 'arial' | 'times'
+let townFontChoice    = 'times';
+let dioceseFontChoice = 'times';
+let verseFontChoice   = 'times';
 
 // PDF layout constants (mm)
 // Page: 156×98 landscape. Two portrait halves: 78×98 each.
@@ -347,19 +367,18 @@ function buildEnvHtml(row, setNum) {
         env.appendChild(imgEl);
     }
 
-    const churchFontCss = churchFontChoice === 'times' ? "'Times New Roman',serif" : 'Arial,sans-serif';
-    const verseFontCss  = verseFontChoice  === 'times' ? "'Times New Roman',serif" : 'Arial,sans-serif';
+    const f = c => c === 'times' ? "'Times New Roman',serif" : 'Arial,sans-serif';
 
     // ── Text — all centred on face (yCentre=49); gift text/date at yCentre=68.5 ──
     // Church — 15pt bold, x-baseline=65.9, centred on face
-    band(row.church, 65.9, 49, 6*S, true, churchFontCss, 44);
+    band(row.church, 65.9, 49, 6*S, true, f(churchFontChoice), 44);
 
     // Town — 11pt bold, x=61.3, centred on face
-    if (row.town) band(row.town, 61.3, 49, 4.5*S, true, churchFontCss, 44);
+    if (row.town) band(row.town, 61.3, 49, 4.5*S, true, f(townFontChoice), 44);
 
     // Diocese — 6pt, x=58.7/56.1/53.5, centred on face (first line = highest x)
     [row.diocese1, row.diocese2, row.diocese3].filter(Boolean).forEach((d, i) => {
-        band(d, 58.7 - i*2.6, 49, 2.8*S, false, churchFontCss, 44);
+        band(d, 58.7 - i*2.6, 49, 2.8*S, false, f(dioceseFontChoice), 44);
     });
 
     if (isSpec) {
@@ -579,7 +598,7 @@ function drawEnvPdf(doc, row, slotX, setNum, weeklyCanvasBox, weeklyCanvasCent, 
     }
 
     // ── Diocese — 6pt Medium, slotX+58.7 (−2.6/line), centred ───────────────
-    const diocF = pdfFont(churchFontChoice, fonts, 'medium');
+    const diocF = pdfFont(dioceseFontChoice, fonts, 'medium');
     doc.setFont(diocF.name, diocF.style); doc.setFontSize(6);
     [row.diocese1, row.diocese2, row.diocese3].filter(Boolean).forEach((d, i) => {
         let pt = 6; doc.setFontSize(pt);
@@ -589,7 +608,7 @@ function drawEnvPdf(doc, row, slotX, setNum, weeklyCanvasBox, weeklyCanvasCent, 
 
     // ── Town — 11pt Bold, slotX+61.3, centred ────────────────────────────────
     if (row.town) {
-        const townF = pdfFont(churchFontChoice, fonts, 'bold');
+        const townF = pdfFont(townFontChoice, fonts, 'bold');
         doc.setFont(townF.name, townF.style); doc.setFontSize(11);
         doc.text(row.town, slotX + 61.3, cY(row.town), { angle: -90 });
     }
