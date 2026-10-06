@@ -392,7 +392,7 @@ function buildEnvHtml(row, setNum) {
         const n = vts.length;
         vts.forEach((line, i) => {
             const xPdf = Math.max(11.2, 31.5 + ((n - 1) / 2 - i) * 3.9);
-            band(line, xPdf, 68.5, 3.8*S, false, verseFontCss, 44);
+            band(line, xPdf, 68.5, 3.8*S, false, f(verseFontChoice), 44);
         });
     }
 
