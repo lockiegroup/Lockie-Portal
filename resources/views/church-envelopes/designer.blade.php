@@ -134,6 +134,7 @@ console.log('[envelope-designer] version:', DESIGNER_VERSION);
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let parsedRows = [];
+let spreadsheetBasename = 'envelopes';
 let weeklyImgDataUrl = null, weeklyNatW = 0, weeklyNatH = 0;
 let specialImgDataUrl = null, specialNatW = 0, specialNatH = 0;
 let churchFontChoice  = 'times'; // 'arial' | 'times'
@@ -208,6 +209,7 @@ function handleImage(input, type) {
 function parseFile() {
     const file = document.getElementById('xlsx-file').files[0];
     if (!file) { showStatus('parse-status', 'Please choose a file first.', 'error'); return; }
+    spreadsheetBasename = file.name.replace(/\.[^.]+$/, '') || 'envelopes';
     const reader = new FileReader();
     reader.onload = function(e) {
         try {
@@ -686,8 +688,6 @@ async function generatePDF() {
             ? await buildRotatedImgCanvas(specialImgDataUrl, specialNatW, specialNatH, SPEC_LOGO_W, SPEC_LOGO_H)
             : null;
 
-        const church = (parsedRows.find(r => !r.isSpecial) || parsedRows[0])?.church || 'envelopes';
-
         for (let idx = 0; idx < parsedRows.length; idx++) {
             if (idx > 0) doc.addPage();
             if (idx % 10 === 0) {
@@ -701,7 +701,7 @@ async function generatePDF() {
 
         st.textContent = `Done — ${parsedRows.length} pages saved.`;
         st.style.color = '#166534';
-        doc.save(sanitise(church) + '-envelopes.pdf');
+        doc.save(spreadsheetBasename + '.pdf');
     } catch (e) {
         st.textContent = 'PDF error: ' + e.message;
         st.style.color = '#991b1b';
