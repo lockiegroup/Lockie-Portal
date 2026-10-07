@@ -186,6 +186,45 @@
                 }
             @endphp
 
+            @php
+                // Load throughput targets and compute target packs/hour
+                $throughputSettings = [
+                    'auto' => [
+                        200 => (int) \App\Models\PrintScheduleSetting::getValue('throughput_auto_200', 350),
+                        300 => (int) \App\Models\PrintScheduleSetting::getValue('throughput_auto_300', 350),
+                        370 => (int) \App\Models\PrintScheduleSetting::getValue('throughput_auto_370', 350),
+                    ],
+                    'baby' => [
+                        200 => (int) \App\Models\PrintScheduleSetting::getValue('throughput_baby_200', 180),
+                        300 => (int) \App\Models\PrintScheduleSetting::getValue('throughput_baby_300', 180),
+                        370 => (int) \App\Models\PrintScheduleSetting::getValue('throughput_baby_370', 180),
+                    ],
+                ];
+                [$wsh, $wsm] = array_map('intval', explode(':', \App\Models\PrintScheduleSetting::getValue('work_start', '08:00')));
+                [$weh, $wem] = array_map('intval', explode(':', \App\Models\PrintScheduleSetting::getValue('work_end', '16:30')));
+                $workHoursPerDay = (($weh * 60 + $wem) - ($wsh * 60 + $wsm) - (int) \App\Models\PrintScheduleSetting::getValue('break_minutes', '30')) / 60;
+
+                $getTargetPPH = function(string $machineName, ?string $productCode) use ($throughputSettings, $workHoursPerDay): ?int {
+                    if ($workHoursPerDay <= 0) return null;
+                    $group = str_starts_with($machineName, 'auto') ? 'auto' : (str_starts_with($machineName, 'baby') ? 'baby' : null);
+                    if (!$group) return null;
+                    preg_match('/\b(200|300|370)\b/', $productCode ?? '', $m);
+                    $size = isset($m[1]) ? (int) $m[1] : 200;
+                    $ppd  = $throughputSettings[$group][$size] ?? null;
+                    return $ppd ? (int) round($ppd / $workHoursPerDay) : null;
+                };
+
+                $rateColour = function(?int $actual, ?int $target): array {
+                    if ($actual === null || $target === null || $target === 0) {
+                        return ['bg' => '#eff6ff', 'text' => '#0284c7']; // blue (no target)
+                    }
+                    $pct = $actual / $target;
+                    if ($pct >= 1.0)  return ['bg' => '#f0fdf4', 'text' => '#15803d']; // green
+                    if ($pct >= 0.75) return ['bg' => '#fef3c7', 'text' => '#b45309']; // amber
+                    return               ['bg' => '#fee2e2', 'text' => '#b91c1c'];     // red
+                };
+            @endphp
+
             {{-- Summary bar --}}
             <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:1.5rem;">
                 @php
@@ -288,6 +327,7 @@
                             $groupRateStr = $groupRate
                                 ? ($groupRate >= 1000 ? number_format($groupRate / 1000, 1) . 'k/hr' : number_format($groupRate) . '/hr')
                                 : null;
+                            $groupTargetPPH = $getTargetPPH($machineName, $job?->product_code);
                             // packs_produced is cumulative (includes all prior days), so the job total
                             // IS the current best reading — not baseline+delta, which breaks after corrections.
                             $totalPacksAllDays = $currentBestPacks ?? $priorBaseline;
@@ -334,7 +374,10 @@
                                 @endif
                                 <span>Time: <strong style="color:#334155;">{{ fmtDur($groupRunSecs) }}</strong></span>
                                 @if($groupRateStr)
-                                    <span style="font-weight:700;color:#0284c7;background:#eff6ff;padding:2px 8px;border-radius:6px;font-size:0.78rem;">~{{ $groupRateStr }}</span>
+                                    @php $gc = $rateColour($groupRate, $groupTargetPPH); @endphp
+                                    <span style="font-weight:700;color:{{ $gc['text'] }};background:{{ $gc['bg'] }};padding:2px 8px;border-radius:6px;font-size:0.78rem;white-space:nowrap;">
+                                        ~{{ $groupRateStr }}@if($groupTargetPPH) <span style="font-weight:400;opacity:0.75;">/ {{ $groupTargetPPH }}/hr target</span>@endif
+                                    </span>
                                 @endif
                                 @if($priorBaseline > 0 || $priorSecs > 0)
                                     <span style="border-left:1px solid #e2e8f0;padding-left:16px;color:#94a3b8;">
@@ -490,9 +533,15 @@
                                     {{-- Rate --}}
                                     <div style="text-align:right;">
                                         @if($rateStr)
-                                            <span style="font-size:0.78rem;font-weight:700;color:#0284c7;background:#eff6ff;padding:3px 8px;border-radius:6px;white-space:nowrap;">
+                                            @php $sc = $rateColour($seg['rate'], $groupTargetPPH); @endphp
+                                            <span style="font-size:0.78rem;font-weight:700;color:{{ $sc['text'] }};background:{{ $sc['bg'] }};padding:3px 8px;border-radius:6px;white-space:nowrap;">
                                                 ~{{ $rateStr }}
                                             </span>
+                                            @if($groupTargetPPH)
+                                                <div style="font-size:0.68rem;color:#94a3b8;margin-top:2px;white-space:nowrap;">target {{ $groupTargetPPH }}/hr</div>
+                                            @endif
+                                        @elseif($groupTargetPPH)
+                                            <div style="font-size:0.68rem;color:#cbd5e1;white-space:nowrap;">target {{ $groupTargetPPH }}/hr</div>
                                         @endif
                                     </div>
 
