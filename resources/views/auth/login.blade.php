@@ -36,6 +36,12 @@
                     </div>
                 </div>
 
+                <label style="display:flex;align-items:center;gap:9px;font-size:0.8rem;color:#64748b;cursor:pointer;">
+                    <input type="checkbox" name="remember_me" value="1"
+                        style="width:15px;height:15px;cursor:pointer;accent-color:#0f172a;flex-shrink:0;">
+                    Remember me on this device for 30 days
+                </label>
+
                 <button type="submit"
                     class="w-full bg-slate-900 hover:bg-slate-700 text-white font-semibold py-3 rounded-lg transition-colors duration-150">
                     Sign In

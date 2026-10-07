@@ -44,6 +44,8 @@ class LoginController extends Controller
         RateLimiter::clear($key);
         Auth::logout();
 
+        $rememberMe = $request->boolean('remember_me');
+
         // Skip OTP if this browser has a valid trusted device token for this user
         $cookieToken = $request->cookie('trusted_device');
         if ($cookieToken) {
@@ -53,7 +55,7 @@ class LoginController extends Controller
                 ->first();
 
             if ($device) {
-                Auth::loginUsingId($user->id);
+                Auth::loginUsingId($user->id, true);
                 $user->update(['last_login_at' => now()]);
                 ActivityLog::record('auth.login', 'Logged in (trusted device)', $user->id);
                 session(['otp_verified' => true]);
@@ -70,7 +72,7 @@ class LoginController extends Controller
         ]);
 
         $this->sendOtp($user, $otp);
-        session(['otp_user_id' => $user->id]);
+        session(['otp_user_id' => $user->id, 'otp_remember_me' => $rememberMe]);
 
         return redirect()->route('otp.show');
     }

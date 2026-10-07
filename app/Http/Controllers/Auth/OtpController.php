@@ -46,10 +46,11 @@ class OtpController extends Controller
 
         RateLimiter::clear($rateLimitKey);
         $otp->update(['used' => true]);
-        session()->forget('otp_user_id');
+        $rememberMe = $request->boolean('remember_me') || session('otp_remember_me');
+        session()->forget(['otp_user_id', 'otp_remember_me']);
         session(['otp_verified' => true]);
 
-        $user = \Illuminate\Support\Facades\Auth::loginUsingId($userId);
+        $user = \Illuminate\Support\Facades\Auth::loginUsingId($userId, $rememberMe);
         $user->update(['last_login_at' => now()]);
 
         \App\Models\ActivityLog::record('auth.login', 'Logged in', $user->id);

@@ -45,8 +45,10 @@
                     <input type="hidden" name="code" id="otp-hidden">
                 </div>
 
+                <input type="hidden" name="remember_me" value="{{ session('otp_remember_me') ? '1' : '0' }}">
+
                 <label style="display:flex;align-items:center;gap:9px;font-size:0.8rem;color:#64748b;cursor:pointer;margin-bottom:0.25rem;">
-                    <input type="checkbox" name="trust_device" value="1"
+                    <input type="checkbox" name="trust_device" value="1" {{ session('otp_remember_me') ? 'checked' : '' }}
                         style="width:15px;height:15px;cursor:pointer;accent-color:#0f172a;flex-shrink:0;">
                     Trust this device for 30 days
                 </label>
