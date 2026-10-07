@@ -51,7 +51,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach(['auto' => 'Auto (1, 2, 3)', 'baby' => 'Baby'] as $group => $label)
+                        @foreach(['auto' => 'Auto (1, 2, 3)', 'baby' => 'Baby', 'coditherm' => 'Coditherm', 'laser' => 'Laser', 'other' => 'Other'] as $group => $label)
                             <tr>
                                 <td style="padding:10px 12px 10px 0;font-weight:600;color:#1e293b;white-space:nowrap;">{{ $label }}</td>
                                 @foreach([200, 300, 370] as $size)

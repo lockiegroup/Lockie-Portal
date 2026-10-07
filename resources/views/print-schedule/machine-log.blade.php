@@ -199,6 +199,21 @@
                         300 => (int) \App\Models\PrintScheduleSetting::getValue('throughput_baby_300', 180),
                         370 => (int) \App\Models\PrintScheduleSetting::getValue('throughput_baby_370', 180),
                     ],
+                    'coditherm' => [
+                        200 => (int) \App\Models\PrintScheduleSetting::getValue('throughput_coditherm_200', 300),
+                        300 => (int) \App\Models\PrintScheduleSetting::getValue('throughput_coditherm_300', 300),
+                        370 => (int) \App\Models\PrintScheduleSetting::getValue('throughput_coditherm_370', 300),
+                    ],
+                    'laser' => [
+                        200 => (int) \App\Models\PrintScheduleSetting::getValue('throughput_laser_200', 300),
+                        300 => (int) \App\Models\PrintScheduleSetting::getValue('throughput_laser_300', 300),
+                        370 => (int) \App\Models\PrintScheduleSetting::getValue('throughput_laser_370', 300),
+                    ],
+                    'other' => [
+                        200 => (int) \App\Models\PrintScheduleSetting::getValue('throughput_other_200', 200),
+                        300 => (int) \App\Models\PrintScheduleSetting::getValue('throughput_other_300', 200),
+                        370 => (int) \App\Models\PrintScheduleSetting::getValue('throughput_other_370', 200),
+                    ],
                 ];
                 [$wsh, $wsm] = array_map('intval', explode(':', \App\Models\PrintScheduleSetting::getValue('work_start', '08:00')));
                 [$weh, $wem] = array_map('intval', explode(':', \App\Models\PrintScheduleSetting::getValue('work_end', '16:30')));
@@ -206,7 +221,11 @@
 
                 $getTargetPPH = function(string $machineName, ?string $productCode) use ($throughputSettings, $workHoursPerDay): ?int {
                     if ($workHoursPerDay <= 0) return null;
-                    $group = str_starts_with($machineName, 'auto') ? 'auto' : (str_starts_with($machineName, 'baby') ? 'baby' : null);
+                    $mn = strtolower($machineName);
+                    $group = null;
+                    foreach (array_keys($throughputSettings) as $prefix) {
+                        if (str_starts_with($mn, $prefix)) { $group = $prefix; break; }
+                    }
                     if (!$group) return null;
                     preg_match('/(200|300|370)/', $productCode ?? '', $m);
                     $size = isset($m[1]) ? (int) $m[1] : 200;
@@ -353,39 +372,41 @@
                         @endif
 
                         {{-- Job header --}}
-                        <div style="padding:10px 20px 8px;background:{{ $gi % 2 === 0 ? '#fff' : '#fafafa' }};border-top:{{ $gi > 0 ? '2px solid #e2e8f0' : 'none' }};display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;min-width:680px;">
-                            <div>
-                                <span style="font-size:0.9rem;font-weight:700;color:#1e293b;">
-                                    {{ $job?->customer_name ?? 'Unknown Job' }}
-                                </span>
-                                @if($job?->product_code)
-                                    <span style="font-size:0.8rem;color:#94a3b8;font-family:monospace;margin-left:8px;">{{ $job->product_code }}</span>
-                                @endif
-                                @if($job?->order_number)
-                                    <span style="font-size:0.75rem;color:#94a3b8;margin-left:6px;">· {{ $job->order_number }}</span>
-                                @endif
-                            </div>
-                            <div style="display:flex;align-items:center;gap:16px;font-size:0.8rem;color:#64748b;flex-wrap:wrap;">
-                                @if($job?->order_quantity)
-                                    <span>Order: <strong style="color:#334155;">{{ number_format($job->order_quantity) }} packs</strong></span>
-                                @endif
-                                @if($groupPacks > 0)
-                                    <span>Done this log: <strong style="color:#15803d;">{{ number_format($groupPacks) }} packs</strong></span>
-                                @endif
-                                <span>Time: <strong style="color:#334155;">{{ fmtDur($groupRunSecs) }}</strong></span>
-                                @if($groupRateStr)
-                                    @php $gc = $rateColour($groupRate, $groupTargetPPH); @endphp
-                                    <span style="font-weight:700;color:{{ $gc['text'] }};background:{{ $gc['bg'] }};padding:2px 8px;border-radius:6px;font-size:0.78rem;white-space:nowrap;">
-                                        ~{{ $groupRateStr }}@if($groupTargetPPH) <span style="font-weight:400;opacity:0.75;">/ {{ $groupTargetPPH }}/hr target</span>@endif
+                        <div style="padding:10px 20px 8px;background:{{ $gi % 2 === 0 ? '#fff' : '#fafafa' }};border-top:{{ $gi > 0 ? '2px solid #e2e8f0' : 'none' }};min-width:680px;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                                <div>
+                                    <span style="font-size:0.9rem;font-weight:700;color:#1e293b;">
+                                        {{ $job?->customer_name ?? 'Unknown Job' }}
                                     </span>
-                                @endif
-                                @if($priorBaseline > 0 || $priorSecs > 0)
-                                    <span style="border-left:1px solid #e2e8f0;padding-left:16px;color:#94a3b8;">
-                                        Job total: <strong style="color:#64748b;">{{ number_format($totalPacksAllDays) }} packs</strong> / <strong style="color:#64748b;">{{ fmtDur($totalSecsAllDays) }}</strong>
-                                        <span style="font-size:0.72rem;"> (inc. prior days)</span>
-                                    </span>
-                                @endif
+                                    @if($job?->product_code)
+                                        <span style="font-size:0.8rem;color:#94a3b8;font-family:monospace;margin-left:8px;">{{ $job->product_code }}</span>
+                                    @endif
+                                    @if($job?->order_number)
+                                        <span style="font-size:0.75rem;color:#94a3b8;margin-left:6px;">· {{ $job->order_number }}</span>
+                                    @endif
+                                </div>
+                                <div style="display:flex;align-items:center;gap:16px;font-size:0.8rem;color:#64748b;flex-wrap:wrap;justify-content:flex-end;">
+                                    @if($job?->order_quantity)
+                                        <span>Order: <strong style="color:#334155;">{{ number_format($job->order_quantity) }} packs</strong></span>
+                                    @endif
+                                    @if($groupPacks > 0)
+                                        <span>Done this log: <strong style="color:#15803d;">{{ number_format($groupPacks) }} packs</strong></span>
+                                    @endif
+                                    <span>Time: <strong style="color:#334155;">{{ fmtDur($groupRunSecs) }}</strong></span>
+                                    @if($groupRateStr)
+                                        @php $gc = $rateColour($groupRate, $groupTargetPPH); @endphp
+                                        <span style="font-weight:700;color:{{ $gc['text'] }};background:{{ $gc['bg'] }};padding:2px 8px;border-radius:6px;font-size:0.78rem;white-space:nowrap;">
+                                            ~{{ $groupRateStr }}@if($groupTargetPPH) <span style="font-weight:400;opacity:0.75;">/ {{ $groupTargetPPH }}/hr target</span>@endif
+                                        </span>
+                                    @endif
+                                </div>
                             </div>
+                            @if($priorBaseline > 0 || $priorSecs > 0)
+                                <div style="margin-top:4px;font-size:0.78rem;color:#94a3b8;">
+                                    Job total: <strong style="color:#64748b;">{{ number_format($totalPacksAllDays) }} packs</strong> / <strong style="color:#64748b;">{{ fmtDur($totalSecsAllDays) }}</strong>
+                                    <span style="font-size:0.72rem;">(inc. prior days)</span>
+                                </div>
+                            @endif
                         </div>
 
                         @foreach($group['entries'] as $ei => $entry)
