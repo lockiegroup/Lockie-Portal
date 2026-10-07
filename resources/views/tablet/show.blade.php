@@ -937,10 +937,17 @@
             <div class="modal-field">
                 <label>Total packs done so far</label>
                 <div style="display:flex;gap:8px;align-items:center;">
-                    <input type="number" id="end-packs-input" name="packs_produced" min="0" placeholder="0" inputmode="numeric" oninput="updateEndRemaining()" style="flex:1;">
+                    <input type="number" id="end-packs-input" name="packs_produced" min="0" placeholder="0" inputmode="numeric" oninput="updateEndRemaining(); updateEndZeroReason()" style="flex:1;">
                     <button type="button" class="btn btn-ghost btn-sm" onclick="endPacksAll()" style="white-space:nowrap;flex-shrink:0;">All done</button>
                 </div>
                 <div id="end-remaining-info" style="margin-top:8px;font-size:0.85rem;display:none;"></div>
+            </div>
+            <div class="modal-field" id="end-zero-reason-field" style="display:none;">
+                <label style="color:#dc2626;">Why were no packs produced? <span style="font-weight:700;">*</span></label>
+                <input type="text" id="end-zero-reason-input" name="zero_packs_reason"
+                    placeholder="e.g. machine setting up, wrong stock, changeover…"
+                    style="width:100%;padding:10px 12px;border:2px solid #fca5a5;border-radius:8px;font-size:0.95rem;background:#fff5f5;box-sizing:border-box;"
+                    onfocus="this.style.borderColor='#ef4444'" onblur="this.style.borderColor='#fca5a5'">
             </div>
             <div class="modal-actions">
                 <button type="button" class="btn btn-ghost btn-md" onclick="closeModal('end-modal')">Cancel</button>
@@ -1181,8 +1188,17 @@ function openEndModal(action, currentPacks, maxPacks, progressAtMs) {
     const packsInput = document.getElementById('end-packs-input');
     packsInput.max = maxPacks || '';
     packsInput.value = (currentPacks > 0) ? currentPacks : '';
+    document.getElementById('end-zero-reason-input').value = '';
     updateEndRemaining();
+    updateEndZeroReason();
     document.getElementById('end-modal').classList.add('open');
+}
+
+function updateEndZeroReason() {
+    const val = parseInt(document.getElementById('end-packs-input').value, 10);
+    const isZero = isNaN(val) || val === 0;
+    document.getElementById('end-zero-reason-field').style.display = isZero ? '' : 'none';
+    document.getElementById('end-zero-reason-input').required = isZero;
 }
 
 function endPacksAll() {
@@ -1224,6 +1240,15 @@ function endModalSubmit(e) {
     const current     = parseInt(form.dataset.currentPacks || '0', 10);
     const maxPacks    = parseInt(form.dataset.maxPacks || '0', 10);
     const entered     = parseInt(document.getElementById('end-packs-input').value, 10);
+
+    // Require reason when packs = 0
+    if (isNaN(entered) || entered === 0) {
+        const reason = document.getElementById('end-zero-reason-input').value.trim();
+        if (!reason) {
+            document.getElementById('end-zero-reason-input').focus();
+            e.preventDefault(); return;
+        }
+    }
 
     if (!isNaN(entered) && maxPacks > 0 && entered > maxPacks) {
         const ok = confirm(

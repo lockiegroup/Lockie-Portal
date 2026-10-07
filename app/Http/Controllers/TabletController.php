@@ -222,11 +222,14 @@ class TabletController extends Controller
         if (!$operator) return redirect()->route('tablet.show', $machine);
 
         $data = $request->validate([
-            'packs_produced' => 'nullable|integer|min:0',
-            'fully_complete' => 'nullable|boolean',
+            'packs_produced'   => 'nullable|integer|min:0',
+            'fully_complete'   => 'nullable|boolean',
+            'zero_packs_reason' => 'nullable|string|max:500',
         ]);
 
         $fullyComplete = filter_var($request->input('fully_complete', false), FILTER_VALIDATE_BOOLEAN);
+        $packs         = $data['packs_produced'] ?? null;
+        $zeroReason    = ($packs === null || $packs === 0) ? ($data['zero_packs_reason'] ?? null) : null;
 
         // Active run (currently running)
         $run = $job->runs()->where('machine', $machine)->whereNull('ended_at')->first();
@@ -234,8 +237,9 @@ class TabletController extends Controller
             $run->update([
                 'ended_at'       => now(),
                 'end_reason'     => 'complete',
-                'packs_produced' => $data['packs_produced'] ?? null,
+                'packs_produced' => $packs,
                 'fully_complete' => $fullyComplete,
+                'pause_reason'   => $zeroReason,
             ]);
             return redirect()->route('tablet.show', $machine);
         }
@@ -248,10 +252,11 @@ class TabletController extends Controller
             ->first();
 
         if ($pausedRun) {
+            $resolvedPacks = $packs ?? $pausedRun->packs_produced;
             $pausedRun->update([
                 'end_reason'     => 'complete',
-                'packs_produced' => $data['packs_produced'] ?? $pausedRun->packs_produced,
-                'pause_reason'   => null,
+                'packs_produced' => $resolvedPacks,
+                'pause_reason'   => ($resolvedPacks === null || $resolvedPacks === 0) ? $zeroReason : null,
                 'fully_complete' => $fullyComplete,
             ]);
         }

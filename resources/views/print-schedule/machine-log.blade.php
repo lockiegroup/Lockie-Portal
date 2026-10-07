@@ -578,6 +578,9 @@
                                             <span style="font-size:0.72rem;font-weight:700;background:#dcfce7;color:#15803d;padding:3px 9px;border-radius:9999px;">
                                                 @if($seg['fully_complete']) ✓ Complete @else Ended @endif
                                             </span>
+                                            @if($seg['pause_reason'] && ($seg['packs'] === null || $seg['packs'] === 0))
+                                                <div style="font-size:0.7rem;color:#64748b;margin-top:3px;text-align:right;">{{ $seg['pause_reason'] }}</div>
+                                            @endif
                                         @elseif($seg['type'] === 'pause')
                                             @php
                                                 $pauseLabel = match($seg['pause_type'] ?? null) {
