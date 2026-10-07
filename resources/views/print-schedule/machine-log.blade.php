@@ -199,21 +199,9 @@
                         300 => (int) \App\Models\PrintScheduleSetting::getValue('throughput_baby_300', 180),
                         370 => (int) \App\Models\PrintScheduleSetting::getValue('throughput_baby_370', 180),
                     ],
-                    'coditherm' => [
-                        200 => (int) \App\Models\PrintScheduleSetting::getValue('throughput_coditherm_200', 300),
-                        300 => (int) \App\Models\PrintScheduleSetting::getValue('throughput_coditherm_300', 300),
-                        370 => (int) \App\Models\PrintScheduleSetting::getValue('throughput_coditherm_370', 300),
-                    ],
-                    'laser' => [
-                        200 => (int) \App\Models\PrintScheduleSetting::getValue('throughput_laser_200', 300),
-                        300 => (int) \App\Models\PrintScheduleSetting::getValue('throughput_laser_300', 300),
-                        370 => (int) \App\Models\PrintScheduleSetting::getValue('throughput_laser_370', 300),
-                    ],
-                    'other' => [
-                        200 => (int) \App\Models\PrintScheduleSetting::getValue('throughput_other_200', 200),
-                        300 => (int) \App\Models\PrintScheduleSetting::getValue('throughput_other_300', 200),
-                        370 => (int) \App\Models\PrintScheduleSetting::getValue('throughput_other_370', 200),
-                    ],
+                    'coditherm' => (int) \App\Models\PrintScheduleSetting::getValue('throughput_coditherm', 300),
+                    'laser'     => (int) \App\Models\PrintScheduleSetting::getValue('throughput_laser',     300),
+                    'other'     => (int) \App\Models\PrintScheduleSetting::getValue('throughput_other',     200),
                 ];
                 [$wsh, $wsm] = array_map('intval', explode(':', \App\Models\PrintScheduleSetting::getValue('work_start', '08:00')));
                 [$weh, $wem] = array_map('intval', explode(':', \App\Models\PrintScheduleSetting::getValue('work_end', '16:30')));
@@ -227,9 +215,15 @@
                         if (str_starts_with($mn, $prefix)) { $group = $prefix; break; }
                     }
                     if (!$group) return null;
-                    preg_match('/(200|300|370)/', $productCode ?? '', $m);
-                    $size = isset($m[1]) ? (int) $m[1] : 200;
-                    $ppd  = $throughputSettings[$group][$size] ?? null;
+                    $entry = $throughputSettings[$group];
+                    if (is_int($entry)) {
+                        // Single flat rate (no size split)
+                        $ppd = $entry;
+                    } else {
+                        preg_match('/(200|300|370)/', $productCode ?? '', $m);
+                        $size = isset($m[1]) ? (int) $m[1] : 200;
+                        $ppd  = $entry[$size] ?? null;
+                    }
                     return $ppd ? (int) round($ppd / $workHoursPerDay) : null;
                 };
 

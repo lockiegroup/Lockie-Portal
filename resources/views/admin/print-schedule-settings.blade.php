@@ -51,7 +51,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach(['auto' => 'Auto (1, 2, 3)', 'baby' => 'Baby', 'coditherm' => 'Coditherm', 'laser' => 'Laser', 'other' => 'Other'] as $group => $label)
+                        @foreach(['auto' => 'Auto (1, 2, 3)', 'baby' => 'Baby'] as $group => $label)
                             <tr>
                                 <td style="padding:10px 12px 10px 0;font-weight:600;color:#1e293b;white-space:nowrap;">{{ $label }}</td>
                                 @foreach([200, 300, 370] as $size)
@@ -70,6 +70,25 @@
                                         </div>
                                     </td>
                                 @endforeach
+                            </tr>
+                        @endforeach
+                        @foreach(['coditherm' => 'Coditherm', 'laser' => 'Laser', 'other' => 'Other'] as $group => $label)
+                            <tr>
+                                <td style="padding:10px 12px 10px 0;font-weight:600;color:#1e293b;white-space:nowrap;">{{ $label }}</td>
+                                <td colspan="3" style="padding:10px 6px;">
+                                    <div style="display:flex;align-items:center;gap:6px;">
+                                        <input type="number" name="throughput_{{ $group }}"
+                                            value="{{ $settings['throughput_' . $group] }}" min="1"
+                                            {{ $isMaster ? '' : 'disabled' }}
+                                            style="width:90px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:0.875rem;color:#1e293b;text-align:center;outline:none;{{ $isMaster ? '' : 'cursor:not-allowed;background:#f8fafc;' }}"
+                                            @if($isMaster)
+                                                onfocus="this.style.borderColor='#e11d48';this.style.boxShadow='0 0 0 3px rgba(225,29,72,0.1)'"
+                                                onblur="this.style.borderColor='#cbd5e1';this.style.boxShadow='none'"
+                                            @endif
+                                        >
+                                        <span style="font-size:0.7rem;color:#94a3b8;white-space:nowrap;">/day (all sizes)</span>
+                                    </div>
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>

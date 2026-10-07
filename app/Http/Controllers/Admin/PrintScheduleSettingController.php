@@ -19,15 +19,9 @@ class PrintScheduleSettingController extends Controller
             'throughput_baby_200'       => PrintScheduleSetting::getValue('throughput_baby_200',       '180'),
             'throughput_baby_300'       => PrintScheduleSetting::getValue('throughput_baby_300',       '180'),
             'throughput_baby_370'       => PrintScheduleSetting::getValue('throughput_baby_370',       '180'),
-            'throughput_coditherm_200'  => PrintScheduleSetting::getValue('throughput_coditherm_200',  '300'),
-            'throughput_coditherm_300'  => PrintScheduleSetting::getValue('throughput_coditherm_300',  '300'),
-            'throughput_coditherm_370'  => PrintScheduleSetting::getValue('throughput_coditherm_370',  '300'),
-            'throughput_laser_200'      => PrintScheduleSetting::getValue('throughput_laser_200',      '300'),
-            'throughput_laser_300'      => PrintScheduleSetting::getValue('throughput_laser_300',      '300'),
-            'throughput_laser_370'      => PrintScheduleSetting::getValue('throughput_laser_370',      '300'),
-            'throughput_other_200'      => PrintScheduleSetting::getValue('throughput_other_200',      '200'),
-            'throughput_other_300'      => PrintScheduleSetting::getValue('throughput_other_300',      '200'),
-            'throughput_other_370'      => PrintScheduleSetting::getValue('throughput_other_370',      '200'),
+            'throughput_coditherm'      => PrintScheduleSetting::getValue('throughput_coditherm',      '300'),
+            'throughput_laser'          => PrintScheduleSetting::getValue('throughput_laser',          '300'),
+            'throughput_other'          => PrintScheduleSetting::getValue('throughput_other',          '200'),
             'dashboard_notes'           => PrintScheduleSetting::getValue('dashboard_notes',           ''),
         ];
 
@@ -47,26 +41,23 @@ class PrintScheduleSettingController extends Controller
                 'throughput_baby_200'      => 'required|integer|min:1',
                 'throughput_baby_300'      => 'required|integer|min:1',
                 'throughput_baby_370'      => 'required|integer|min:1',
-                'throughput_coditherm_200' => 'required|integer|min:1',
-                'throughput_coditherm_300' => 'required|integer|min:1',
-                'throughput_coditherm_370' => 'required|integer|min:1',
-                'throughput_laser_200'     => 'required|integer|min:1',
-                'throughput_laser_300'     => 'required|integer|min:1',
-                'throughput_laser_370'     => 'required|integer|min:1',
-                'throughput_other_200'     => 'required|integer|min:1',
-                'throughput_other_300'     => 'required|integer|min:1',
-                'throughput_other_370'     => 'required|integer|min:1',
+                'throughput_coditherm'     => 'required|integer|min:1',
+                'throughput_laser'         => 'required|integer|min:1',
+                'throughput_other'         => 'required|integer|min:1',
             ]);
         }
 
         $request->validate($rules);
 
         if ($isMaster) {
-            foreach (['auto', 'baby', 'coditherm', 'laser', 'other'] as $group) {
+            foreach (['auto', 'baby'] as $group) {
                 foreach ([200, 300, 370] as $size) {
                     $key = "throughput_{$group}_{$size}";
                     PrintScheduleSetting::setValue($key, (string) $request->integer($key));
                 }
+            }
+            foreach (['coditherm', 'laser', 'other'] as $group) {
+                PrintScheduleSetting::setValue("throughput_{$group}", (string) $request->integer("throughput_{$group}"));
             }
         }
 
