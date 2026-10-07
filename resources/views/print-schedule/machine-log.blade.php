@@ -208,7 +208,7 @@
                     if ($workHoursPerDay <= 0) return null;
                     $group = str_starts_with($machineName, 'auto') ? 'auto' : (str_starts_with($machineName, 'baby') ? 'baby' : null);
                     if (!$group) return null;
-                    preg_match('/\b(200|300|370)\b/', $productCode ?? '', $m);
+                    preg_match('/(200|300|370)/', $productCode ?? '', $m);
                     $size = isset($m[1]) ? (int) $m[1] : 200;
                     $ppd  = $throughputSettings[$group][$size] ?? null;
                     return $ppd ? (int) round($ppd / $workHoursPerDay) : null;
