@@ -589,29 +589,30 @@ async function patchTask(data) {
 function playCompleteDing() {
     return new Promise(resolve => {
         try {
-            const ctx  = new (window.AudioContext || window.webkitAudioContext)();
-            const t    = ctx.currentTime;
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const t   = ctx.currentTime;
 
-            function tone(freq, start, dur, vol) {
-                const osc  = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(freq, t + start);
-                gain.gain.setValueAtTime(vol, t + start);
-                gain.gain.exponentialRampToValueAtTime(0.001, t + start + dur);
-                osc.start(t + start);
-                osc.stop(t + start + dur);
-                return osc;
+            // Strike a bell-like chime by layering the fundamental + two inharmonic partials
+            function chime(freq, start) {
+                [[1, 0.6], [2.756, 0.2], [5.4, 0.08]].forEach(([ratio, vol]) => {
+                    const osc  = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq * ratio, t + start);
+                    gain.gain.setValueAtTime(vol, t + start);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, t + start + 1.1);
+                    osc.start(t + start);
+                    osc.stop(t + start + 1.1);
+                });
             }
 
-            // "bing" — high bright tone
-            tone(1046, 0,    0.45, 0.5);
-            // "bong" — lower warm tone, follows after a short gap
-            const bong = tone(523, 0.35, 0.65, 0.45);
+            // "bing" — A5 (880 Hz), then "bong" — E5 (659 Hz) after a clean gap
+            chime(880, 0);
+            chime(659, 0.42);
 
-            bong.onended = () => { ctx.close(); resolve(); };
+            setTimeout(() => { ctx.close(); resolve(); }, 1600);
         } catch (e) { resolve(); }
     });
 }
