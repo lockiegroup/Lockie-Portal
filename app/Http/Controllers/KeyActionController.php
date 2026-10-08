@@ -115,8 +115,14 @@ class KeyActionController extends Controller
             ? User::where('is_active', true)->orderBy('name')->get()
             : collect();
 
+        $initialHash = md5(
+            $tasks->sortBy('id')
+                ->map(fn($t) => implode(':', [$t->id, (int)$t->completed, $t->sort_order, $t->bucket_id, $t->assigned_to, $t->updated_at]))
+                ->implode(',')
+        );
+
         return view('key-actions.show', compact(
-            'group', 'allColumns', 'isGroupAdmin', 'allUsers'
+            'group', 'allColumns', 'isGroupAdmin', 'allUsers', 'initialHash'
         ));
     }
 

@@ -1058,7 +1058,7 @@ document.querySelectorAll('.task-list').forEach(list => {
 });
 
 // ── Real-time polling ─────────────────────────────────────────────────────────
-let _pollHash = null;
+let _pollHash = '{{ $initialHash }}';
 
 async function pollForChanges() {
     // Don't reload while the user has the panel open or is dragging
@@ -1070,9 +1070,7 @@ async function pollForChanges() {
         const res  = await fetch(`${baseUrl}/hash`, { headers: { 'Accept': 'application/json' } });
         if (!res.ok) return;
         const json = await res.json();
-        if (_pollHash === null) {
-            _pollHash = json.hash;
-        } else if (json.hash !== _pollHash) {
+        if (json.hash !== _pollHash) {
             location.reload();
         }
     } catch (_) {}
