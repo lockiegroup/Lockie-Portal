@@ -589,19 +589,29 @@ async function patchTask(data) {
 function playCompleteDing() {
     return new Promise(resolve => {
         try {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(880, ctx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + 0.08);
-            gain.gain.setValueAtTime(0.4, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-            osc.start(ctx.currentTime);
-            osc.stop(ctx.currentTime + 0.5);
-            osc.onended = () => { ctx.close(); resolve(); };
+            const ctx  = new (window.AudioContext || window.webkitAudioContext)();
+            const t    = ctx.currentTime;
+
+            function tone(freq, start, dur, vol) {
+                const osc  = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, t + start);
+                gain.gain.setValueAtTime(vol, t + start);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + start + dur);
+                osc.start(t + start);
+                osc.stop(t + start + dur);
+                return osc;
+            }
+
+            // "bing" — high bright tone
+            tone(1046, 0,    0.45, 0.5);
+            // "bong" — lower warm tone, follows after a short gap
+            const bong = tone(523, 0.35, 0.65, 0.45);
+
+            bong.onended = () => { ctx.close(); resolve(); };
         } catch (e) { resolve(); }
     });
 }
