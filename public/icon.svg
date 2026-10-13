@@ -1,42 +1,41 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500">
   <defs>
     <!--
-      Gradient sampled directly from the brand logo:
-      upper-left: #b4c8dc (light steel blue)
-      lower-right: #7066ae (blue-purple)
+      Gradient colours sampled directly from the brand logo pixels:
+      top-left  #adbfd7 (steel blue)  →  bottom-right #7066ae (blue-purple)
     -->
     <linearGradient id="g" gradientUnits="userSpaceOnUse"
-                    x1="50" y1="50" x2="450" y2="450">
-      <stop offset="0%"   stop-color="#b4c8dc"/>
-      <stop offset="45%"  stop-color="#9eb4da"/>
+                    x1="45" y1="45" x2="455" y2="455">
+      <stop offset="0%"   stop-color="#b0c4d8"/>
+      <stop offset="45%"  stop-color="#8890c4"/>
       <stop offset="100%" stop-color="#7066ae"/>
     </linearGradient>
   </defs>
 
-  <!-- Solid dark-navy background — no transparency, no anti-alias bleed -->
   <rect width="500" height="500" fill="#0f172a"/>
 
   <!--
-    L shape path (all integers, clockwise outer boundary):
-
-    Vertical bar  : x = 55 → 191  (width 136, ~34 % of 400 span — matches logo)
-    Horizontal bar: y = 336 → 450 (height 114, ~28 % of 400 span — matches logo)
-    Padding       : 55 px each side
-
-    Top cap          — semicircle r=68 (half bar width), dome peaks at y=55
-    Outer BL corner  — r=50, rounds the bottom-left outer corner
-    Inner corner     — r=68, concave notch where bars meet
-    Right end        — flat, matching the logo
+    The L is a single thick stroke with:
+      round linecap  → dome at top, semicircle at right end
+      round linejoin → convex rounded corner at bottom-left
+    Stroke width 130 → bars are 26% of the 500px canvas each side.
+    Centre spine:  top (110,110) → bend (110,390) → right (390,390)
+    Visual extent: x 45–455, y 45–455 (65 px padding each side)
   -->
-  <path shape-rendering="geometricPrecision" d="
-    M 191,123
-    A 68,68 0 0,0 55,123
-    L 55,400
-    A 50,50 0 0,0 105,450
-    L 450,450
-    L 450,336
-    L 259,336
-    A 68,68 0 0,0 191,268
-    Z
-  " fill="url(#g)"/>
+  <polyline
+    points="110,110 110,390 390,390"
+    stroke="url(#g)"
+    stroke-width="130"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    fill="none"
+  />
+
+  <!--
+    Carve the concave inner corner:
+    The inner corner point is at (175, 325) — where the right edge of the
+    vertical bar meets the top edge of the horizontal bar.
+    A navy quarter-circle sector centred there bites into the L.
+  -->
+  <path d="M 175,325 L 110,325 A 65,65 0 0,1 175,390 Z" fill="#0f172a"/>
 </svg>
