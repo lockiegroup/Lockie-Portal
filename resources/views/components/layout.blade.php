@@ -6,6 +6,13 @@
     <meta name="robots" content="noindex, nofollow">
     <title>{{ $title ?? 'Lockie Portal' }}</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Lockie Portal">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @vite(['resources/css/app.css'])
     @auth
