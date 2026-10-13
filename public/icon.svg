@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <!-- Main gradient: steel-blue top → blue-purple bottom, matching the logo -->
+    <linearGradient id="grad" x1="0.3" y1="0" x2="0.7" y2="1" gradientUnits="objectBoundingBox">
+      <stop offset="0%"   stop-color="#a8c0e0"/>
+      <stop offset="40%"  stop-color="#8898cc"/>
+      <stop offset="100%" stop-color="#6868b0"/>
+    </linearGradient>
+    <!-- Soft pink-lavender highlight on upper portion (matches logo sheen) -->
+    <radialGradient id="shine" cx="40%" cy="15%" r="50%" gradientUnits="objectBoundingBox">
+      <stop offset="0%"   stop-color="#e0b8f0" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#e0b8f0" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Dark navy background -->
+  <rect width="200" height="200" fill="#0f172a"/>
+
+  <!--
+    L shape path (clockwise outer boundary):
+      - Vertical bar: x=38–80, full height with semicircle top cap
+      - Horizontal bar: x=38–165, y=132–165
+      - Rounded outer bottom-left corner (r=18)
+      - Concave inner corner where bars meet (r=21)
+      - Flat right end and flat top-right
+  -->
+  <path d="
+    M 80,38
+    A 21,21 0 0,0 38,38
+    L 38,147
+    A 18,18 0 0,1 56,165
+    L 165,165
+    L 165,132
+    L 101,132
+    A 21,21 0 0,0 80,111
+    Z
+  " fill="url(#grad)"/>
+
+  <!-- Highlight overlay on same path -->
+  <path d="
+    M 80,38
+    A 21,21 0 0,0 38,38
+    L 38,147
+    A 18,18 0 0,1 56,165
+    L 165,165
+    L 165,132
+    L 101,132
+    A 21,21 0 0,0 80,111
+    Z
+  " fill="url(#shine)"/>
+</svg>
