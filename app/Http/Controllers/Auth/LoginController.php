@@ -55,6 +55,7 @@ class LoginController extends Controller
                 ->first();
 
             if ($device) {
+                config(['session.lifetime' => 60 * 24 * 30]);
                 Auth::loginUsingId($user->id, true);
                 $user->update(['last_login_at' => now()]);
                 ActivityLog::record('auth.login', 'Logged in (trusted device)', $user->id);

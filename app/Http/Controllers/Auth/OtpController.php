@@ -46,16 +46,21 @@ class OtpController extends Controller
 
         RateLimiter::clear($rateLimitKey);
         $otp->update(['used' => true]);
-        $rememberMe = $request->boolean('remember_me') || session('otp_remember_me');
+        $trustDevice = $request->boolean('trust_device');
+        $rememberMe = $request->boolean('remember_me') || session('otp_remember_me') || $trustDevice;
         session()->forget(['otp_user_id', 'otp_remember_me']);
         session(['otp_verified' => true]);
+
+        if ($trustDevice) {
+            config(['session.lifetime' => 60 * 24 * 30]);
+        }
 
         $user = \Illuminate\Support\Facades\Auth::loginUsingId($userId, $rememberMe);
         $user->update(['last_login_at' => now()]);
 
         \App\Models\ActivityLog::record('auth.login', 'Logged in', $user->id);
 
-        if ($request->boolean('trust_device')) {
+        if ($trustDevice) {
             $plainToken = Str::random(64);
             TrustedDevice::create([
                 'user_id'    => $user->id,
