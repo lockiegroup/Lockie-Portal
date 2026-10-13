@@ -1,51 +1,42 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500">
   <defs>
-    <!-- Main gradient: steel-blue top → blue-purple bottom, matching the logo -->
-    <linearGradient id="grad" x1="0.3" y1="0" x2="0.7" y2="1" gradientUnits="objectBoundingBox">
-      <stop offset="0%"   stop-color="#a8c0e0"/>
-      <stop offset="40%"  stop-color="#8898cc"/>
-      <stop offset="100%" stop-color="#6868b0"/>
+    <!--
+      Gradient sampled directly from the brand logo:
+      upper-left: #b4c8dc (light steel blue)
+      lower-right: #7066ae (blue-purple)
+    -->
+    <linearGradient id="g" gradientUnits="userSpaceOnUse"
+                    x1="50" y1="50" x2="450" y2="450">
+      <stop offset="0%"   stop-color="#b4c8dc"/>
+      <stop offset="45%"  stop-color="#9eb4da"/>
+      <stop offset="100%" stop-color="#7066ae"/>
     </linearGradient>
-    <!-- Soft pink-lavender highlight on upper portion (matches logo sheen) -->
-    <radialGradient id="shine" cx="40%" cy="15%" r="50%" gradientUnits="objectBoundingBox">
-      <stop offset="0%"   stop-color="#e0b8f0" stop-opacity="0.45"/>
-      <stop offset="100%" stop-color="#e0b8f0" stop-opacity="0"/>
-    </radialGradient>
   </defs>
 
-  <!-- Dark navy background -->
-  <rect width="200" height="200" fill="#0f172a"/>
+  <!-- Solid dark-navy background — no transparency, no anti-alias bleed -->
+  <rect width="500" height="500" fill="#0f172a"/>
 
   <!--
-    L shape path (clockwise outer boundary):
-      - Vertical bar: x=38–80, full height with semicircle top cap
-      - Horizontal bar: x=38–165, y=132–165
-      - Rounded outer bottom-left corner (r=18)
-      - Concave inner corner where bars meet (r=21)
-      - Flat right end and flat top-right
-  -->
-  <path d="
-    M 80,38
-    A 21,21 0 0,0 38,38
-    L 38,147
-    A 18,18 0 0,1 56,165
-    L 165,165
-    L 165,132
-    L 101,132
-    A 21,21 0 0,0 80,111
-    Z
-  " fill="url(#grad)"/>
+    L shape path (all integers, clockwise outer boundary):
 
-  <!-- Highlight overlay on same path -->
-  <path d="
-    M 80,38
-    A 21,21 0 0,0 38,38
-    L 38,147
-    A 18,18 0 0,1 56,165
-    L 165,165
-    L 165,132
-    L 101,132
-    A 21,21 0 0,0 80,111
+    Vertical bar  : x = 55 → 191  (width 136, ~34 % of 400 span — matches logo)
+    Horizontal bar: y = 336 → 450 (height 114, ~28 % of 400 span — matches logo)
+    Padding       : 55 px each side
+
+    Top cap          — semicircle r=68 (half bar width), dome peaks at y=55
+    Outer BL corner  — r=50, rounds the bottom-left outer corner
+    Inner corner     — r=68, concave notch where bars meet
+    Right end        — flat, matching the logo
+  -->
+  <path shape-rendering="geometricPrecision" d="
+    M 191,123
+    A 68,68 0 0,0 55,123
+    L 55,400
+    A 50,50 0 0,0 105,450
+    L 450,450
+    L 450,336
+    L 259,336
+    A 68,68 0 0,0 191,268
     Z
-  " fill="url(#shine)"/>
+  " fill="url(#g)"/>
 </svg>
