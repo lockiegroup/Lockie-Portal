@@ -1,41 +1,45 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500">
   <defs>
-    <!--
-      Gradient colours sampled directly from the brand logo pixels:
-      top-left  #adbfd7 (steel blue)  →  bottom-right #7066ae (blue-purple)
-    -->
     <linearGradient id="g" gradientUnits="userSpaceOnUse"
-                    x1="45" y1="45" x2="455" y2="455">
-      <stop offset="0%"   stop-color="#b0c4d8"/>
-      <stop offset="45%"  stop-color="#8890c4"/>
+                    x1="64" y1="58" x2="438" y2="442">
+      <stop offset="0%"   stop-color="#adbfd7"/>
+      <stop offset="45%"  stop-color="#9098c8"/>
       <stop offset="100%" stop-color="#7066ae"/>
     </linearGradient>
   </defs>
 
   <rect width="500" height="500" fill="#0f172a"/>
 
-  <!--
-    The L is a single thick stroke with:
-      round linecap  → dome at top, semicircle at right end
-      round linejoin → convex rounded corner at bottom-left
-    Stroke width 130 → bars are 26% of the 500px canvas each side.
-    Centre spine:  top (110,110) → bend (110,390) → right (390,390)
-    Visual extent: x 45–455, y 45–455 (65 px padding each side)
-  -->
-  <polyline
-    points="110,110 110,390 390,390"
-    stroke="url(#g)"
-    stroke-width="130"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    fill="none"
-  />
-
-  <!--
-    Carve the concave inner corner:
-    The inner corner point is at (175, 325) — where the right edge of the
-    vertical bar meets the top edge of the horizontal bar.
-    A navy quarter-circle sector centred there bites into the L.
-  -->
-  <path d="M 175,325 L 110,325 A 65,65 0 0,1 175,390 Z" fill="#0f172a"/>
+  <!-- Exact L path from the brand SVG, scaled and centred -->
+  <g transform="translate(23.6,15.6) scale(4.04)">
+    <path fill="url(#g)" fill-rule="evenodd" d="
+      M 15.39485803241271 11.684762825059053
+      L 11.28971606482542 12.100839366113474
+        10.742280162045155 41.30041968305674
+      C 10.301283258261481 64.82267031761806,
+        10.478630094048603 71.74466364725282,
+        11.654408480326854 76.9015405426113
+      C 14.479178965948162 89.29077462106775,
+        20.40939470928121 97.18419812749313,
+        30.51640157152213 102.00782774834346
+      L 36.78593465295478 104.99999999999999
+        69.49885236876115 104.99999999999999
+      L 102.21177008456752 104.99999999999999
+        101.85193864388886 97.07636327811801
+      C 101.54418852871804 90.2995788227858,
+        101.13083310257846 88.76117493509544,
+        98.9960536016051 86.44748465693212
+      C 94.43253912056127 81.5015129140732,
+        91.70449729764891 80.99490468950862,
+        65.97020244365689 80.31445264864682
+      L 42 79.68064576700512
+        42 53.08372099670821
+      C 42 38.455412373044915,
+        41.560746694010874 24.955209456649712,
+        41.02388154224638 23.08327007138554
+      C 38.51645862134931 14.340397292784369,
+        29.362313869967785 10.269091757381977,
+        15.39485803241271 11.684762825059053
+    "/>
+  </g>
 </svg>
