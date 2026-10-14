@@ -14,11 +14,12 @@ class ClockingSettingsController extends Controller
 {
     public function index(): View
     {
-        $categories  = ClockingCategory::with('alertRecipients')->orderBy('name')->get();
+        $categories       = ClockingCategory::with('alertRecipients')->orderBy('name')->get();
         $globalRecipients = ClockingAlertRecipient::whereNull('category_id')->orderBy('email')->get();
-        $graceMins   = (int) (ClockingSettingRecord::where('key', 'alert_grace_minutes')->value('value') ?? 15);
+        $graceMins        = (int) (ClockingSettingRecord::where('key', 'alert_grace_minutes')->value('value') ?? 15);
+        $defaultBreakMins = (int) (ClockingSettingRecord::where('key', 'default_break_minutes')->value('value') ?? 0);
 
-        return view('clocking.settings', compact('categories', 'globalRecipients', 'graceMins'));
+        return view('clocking.settings', compact('categories', 'globalRecipients', 'graceMins', 'defaultBreakMins'));
     }
 
     // ── Categories ────────────────────────────────────────────────────────────
@@ -72,13 +73,17 @@ class ClockingSettingsController extends Controller
 
     public function updateSettings(Request $request): JsonResponse
     {
-        $data = $request->validate([
-            'alert_grace_minutes' => 'required|integer|min:0|max:120',
+        $request->validate([
+            'alert_grace_minutes'   => 'sometimes|integer|min:0|max:120',
+            'default_break_minutes' => 'sometimes|integer|min:0|max:180',
         ]);
-        ClockingSettingRecord::updateOrCreate(
-            ['key' => 'alert_grace_minutes'],
-            ['value' => $data['alert_grace_minutes']]
-        );
+
+        foreach (['alert_grace_minutes', 'default_break_minutes'] as $key) {
+            if ($request->has($key)) {
+                ClockingSettingRecord::updateOrCreate(['key' => $key], ['value' => $request->integer($key)]);
+            }
+        }
+
         return response()->json(['ok' => true]);
     }
 }

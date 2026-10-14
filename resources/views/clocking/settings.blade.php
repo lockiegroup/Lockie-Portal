@@ -22,6 +22,22 @@
         </div>
     </div>
 
+    {{-- Break time --}}
+    <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:1.5rem;margin-bottom:1.5rem;">
+        <h2 style="font-size:0.9375rem;font-weight:700;color:#1e293b;margin:0 0 0.75rem;">Default break time</h2>
+        <p style="font-size:0.8125rem;color:#64748b;margin:0 0 1rem;">Minutes automatically deducted from each employee's hours on days they work. Individual employees can override this on the Employees page.</p>
+        <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+            <input type="number" id="break-mins" value="{{ $defaultBreakMins }}" min="0" max="180"
+                style="width:80px;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:7px;font-size:0.875rem;">
+            <span style="font-size:0.875rem;color:#475569;">minutes</span>
+            <button onclick="saveBreak()"
+                style="padding:0.4rem 1rem;background:#6366f1;color:#fff;border:none;border-radius:7px;font-size:0.8125rem;font-weight:600;cursor:pointer;">
+                Save
+            </button>
+            <span id="break-result" style="font-size:0.8125rem;"></span>
+        </div>
+    </div>
+
     {{-- Global recipients --}}
     <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:1.5rem;margin-bottom:1.5rem;">
         <h2 style="font-size:0.9375rem;font-weight:700;color:#1e293b;margin:0 0 0.25rem;">Global alert recipients</h2>
@@ -134,6 +150,19 @@ async function saveGrace() {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
         body: JSON.stringify({ alert_grace_minutes: parseInt(mins) }),
+    });
+    res.innerHTML = r.ok ? '<span style="color:#22c55e">Saved</span>' : '<span style="color:#ef4444">Error</span>';
+    setTimeout(() => res.textContent = '', 2000);
+}
+
+// ── Break time ────────────────────────────────────────────────────────────────
+async function saveBreak() {
+    const mins = document.getElementById('break-mins').value;
+    const res  = document.getElementById('break-result');
+    const r = await fetch('/clocking/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
+        body: JSON.stringify({ default_break_minutes: parseInt(mins) }),
     });
     res.innerHTML = r.ok ? '<span style="color:#22c55e">Saved</span>' : '<span style="color:#ef4444">Error</span>';
     setTimeout(() => res.textContent = '', 2000);
