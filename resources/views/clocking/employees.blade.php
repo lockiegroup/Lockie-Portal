@@ -18,10 +18,25 @@
 
         <div id="add-form" style="display:none;margin-top:1rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:1.25rem;">
             <p style="font-size:0.8125rem;color:#64748b;margin:0 0 1rem;">Fill in the employee's name and their weekly schedule.</p>
-            <div style="margin-bottom:0.75rem;">
-                <label style="font-size:0.8125rem;font-weight:600;color:#374151;display:block;margin-bottom:0.25rem;">Name</label>
-                <input type="text" id="add-name" placeholder="Full name" maxlength="100"
-                    style="width:100%;max-width:320px;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:7px;font-size:0.875rem;">
+            <div style="display:flex;flex-wrap:wrap;gap:0.75rem;margin-bottom:0.75rem;">
+                <div>
+                    <label style="font-size:0.8125rem;font-weight:600;color:#374151;display:block;margin-bottom:0.25rem;">Name</label>
+                    <input type="text" id="add-name" placeholder="Full name" maxlength="100"
+                        style="width:100%;min-width:220px;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:7px;font-size:0.875rem;">
+                </div>
+                <div>
+                    <label style="font-size:0.8125rem;font-weight:600;color:#374151;display:block;margin-bottom:0.25rem;">
+                        Fob UID <span style="font-weight:400;color:#94a3b8;">— type or tap reader</span>
+                    </label>
+                    <div style="display:flex;gap:0.375rem;align-items:center;">
+                        <input type="text" id="add-fob" maxlength="20" placeholder="e.g. 0012345678" inputmode="numeric"
+                            style="width:160px;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:7px;font-size:0.875rem;font-family:monospace;">
+                        <button type="button" onclick="startCapture('add-fob')"
+                            style="padding:0.45rem 0.75rem;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:7px;font-size:0.75rem;color:#475569;cursor:pointer;">
+                            📡 Tap
+                        </button>
+                    </div>
+                </div>
             </div>
             <div id="add-schedule" style="margin-bottom:0.75rem;"></div>
             <div style="margin-bottom:1rem;">
@@ -96,10 +111,26 @@
             <tr id="emp-edit-{{ $emp->id }}" style="display:none;">
                 <td colspan="5" style="padding:0;background:#f8fafc;border-bottom:1px solid #e2e8f0;">
                     <div style="padding:1.25rem 1rem;">
-                        <div style="margin-bottom:0.75rem;">
-                            <label style="font-size:0.8125rem;font-weight:600;color:#374151;display:block;margin-bottom:0.25rem;">Name</label>
-                            <input type="text" id="edit-name-{{ $emp->id }}" value="{{ $emp->name }}" maxlength="100"
-                                style="width:100%;max-width:320px;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:7px;font-size:0.875rem;">
+                        <div style="display:flex;flex-wrap:wrap;gap:0.75rem;margin-bottom:0.75rem;">
+                            <div>
+                                <label style="font-size:0.8125rem;font-weight:600;color:#374151;display:block;margin-bottom:0.25rem;">Name</label>
+                                <input type="text" id="edit-name-{{ $emp->id }}" value="{{ $emp->name }}" maxlength="100"
+                                    style="width:100%;min-width:220px;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:7px;font-size:0.875rem;">
+                            </div>
+                            <div>
+                                <label style="font-size:0.8125rem;font-weight:600;color:#374151;display:block;margin-bottom:0.25rem;">
+                                    Fob UID <span style="font-weight:400;color:#94a3b8;">— type or tap reader</span>
+                                </label>
+                                <div style="display:flex;gap:0.375rem;align-items:center;">
+                                    <input type="text" id="edit-fob-{{ $emp->id }}" maxlength="20" inputmode="numeric"
+                                        value="{{ $fob?->uid ?? '' }}" placeholder="none assigned"
+                                        style="width:160px;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:7px;font-size:0.875rem;font-family:monospace;">
+                                    <button type="button" onclick="startCapture('edit-fob-{{ $emp->id }}')"
+                                        style="padding:0.45rem 0.75rem;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:7px;font-size:0.75rem;color:#475569;cursor:pointer;">
+                                        📡 Tap
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                         <div id="edit-schedule-{{ $emp->id }}" style="margin-bottom:0.75rem;"></div>
                         <div style="margin-bottom:1rem;">
@@ -197,6 +228,7 @@ function toggleAddForm() {
 
 async function saveEmployee() {
     const name     = document.getElementById('add-name').value.trim();
+    const fob_uid  = document.getElementById('add-fob').value.trim() || null;
     const brk      = document.getElementById('add-break').value;
     const schedule = collectSchedule('add-schedule');
     const res      = document.getElementById('add-result');
@@ -206,7 +238,7 @@ async function saveEmployee() {
         const r = await fetch('{{ route('clocking.employees.store') }}', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
-            body: JSON.stringify({ name, schedule, break_override_minutes: brk || null }),
+            body: JSON.stringify({ name, fob_uid, schedule, break_override_minutes: brk || null }),
         });
         if (r.ok) { location.reload(); }
         else { const j = await r.json(); res.innerHTML = `<span style="color:#ef4444">${j.message || 'Error.'}</span>`; }
@@ -228,6 +260,7 @@ function closeAllEdits() {
 
 async function updateEmployee(id) {
     const name     = document.getElementById('edit-name-' + id).value.trim();
+    const fob_uid  = document.getElementById('edit-fob-' + id).value.trim(); // empty string = clear
     const brk      = document.getElementById('edit-break-' + id).value;
     const schedule = collectSchedule('edit-schedule-' + id);
     const res      = document.getElementById('edit-result-' + id);
@@ -237,7 +270,7 @@ async function updateEmployee(id) {
         const r = await fetch(`/clocking/employees/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
-            body: JSON.stringify({ name, schedule, break_override_minutes: brk || null }),
+            body: JSON.stringify({ name, fob_uid: fob_uid || null, schedule, break_override_minutes: brk || null }),
         });
         if (r.ok) { location.reload(); }
         else { const j = await r.json(); res.innerHTML = `<span style="color:#ef4444">${j.message || 'Error.'}</span>`; }
@@ -253,5 +286,51 @@ async function toggleActive(id, currentlyActive) {
     });
     if (r.ok) location.reload();
 }
+
+// ── RFID tap-to-capture for fob fields ───────────────────────────────────────
+let captureTargetId = null;
+let rfidBuffer = '';
+let rfidTimer  = null;
+
+function startCapture(inputId) {
+    captureTargetId = inputId;
+    rfidBuffer = '';
+    const input = document.getElementById(inputId);
+    input.style.borderColor = '#6366f1';
+    input.placeholder = 'Tap fob on reader…';
+}
+
+function stopCapture(inputId) {
+    if (captureTargetId !== inputId) return;
+    captureTargetId = null;
+    const input = document.getElementById(inputId);
+    if (input) { input.style.borderColor = ''; input.placeholder = 'none assigned'; }
+}
+
+document.addEventListener('keydown', e => {
+    if (!captureTargetId) return;
+
+    if (e.key === 'Enter') {
+        const uid = rfidBuffer.trim();
+        rfidBuffer = '';
+        if (rfidTimer) { clearTimeout(rfidTimer); rfidTimer = null; }
+        if (uid.length >= 8 && uid.length <= 14 && /^\d+$/.test(uid)) {
+            const input = document.getElementById(captureTargetId);
+            if (input) { input.value = uid; input.style.borderColor = '#22c55e'; }
+        }
+        captureTargetId = null;
+        return;
+    }
+
+    e.preventDefault();
+    if (e.key.length === 1 && /\d/.test(e.key)) {
+        rfidBuffer += e.key;
+        if (rfidTimer) clearTimeout(rfidTimer);
+        rfidTimer = setTimeout(() => { rfidBuffer = ''; rfidTimer = null; }, 500);
+    } else if (e.key.length === 1) {
+        rfidBuffer = '';
+        if (rfidTimer) { clearTimeout(rfidTimer); rfidTimer = null; }
+    }
+});
 </script>
 </x-layout>

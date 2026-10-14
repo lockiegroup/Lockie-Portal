@@ -2,7 +2,6 @@
 $tabs = [
     'dashboard' => ['label' => 'Dashboard',  'route' => 'clocking.index'],
     'employees' => ['label' => 'Employees',  'route' => 'clocking.employees.index'],
-    'fobs'      => ['label' => 'Fobs',       'route' => 'clocking.fobs.index'],
 ];
 @endphp
 <div style="display:flex;gap:0.25rem;border-bottom:1px solid #e2e8f0;margin-bottom:1.5rem;">
