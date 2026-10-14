@@ -154,7 +154,7 @@ class KioskController extends Controller
         }
 
         $employee  = $fob->employee;
-        $punchedAt = Carbon::parse($data['punched_at'])->utc();
+        $punchedAt = Carbon::parse($data['punched_at'])->setTimezone(config('app.timezone'));
         $direction = $data['direction'];
 
         // 60-second debounce: same direction within 60 s of this punch time

@@ -69,10 +69,9 @@ class PunchIdempotencyTest extends TestCase
         $emp    = ClockingEmployee::create(['name' => 'Pat', 'is_active' => true]);
         $fob    = ClockingFob::create(['employee_id' => $emp->id, 'uid' => '4444444444', 'is_active' => true, 'assigned_at' => now()]);
 
-        // Someone is clocked in — use explicit UTC to avoid BST storage/comparison mismatch
         ClockingPunch::create([
             'employee_id' => $emp->id, 'fob_id' => $fob->id,
-            'direction' => 'in', 'punched_at' => now()->utc()->subHours(2),
+            'direction' => 'in', 'punched_at' => now()->subHours(2),
             'client_uuid' => Str::uuid(), 'source' => 'kiosk',
         ]);
 
