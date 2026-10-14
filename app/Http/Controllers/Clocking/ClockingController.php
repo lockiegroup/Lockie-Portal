@@ -55,7 +55,14 @@ class ClockingController extends Controller
             ->unique();
 
         $notClockedIn = $scheduledToday
-            ->filter(fn($emp) => !$clockedInIds->contains($emp->id) && !$absentIds->contains($emp->id))
+            ->filter(function ($emp) use ($clockedInIds, $absentIds, $dayKey, $now, $tz) {
+                if ($clockedInIds->contains($emp->id) || $absentIds->contains($emp->id)) return false;
+                $start = $emp->schedule[$dayKey]['start'] ?? null;
+                if (!$start) return false;
+                $scheduledStart = Carbon::createFromFormat('H:i', $start, $tz)->setDateFrom($now);
+                // Only show if shift starts within 15 minutes or has already started
+                return $now->gte($scheduledStart->copy()->subMinutes(15));
+            })
             ->sortBy(fn($emp) => ($emp->schedule[$dayKey]['start'] ?? '99:99'))
             ->values();
 

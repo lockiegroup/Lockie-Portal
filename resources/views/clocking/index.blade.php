@@ -70,11 +70,13 @@
                     @endif
                 </td>
                 <td style="padding:0.625rem 0;color:#92400e;font-weight:600;">
+                    @php
+                        $scheduledStart = \Carbon\Carbon::createFromFormat('H:i', $start, config('app.timezone'))->setDateFrom($now);
+                        $lateBy = max(0, (int) floor(($now->timestamp - $scheduledStart->timestamp) / 60));
+                    @endphp
                     {{ $start }}
-                    @if($start !== '—' && \Carbon\Carbon::createFromFormat('H:i', $start, config('app.timezone'))->setDateFrom($now)->lt($now))
-                        <span style="font-size:0.7rem;color:#ef4444;margin-left:0.25rem;">
-                            {{ $now->diffInMinutes(\Carbon\Carbon::createFromFormat('H:i', $start, config('app.timezone'))->setDateFrom($now)) }}m late
-                        </span>
+                    @if($lateBy > 0)
+                        <span style="font-size:0.7rem;color:#ef4444;margin-left:0.25rem;">{{ $lateBy }}m late</span>
                     @endif
                 </td>
             </tr>
