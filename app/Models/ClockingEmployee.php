@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ClockingEmployee extends Model
 {
-    protected $fillable = ['name', 'is_active', 'schedule', 'break_override_minutes'];
+    protected $fillable = ['name', 'is_active', 'category_id', 'schedule', 'break_override_minutes'];
 
     protected function casts(): array
     {
