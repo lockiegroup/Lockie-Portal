@@ -78,7 +78,7 @@ class ClockingTimesheetController extends Controller
             }
         }
 
-        return view('clocking.timesheets', compact('grid', 'days', 'weekStart', 'punchJson'));
+        return view('clocking.timesheets', compact('grid', 'days', 'weekStart', 'punchJson', 'absentOverrides'));
     }
 
     private function buildSessions($punches): array

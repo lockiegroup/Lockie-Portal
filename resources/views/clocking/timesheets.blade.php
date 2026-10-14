@@ -51,20 +51,22 @@
                 <td style="padding:0.75rem 1rem;font-weight:600;color:#1e293b;white-space:nowrap;">{{ $emp->name }}</td>
                 @foreach($row['days'] as $i => $dayInfo)
                 @php
-                    $sessions = $dayInfo['sessions'];
-                    $total    = $dayInfo['total_mins'];
-                    $date     = $dayInfo['date']->format('Y-m-d');
-                    $isToday  = $dayInfo['date']->isToday();
+                    $sessions   = $dayInfo['sessions'];
+                    $total      = $dayInfo['total_mins'];
+                    $date       = $dayInfo['date']->format('Y-m-d');
+                    $isToday    = $dayInfo['date']->isToday();
                     $hasPunches = count($dayInfo['punches']) > 0;
-                    $ongoing  = count($sessions) > 0 && $sessions[array_key_last($sessions)]['ongoing'];
+                    $ongoing    = count($sessions) > 0 && $sessions[array_key_last($sessions)]['ongoing'];
+                    $isAbsent   = isset($absentOverrides[$emp->id . '_' . $date]);
                 @endphp
                 <td style="padding:0.375rem 0.25rem;text-align:center;{{ $isToday ? 'background:#fafaff;' : '' }}">
                     <button onclick="openDay({{ $emp->id }}, '{{ $date }}')"
-                        style="width:100%;min-width:90px;padding:0.4rem 0.35rem;background:{{ $hasPunches ? ($ongoing ? '#fffbeb' : '#f0fdf4') : 'transparent' }};border:1px solid {{ $hasPunches ? ($ongoing ? '#fde68a' : '#bbf7d0') : '#e2e8f0' }};border-radius:7px;cursor:pointer;text-align:center;font-size:0.75rem;line-height:1.4;">
-                        @if(count($sessions) === 0 && !$hasPunches)
+                        style="width:100%;min-width:90px;padding:0.4rem 0.35rem;background:{{ $isAbsent ? '#fef9f0' : ($hasPunches ? ($ongoing ? '#fffbeb' : '#f0fdf4') : 'transparent') }};border:1px solid {{ $isAbsent ? '#fed7aa' : ($hasPunches ? ($ongoing ? '#fde68a' : '#bbf7d0') : '#e2e8f0') }};border-radius:7px;cursor:pointer;text-align:center;font-size:0.75rem;line-height:1.4;">
+                        @if($isAbsent)
+                            <span style="color:#92400e;font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;">Absent</span>
+                        @elseif(count($sessions) === 0 && !$hasPunches)
                             <span style="color:#cbd5e1;">—</span>
                         @elseif(count($sessions) === 0 && $hasPunches)
-                            {{-- Has punches but no complete sessions (only voided?) --}}
                             <span style="color:#94a3b8;font-size:0.7rem;">edit</span>
                         @else
                             @foreach($sessions as $s)
@@ -171,10 +173,10 @@ function openDay(empId, date) {
 
     // Absent toggle button
     const absentBtn = document.getElementById('absent-btn');
-    absentBtn.textContent = data.absent ? '✓ Marked absent — click to remove' : 'Mark as absent (suppress alert)';
-    absentBtn.style.background = data.absent ? '#f0fdf4' : '';
-    absentBtn.style.borderColor = data.absent ? '#bbf7d0' : '';
-    absentBtn.style.color = data.absent ? '#166534' : '';
+    absentBtn.textContent     = data.absent ? '✓ Marked absent — click to remove' : 'Mark as absent (suppress alert)';
+    absentBtn.style.background  = data.absent ? '#fef9f0' : '';
+    absentBtn.style.borderColor = data.absent ? '#fed7aa' : '';
+    absentBtn.style.color       = data.absent ? '#92400e' : '';
 
     // Pre-fill add-punch time to 9am on that date, reset out field
     document.getElementById('add-time').value     = date + 'T09:00';
@@ -277,22 +279,12 @@ async function submitAddPunch() {
 }
 
 async function toggleAbsent() {
-    const key  = currentEmpId + '_' + currentDate;
-    const data = PUNCH_DATA[key];
     const r = await fetch('/clocking/timesheets/absent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
         body: JSON.stringify({ employee_id: currentEmpId, date: currentDate }),
     });
-    if (r.ok) {
-        const j = await r.json();
-        data.absent = j.absent;
-        const btn = document.getElementById('absent-btn');
-        btn.textContent   = j.absent ? '✓ Marked absent — click to remove' : 'Mark as absent (suppress alert)';
-        btn.style.background  = j.absent ? '#f0fdf4' : '';
-        btn.style.borderColor = j.absent ? '#bbf7d0' : '';
-        btn.style.color       = j.absent ? '#166534' : '';
-    }
+    if (r.ok) location.reload();
 }
 
 // Close modal on backdrop click
