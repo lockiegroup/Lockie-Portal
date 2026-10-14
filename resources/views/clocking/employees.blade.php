@@ -60,17 +60,25 @@
         </div>
     </div>
 
+    <style>
+        @media (max-width: 600px) {
+            .emp-col-schedule, .emp-col-fob { display: none; }
+            .emp-col-schedule-hd, .emp-col-fob-hd { display: none; }
+        }
+    </style>
+
     {{-- Employee list --}}
-    <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;overflow:hidden;">
+    <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;">
         @if($employees->isEmpty())
             <p style="padding:1.5rem;color:#94a3b8;font-size:0.875rem;">No employees yet. Add one above.</p>
         @else
+        <div style="overflow-x:auto;border-radius:14px;">
         <table style="width:100%;border-collapse:collapse;font-size:0.875rem;" id="emp-table">
             <thead>
                 <tr style="border-bottom:1px solid #e2e8f0;background:#f8fafc;">
                     <th style="text-align:left;padding:0.625rem 1rem;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;font-weight:600;">Name</th>
-                    <th style="text-align:left;padding:0.625rem 0.75rem;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;font-weight:600;">Schedule</th>
-                    <th style="text-align:left;padding:0.625rem 0.75rem;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;font-weight:600;">Fob</th>
+                    <th class="emp-col-schedule-hd" style="text-align:left;padding:0.625rem 0.75rem;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;font-weight:600;">Schedule</th>
+                    <th class="emp-col-fob-hd" style="text-align:left;padding:0.625rem 0.75rem;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;font-weight:600;">Fob</th>
                     <th style="text-align:left;padding:0.625rem 0.75rem;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;font-weight:600;">Status</th>
                     <th style="padding:0.625rem 1rem;"></th>
                 </tr>
@@ -87,8 +95,8 @@
             @endphp
             <tr style="border-bottom:1px solid #f1f5f9;" id="emp-row-{{ $emp->id }}">
                 <td style="padding:0.75rem 1rem;font-weight:600;color:#1e293b;">{{ $emp->name }}</td>
-                <td style="padding:0.75rem 0.75rem;color:#475569;">{{ $days ?: '—' }}</td>
-                <td style="padding:0.75rem 0.75rem;font-family:monospace;color:#64748b;">{{ $fob?->uid ?? '—' }}</td>
+                <td class="emp-col-schedule" style="padding:0.75rem 0.75rem;color:#475569;">{{ $days ?: '—' }}</td>
+                <td class="emp-col-fob" style="padding:0.75rem 0.75rem;font-family:monospace;color:#64748b;">{{ $fob?->uid ?? '—' }}</td>
                 <td style="padding:0.75rem 0.75rem;">
                     @if($emp->is_active)
                         <span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:99px;font-size:0.72rem;font-weight:600;">Active</span>
@@ -156,6 +164,7 @@
             @endforeach
             </tbody>
         </table>
+        </div>{{-- scroll wrapper --}}
         @endif
     </div>
 
