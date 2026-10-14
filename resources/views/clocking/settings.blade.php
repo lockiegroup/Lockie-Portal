@@ -1,5 +1,5 @@
 <x-layout title="Settings — Clocking">
-<main style="max-width:900px;margin:0 auto;padding:2rem 1.5rem;">
+<main style="max-width:900px;width:100%;margin:0 auto;padding:2rem 1.5rem;box-sizing:border-box;">
 
     <div style="margin-bottom:1.5rem;">
         <h1 style="font-size:1.5rem;font-weight:700;color:#1e293b;margin:0 0 1rem;">Clocking</h1>
@@ -44,13 +44,13 @@
 
     {{-- Categories --}}
     <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:1.5rem;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:0.75rem;flex-wrap:wrap;margin-bottom:1rem;">
             <div>
                 <h2 style="font-size:0.9375rem;font-weight:700;color:#1e293b;margin:0 0 0.25rem;">Categories</h2>
                 <p style="font-size:0.8125rem;color:#64748b;margin:0;">Group employees so managers only receive alerts for their team.</p>
             </div>
             <button onclick="toggleAddCategory()"
-                style="padding:0.4rem 0.875rem;background:#1e293b;color:#fff;border:none;border-radius:7px;font-size:0.8125rem;font-weight:600;cursor:pointer;">
+                style="padding:0.4rem 0.875rem;background:#1e293b;color:#fff;border:none;border-radius:7px;font-size:0.8125rem;font-weight:600;cursor:pointer;flex-shrink:0;">
                 + Add Category
             </button>
         </div>
@@ -60,7 +60,7 @@
                 <div>
                     <label style="font-size:0.75rem;color:#64748b;display:block;margin-bottom:3px;">Name</label>
                     <input type="text" id="new-cat-name" maxlength="80" placeholder="e.g. Factory"
-                        style="padding:0.4rem 0.75rem;border:1px solid #e2e8f0;border-radius:6px;font-size:0.875rem;width:180px;">
+                        style="padding:0.4rem 0.75rem;border:1px solid #e2e8f0;border-radius:6px;font-size:0.875rem;width:100%;max-width:180px;box-sizing:border-box;">
                 </div>
                 <div>
                     <label style="font-size:0.75rem;color:#64748b;display:block;margin-bottom:3px;">Colour</label>
@@ -90,7 +90,7 @@
             <div id="cat-rename-{{ $cat->id }}" style="display:none;margin-bottom:0.75rem;display:none;">
                 <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
                     <input type="text" id="cat-rename-name-{{ $cat->id }}" maxlength="80"
-                        style="padding:0.35rem 0.6rem;border:1px solid #6366f1;border-radius:6px;font-size:0.875rem;width:160px;">
+                        style="padding:0.35rem 0.6rem;border:1px solid #6366f1;border-radius:6px;font-size:0.875rem;width:100%;max-width:160px;box-sizing:border-box;">
                     <input type="color" id="cat-rename-color-{{ $cat->id }}"
                         style="width:36px;height:30px;border:1px solid #e2e8f0;border-radius:5px;padding:1px;cursor:pointer;">
                     <button onclick="saveRenameCategory({{ $cat->id }})"

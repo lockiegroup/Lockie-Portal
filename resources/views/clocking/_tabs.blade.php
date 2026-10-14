@@ -6,7 +6,7 @@ $tabs = [
     'settings'   => ['label' => 'Settings',    'route' => 'clocking.settings.index'],
 ];
 @endphp
-<div style="display:flex;gap:0.25rem;border-bottom:1px solid #e2e8f0;margin-bottom:1.5rem;">
+<div style="display:flex;gap:0.25rem;border-bottom:1px solid #e2e8f0;margin-bottom:1.5rem;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;">
 @foreach($tabs as $key => $tab)
 @php $isActive = ($active ?? '') === $key; @endphp
 <a href="{{ route($tab['route']) }}"
