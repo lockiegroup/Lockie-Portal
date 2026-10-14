@@ -31,6 +31,8 @@ use App\Http\Controllers\TabletController;
 use App\Http\Controllers\RackingController;
 use App\Http\Controllers\ProductionPlannerController;
 use App\Http\Controllers\Admin\ProductionSettingsController;
+use App\Http\Controllers\Clocking\KioskController;
+use App\Http\Controllers\Clocking\ClockingController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn() => redirect()->route('login'));
@@ -52,6 +54,14 @@ Route::prefix('tablet')->name('tablet.')->group(function () {
     // Redirect stale GET requests (e.g. browser navigating directly to a POST action URL) back to the tablet
     Route::get('/{machine}/jobs/{job}/{action}', fn(string $machine) => redirect()->route('tablet.show', $machine))
         ->where('action', 'start|pause|resume|end|handover|progress');
+});
+
+// Clocking — kiosk (device-token auth, no portal login required)
+Route::prefix('clocking')->name('clocking.')->group(function () {
+    Route::get('/kiosk',           [KioskController::class, 'show'])->name('kiosk');
+    Route::post('/kiosk/activate', [KioskController::class, 'activate'])->name('kiosk.activate');
+    Route::post('/kiosk/roster',   [KioskController::class, 'roster'])->name('kiosk.roster');
+    Route::post('/kiosk/punch',    [KioskController::class, 'punch'])->name('kiosk.punch');
 });
 
 // Guest routes
@@ -335,6 +345,13 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::post('/divisions', [ProductionSettingsController::class, 'storeDivision'])->name('divisions.store');
         Route::put('/divisions/{division}', [ProductionSettingsController::class, 'updateDivision'])->name('divisions.update');
         Route::delete('/divisions/{division}', [ProductionSettingsController::class, 'destroyDivision'])->name('divisions.destroy');
+    });
+
+    // Clocking — admin (requires clocking_admin permission)
+    Route::prefix('clocking')->name('clocking.')->middleware('can:clocking_admin')->group(function () {
+        Route::get('/',                              [ClockingController::class, 'index'])->name('index');
+        Route::post('/devices',                      [ClockingController::class, 'generateCode'])->name('devices.generate');
+        Route::delete('/devices/{device}',           [ClockingController::class, 'revokeDevice'])->name('devices.revoke');
     });
 
     // Action Plans

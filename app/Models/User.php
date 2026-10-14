@@ -22,6 +22,7 @@ class User extends Authenticatable
         'factory_training'    => 'Factory Training',
         'imports'             => 'Imports',
         'production_settings' => 'Production Settings',
+        'clocking_admin'      => 'Clocking Admin',
     ];
 
     const MODULES = [
@@ -36,6 +37,7 @@ class User extends Authenticatable
         'factory_training'   => 'Factory Training',
         'reminders'          => 'Order Reminders',
         'production_planner'  => 'Production Planner',
+        'clocking'            => 'Clocking',
     ];
 
     protected $fillable = ['name', 'email', 'password', 'role', 'is_active', 'permissions', 'modules', 'last_login_at', 'operator_pin'];

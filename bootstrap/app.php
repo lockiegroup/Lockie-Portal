@@ -15,6 +15,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'otp'    => \App\Http\Middleware\OtpVerified::class,
             'module' => \App\Http\Middleware\ModuleAccess::class,
         ]);
+        // Device token is hashed in the DB — no value in encrypting the cookie itself
+        $middleware->encryptCookies(except: ['clocking_device']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

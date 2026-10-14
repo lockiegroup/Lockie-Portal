@@ -6,7 +6,7 @@
     $activeFinance    = request()->routeIs('sales*') || request()->routeIs('amazon.*') || request()->routeIs('stock.*');
     $activePlanning   = request()->routeIs('key-actions.*') || request()->routeIs('action-plans.*') || request()->routeIs('ab-testing.*');
     $activeCustomers  = request()->routeIs('key-accounts.*') || request()->routeIs('crm.*') || request()->routeIs('reminders.*');
-    $activeOperations = request()->routeIs('church-envelopes.*') || request()->routeIs('policies.*') || request()->routeIs('training.*') || request()->routeIs('letter-filter.*') || request()->routeIs('racking.*') || request()->routeIs('production-planner.*') || $isPrintSection;
+    $activeOperations = request()->routeIs('church-envelopes.*') || request()->routeIs('policies.*') || request()->routeIs('training.*') || request()->routeIs('letter-filter.*') || request()->routeIs('racking.*') || request()->routeIs('production-planner.*') || request()->routeIs('clocking.*') || $isPrintSection;
     $activeAdmin      = request()->routeIs('admin.*') || request()->routeIs('imports.*');
 
     $showKeyActions  = $user->isMaster() || $user->can('admin') || \App\Models\KeyActionGroup::whereHas('members', fn($q) => $q->where('user_id', $user->id))->exists();
@@ -160,6 +160,15 @@
             <svg id="sc-operations" style="width:10px;height:10px;flex-shrink:0;transition:transform 0.2s;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div id="ss-operations">
+            @can('clocking_admin')
+            <a href="{{ route('clocking.index') }}" class="sb-item{{ request()->routeIs('clocking.*') ? ' sb-active' : '' }}" data-tip="Clocking">
+                <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                </svg>
+                <span class="sb-label">Clocking</span>
+            </a>
+            @endcan
             @if($user->hasModule('production_planner'))
             <a href="{{ route('production-planner.index') }}" class="sb-item{{ request()->routeIs('production-planner.*') ? ' sb-active' : '' }}" data-tip="Production Planner">
                 <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
