@@ -240,9 +240,11 @@ async function saveEmployee() {
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
             body: JSON.stringify({ name, fob_uid, schedule, break_override_minutes: brk || null }),
         });
-        if (r.ok) { location.reload(); }
-        else { const j = await r.json(); res.innerHTML = `<span style="color:#ef4444">${j.message || 'Error.'}</span>`; }
-    } catch(e) { res.innerHTML = `<span style="color:#ef4444">Error: ${e.message || 'Could not reach server.'}</span>`; }
+        if (r.ok) { location.reload(); return; }
+        let msg = `Server error (${r.status}) — please refresh the page.`;
+        try { const j = await r.json(); msg = j.message || Object.values(j.errors||{})[0]?.[0] || msg; } catch(_){}
+        res.innerHTML = `<span style="color:#ef4444">${msg}</span>`;
+    } catch(_) { res.innerHTML = '<span style="color:#ef4444">Could not reach server — check your connection.</span>'; }
 }
 
 // ── Edit form ─────────────────────────────────────────────────────────────────
@@ -272,9 +274,11 @@ async function updateEmployee(id) {
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
             body: JSON.stringify({ name, fob_uid: fob_uid || null, schedule, break_override_minutes: brk || null }),
         });
-        if (r.ok) { location.reload(); }
-        else { const j = await r.json(); res.innerHTML = `<span style="color:#ef4444">${j.message || 'Error.'}</span>`; }
-    } catch(e) { res.innerHTML = `<span style="color:#ef4444">Error: ${e.message || 'Could not reach server.'}</span>`; }
+        if (r.ok) { location.reload(); return; }
+        let msg = `Server error (${r.status}) — please refresh the page.`;
+        try { const j = await r.json(); msg = j.message || Object.values(j.errors||{})[0]?.[0] || msg; } catch(_){}
+        res.innerHTML = `<span style="color:#ef4444">${msg}</span>`;
+    } catch(_) { res.innerHTML = '<span style="color:#ef4444">Could not reach server — check your connection.</span>'; }
 }
 
 async function toggleActive(id, currentlyActive) {
