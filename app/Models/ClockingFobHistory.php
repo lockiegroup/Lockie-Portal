@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ClockingFobHistory extends Model
 {
+    protected $table = 'clocking_fob_history';
+
     public $timestamps = false;
 
     protected $fillable = ['fob_id', 'employee_id', 'action', 'created_by', 'created_at'];
