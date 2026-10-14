@@ -2,8 +2,8 @@
 <main style="max-width:900px;margin:0 auto;padding:2rem 1.5rem;">
 
     <div style="margin-bottom:1.5rem;">
-        <h1 style="font-size:1.5rem;font-weight:700;color:#1e293b;margin:0 0 0.25rem;">Clocking</h1>
-        <p style="color:#64748b;font-size:0.875rem;margin:0;">Staff clocking module — Phase 2 (full admin) coming soon.</p>
+        <h1 style="font-size:1.5rem;font-weight:700;color:#1e293b;margin:0 0 1rem;">Clocking</h1>
+        @include('clocking._tabs', ['active' => 'dashboard'])
     </div>
 
     {{-- Who's In Now --}}

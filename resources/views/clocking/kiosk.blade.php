@@ -11,25 +11,51 @@
         html,body{width:100%;height:100%;overflow:hidden;background:#0f172a;color:#e2e8f0;
             font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;user-select:none;}
 
-        /* Clock screen */
-        #clock-screen{position:fixed;inset:0;display:flex;flex-direction:column;
-            align-items:center;justify-content:center;background:#0f172a;}
+        /* ── Shared ── */
+        .screen{position:fixed;inset:0;display:none;flex-direction:column;
+            align-items:center;justify-content:center;}
+        .screen.active{display:flex;}
+        #logo{position:fixed;top:20px;left:24px;opacity:0.4;z-index:10;}
+        #logo img{height:28px;width:auto;}
+        #status{position:fixed;bottom:18px;right:20px;font-size:0.75rem;display:flex;
+            align-items:center;gap:6px;color:#475569;z-index:10;}
+        #status-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0;}
+        #status-dot.offline{background:#f59e0b;}
+
+        /* ── Clock screen ── */
+        #clock-screen{background:#0f172a;}
         #clock-time{font-size:min(22vw,18vh);font-weight:200;letter-spacing:-0.02em;
             color:#e2e8f0;line-height:1;font-variant-numeric:tabular-nums;}
         #clock-date{font-size:min(4vw,3.5vh);color:#64748b;margin-top:1vh;font-weight:400;}
         #clock-prompt{font-size:min(2.5vw,2.2vh);color:#334155;margin-top:4vh;letter-spacing:0.05em;text-transform:uppercase;}
 
-        /* Logo top-left */
-        #logo{position:fixed;top:20px;left:24px;opacity:0.4;}
-        #logo img{height:28px;width:auto;}
+        /* ── Confirm screen ── */
+        #confirm-screen{background:#0f172a;gap:0;}
+        #cf-name{font-size:min(10vw,8vh);font-weight:300;color:#f1f5f9;
+            margin-top:min(4vw,3vh);text-align:center;padding:0 5vw;}
+        #cf-current{font-size:min(4vw,3.2vh);color:#64748b;margin-top:1.5vh;text-align:center;}
+        #cf-divider{width:min(20vw,120px);height:1px;background:#1e293b;margin:3vh 0;}
+        #cf-action-wrap{display:flex;align-items:center;gap:min(3vw,2vh);}
+        #cf-arrow{font-size:min(8vw,6vh);opacity:0.5;}
+        #cf-action{font-size:min(10vw,8vh);font-weight:800;letter-spacing:0.04em;}
+        #cf-action.in{color:#22c55e;}
+        #cf-action.out{color:#f59e0b;}
 
-        /* Status indicator bottom-right */
-        #status{position:fixed;bottom:18px;right:20px;font-size:0.75rem;display:flex;
-            align-items:center;gap:6px;color:#475569;}
-        #status-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0;}
-        #status-dot.offline{background:#f59e0b;}
+        /* Countdown ring */
+        #cf-ring-wrap{position:relative;width:min(20vw,100px);height:min(20vw,100px);margin-top:3vh;}
+        #cf-ring-wrap svg{width:100%;height:100%;transform:rotate(-90deg);}
+        #cf-ring-bg{fill:none;stroke:#1e293b;stroke-width:4;}
+        #cf-ring{fill:none;stroke:#94a3b8;stroke-width:4;stroke-linecap:round;
+            transition:stroke-dashoffset 0.9s linear,stroke 0.3s;}
+        #cf-countdown-num{position:absolute;inset:0;display:flex;align-items:center;
+            justify-content:center;font-size:min(8vw,5vh);font-weight:200;color:#94a3b8;}
 
-        /* Overlay (confirmation / error) */
+        #cf-prompt{font-size:min(2.8vw,2.4vh);color:#475569;margin-top:2.5vh;
+            letter-spacing:0.04em;text-transform:uppercase;text-align:center;}
+        #cf-cancel{font-size:min(2vw,1.8vh);color:#334155;margin-top:1.2vh;
+            letter-spacing:0.03em;text-align:center;}
+
+        /* ── Flash overlay (success/error after confirm) ── */
         #overlay{position:fixed;inset:0;display:none;flex-direction:column;
             align-items:center;justify-content:center;z-index:100;}
         #overlay.show{display:flex;}
@@ -43,18 +69,37 @@
 </head>
 <body>
 
-<div id="clock-screen">
-    <div id="logo"><img src="{{ asset('images/logo.png') }}" alt=""></div>
+<div id="logo"><img src="{{ asset('images/logo.png') }}" alt=""></div>
+<div id="status"><div id="status-dot"></div><span id="status-text">Online</span></div>
+
+<!-- Clock (idle) -->
+<div id="clock-screen" class="screen active">
     <div id="clock-time">00:00</div>
     <div id="clock-date"></div>
     <div id="clock-prompt">Tap your fob to clock in or out</div>
 </div>
 
-<div id="status">
-    <div id="status-dot"></div>
-    <span id="status-text">Online</span>
+<!-- Confirm (waiting for second tap) -->
+<div id="confirm-screen" class="screen">
+    <div id="cf-name"></div>
+    <div id="cf-current"></div>
+    <div id="cf-divider"></div>
+    <div id="cf-action-wrap">
+        <div id="cf-arrow">→</div>
+        <div id="cf-action"></div>
+    </div>
+    <div id="cf-ring-wrap">
+        <svg viewBox="0 0 64 64">
+            <circle id="cf-ring-bg" cx="32" cy="32" r="28"/>
+            <circle id="cf-ring"    cx="32" cy="32" r="28"/>
+        </svg>
+        <div id="cf-countdown-num">7</div>
+    </div>
+    <div id="cf-prompt">Tap your fob again to confirm</div>
+    <div id="cf-cancel">Tap a different fob to cancel</div>
 </div>
 
+<!-- Flash overlay -->
 <div id="overlay">
     <div id="ov-icon"></div>
     <div id="ov-action"></div>
@@ -67,30 +112,31 @@
 const PUNCH_URL  = @json(route('clocking.kiosk.punch'));
 const ROSTER_URL = @json(route('clocking.kiosk.roster'));
 const CSRF       = document.querySelector('meta[name="csrf-token"]').content;
-const OVERLAY_MS = 3000;   // how long to show the confirmation overlay
-const DEBOUNCE_S = 60;     // mirror server-side: ignore same-direction taps within 60s
+const OVERLAY_MS = 3000;
+const CONFIRM_S  = 7;
+const DEBOUNCE_S = 60;
 const ROSTER_INTERVAL_MS = 60_000;
+const RING_CIRC  = 2 * Math.PI * 28; // SVG circle r=28
 
-// ── Audio (Web Audio API, no external files) ──────────────────────────────────
+// ── Audio ─────────────────────────────────────────────────────────────────────
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 function playBeep(freq, dur, type = 'sine', vol = 0.25) {
-    const osc  = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
+    const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
     osc.connect(gain); gain.connect(audioCtx.destination);
-    osc.type      = type;
-    osc.frequency.value = freq;
+    osc.type = type; osc.frequency.value = freq;
     gain.gain.setValueAtTime(vol, audioCtx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
     osc.start(); osc.stop(audioCtx.currentTime + dur);
 }
+function soundPrompt()  { playBeep(660, 0.1); }
 function soundSuccess() { playBeep(880, 0.12); setTimeout(() => playBeep(1320, 0.15), 100); }
 function soundError()   { playBeep(200, 0.35, 'sawtooth', 0.2); }
 
 // ── Clock ─────────────────────────────────────────────────────────────────────
 const LONDON_TZ = 'Europe/London';
-
 const _timeFmt = new Intl.DateTimeFormat('en-GB', { timeZone: LONDON_TZ, hour: '2-digit', minute: '2-digit', hour12: false });
 const _dateFmt = new Intl.DateTimeFormat('en-GB', { timeZone: LONDON_TZ, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+const _shortFmt = new Intl.DateTimeFormat('en-GB', { timeZone: LONDON_TZ, hour: '2-digit', minute: '2-digit', hour12: false });
 
 function updateClock() {
     const now = new Date();
@@ -100,7 +146,7 @@ function updateClock() {
 updateClock();
 setInterval(updateClock, 1000);
 
-// ── Screen Wake Lock ──────────────────────────────────────────────────────────
+// ── Wake Lock ─────────────────────────────────────────────────────────────────
 async function acquireWakeLock() {
     if (!('wakeLock' in navigator)) return;
     try {
@@ -113,7 +159,13 @@ document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') acquireWakeLock();
 });
 
-// ── Overlay ───────────────────────────────────────────────────────────────────
+// ── Screen switcher ───────────────────────────────────────────────────────────
+function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+}
+
+// ── Flash overlay ─────────────────────────────────────────────────────────────
 let overlayTimer = null;
 function showOverlay(type, icon, action, name, time) {
     const el = document.getElementById('overlay');
@@ -123,7 +175,10 @@ function showOverlay(type, icon, action, name, time) {
     document.getElementById('ov-name').textContent   = name;
     document.getElementById('ov-time').textContent   = time;
     if (overlayTimer) clearTimeout(overlayTimer);
-    overlayTimer = setTimeout(() => { el.className = ''; }, OVERLAY_MS);
+    overlayTimer = setTimeout(() => {
+        el.className = '';
+        showScreen('clock-screen');
+    }, OVERLAY_MS);
 }
 
 // ── IndexedDB punch queue ─────────────────────────────────────────────────────
@@ -133,9 +188,8 @@ function openDb() {
         const req = indexedDB.open('clocking_v1', 1);
         req.onupgradeneeded = e => {
             const d = e.target.result;
-            if (!d.objectStoreNames.contains('punches')) {
+            if (!d.objectStoreNames.contains('punches'))
                 d.createObjectStore('punches', { keyPath: 'clientUuid' });
-            }
         };
         req.onsuccess = e => resolve(e.target.result);
         req.onerror   = ()  => reject(req.error);
@@ -148,31 +202,24 @@ function dbPut(punch) {
 function dbGetPending() {
     return new Promise(resolve => {
         if (!db) return resolve([]);
-        const tx  = db.transaction('punches', 'readonly');
-        const req = tx.objectStore('punches').getAll();
+        const req = db.transaction('punches', 'readonly').objectStore('punches').getAll();
         req.onsuccess = () => resolve((req.result || []).filter(p => !p.synced));
     });
 }
 function dbMarkSynced(uuid) {
     if (!db) return;
-    const tx    = db.transaction('punches', 'readwrite');
-    const store = tx.objectStore('punches');
-    const req   = store.get(uuid);
-    req.onsuccess = () => {
-        const p = req.result;
-        if (p) { p.synced = true; store.put(p); }
-    };
+    const store = db.transaction('punches', 'readwrite').objectStore('punches');
+    const req = store.get(uuid);
+    req.onsuccess = () => { const p = req.result; if (p) { p.synced = true; store.put(p); } };
 }
 
-// ── In-memory roster ──────────────────────────────────────────────────────────
-// { [fobUid]: { employee_id, name, state:'in'|'out', since:isoString|null } }
+// ── Roster ────────────────────────────────────────────────────────────────────
 let roster = {};
 let online = true;
 
 function setOnline(val) {
     online = val;
     document.getElementById('status-dot').className = val ? '' : 'offline';
-    // Count pending
     dbGetPending().then(ps => {
         const q = ps.length;
         document.getElementById('status-text').textContent =
@@ -182,7 +229,7 @@ function setOnline(val) {
 
 async function fetchRoster() {
     try {
-        const res  = await fetch(ROSTER_URL, {
+        const res = await fetch(ROSTER_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
             body: '{}',
@@ -205,7 +252,7 @@ async function syncQueue() {
         if (!pending.length) { setOnline(true); return; }
         for (const punch of pending) {
             try {
-                const res  = await fetch(PUNCH_URL, {
+                const res = await fetch(PUNCH_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
                     body: JSON.stringify({
@@ -216,14 +263,11 @@ async function syncQueue() {
                 if (res.ok || res.status === 409) {
                     dbMarkSynced(punch.clientUuid);
                     setOnline(true);
-                    // If server returns updated roster state, apply it
                     const json = await res.json().catch(() => null);
                     if (json?.ok && roster[punch.fobUid]) {
                         roster[punch.fobUid].state = punch.direction;
                         roster[punch.fobUid].since = punch.punchedAt;
                     }
-                } else if (res.status >= 500) {
-                    // Server error: leave in queue
                 }
             } catch(_) { setOnline(false); break; }
         }
@@ -231,18 +275,117 @@ async function syncQueue() {
 }
 setInterval(syncQueue, 5000);
 
-// ── UUID generator ────────────────────────────────────────────────────────────
+// ── UUID ──────────────────────────────────────────────────────────────────────
 function uuid4() {
     return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
         (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
 }
 
-// ── RFID fob input capture ────────────────────────────────────────────────────
+// ── Confirm screen helpers ────────────────────────────────────────────────────
+const ring = document.getElementById('cf-ring');
+ring.style.strokeDasharray  = RING_CIRC;
+ring.style.strokeDashoffset = 0;
+
+function setRing(fraction) { // fraction: 1 = full, 0 = empty
+    ring.style.strokeDashoffset = RING_CIRC * (1 - fraction);
+    // Turn red in last 2 seconds
+    ring.style.stroke = fraction < (2 / CONFIRM_S) ? '#ef4444' : '#94a3b8';
+}
+
+let confirmState = null;
+
+function startConfirm(uid) {
+    const entry = roster[uid];
+    if (!entry) {
+        soundError();
+        showOverlay('red', '✗', 'UNKNOWN FOB', uid, '');
+        return;
+    }
+
+    const empId    = entry.employee_id;
+    const name     = entry.name;
+    const curState = entry.state || 'out';
+    const direction = curState === 'in' ? 'out' : 'in';
+
+    // Client-side debounce
+    const last = lastPunchByEmployee[empId];
+    if (last && last.direction === direction && (Date.now() - last.ts) < DEBOUNCE_S * 1000) {
+        soundError();
+        const at = _shortFmt.format(new Date(last.isoTime));
+        showOverlay('red', '⏱', `Already ${direction.toUpperCase()} at ${at}`, name, '');
+        return;
+    }
+
+    // Build "currently …" line
+    let currentLine;
+    if (curState === 'in' && entry.since) {
+        currentLine = 'Currently IN since ' + _shortFmt.format(new Date(entry.since));
+    } else if (curState === 'in') {
+        currentLine = 'Currently IN';
+    } else if (entry.since) {
+        currentLine = 'Last clocked out at ' + _shortFmt.format(new Date(entry.since));
+    } else {
+        currentLine = 'Not yet clocked in today';
+    }
+
+    document.getElementById('cf-name').textContent    = name;
+    document.getElementById('cf-current').textContent = currentLine;
+    const actionEl = document.getElementById('cf-action');
+    actionEl.textContent  = direction === 'in' ? 'CLOCK IN' : 'CLOCK OUT';
+    actionEl.className    = direction;
+
+    let remaining = CONFIRM_S;
+    document.getElementById('cf-countdown-num').textContent = remaining;
+    setRing(1);
+    showScreen('confirm-screen');
+    soundPrompt();
+
+    const isoUtc     = new Date().toISOString();
+    const localTime  = _shortFmt.format(new Date());
+    const clientUuid = uuid4();
+
+    const countdownInterval = setInterval(() => {
+        remaining--;
+        document.getElementById('cf-countdown-num').textContent = remaining;
+        setRing(remaining / CONFIRM_S);
+        if (remaining <= 0) cancelConfirm();
+    }, 1000);
+
+    confirmState = { uid, empId, name, direction, clientUuid, isoUtc, localTime, entry, countdownInterval };
+}
+
+function cancelConfirm() {
+    if (!confirmState) return;
+    clearInterval(confirmState.countdownInterval);
+    confirmState = null;
+    showScreen('clock-screen');
+}
+
+function recordPunch() {
+    if (!confirmState) return;
+    const { uid, empId, name, direction, clientUuid, isoUtc, localTime, entry, countdownInterval } = confirmState;
+    clearInterval(countdownInterval);
+    confirmState = null;
+
+    // Update local roster state
+    entry.state = direction;
+    entry.since = isoUtc;
+    lastPunchByEmployee[empId] = { direction, ts: Date.now(), isoTime: isoUtc };
+
+    soundSuccess();
+    showOverlay('green', '✓', direction === 'in' ? 'CLOCKED IN' : 'CLOCKED OUT', name, localTime);
+
+    const punch = { clientUuid, fobUid: uid, direction, punchedAt: isoUtc, synced: false };
+    dbPut(punch);
+    syncQueue();
+}
+
+// ── RFID capture ──────────────────────────────────────────────────────────────
+let lastPunchByEmployee = {};
 let inputBuffer = '';
 let inputTimer  = null;
 
 document.addEventListener('keydown', e => {
-    // Prevent any default keyboard action (e.g. scroll, zoom) on the kiosk
     if (e.key !== 'Enter') e.preventDefault();
 
     if (e.key === 'Enter') {
@@ -252,7 +395,6 @@ document.addEventListener('keydown', e => {
         if (uid.length >= 8 && uid.length <= 14 && /^\d+$/.test(uid)) {
             handleFob(uid);
         }
-        // else: partial/garbage — discard silently
         return;
     }
 
@@ -261,68 +403,29 @@ document.addEventListener('keydown', e => {
         if (inputTimer) clearTimeout(inputTimer);
         inputTimer = setTimeout(() => { inputBuffer = ''; inputTimer = null; }, 500);
     } else if (e.key.length === 1) {
-        // Non-digit character — garbage, reset buffer
         inputBuffer = '';
         if (inputTimer) { clearTimeout(inputTimer); inputTimer = null; }
     }
 });
 
-// ── Fob handler ───────────────────────────────────────────────────────────────
-let lastPunchByEmployee = {}; // { [employeeId]: {direction, ts} } — client debounce
-
+// ── Fob handler (two-tap flow) ────────────────────────────────────────────────
 function handleFob(uid) {
-    // Resume AudioContext on first interaction (browser autoplay policy)
     if (audioCtx.state === 'suspended') audioCtx.resume();
 
-    const entry = roster[uid];
+    // Overlay showing (post-punch flash) — ignore
+    if (document.getElementById('overlay').classList.contains('show')) return;
 
-    if (!entry) {
-        soundError();
-        showOverlay('red', '✗', 'UNKNOWN FOB', uid, '');
+    if (confirmState) {
+        if (confirmState.uid === uid) {
+            recordPunch(); // second tap same fob — confirm
+        } else {
+            cancelConfirm();
+            startConfirm(uid); // different fob — start fresh
+        }
         return;
     }
 
-    const empId     = entry.employee_id;
-    const name      = entry.name;
-    const curState  = entry.state || 'out'; // default assume out
-    const direction = curState === 'in' ? 'out' : 'in';
-
-    // Client-side debounce (mirrors server: 60 s same direction)
-    const last = lastPunchByEmployee[empId];
-    if (last && last.direction === direction && (Date.now() - last.ts) < DEBOUNCE_S * 1000) {
-        soundError();
-        const at = new Date(last.isoTime).toLocaleTimeString('en-GB', {
-            hour: '2-digit', minute: '2-digit', timeZone: LONDON_TZ,
-        });
-        showOverlay('red', '⏱', `Already ${direction.toUpperCase()} at ${at}`, name, '');
-        return;
-    }
-
-    // Determine display time in Europe/London
-    const now       = new Date();
-    const isoUtc    = now.toISOString();
-    const localTime = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: LONDON_TZ });
-    const clientUuid = uuid4();
-
-    // Update local state immediately
-    entry.state = direction;
-    entry.since = isoUtc;
-    lastPunchByEmployee[empId] = { direction, ts: Date.now(), isoTime: isoUtc };
-
-    // Show confirmation overlay immediately
-    soundSuccess();
-    showOverlay(
-        'green',
-        direction === 'in' ? '✓' : '✓',
-        direction === 'in' ? 'CLOCKED IN' : 'CLOCKED OUT',
-        name,
-        localTime,
-    );
-
-    // Queue punch in IndexedDB and start sync
-    const punch = { clientUuid, fobUid: uid, direction, punchedAt: isoUtc, synced: false };
-    dbPut(punch);
-    syncQueue();
+    startConfirm(uid);
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────

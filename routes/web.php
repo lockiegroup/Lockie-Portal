@@ -33,6 +33,8 @@ use App\Http\Controllers\ProductionPlannerController;
 use App\Http\Controllers\Admin\ProductionSettingsController;
 use App\Http\Controllers\Clocking\KioskController;
 use App\Http\Controllers\Clocking\ClockingController;
+use App\Http\Controllers\Clocking\ClockingEmployeeController;
+use App\Http\Controllers\Clocking\ClockingFobController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn() => redirect()->route('login'));
@@ -349,9 +351,21 @@ Route::middleware(['auth', 'otp'])->group(function () {
 
     // Clocking — admin (requires clocking_admin permission)
     Route::prefix('clocking')->name('clocking.')->middleware('can:clocking_admin')->group(function () {
-        Route::get('/',                              [ClockingController::class, 'index'])->name('index');
-        Route::post('/devices',                      [ClockingController::class, 'generateCode'])->name('devices.generate');
-        Route::delete('/devices/{device}',           [ClockingController::class, 'revokeDevice'])->name('devices.revoke');
+        Route::get('/',                                    [ClockingController::class, 'index'])->name('index');
+        Route::post('/devices',                            [ClockingController::class, 'generateCode'])->name('devices.generate');
+        Route::delete('/devices/{device}',                 [ClockingController::class, 'revokeDevice'])->name('devices.revoke');
+
+        // Employees
+        Route::get('/employees',                           [ClockingEmployeeController::class, 'index'])->name('employees.index');
+        Route::post('/employees',                          [ClockingEmployeeController::class, 'store'])->name('employees.store');
+        Route::put('/employees/{employee}',                [ClockingEmployeeController::class, 'update'])->name('employees.update');
+        Route::post('/employees/{employee}/toggle',        [ClockingEmployeeController::class, 'toggle'])->name('employees.toggle');
+
+        // Fobs
+        Route::get('/fobs',                                [ClockingFobController::class, 'index'])->name('fobs.index');
+        Route::post('/fobs',                               [ClockingFobController::class, 'enrol'])->name('fobs.enrol');
+        Route::put('/fobs/{fob}/assign',                   [ClockingFobController::class, 'assign'])->name('fobs.assign');
+        Route::post('/fobs/{fob}/deactivate',              [ClockingFobController::class, 'deactivate'])->name('fobs.deactivate');
     });
 
     // Action Plans
