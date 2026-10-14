@@ -132,31 +132,7 @@
 const CSRF = document.querySelector('meta[name="csrf-token"]').content;
 
 // All punch data keyed by "empId_YYYY-MM-DD"
-const PUNCH_DATA = @json(
-    $grid->flatMap(function ($row) {
-        return $row['days']->map(function ($day) use ($row) {
-            $key = $row['employee']->id . '_' . $day['date']->format('Y-m-d');
-            return [
-                $key => [
-                    'employee_id'   => $row['employee']->id,
-                    'employee_name' => $row['employee']->name,
-                    'date'          => $day['date']->format('Y-m-d'),
-                    'date_label'    => $day['date']->format('l, j F Y'),
-                    'punches'       => $day['punches']->map(fn($p) => [
-                        'id'            => $p->id,
-                        'direction'     => $p->direction,
-                        'time'          => $p->punched_at->format('H:i'),
-                        'punched_at'    => $p->punched_at->format('Y-m-d\TH:i'),
-                        'source'        => $p->source,
-                        'flagged'       => $p->is_flagged,
-                        'voided'        => (bool) $p->voided_at,
-                        'voided_reason' => $p->voided_reason,
-                    ])->values()->toArray(),
-                ]
-            ];
-        });
-    })->collapse()->toArray()
-);
+const PUNCH_DATA = @json($punchJson);
 
 let currentEmpId = null;
 let currentDate  = null;

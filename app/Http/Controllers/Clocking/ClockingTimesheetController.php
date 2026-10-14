@@ -45,7 +45,31 @@ class ClockingTimesheetController extends Controller
             return ['employee' => $emp, 'days' => $dayData, 'week_total' => $dayData->sum('total_mins')];
         });
 
-        return view('clocking.timesheets', compact('grid', 'days', 'weekStart'));
+        // Pre-build punch JSON for the day-detail modal (keyed by "empId_YYYY-MM-DD")
+        $punchJson = [];
+        foreach ($grid as $row) {
+            foreach ($row['days'] as $dayInfo) {
+                $key = $row['employee']->id . '_' . $dayInfo['date']->format('Y-m-d');
+                $punchJson[$key] = [
+                    'employee_id'   => $row['employee']->id,
+                    'employee_name' => $row['employee']->name,
+                    'date'          => $dayInfo['date']->format('Y-m-d'),
+                    'date_label'    => $dayInfo['date']->format('l, j F Y'),
+                    'punches'       => $dayInfo['punches']->map(fn($p) => [
+                        'id'            => $p->id,
+                        'direction'     => $p->direction,
+                        'time'          => $p->punched_at->format('H:i'),
+                        'punched_at'    => $p->punched_at->format('Y-m-d\TH:i'),
+                        'source'        => $p->source,
+                        'flagged'       => $p->is_flagged,
+                        'voided'        => (bool) $p->voided_at,
+                        'voided_reason' => $p->voided_reason,
+                    ])->values()->toArray(),
+                ];
+            }
+        }
+
+        return view('clocking.timesheets', compact('grid', 'days', 'weekStart', 'punchJson'));
     }
 
     private function buildSessions($punches): array
