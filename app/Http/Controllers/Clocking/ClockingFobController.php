@@ -42,6 +42,7 @@ class ClockingFobController extends Controller
                 'employee_id' => $fob->employee_id,
                 'action'      => 'assigned',
                 'created_by'  => auth()->id(),
+                'created_at'  => now(),
             ]);
         }
 
@@ -71,6 +72,7 @@ class ClockingFobController extends Controller
             'employee_id' => $data['employee_id'] ?? null,
             'action'      => $data['employee_id'] ? 'assigned' : 'unassigned',
             'created_by'  => auth()->id(),
+            'created_at'  => now(),
         ]);
 
         return response()->json(['ok' => true]);
@@ -86,6 +88,7 @@ class ClockingFobController extends Controller
             'employee_id' => $fob->employee_id,
             'action'      => 'deactivated',
             'created_by'  => auth()->id(),
+            'created_at'  => now(),
         ]);
 
         return response()->json(['ok' => true]);

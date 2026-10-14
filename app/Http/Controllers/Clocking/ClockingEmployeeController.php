@@ -85,6 +85,7 @@ class ClockingEmployeeController extends Controller
                     'employee_id' => null,
                     'action'      => 'unassigned',
                     'created_by'  => auth()->id(),
+                    'created_at'  => now(),
                 ]);
             }
             return;
@@ -117,6 +118,7 @@ class ClockingEmployeeController extends Controller
             'employee_id' => $employee->id,
             'action'      => 'assigned',
             'created_by'  => auth()->id(),
+            'created_at'  => now(),
         ]);
     }
 }
