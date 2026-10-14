@@ -35,6 +35,7 @@ use App\Http\Controllers\Clocking\KioskController;
 use App\Http\Controllers\Clocking\ClockingController;
 use App\Http\Controllers\Clocking\ClockingEmployeeController;
 use App\Http\Controllers\Clocking\ClockingFobController;
+use App\Http\Controllers\Clocking\ClockingReportsController;
 use App\Http\Controllers\Clocking\ClockingSettingsController;
 use App\Http\Controllers\Clocking\ClockingTimesheetController;
 use Illuminate\Support\Facades\Route;
@@ -370,6 +371,9 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::post('/fobs/{fob}/deactivate',              [ClockingFobController::class, 'deactivate'])->name('fobs.deactivate');
 
         // Timesheets
+        Route::get('/reports',                             [ClockingReportsController::class, 'index'])->name('reports.index');
+        Route::get('/reports/export',                      [ClockingReportsController::class, 'export'])->name('reports.export');
+
         Route::get('/timesheets',                          [ClockingTimesheetController::class, 'index'])->name('timesheets.index');
         Route::get('/timesheets/export',                   [ClockingTimesheetController::class, 'export'])->name('timesheets.export');
         Route::post('/timesheets/punch',                   [ClockingTimesheetController::class, 'addPunch'])->name('timesheets.addPunch');

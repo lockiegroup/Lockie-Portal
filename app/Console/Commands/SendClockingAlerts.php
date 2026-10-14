@@ -42,8 +42,8 @@ class SendClockingAlerts extends Command
             $alertAfter     = $scheduledStart->copy()->addMinutes($graceMins);
             if ($now->lt($alertAfter)) continue; // not yet time to alert
 
-            // Already alerted today?
-            if (ClockingAlertLog::where('employee_id', $emp->id)->where('alert_date', $today)->exists()) continue;
+            // Already alerted today (absent type)?
+            if (ClockingAlertLog::where('employee_id', $emp->id)->where('alert_date', $today)->where('alert_type', 'absent')->exists()) continue;
 
             // On absent override?
             if (\App\Models\ClockingAbsentOverride::where('employee_id', $emp->id)->where('date', $today)->exists()) continue;
@@ -74,6 +74,7 @@ class SendClockingAlerts extends Command
 
             ClockingAlertLog::create([
                 'employee_id' => $emp->id,
+                'alert_type'  => 'absent',
                 'alert_date'  => $today,
                 'sent_at'     => now(),
                 'recipients'  => $recipients,

@@ -2,6 +2,7 @@
 $tabs = [
     'dashboard'  => ['label' => 'Dashboard',   'route' => 'clocking.index'],
     'timesheets' => ['label' => 'Timesheets',  'route' => 'clocking.timesheets.index'],
+    'reports'    => ['label' => 'Reports',     'route' => 'clocking.reports.index'],
     'employees'  => ['label' => 'Employees',   'route' => 'clocking.employees.index'],
     'settings'   => ['label' => 'Settings',    'route' => 'clocking.settings.index'],
 ];

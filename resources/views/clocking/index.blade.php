@@ -39,6 +39,84 @@
         @endif
     </div>
 
+    {{-- Scheduled today — not yet clocked in --}}
+    @if($notClockedIn->isNotEmpty())
+    <div style="background:#fff;border-radius:14px;border:1px solid #fed7aa;padding:1.5rem;margin-bottom:1.5rem;">
+        <h2 style="font-size:0.9375rem;font-weight:700;color:#92400e;margin:0 0 1rem;">
+            Not Clocked In Yet
+            <span style="font-size:0.75rem;font-weight:500;background:#fff7ed;color:#c2410c;padding:2px 8px;border-radius:99px;border:1px solid #fed7aa;margin-left:0.5rem;">{{ $notClockedIn->count() }}</span>
+        </h2>
+        <table style="width:100%;border-collapse:collapse;font-size:0.875rem;">
+            <thead>
+                <tr style="border-bottom:1px solid #fde8ca;color:#92400e;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;">
+                    <th style="text-align:left;padding:0.5rem 0.75rem 0.5rem 0;">Name</th>
+                    <th style="text-align:left;padding:0.5rem 0.75rem;">Category</th>
+                    <th style="text-align:left;padding:0.5rem 0;">Scheduled Start</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach($notClockedIn as $emp)
+            @php $start = $emp->schedule[$dayKey]['start'] ?? '—'; @endphp
+            <tr style="border-bottom:1px solid #fff7ed;">
+                <td style="padding:0.625rem 0.75rem 0.625rem 0;font-weight:600;color:#1e293b;">{{ $emp->name }}</td>
+                <td style="padding:0.625rem 0.75rem;color:#64748b;">
+                    @if($emp->category)
+                        <span style="display:inline-flex;align-items:center;gap:5px;">
+                            <span style="width:8px;height:8px;border-radius:50%;background:{{ $emp->category->color }};flex-shrink:0;"></span>
+                            {{ $emp->category->name }}
+                        </span>
+                    @else
+                        <span style="color:#cbd5e1;">—</span>
+                    @endif
+                </td>
+                <td style="padding:0.625rem 0;color:#92400e;font-weight:600;">
+                    {{ $start }}
+                    @if($start !== '—' && \Carbon\Carbon::createFromFormat('H:i', $start, config('app.timezone'))->setDateFrom($now)->lt($now))
+                        <span style="font-size:0.7rem;color:#ef4444;margin-left:0.25rem;">
+                            {{ $now->diffInMinutes(\Carbon\Carbon::createFromFormat('H:i', $start, config('app.timezone'))->setDateFrom($now)) }}m late
+                        </span>
+                    @endif
+                </td>
+            </tr>
+            @endforeach
+            </tbody>
+        </table>
+    </div>
+    @endif
+
+    {{-- Recent Alerts --}}
+    @if($recentAlerts->isNotEmpty())
+    <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:1.5rem;margin-bottom:1.5rem;">
+        <h2 style="font-size:0.9375rem;font-weight:700;color:#1e293b;margin:0 0 1rem;">Recent Alerts</h2>
+        <table style="width:100%;border-collapse:collapse;font-size:0.875rem;">
+            <thead>
+                <tr style="border-bottom:1px solid #e2e8f0;color:#64748b;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;">
+                    <th style="text-align:left;padding:0.5rem 0.75rem 0.5rem 0;">Employee</th>
+                    <th style="text-align:left;padding:0.5rem 0.75rem;">Type</th>
+                    <th style="text-align:left;padding:0.5rem 0.75rem;">Date</th>
+                    <th style="text-align:left;padding:0.5rem 0;">Sent</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach($recentAlerts as $log)
+            <tr style="border-bottom:1px solid #f1f5f9;">
+                <td style="padding:0.5rem 0.75rem 0.5rem 0;font-weight:600;color:#1e293b;">{{ $log->employee?->name ?? '—' }}</td>
+                <td style="padding:0.5rem 0.75rem;">
+                    @if($log->alert_type === 'clockout')
+                        <span style="background:#fef3c7;color:#92400e;padding:2px 7px;border-radius:99px;font-size:0.7rem;font-weight:600;">Didn't clock out</span>
+                    @else
+                        <span style="background:#fee2e2;color:#991b1b;padding:2px 7px;border-radius:99px;font-size:0.7rem;font-weight:600;">Didn't clock in</span>
+                    @endif
+                </td>
+                <td style="padding:0.5rem 0.75rem;color:#475569;">{{ \Carbon\Carbon::parse($log->alert_date)->format('d M Y') }}</td>
+                <td style="padding:0.5rem 0;color:#64748b;">{{ $log->sent_at->setTimezone(config('app.timezone'))->format('H:i') }}</td>
+            </tr>
+            @endforeach
+            </tbody>
+        </table>
+    </div>
+    @endif
+
     {{-- Kiosk Devices --}}
     <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:1.5rem;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem;">

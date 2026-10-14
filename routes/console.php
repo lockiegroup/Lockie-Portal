@@ -29,3 +29,6 @@ Schedule::command('imports:sync-unleashed --from=2021-01-01')->dailyAt('07:30');
 
 // Clocking: send absence alerts every 15 minutes during working hours
 Schedule::command('clocking:send-alerts')->everyFifteenMinutes();
+
+// Clocking: send clockout reminders every 15 minutes (fires once per employee per day via log)
+Schedule::command('clocking:send-clockout-reminders')->everyFifteenMinutes();
