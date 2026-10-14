@@ -85,9 +85,11 @@
     @endif
 
     {{-- Recent Alerts --}}
-    @if($recentAlerts->isNotEmpty())
     <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:1.5rem;margin-bottom:1.5rem;">
         <h2 style="font-size:0.9375rem;font-weight:700;color:#1e293b;margin:0 0 1rem;">Recent Alerts</h2>
+        @if($recentAlerts->isEmpty())
+            <p style="color:#94a3b8;font-size:0.875rem;">No alerts have been sent yet.</p>
+        @else
         <table style="width:100%;border-collapse:collapse;font-size:0.875rem;">
             <thead>
                 <tr style="border-bottom:1px solid #e2e8f0;color:#64748b;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;">
@@ -114,8 +116,8 @@
             @endforeach
             </tbody>
         </table>
+        @endif
     </div>
-    @endif
 
     {{-- Kiosk Devices --}}
     <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:1.5rem;">
@@ -148,7 +150,6 @@
                 <tr style="border-bottom:1px solid #e2e8f0;color:#64748b;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;">
                     <th style="text-align:left;padding:0.5rem 0.75rem 0.5rem 0;">Name</th>
                     <th style="text-align:left;padding:0.5rem 0.75rem;">Last Seen</th>
-                    <th style="text-align:left;padding:0.5rem 0.75rem;">Status</th>
                     <th></th>
                 </tr>
             </thead>
@@ -159,20 +160,11 @@
                 <td style="padding:0.625rem 0.75rem;color:#475569;">
                     {{ $dev->last_seen_at ? $dev->last_seen_at->setTimezone('Europe/London')->format('d M Y H:i') : 'Never' }}
                 </td>
-                <td style="padding:0.625rem 0.75rem;">
-                    @if($dev->is_active)
-                        <span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:99px;font-size:0.75rem;font-weight:600;">Active</span>
-                    @else
-                        <span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:99px;font-size:0.75rem;font-weight:600;">Revoked</span>
-                    @endif
-                </td>
                 <td style="padding:0.625rem 0;text-align:right;">
-                    @if($dev->is_active)
-                    <button onclick="revokeDevice({{ $dev->id }})"
+                    <button onclick="deleteDevice({{ $dev->id }})"
                         style="padding:3px 10px;background:none;border:1px solid #fecaca;border-radius:6px;color:#ef4444;font-size:0.75rem;cursor:pointer;">
-                        Revoke
+                        Delete
                     </button>
-                    @endif
                 </td>
             </tr>
             @endforeach
@@ -211,16 +203,14 @@ async function generateCode() {
     } catch(e) { res.innerHTML = '<span style="color:#ef4444">Network error.</span>'; }
 }
 
-async function revokeDevice(id) {
-    if (!confirm('Revoke this device? The kiosk will need to be re-registered.')) return;
+async function deleteDevice(id) {
+    if (!confirm('Delete this device? The kiosk will need to be re-registered.')) return;
     const r = await fetch(`/clocking/devices/${id}`, {
         method: 'DELETE',
         headers: { 'X-CSRF-TOKEN': csrfToken },
     });
     if (r.ok) {
-        const row = document.getElementById('dev-row-' + id);
-        if (row) row.querySelector('td:nth-child(3)').innerHTML =
-            '<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:99px;font-size:0.75rem;font-weight:600;">Revoked</span>';
+        document.getElementById('dev-row-' + id)?.remove();
     }
 }
 </script>

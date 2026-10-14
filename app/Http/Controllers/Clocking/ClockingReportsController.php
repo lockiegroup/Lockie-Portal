@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Clocking;
 
 use App\Http\Controllers\Controller;
 use App\Models\ClockingAbsentOverride;
+use App\Models\ClockingCategory;
 use App\Models\ClockingEmployee;
 use App\Models\ClockingPunch;
 use App\Models\ClockingSettingRecord;
@@ -17,12 +18,13 @@ class ClockingReportsController extends Controller
     public function index(Request $request): View
     {
         [$from, $to, $report, $defaultBreakMins] = $this->buildReport($request);
-        return view('clocking.reports', compact('report', 'from', 'to', 'defaultBreakMins'));
+        $categories = ClockingCategory::orderBy('name')->get();
+        return view('clocking.reports', compact('report', 'from', 'to', 'defaultBreakMins', 'categories'));
     }
 
     public function export(Request $request): Response
     {
-        [$from, $to, $report] = $this->buildReport($request);
+        [$from, $to, $report, ] = $this->buildReport($request);
 
         $headers = ['Employee', 'Category', 'Date', 'Day', 'Scheduled Start', 'Scheduled End',
                     'Clock In', 'Clock Out', 'Break (mins)', 'Hours Worked', 'Notes'];
@@ -80,7 +82,16 @@ class ClockingReportsController extends Controller
 
         $defaultBreakMins = (int) (ClockingSettingRecord::where('key', 'default_break_minutes')->value('value') ?? 0);
 
-        $employees = ClockingEmployee::with('category')->where('is_active', true)->orderBy('name')->get();
+        $employeeQuery = ClockingEmployee::with('category')->where('is_active', true)->orderBy('name');
+
+        if ($request->filled('category_id')) {
+            $employeeQuery->where('category_id', $request->category_id);
+        }
+        if ($request->filled('employee_id')) {
+            $employeeQuery->where('id', $request->employee_id);
+        }
+
+        $employees = $employeeQuery->get();
 
         $allPunches = ClockingPunch::whereIn('employee_id', $employees->pluck('id'))
             ->whereBetween('punched_at', [$from, $to])

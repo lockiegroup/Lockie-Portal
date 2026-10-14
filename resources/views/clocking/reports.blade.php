@@ -7,6 +7,14 @@
     </div>
 
     {{-- Controls --}}
+    @php
+        $tz = config('app.timezone');
+        $activeCat = request('category_id');
+        $activeEmp = request('employee_id');
+        $exportParams = ['from' => $from->format('Y-m-d'), 'to' => $to->format('Y-m-d')];
+        if ($activeCat) $exportParams['category_id'] = $activeCat;
+        if ($activeEmp) $exportParams['employee_id'] = $activeEmp;
+    @endphp
     <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:1.5rem;margin-bottom:1.5rem;">
         <form method="GET" action="{{ route('clocking.reports.index') }}" style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:flex-end;">
             <div>
@@ -19,12 +27,23 @@
                 <input type="date" name="to" value="{{ $to->format('Y-m-d') }}"
                     style="padding:0.4rem 0.6rem;border:1px solid #e2e8f0;border-radius:6px;font-size:0.875rem;">
             </div>
+            @if($categories->isNotEmpty())
+            <div>
+                <label style="font-size:0.75rem;color:#64748b;display:block;margin-bottom:3px;">Category</label>
+                <select name="category_id" onchange="this.form.submit()"
+                    style="padding:0.4rem 0.6rem;border:1px solid #e2e8f0;border-radius:6px;font-size:0.875rem;background:#fff;">
+                    <option value="">All categories</option>
+                    @foreach($categories as $cat)
+                    <option value="{{ $cat->id }}" @selected($activeCat == $cat->id)>{{ $cat->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            @endif
             <button type="submit"
                 style="padding:0.4rem 1rem;background:#6366f1;color:#fff;border:none;border-radius:6px;font-size:0.8125rem;font-weight:600;cursor:pointer;">
                 Apply
             </button>
             @php
-                $tz = config('app.timezone');
                 $presets = [
                     'This month' => [now($tz)->startOfMonth()->format('Y-m-d'), now($tz)->endOfMonth()->format('Y-m-d')],
                     'Last month' => [now($tz)->subMonthNoOverflow()->startOfMonth()->format('Y-m-d'), now($tz)->subMonthNoOverflow()->endOfMonth()->format('Y-m-d')],
@@ -33,13 +52,13 @@
             @endphp
             <div style="display:flex;gap:0.375rem;flex-wrap:wrap;align-items:center;">
                 @foreach($presets as $label => [$pFrom, $pTo])
-                <a href="{{ route('clocking.reports.index', ['from' => $pFrom, 'to' => $pTo]) }}"
+                <a href="{{ route('clocking.reports.index', array_merge(['from' => $pFrom, 'to' => $pTo], $activeCat ? ['category_id' => $activeCat] : [])) }}"
                    style="padding:0.35rem 0.625rem;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;font-size:0.75rem;color:#475569;text-decoration:none;white-space:nowrap;">
                     {{ $label }}
                 </a>
                 @endforeach
             </div>
-            <a href="{{ route('clocking.reports.export', ['from' => $from->format('Y-m-d'), 'to' => $to->format('Y-m-d')]) }}"
+            <a href="{{ route('clocking.reports.export', $exportParams) }}"
                style="padding:0.4rem 0.875rem;background:#1e293b;color:#fff;border-radius:6px;font-size:0.8125rem;font-weight:600;text-decoration:none;white-space:nowrap;margin-left:auto;">
                 ↓ Export CSV
             </a>

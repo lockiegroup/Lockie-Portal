@@ -81,10 +81,10 @@ class ClockingController extends Controller
         return response()->json(['ok' => true, 'code' => $code, 'device_id' => $device->id]);
     }
 
-    /** Revoke a device. */
+    /** Delete a device. */
     public function revokeDevice(ClockingDevice $device): JsonResponse
     {
-        $device->update(['is_active' => false, 'token_hash' => null]);
+        $device->delete();
         return response()->json(['ok' => true]);
     }
 }
