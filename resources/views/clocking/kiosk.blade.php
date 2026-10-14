@@ -33,7 +33,12 @@
         #confirm-screen{background:#0f172a;gap:0;}
         #cf-name{font-size:min(10vw,8vh);font-weight:300;color:#f1f5f9;
             margin-top:min(4vw,3vh);text-align:center;padding:0 5vw;}
-        #cf-current{font-size:min(4vw,3.2vh);color:#64748b;margin-top:1.5vh;text-align:center;}
+        #cf-status-badge{margin-top:2vh;padding:min(1.2vw,0.7vh) min(4vw,2.5vh);
+            border-radius:99px;font-size:min(3.5vw,2.8vh);font-weight:800;
+            letter-spacing:0.08em;text-transform:uppercase;}
+        #cf-status-badge.in{background:rgba(34,197,94,0.18);color:#22c55e;}
+        #cf-status-badge.out{background:rgba(100,116,139,0.18);color:#64748b;}
+        #cf-since{font-size:min(4vw,3.2vh);color:#475569;margin-top:0.8vh;text-align:center;}
         #cf-divider{width:min(20vw,120px);height:1px;background:#1e293b;margin:3vh 0;}
         #cf-action-wrap{display:flex;align-items:center;gap:min(3vw,2vh);}
         #cf-arrow{font-size:min(8vw,6vh);opacity:0.5;}
@@ -98,7 +103,8 @@
 <!-- Confirm (waiting for second tap) -->
 <div id="confirm-screen" class="screen">
     <div id="cf-name"></div>
-    <div id="cf-current"></div>
+    <div id="cf-status-badge"></div>
+    <div id="cf-since"></div>
     <div id="cf-divider"></div>
     <div id="cf-action-wrap">
         <div id="cf-arrow">→</div>
@@ -332,20 +338,20 @@ function startConfirm(uid) {
         return;
     }
 
-    // Build "currently …" line
-    let currentLine;
-    if (curState === 'in' && entry.since) {
-        currentLine = 'Currently IN since ' + _shortFmt.format(new Date(entry.since));
-    } else if (curState === 'in') {
-        currentLine = 'Currently IN';
-    } else if (entry.since) {
-        currentLine = 'Last clocked out at ' + _shortFmt.format(new Date(entry.since));
+    // Status badge + since line
+    const badge = document.getElementById('cf-status-badge');
+    const since = document.getElementById('cf-since');
+    if (curState === 'in') {
+        badge.textContent  = 'Currently Clocked In';
+        badge.className    = 'in';
+        since.textContent  = entry.since ? 'since ' + _shortFmt.format(new Date(entry.since)) : '';
     } else {
-        currentLine = 'Not yet clocked in today';
+        badge.textContent  = 'Currently Clocked Out';
+        badge.className    = 'out';
+        since.textContent  = entry.since ? 'last out at ' + _shortFmt.format(new Date(entry.since)) : 'not yet clocked in today';
     }
 
-    document.getElementById('cf-name').textContent    = name;
-    document.getElementById('cf-current').textContent = currentLine;
+    document.getElementById('cf-name').textContent = name;
     const actionEl = document.getElementById('cf-action');
     actionEl.textContent  = direction === 'in' ? 'CLOCK IN' : 'CLOCK OUT';
     actionEl.className    = direction;
