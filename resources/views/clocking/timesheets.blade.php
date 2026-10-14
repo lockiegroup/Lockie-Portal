@@ -107,7 +107,7 @@
                 <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:flex-end;">
                     <div>
                         <label style="font-size:0.75rem;color:#64748b;display:block;margin-bottom:3px;">Direction</label>
-                        <select id="add-dir" style="padding:0.4rem 0.6rem;border:1px solid #e2e8f0;border-radius:6px;font-size:0.8125rem;">
+                        <select id="add-dir" onchange="togglePairedOut()" style="padding:0.4rem 0.6rem;border:1px solid #e2e8f0;border-radius:6px;font-size:0.8125rem;">
                             <option value="in">Clock In</option>
                             <option value="out">Clock Out</option>
                         </select>
@@ -115,6 +115,11 @@
                     <div>
                         <label style="font-size:0.75rem;color:#64748b;display:block;margin-bottom:3px;">Time</label>
                         <input type="datetime-local" id="add-time"
+                            style="padding:0.4rem 0.6rem;border:1px solid #e2e8f0;border-radius:6px;font-size:0.8125rem;">
+                    </div>
+                    <div id="paired-out-wrap">
+                        <label style="font-size:0.75rem;color:#64748b;display:block;margin-bottom:3px;">Clock Out <span style="color:#94a3b8;">(optional)</span></label>
+                        <input type="datetime-local" id="add-time-out"
                             style="padding:0.4rem 0.6rem;border:1px solid #e2e8f0;border-radius:6px;font-size:0.8125rem;">
                     </div>
                     <button onclick="submitAddPunch()"
@@ -137,6 +142,11 @@ const PUNCH_DATA = @json($punchJson);
 let currentEmpId = null;
 let currentDate  = null;
 
+function togglePairedOut() {
+    const isIn = document.getElementById('add-dir').value === 'in';
+    document.getElementById('paired-out-wrap').style.display = isIn ? '' : 'none';
+}
+
 function openDay(empId, date) {
     currentEmpId = empId;
     currentDate  = date;
@@ -147,8 +157,11 @@ function openDay(empId, date) {
     document.getElementById('modal-name').textContent = data.employee_name;
     document.getElementById('modal-date').textContent = data.date_label;
 
-    // Pre-fill add-punch time to noon on that date
-    document.getElementById('add-time').value = date + 'T09:00';
+    // Pre-fill add-punch time to 9am on that date, reset out field
+    document.getElementById('add-time').value     = date + 'T09:00';
+    document.getElementById('add-time-out').value = '';
+    document.getElementById('add-dir').value = 'in';
+    togglePairedOut();
 
     renderPunches(data.punches);
 
@@ -205,21 +218,42 @@ async function voidPunch(id) {
 }
 
 async function submitAddPunch() {
-    const res = document.getElementById('add-result');
+    const res        = document.getElementById('add-result');
     const direction  = document.getElementById('add-dir').value;
     const punched_at = document.getElementById('add-time').value;
-    if (!punched_at) { res.innerHTML = '<span style="color:#ef4444">Choose a time.</span>'; return; }
+    const out_at     = document.getElementById('add-time-out').value;
+
+    if (!punched_at) { res.innerHTML = '<span style="color:#ef4444">Choose a clock-in time.</span>'; return; }
+    if (direction === 'in' && out_at && out_at <= punched_at) {
+        res.innerHTML = '<span style="color:#ef4444">Clock-out must be after clock-in.</span>'; return;
+    }
+
     res.textContent = 'Saving…';
     try {
-        const r = await fetch('/clocking/timesheets/punch', {
+        const post = async (dir, time) => fetch('/clocking/timesheets/punch', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
-            body: JSON.stringify({ employee_id: currentEmpId, direction, punched_at }),
+            body: JSON.stringify({ employee_id: currentEmpId, direction: dir, punched_at: time }),
         });
-        if (r.ok) { location.reload(); return; }
-        let msg = `Error (${r.status})`;
-        try { const j = await r.json(); msg = j.message || Object.values(j.errors||{})[0]?.[0] || msg; } catch(_) {}
-        res.innerHTML = `<span style="color:#ef4444">${msg}</span>`;
+
+        const r1 = await post(direction, punched_at);
+        if (!r1.ok) {
+            let msg = `Error (${r1.status})`;
+            try { const j = await r1.json(); msg = j.message || Object.values(j.errors||{})[0]?.[0] || msg; } catch(_) {}
+            res.innerHTML = `<span style="color:#ef4444">${msg}</span>`; return;
+        }
+
+        // If clock-in with an out time, save the out punch too
+        if (direction === 'in' && out_at) {
+            const r2 = await post('out', out_at);
+            if (!r2.ok) {
+                let msg = `Clock-in saved, but clock-out failed.`;
+                try { const j = await r2.json(); msg += ' ' + (j.message || ''); } catch(_) {}
+                res.innerHTML = `<span style="color:#f59e0b">${msg}</span>`; return;
+            }
+        }
+
+        location.reload();
     } catch(_) { res.innerHTML = '<span style="color:#ef4444">Network error.</span>'; }
 }
 
