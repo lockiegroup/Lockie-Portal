@@ -72,6 +72,22 @@
 <div id="logo"><img src="{{ asset('images/logo.png') }}" alt=""></div>
 <div id="status"><div id="status-dot"></div><span id="status-text">Online</span></div>
 
+<!-- Test input (remove before go-live) -->
+<div id="test-bar" style="position:fixed;bottom:50px;left:50%;transform:translateX(-50%);
+    display:flex;gap:8px;align-items:center;z-index:50;background:rgba(15,23,42,0.85);
+    border:1px solid #334155;border-radius:10px;padding:8px 12px;">
+    <span style="font-size:0.7rem;color:#475569;letter-spacing:0.05em;text-transform:uppercase;">Test UID</span>
+    <input id="test-uid" type="text" inputmode="numeric" maxlength="20" placeholder="e.g. 1234567890"
+        style="width:160px;padding:5px 9px;background:#1e293b;border:1px solid #334155;border-radius:6px;
+               color:#e2e8f0;font-family:monospace;font-size:0.875rem;outline:none;"
+        onkeydown="if(event.key==='Enter'){simulateFob();event.preventDefault();}">
+    <button onclick="simulateFob()"
+        style="padding:5px 12px;background:#334155;border:none;border-radius:6px;
+               color:#94a3b8;font-size:0.75rem;cursor:pointer;">
+        Tap
+    </button>
+</div>
+
 <!-- Clock (idle) -->
 <div id="clock-screen" class="screen active">
     <div id="clock-time">00:00</div>
@@ -426,6 +442,13 @@ function handleFob(uid) {
     }
 
     startConfirm(uid);
+}
+
+// ── Test helper (remove before go-live) ──────────────────────────────────────
+function simulateFob() {
+    const input = document.getElementById('test-uid');
+    const uid   = (input?.value || '').trim();
+    if (uid) { handleFob(uid); input.value = ''; input.blur(); }
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
