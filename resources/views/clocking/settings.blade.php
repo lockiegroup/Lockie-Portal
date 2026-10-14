@@ -10,7 +10,7 @@
     <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:1.5rem;margin-bottom:1.5rem;">
         <h2 style="font-size:0.9375rem;font-weight:700;color:#1e293b;margin:0 0 0.75rem;">Alert timing</h2>
         <p style="font-size:0.8125rem;color:#64748b;margin:0 0 1rem;">Send an alert this many minutes after an employee's scheduled start if they haven't clocked in.</p>
-        <div style="display:flex;align-items:center;gap:0.75rem;">
+        <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
             <input type="number" id="grace-mins" value="{{ $graceMins }}" min="0" max="120"
                 style="width:80px;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:7px;font-size:0.875rem;">
             <span style="font-size:0.875rem;color:#475569;">minutes</span>
