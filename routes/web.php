@@ -35,6 +35,7 @@ use App\Http\Controllers\Clocking\KioskController;
 use App\Http\Controllers\Clocking\ClockingController;
 use App\Http\Controllers\Clocking\ClockingEmployeeController;
 use App\Http\Controllers\Clocking\ClockingFobController;
+use App\Http\Controllers\Clocking\ClockingTimesheetController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn() => redirect()->route('login'));
@@ -366,6 +367,11 @@ Route::middleware(['auth', 'otp'])->group(function () {
         Route::post('/fobs',                               [ClockingFobController::class, 'enrol'])->name('fobs.enrol');
         Route::put('/fobs/{fob}/assign',                   [ClockingFobController::class, 'assign'])->name('fobs.assign');
         Route::post('/fobs/{fob}/deactivate',              [ClockingFobController::class, 'deactivate'])->name('fobs.deactivate');
+
+        // Timesheets
+        Route::get('/timesheets',                          [ClockingTimesheetController::class, 'index'])->name('timesheets.index');
+        Route::post('/timesheets/punch',                   [ClockingTimesheetController::class, 'addPunch'])->name('timesheets.addPunch');
+        Route::post('/timesheets/void/{punch}',            [ClockingTimesheetController::class, 'void'])->name('timesheets.void');
     });
 
     // Action Plans
