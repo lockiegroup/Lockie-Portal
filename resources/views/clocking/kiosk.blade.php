@@ -402,6 +402,9 @@ let inputBuffer = '';
 let inputTimer  = null;
 
 document.addEventListener('keydown', e => {
+    // Let the test input handle its own keypresses
+    if (document.activeElement && document.activeElement.id === 'test-uid') return;
+
     if (e.key !== 'Enter') e.preventDefault();
 
     if (e.key === 'Enter') {
