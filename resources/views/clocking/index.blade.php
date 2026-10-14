@@ -23,14 +23,26 @@
             <tbody>
             @foreach($inNow as $punch)
             @php
-                $london  = new \DateTimeZone('Europe/London');
-                $sinceL  = $punch->punched_at->setTimezone($london);
-                $mins    = (int) $punch->punched_at->diffInMinutes(now());
-                $dur     = sprintf('%dh %02dm', intdiv($mins,60), $mins % 60);
+                $london      = new \DateTimeZone('Europe/London');
+                $sinceL      = $punch->punched_at->setTimezone($london);
+                $mins        = (int) $punch->punched_at->diffInMinutes(now());
+                $dur         = sprintf('%dh %02dm', intdiv($mins,60), $mins % 60);
+                $empSched    = ($punch->employee->schedule ?? [])[$dayKey] ?? [];
+                $lateBy      = null;
+                if (!empty($empSched['start'])) {
+                    $schedStart = \Carbon\Carbon::createFromFormat('H:i', $empSched['start'], config('app.timezone'))->setDateFrom($punch->punched_at);
+                    $lateBy = max(0, (int) floor(($punch->punched_at->timestamp - $schedStart->timestamp) / 60));
+                    if ($lateBy === 0) $lateBy = null;
+                }
             @endphp
             <tr style="border-bottom:1px solid #f1f5f9;">
                 <td style="padding:0.625rem 0.75rem 0.625rem 0;font-weight:600;color:#1e293b;">{{ $punch->employee->name }}</td>
-                <td style="padding:0.625rem 0.75rem;color:#475569;">{{ $sinceL->format('H:i') }}</td>
+                <td style="padding:0.625rem 0.75rem;color:#475569;">
+                    {{ $sinceL->format('H:i') }}
+                    @if($lateBy)
+                        <span style="margin-left:5px;background:#fee2e2;color:#b91c1c;padding:1px 6px;border-radius:99px;font-size:0.7rem;font-weight:600;white-space:nowrap;">{{ $lateBy }}m late</span>
+                    @endif
+                </td>
                 <td style="padding:0.625rem 0.75rem;color:#64748b;">{{ $dur }}</td>
             </tr>
             @endforeach
