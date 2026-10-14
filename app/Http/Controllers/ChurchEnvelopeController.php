@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\EnvelopeDesign;
 use App\Models\EnvelopeSetting;
 use App\Models\EnvelopeVerse;
@@ -19,6 +20,22 @@ class ChurchEnvelopeController extends Controller
     public function designer(): View
     {
         return view('church-envelopes.designer');
+    }
+
+    public function logDownload(Request $request): JsonResponse
+    {
+        $accountCode = trim($request->input('account_code', ''));
+        $church      = trim($request->input('church', ''));
+        $town        = trim($request->input('town', ''));
+        $pages       = (int) $request->input('pages', 0);
+
+        $parts = array_filter([$accountCode ?: null, $church ?: null, $town ?: null]);
+        $desc  = 'Church envelope PDF downloaded' . ($parts ? ' — ' . implode(', ', $parts) : '');
+        if ($pages) $desc .= " ({$pages} pages)";
+
+        ActivityLog::record('church-envelope.download', $desc);
+
+        return response()->json(['ok' => true]);
     }
 
     public function index(): View

@@ -231,6 +231,7 @@ function parseFile() {
                 for (let i = 1; i <= 8; i++) vts.push(String(row[vtCols[i]] ?? '').trim());
                 const rawL = row[5], rawR = row[4]; // col F = left, col E = right
                 parsedRows.push({
+                    accountCode: String(row[0]??'').trim(),
                     day: String(row[1]??'').trim(), month: String(row[2]??'').trim(), year: String(row[3]??'').trim(),
                     setLeft:  (rawL !== '' && rawL !== null) ? parseInt(rawL)  : null,
                     setRight: (rawR !== '' && rawR !== null) ? parseInt(rawR) : null,
@@ -702,6 +703,14 @@ async function generatePDF() {
         st.textContent = `Done — ${parsedRows.length} pages saved.`;
         st.style.color = '#166534';
         doc.save(spreadsheetBasename + '.pdf');
+
+        // Log the download server-side (fire and forget)
+        const first = parsedRows.find(r => !r.isSpecial) || parsedRows[0];
+        fetch('{{ route('church-envelopes.log-download') }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+            body: JSON.stringify({ account_code: first?.accountCode || '', church: first?.church || '', town: first?.town || '', pages: parsedRows.length }),
+        }).catch(() => {});
     } catch (e) {
         st.textContent = 'PDF error: ' + e.message;
         st.style.color = '#991b1b';
