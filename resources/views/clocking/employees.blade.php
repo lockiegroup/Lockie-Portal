@@ -242,7 +242,7 @@ async function saveEmployee() {
         });
         if (r.ok) { location.reload(); }
         else { const j = await r.json(); res.innerHTML = `<span style="color:#ef4444">${j.message || 'Error.'}</span>`; }
-    } catch(_) { res.innerHTML = '<span style="color:#ef4444">Network error.</span>'; }
+    } catch(e) { res.innerHTML = `<span style="color:#ef4444">Error: ${e.message || 'Could not reach server.'}</span>`; }
 }
 
 // ── Edit form ─────────────────────────────────────────────────────────────────
@@ -274,7 +274,7 @@ async function updateEmployee(id) {
         });
         if (r.ok) { location.reload(); }
         else { const j = await r.json(); res.innerHTML = `<span style="color:#ef4444">${j.message || 'Error.'}</span>`; }
-    } catch(_) { res.innerHTML = '<span style="color:#ef4444">Network error.</span>'; }
+    } catch(e) { res.innerHTML = `<span style="color:#ef4444">Error: ${e.message || 'Could not reach server.'}</span>`; }
 }
 
 async function toggleActive(id, currentlyActive) {
