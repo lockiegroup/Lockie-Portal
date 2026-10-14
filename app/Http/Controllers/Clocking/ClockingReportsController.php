@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Clocking;
 
 use App\Http\Controllers\Controller;
 use App\Models\ClockingAbsentOverride;
-use App\Models\ClockingCategory;
 use App\Models\ClockingEmployee;
 use App\Models\ClockingPunch;
 use App\Models\ClockingSettingRecord;
@@ -18,8 +17,8 @@ class ClockingReportsController extends Controller
     public function index(Request $request): View
     {
         [$from, $to, $report, $defaultBreakMins] = $this->buildReport($request);
-        $categories = ClockingCategory::orderBy('name')->get();
-        return view('clocking.reports', compact('report', 'from', 'to', 'defaultBreakMins', 'categories'));
+        $allEmployees = ClockingEmployee::where('is_active', true)->orderBy('name')->get(['id', 'name']);
+        return view('clocking.reports', compact('report', 'from', 'to', 'defaultBreakMins', 'allEmployees'));
     }
 
     public function export(Request $request): Response
@@ -84,9 +83,6 @@ class ClockingReportsController extends Controller
 
         $employeeQuery = ClockingEmployee::with('category')->where('is_active', true)->orderBy('name');
 
-        if ($request->filled('category_id')) {
-            $employeeQuery->where('category_id', $request->category_id);
-        }
         if ($request->filled('employee_id')) {
             $employeeQuery->where('id', $request->employee_id);
         }

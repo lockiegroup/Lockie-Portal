@@ -9,10 +9,8 @@
     {{-- Controls --}}
     @php
         $tz = config('app.timezone');
-        $activeCat = request('category_id');
         $activeEmp = request('employee_id');
         $exportParams = ['from' => $from->format('Y-m-d'), 'to' => $to->format('Y-m-d')];
-        if ($activeCat) $exportParams['category_id'] = $activeCat;
         if ($activeEmp) $exportParams['employee_id'] = $activeEmp;
     @endphp
     <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:1.5rem;margin-bottom:1.5rem;">
@@ -27,14 +25,14 @@
                 <input type="date" name="to" value="{{ $to->format('Y-m-d') }}"
                     style="padding:0.4rem 0.6rem;border:1px solid #e2e8f0;border-radius:6px;font-size:0.875rem;">
             </div>
-            @if($categories->isNotEmpty())
+            @if($allEmployees->isNotEmpty())
             <div>
-                <label style="font-size:0.75rem;color:#64748b;display:block;margin-bottom:3px;">Category</label>
-                <select name="category_id" onchange="this.form.submit()"
+                <label style="font-size:0.75rem;color:#64748b;display:block;margin-bottom:3px;">Employee</label>
+                <select name="employee_id" onchange="this.form.submit()"
                     style="padding:0.4rem 0.6rem;border:1px solid #e2e8f0;border-radius:6px;font-size:0.875rem;background:#fff;">
-                    <option value="">All categories</option>
-                    @foreach($categories as $cat)
-                    <option value="{{ $cat->id }}" @selected($activeCat == $cat->id)>{{ $cat->name }}</option>
+                    <option value="">All employees</option>
+                    @foreach($allEmployees as $emp)
+                    <option value="{{ $emp->id }}" @selected($activeEmp == $emp->id)>{{ $emp->name }}</option>
                     @endforeach
                 </select>
             </div>
@@ -45,6 +43,7 @@
             </button>
             @php
                 $presets = [
+                    'This week'  => [now($tz)->startOfWeek(\Carbon\Carbon::MONDAY)->format('Y-m-d'), now($tz)->format('Y-m-d')],
                     'This month' => [now($tz)->startOfMonth()->format('Y-m-d'), now($tz)->endOfMonth()->format('Y-m-d')],
                     'Last month' => [now($tz)->subMonthNoOverflow()->startOfMonth()->format('Y-m-d'), now($tz)->subMonthNoOverflow()->endOfMonth()->format('Y-m-d')],
                     'This year'  => [now($tz)->startOfYear()->format('Y-m-d'), now($tz)->endOfYear()->format('Y-m-d')],
@@ -52,7 +51,7 @@
             @endphp
             <div style="display:flex;gap:0.375rem;flex-wrap:wrap;align-items:center;">
                 @foreach($presets as $label => [$pFrom, $pTo])
-                <a href="{{ route('clocking.reports.index', array_merge(['from' => $pFrom, 'to' => $pTo], $activeCat ? ['category_id' => $activeCat] : [])) }}"
+                <a href="{{ route('clocking.reports.index', array_merge(['from' => $pFrom, 'to' => $pTo], $activeEmp ? ['employee_id' => $activeEmp] : [])) }}"
                    style="padding:0.35rem 0.625rem;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;font-size:0.75rem;color:#475569;text-decoration:none;white-space:nowrap;">
                     {{ $label }}
                 </a>
