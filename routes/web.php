@@ -35,6 +35,7 @@ use App\Http\Controllers\Clocking\KioskController;
 use App\Http\Controllers\Clocking\ClockingController;
 use App\Http\Controllers\Clocking\ClockingEmployeeController;
 use App\Http\Controllers\Clocking\ClockingFobController;
+use App\Http\Controllers\Clocking\ClockingSettingsController;
 use App\Http\Controllers\Clocking\ClockingTimesheetController;
 use Illuminate\Support\Facades\Route;
 
@@ -370,8 +371,19 @@ Route::middleware(['auth', 'otp'])->group(function () {
 
         // Timesheets
         Route::get('/timesheets',                          [ClockingTimesheetController::class, 'index'])->name('timesheets.index');
+        Route::get('/timesheets/export',                   [ClockingTimesheetController::class, 'export'])->name('timesheets.export');
         Route::post('/timesheets/punch',                   [ClockingTimesheetController::class, 'addPunch'])->name('timesheets.addPunch');
         Route::post('/timesheets/void/{punch}',            [ClockingTimesheetController::class, 'void'])->name('timesheets.void');
+        Route::post('/timesheets/absent',                  [ClockingTimesheetController::class, 'toggleAbsent'])->name('timesheets.absent');
+
+        // Settings
+        Route::get('/settings',                            [ClockingSettingsController::class, 'index'])->name('settings.index');
+        Route::patch('/settings',                          [ClockingSettingsController::class, 'updateSettings'])->name('settings.update');
+        Route::post('/settings/categories',                [ClockingSettingsController::class, 'storeCategory'])->name('settings.categories.store');
+        Route::put('/settings/categories/{category}',      [ClockingSettingsController::class, 'updateCategory'])->name('settings.categories.update');
+        Route::delete('/settings/categories/{category}',   [ClockingSettingsController::class, 'destroyCategory'])->name('settings.categories.destroy');
+        Route::post('/settings/recipients',                [ClockingSettingsController::class, 'storeRecipient'])->name('settings.recipients.store');
+        Route::delete('/settings/recipients/{recipient}',  [ClockingSettingsController::class, 'destroyRecipient'])->name('settings.recipients.destroy');
     });
 
     // Action Plans

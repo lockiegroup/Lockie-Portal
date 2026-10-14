@@ -6,7 +6,7 @@
         @include('clocking._tabs', ['active' => 'timesheets'])
     </div>
 
-    {{-- Week navigator --}}
+    {{-- Week navigator + export --}}
     @php
         $london   = new \DateTimeZone('Europe/London');
         $prevWeek = $weekStart->copy()->subWeek()->format('Y-m-d');
@@ -20,6 +20,10 @@
         @if($weekStart->format('Y-m-d') !== now()->startOfWeek(\Carbon\Carbon::MONDAY)->format('Y-m-d'))
             <a href="?" style="font-size:0.8125rem;color:#6366f1;text-decoration:none;font-weight:500;">This week</a>
         @endif
+        <a href="?week={{ $weekStart->format('Y-m-d') }}&export=1" onclick="this.href='/clocking/timesheets/export?week={{ $weekStart->format('Y-m-d') }}'"
+           style="margin-left:auto;padding:0.4rem 0.875rem;background:#fff;border:1px solid #e2e8f0;border-radius:7px;font-size:0.8125rem;color:#475569;text-decoration:none;font-weight:600;">
+            ↓ Export CSV
+        </a>
     </div>
 
     {{-- Timesheet table --}}
@@ -100,6 +104,14 @@
             <button onclick="closeDay()" style="padding:4px 8px;background:none;border:1px solid #e2e8f0;border-radius:6px;color:#64748b;font-size:1rem;cursor:pointer;">✕</button>
         </div>
         <div id="modal-punches" style="padding:1rem 1.25rem;"></div>
+        {{-- Absent override --}}
+        <div style="padding:0 1.25rem 0.75rem;">
+            <button id="absent-btn" onclick="toggleAbsent()"
+                style="padding:0.35rem 0.875rem;background:none;border:1px solid #e2e8f0;border-radius:7px;font-size:0.8125rem;color:#64748b;cursor:pointer;width:100%;text-align:left;">
+                Mark as absent (suppress alert)
+            </button>
+        </div>
+
         {{-- Add punch form --}}
         <div style="padding:0 1.25rem 1.25rem;">
             <div style="border-top:1px solid #f1f5f9;padding-top:1rem;">
@@ -156,6 +168,13 @@ function openDay(empId, date) {
 
     document.getElementById('modal-name').textContent = data.employee_name;
     document.getElementById('modal-date').textContent = data.date_label;
+
+    // Absent toggle button
+    const absentBtn = document.getElementById('absent-btn');
+    absentBtn.textContent = data.absent ? '✓ Marked absent — click to remove' : 'Mark as absent (suppress alert)';
+    absentBtn.style.background = data.absent ? '#f0fdf4' : '';
+    absentBtn.style.borderColor = data.absent ? '#bbf7d0' : '';
+    absentBtn.style.color = data.absent ? '#166534' : '';
 
     // Pre-fill add-punch time to 9am on that date, reset out field
     document.getElementById('add-time').value     = date + 'T09:00';
@@ -255,6 +274,25 @@ async function submitAddPunch() {
 
         location.reload();
     } catch(_) { res.innerHTML = '<span style="color:#ef4444">Network error.</span>'; }
+}
+
+async function toggleAbsent() {
+    const key  = currentEmpId + '_' + currentDate;
+    const data = PUNCH_DATA[key];
+    const r = await fetch('/clocking/timesheets/absent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
+        body: JSON.stringify({ employee_id: currentEmpId, date: currentDate }),
+    });
+    if (r.ok) {
+        const j = await r.json();
+        data.absent = j.absent;
+        const btn = document.getElementById('absent-btn');
+        btn.textContent   = j.absent ? '✓ Marked absent — click to remove' : 'Mark as absent (suppress alert)';
+        btn.style.background  = j.absent ? '#f0fdf4' : '';
+        btn.style.borderColor = j.absent ? '#bbf7d0' : '';
+        btn.style.color       = j.absent ? '#166534' : '';
+    }
 }
 
 // Close modal on backdrop click

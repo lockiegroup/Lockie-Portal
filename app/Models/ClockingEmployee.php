@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ClockingEmployee extends Model
@@ -15,6 +16,11 @@ class ClockingEmployee extends Model
             'is_active' => 'boolean',
             'schedule'  => 'array',
         ];
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(ClockingCategory::class, 'category_id');
     }
 
     public function fobs(): HasMany

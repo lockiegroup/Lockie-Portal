@@ -24,6 +24,17 @@
                     <input type="text" id="add-name" placeholder="Full name" maxlength="100"
                         style="width:100%;min-width:220px;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:7px;font-size:0.875rem;">
                 </div>
+                @if($categories->isNotEmpty())
+                <div>
+                    <label style="font-size:0.8125rem;font-weight:600;color:#374151;display:block;margin-bottom:0.25rem;">Category</label>
+                    <select id="add-category" style="padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:7px;font-size:0.875rem;min-width:160px;">
+                        <option value="">— none —</option>
+                        @foreach($categories as $cat)
+                        <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                @endif
                 <div>
                     <label style="font-size:0.8125rem;font-weight:600;color:#374151;display:block;margin-bottom:0.25rem;">
                         Fob UID <span style="font-weight:400;color:#94a3b8;">— type or tap reader</span>
@@ -125,6 +136,17 @@
                                 <input type="text" id="edit-name-{{ $emp->id }}" value="{{ $emp->name }}" maxlength="100"
                                     style="width:100%;min-width:220px;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:7px;font-size:0.875rem;">
                             </div>
+                            @if($categories->isNotEmpty())
+                            <div>
+                                <label style="font-size:0.8125rem;font-weight:600;color:#374151;display:block;margin-bottom:0.25rem;">Category</label>
+                                <select id="edit-category-{{ $emp->id }}" style="padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:7px;font-size:0.875rem;min-width:160px;">
+                                    <option value="">— none —</option>
+                                    @foreach($categories as $cat)
+                                    <option value="{{ $cat->id }}" {{ $emp->category_id == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            @endif
                             <div>
                                 <label style="font-size:0.8125rem;font-weight:600;color:#374151;display:block;margin-bottom:0.25rem;">
                                     Fob UID <span style="font-weight:400;color:#94a3b8;">— type or tap reader</span>
@@ -176,7 +198,9 @@ const DAYS = ['mon','tue','wed','thu','fri','sat','sun'];
 const DAY_LABELS = { mon:'Mon', tue:'Tue', wed:'Wed', thu:'Thu', fri:'Fri', sat:'Sat', sun:'Sun' };
 
 // Existing schedule data passed from PHP
-const empSchedules = @json($employees->pluck('schedule', 'id'));
+const empSchedules  = @json($employees->pluck('schedule', 'id'));
+const empCategories = @json($employees->pluck('category_id', 'id'));
+const categories    = @json($categories->map->only(['id','name'])->values());
 
 function buildScheduleEditor(containerId, empId) {
     const container = document.getElementById(containerId);
@@ -237,9 +261,10 @@ function toggleAddForm() {
 
 async function saveEmployee() {
     const name     = document.getElementById('add-name').value.trim();
-    const fob_uid  = document.getElementById('add-fob').value.trim() || null;
-    const brk      = document.getElementById('add-break').value;
-    const schedule = collectSchedule('add-schedule');
+    const fob_uid     = document.getElementById('add-fob').value.trim() || null;
+    const category_id = document.getElementById('add-category')?.value || null;
+    const brk         = document.getElementById('add-break').value;
+    const schedule    = collectSchedule('add-schedule');
     const res      = document.getElementById('add-result');
     if (!name) { res.innerHTML = '<span style="color:#ef4444">Name is required.</span>'; return; }
     res.textContent = 'Saving…';
@@ -247,7 +272,7 @@ async function saveEmployee() {
         const r = await fetch('{{ route('clocking.employees.store') }}', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
-            body: JSON.stringify({ name, fob_uid, schedule, break_override_minutes: brk || null }),
+            body: JSON.stringify({ name, fob_uid, category_id: category_id || null, schedule, break_override_minutes: brk || null }),
         });
         if (r.ok) { location.reload(); return; }
         let msg = `Server error (${r.status}) — please refresh the page.`;
@@ -271,9 +296,10 @@ function closeAllEdits() {
 
 async function updateEmployee(id) {
     const name     = document.getElementById('edit-name-' + id).value.trim();
-    const fob_uid  = document.getElementById('edit-fob-' + id).value.trim(); // empty string = clear
-    const brk      = document.getElementById('edit-break-' + id).value;
-    const schedule = collectSchedule('edit-schedule-' + id);
+    const fob_uid     = document.getElementById('edit-fob-' + id).value.trim();
+    const category_id = document.getElementById('edit-category-' + id)?.value || null;
+    const brk         = document.getElementById('edit-break-' + id).value;
+    const schedule    = collectSchedule('edit-schedule-' + id);
     const res      = document.getElementById('edit-result-' + id);
     if (!name) { res.innerHTML = '<span style="color:#ef4444">Name is required.</span>'; return; }
     res.textContent = 'Saving…';
@@ -281,7 +307,7 @@ async function updateEmployee(id) {
         const r = await fetch(`/clocking/employees/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF },
-            body: JSON.stringify({ name, fob_uid: fob_uid || null, schedule, break_override_minutes: brk || null }),
+            body: JSON.stringify({ name, fob_uid: fob_uid || null, category_id: category_id || null, schedule, break_override_minutes: brk || null }),
         });
         if (r.ok) { location.reload(); return; }
         let msg = `Server error (${r.status}) — please refresh the page.`;

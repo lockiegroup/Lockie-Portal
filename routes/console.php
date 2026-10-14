@@ -26,3 +26,6 @@ Schedule::command('amazon:sync --settlements --ads')->dailyAt('06:00');
 // Auto-sync sales orders and credit notes from Unleashed API daily at 07:30
 // Default pulls last 3 years. Run manually with --from=2001-01-01 for full history.
 Schedule::command('imports:sync-unleashed --from=2021-01-01')->dailyAt('07:30');
+
+// Clocking: send absence alerts every 15 minutes during working hours
+Schedule::command('clocking:send-alerts')->everyFifteenMinutes();

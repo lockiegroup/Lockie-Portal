@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Clocking;
 
 use App\Http\Controllers\Controller;
+use App\Models\ClockingCategory;
 use App\Models\ClockingEmployee;
 use App\Models\ClockingFob;
 use App\Models\ClockingFobHistory;
@@ -14,22 +15,24 @@ class ClockingEmployeeController extends Controller
 {
     public function index(): View
     {
-        $employees = ClockingEmployee::with(['fobs' => fn($q) => $q->where('is_active', true)])
-            ->orderBy('name')
-            ->get();
-        return view('clocking.employees', compact('employees'));
+        $employees  = ClockingEmployee::with(['fobs' => fn($q) => $q->where('is_active', true), 'category'])
+            ->orderBy('name')->get();
+        $categories = ClockingCategory::orderBy('name')->get();
+        return view('clocking.employees', compact('employees', 'categories'));
     }
 
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
             'name'                   => 'required|string|max:100',
+            'category_id'            => 'nullable|exists:clocking_categories,id',
             'fob_uid'                => 'nullable|string|max:20',
             'schedule'               => 'nullable|array',
             'break_override_minutes' => 'nullable|integer|min:0|max:120',
         ]);
         $emp = ClockingEmployee::create([
             'name'                   => $data['name'],
+            'category_id'            => $data['category_id'] ?? null,
             'is_active'              => true,
             'schedule'               => $data['schedule'] ?? null,
             'break_override_minutes' => $data['break_override_minutes'] ?? null,
@@ -44,12 +47,14 @@ class ClockingEmployeeController extends Controller
     {
         $data = $request->validate([
             'name'                   => 'required|string|max:100',
+            'category_id'            => 'nullable|exists:clocking_categories,id',
             'fob_uid'                => 'nullable|string|max:20',
             'schedule'               => 'nullable|array',
             'break_override_minutes' => 'nullable|integer|min:0|max:120',
         ]);
         $employee->update([
             'name'                   => $data['name'],
+            'category_id'            => $data['category_id'] ?? null,
             'schedule'               => $data['schedule'] ?? null,
             'break_override_minutes' => $data['break_override_minutes'] ?? null,
         ]);
