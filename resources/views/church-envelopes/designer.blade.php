@@ -709,7 +709,7 @@ async function generatePDF() {
         fetch('{{ route('church-envelopes.log-download') }}', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
-            body: JSON.stringify({ account_code: first?.accountCode || '', church: first?.church || '', town: first?.town || '', pages: parsedRows.length }),
+            body: JSON.stringify({ account_code: spreadsheetBasename, church: first?.church || '', town: first?.town || '', pages: parsedRows.length }),
         }).catch(() => {});
     } catch (e) {
         st.textContent = 'PDF error: ' + e.message;
