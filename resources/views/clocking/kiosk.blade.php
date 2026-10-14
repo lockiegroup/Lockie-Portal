@@ -88,16 +88,14 @@ function soundError()   { playBeep(200, 0.35, 'sawtooth', 0.2); }
 
 // ── Clock ─────────────────────────────────────────────────────────────────────
 const LONDON_TZ = 'Europe/London';
-function nowLondon() { return new Date(new Date().toLocaleString('en-GB', { timeZone: LONDON_TZ })); }
+
+const _timeFmt = new Intl.DateTimeFormat('en-GB', { timeZone: LONDON_TZ, hour: '2-digit', minute: '2-digit', hour12: false });
+const _dateFmt = new Intl.DateTimeFormat('en-GB', { timeZone: LONDON_TZ, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
 function updateClock() {
-    const now = nowLondon();
-    const hh  = String(now.getHours()).padStart(2, '0');
-    const mm  = String(now.getMinutes()).padStart(2, '0');
-    document.getElementById('clock-time').textContent = hh + ':' + mm;
-    document.getElementById('clock-date').textContent = now.toLocaleDateString('en-GB', {
-        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: LONDON_TZ,
-    });
+    const now = new Date();
+    document.getElementById('clock-time').textContent = _timeFmt.format(now);
+    document.getElementById('clock-date').textContent = _dateFmt.format(now);
 }
 updateClock();
 setInterval(updateClock, 1000);
