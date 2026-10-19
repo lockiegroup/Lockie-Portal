@@ -160,7 +160,7 @@
             <svg id="sc-operations" style="width:10px;height:10px;flex-shrink:0;transition:transform 0.2s;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div id="ss-operations">
-            @can('clocking_admin')
+            @can('clocking_view')
             <a href="{{ route('clocking.index') }}" class="sb-item{{ request()->routeIs('clocking.*') ? ' sb-active' : '' }}" data-tip="Clocking">
                 <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="10"/>

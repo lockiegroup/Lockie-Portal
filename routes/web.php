@@ -352,9 +352,15 @@ Route::middleware(['otp', 'auth'])->group(function () {
         Route::delete('/divisions/{division}', [ProductionSettingsController::class, 'destroyDivision'])->name('divisions.destroy');
     });
 
-    // Clocking — admin (requires clocking_admin permission)
+    // Clocking — dashboard + reports (admin or manager)
+    Route::prefix('clocking')->name('clocking.')->middleware('can:clocking_view')->group(function () {
+        Route::get('/',               [ClockingController::class, 'index'])->name('index');
+        Route::get('/reports',        [ClockingReportsController::class, 'index'])->name('reports.index');
+        Route::get('/reports/export', [ClockingReportsController::class, 'export'])->name('reports.export');
+    });
+
+    // Clocking — full admin
     Route::prefix('clocking')->name('clocking.')->middleware('can:clocking_admin')->group(function () {
-        Route::get('/',                                    [ClockingController::class, 'index'])->name('index');
         Route::post('/devices',                            [ClockingController::class, 'generateCode'])->name('devices.generate');
         Route::delete('/devices/{device}',                 [ClockingController::class, 'revokeDevice'])->name('devices.revoke');
 
@@ -371,9 +377,6 @@ Route::middleware(['otp', 'auth'])->group(function () {
         Route::post('/fobs/{fob}/deactivate',              [ClockingFobController::class, 'deactivate'])->name('fobs.deactivate');
 
         // Timesheets
-        Route::get('/reports',                             [ClockingReportsController::class, 'index'])->name('reports.index');
-        Route::get('/reports/export',                      [ClockingReportsController::class, 'export'])->name('reports.export');
-
         Route::get('/timesheets',                          [ClockingTimesheetController::class, 'index'])->name('timesheets.index');
         Route::get('/timesheets/export',                   [ClockingTimesheetController::class, 'export'])->name('timesheets.export');
         Route::post('/timesheets/punch',                   [ClockingTimesheetController::class, 'addPunch'])->name('timesheets.addPunch');

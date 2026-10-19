@@ -133,7 +133,8 @@
         @endif
     </div>
 
-    {{-- Kiosk Devices --}}
+    {{-- Kiosk Devices (admin only) --}}
+    @if($isAdmin)
     <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:1.5rem;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem;">
             <h2 style="font-size:0.9375rem;font-weight:700;color:#1e293b;margin:0;">Kiosk Devices</h2>
@@ -186,6 +187,7 @@
         </table>
         @endif
     </div>
+    @endif
 
 </main>
 

@@ -29,5 +29,6 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('key_actions_admin',     fn($user) => $user->isMaster() || $user->hasPermission('key_actions_admin'));
         Gate::define('ab_test',               fn($user) => $user->isMaster() || $user->hasPermission('ab_test'));
         Gate::define('clocking_admin',        fn($user) => $user->isMaster() || $user->hasPermission('clocking_admin'));
+        Gate::define('clocking_view',         fn($user) => $user->isMaster() || $user->hasPermission('clocking_admin') || $user->hasPermission('clocking_manager'));
     }
 }

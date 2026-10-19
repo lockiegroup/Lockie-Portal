@@ -17,7 +17,12 @@ class ClockingReportsController extends Controller
     public function index(Request $request): View
     {
         [$from, $to, $report, $defaultBreakMins] = $this->buildReport($request);
-        $allEmployees = ClockingEmployee::where('is_active', true)->orderBy('name')->get(['id', 'name']);
+        $empQuery = ClockingEmployee::where('is_active', true)->orderBy('name');
+        $user = auth()->user();
+        if (!$user->can('clocking_admin')) {
+            $empQuery->whereIn('category_id', $user->clocking_category_ids ?: []);
+        }
+        $allEmployees = $empQuery->get(['id', 'name']);
         return view('clocking.reports', compact('report', 'from', 'to', 'defaultBreakMins', 'allEmployees'));
     }
 
@@ -82,6 +87,13 @@ class ClockingReportsController extends Controller
         $defaultBreakMins = (int) (ClockingSettingRecord::where('key', 'default_break_minutes')->value('value') ?? 0);
 
         $employeeQuery = ClockingEmployee::with('category')->where('is_active', true)->orderBy('name');
+
+        // Scope to the manager's assigned categories unless full admin
+        $user = auth()->user();
+        if (!$user->can('clocking_admin')) {
+            $categoryIds = $user->clocking_category_ids ?: [];
+            $employeeQuery->whereIn('category_id', $categoryIds);
+        }
 
         if ($request->filled('employee_id')) {
             $employeeQuery->where('id', $request->employee_id);

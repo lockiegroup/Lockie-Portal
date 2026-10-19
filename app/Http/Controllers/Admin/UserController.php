@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\ClockingCategory;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -18,9 +19,10 @@ class UserController extends Controller
 
     public function create()
     {
-        $permissions = User::PERMISSIONS;
-        $modules     = User::MODULES;
-        return view('admin.users.create', compact('permissions', 'modules'));
+        $permissions       = User::PERMISSIONS;
+        $modules           = User::MODULES;
+        $clockingCategories = ClockingCategory::orderBy('name')->get();
+        return view('admin.users.create', compact('permissions', 'modules', 'clockingCategories'));
     }
 
     public function store(Request $request)
@@ -38,6 +40,7 @@ class UserController extends Controller
 
         $permissions = null;
         $modules     = null;
+        $clockingCategoryIds = null;
         if ($data['role'] === 'staff') {
             $permissions = array_keys(array_filter(
                 User::PERMISSIONS,
@@ -50,6 +53,9 @@ class UserController extends Controller
                 ARRAY_FILTER_USE_BOTH
             ));
             $modules = count($checked) === count(User::MODULES) ? null : $checked;
+            if (in_array('clocking_manager', $permissions)) {
+                $clockingCategoryIds = array_map('intval', $request->input('clocking_cat', [])) ?: null;
+            }
         }
 
         if (!empty($data['operator_pin'])) {
@@ -65,9 +71,10 @@ class UserController extends Controller
             'name'         => $data['name'],
             'email'        => isset($data['email']) ? strtolower($data['email']) : null,
             'role'         => $data['role'],
-            'permissions'  => $permissions,
-            'modules'      => $modules,
-            'password'     => Hash::make($data['password'] ?? \Illuminate\Support\Str::random(32)),
+            'permissions'          => $permissions,
+            'modules'              => $modules,
+            'clocking_category_ids' => $clockingCategoryIds,
+            'password'             => Hash::make($data['password'] ?? \Illuminate\Support\Str::random(32)),
             'is_active'    => true,
             'operator_pin' => $data['operator_pin'] ?? null,
         ];
@@ -82,9 +89,10 @@ class UserController extends Controller
 
     public function edit(User $user)
     {
-        $permissions = User::PERMISSIONS;
-        $modules     = User::MODULES;
-        return view('admin.users.edit', compact('user', 'permissions', 'modules'));
+        $permissions        = User::PERMISSIONS;
+        $modules            = User::MODULES;
+        $clockingCategories = ClockingCategory::orderBy('name')->get();
+        return view('admin.users.edit', compact('user', 'permissions', 'modules', 'clockingCategories'));
     }
 
     public function update(Request $request, User $user)
@@ -117,10 +125,14 @@ class UserController extends Controller
                 ARRAY_FILTER_USE_BOTH
             ));
             $user->modules = count($checked) === count(User::MODULES) ? null : $checked;
+            $user->clocking_category_ids = in_array('clocking_manager', $user->permissions)
+                ? (array_map('intval', $request->input('clocking_cat', [])) ?: null)
+                : null;
         } else {
             // master — no restrictions needed
-            $user->permissions = null;
-            $user->modules     = null;
+            $user->permissions           = null;
+            $user->modules               = null;
+            $user->clocking_category_ids = null;
         }
 
         if (!empty($data['password'])) {

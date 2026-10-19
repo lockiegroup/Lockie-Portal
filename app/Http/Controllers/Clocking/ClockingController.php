@@ -23,8 +23,10 @@ class ClockingController extends Controller
         $today  = $now->format('Y-m-d');
         $dayKey = strtolower($now->format('D'));
 
+        $scopedCategoryIds = $this->scopedCategoryIds();
+
         // Who's currently clocked in
-        $inNow = ClockingPunch::with('employee')
+        $inNow = ClockingPunch::with('employee.category')
             ->whereNull('voided_at')
             ->whereIn('id', function ($q) {
                 $q->selectRaw('MAX(id)')
@@ -33,12 +35,14 @@ class ClockingController extends Controller
                     ->groupBy('employee_id');
             })
             ->where('direction', 'in')
+            ->when($scopedCategoryIds, fn($q) => $q->whereHas('employee', fn($eq) => $eq->whereIn('category_id', $scopedCategoryIds)))
             ->orderBy('punched_at')
             ->get();
 
         // Scheduled today but not yet clocked in (excluding absent overrides)
         $scheduledToday = ClockingEmployee::with('category')
             ->where('is_active', true)
+            ->when($scopedCategoryIds, fn($q) => $q->whereIn('category_id', $scopedCategoryIds))
             ->get()
             ->filter(fn($emp) => !empty(($emp->schedule ?? [])[$dayKey]['start']));
 
@@ -68,13 +72,22 @@ class ClockingController extends Controller
 
         // Recent alert history (both absent + clockout)
         $recentAlerts = ClockingAlertLog::with('employee')
+            ->when($scopedCategoryIds, fn($q) => $q->whereHas('employee', fn($eq) => $eq->whereIn('category_id', $scopedCategoryIds)))
             ->orderByDesc('sent_at')
             ->limit(20)
             ->get();
 
-        $devices = ClockingDevice::orderBy('name')->get();
+        $isAdmin = auth()->user()->can('clocking_admin');
+        $devices = $isAdmin ? ClockingDevice::orderBy('name')->get() : collect();
 
-        return view('clocking.index', compact('inNow', 'notClockedIn', 'dayKey', 'now', 'recentAlerts', 'devices'));
+        return view('clocking.index', compact('inNow', 'notClockedIn', 'dayKey', 'now', 'recentAlerts', 'devices', 'isAdmin'));
+    }
+
+    private function scopedCategoryIds(): ?array
+    {
+        $user = auth()->user();
+        if ($user->can('clocking_admin')) return null; // null = no restriction
+        return $user->clocking_category_ids ?: [];
     }
 
     /** Generate a one-time registration code for a new or existing device. */
