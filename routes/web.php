@@ -78,7 +78,7 @@ Route::middleware('guest')->group(function () {
 });
 
 // Authenticated + OTP verified routes
-Route::middleware(['auth', 'otp'])->group(function () {
+Route::middleware(['otp', 'auth'])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/sales', [SalesController::class, 'index'])->name('sales');
     Route::get('/sales/data', [SalesController::class, 'data'])->name('sales.data');

@@ -27,14 +27,6 @@ class OtpVerified
                 ->first();
 
             if ($device) {
-                // Extend the session cookie to 30 days for this response.
-                // StartSession reads config('session.lifetime') when it writes
-                // the Set-Cookie header, which happens after this middleware
-                // returns, so the change is picked up in time.
-                config(['session.lifetime' => 60 * 24 * 30]);
-
-                // Re-establish a full authenticated session + refresh the
-                // remember cookie so the next session expiry is also seamless.
                 Auth::loginUsingId($device->user_id, true);
                 session(['otp_verified' => true]);
 
