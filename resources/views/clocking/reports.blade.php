@@ -10,8 +10,10 @@
     @php
         $tz = config('app.timezone');
         $activeEmp = request('employee_id');
+        $activeFlag = request('flag', '');
         $exportParams = ['from' => $from->format('Y-m-d'), 'to' => $to->format('Y-m-d')];
-        if ($activeEmp) $exportParams['employee_id'] = $activeEmp;
+        if ($activeEmp)  $exportParams['employee_id'] = $activeEmp;
+        if ($activeFlag) $exportParams['flag'] = $activeFlag;
     @endphp
     <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:1.5rem;margin-bottom:1.5rem;">
         <form method="GET" action="{{ route('clocking.reports.index') }}" style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:flex-end;">
@@ -37,6 +39,16 @@
                 </select>
             </div>
             @endif
+            <div>
+                <label style="font-size:0.75rem;color:#64748b;display:block;margin-bottom:3px;">Show</label>
+                <select name="flag" onchange="this.form.submit()"
+                    style="padding:0.4rem 0.6rem;border:1px solid #e2e8f0;border-radius:6px;font-size:0.875rem;background:#fff;">
+                    <option value=""      @selected($activeFlag === '')>All days</option>
+                    <option value="late"  @selected($activeFlag === 'late')>Late arrivals</option>
+                    <option value="early" @selected($activeFlag === 'early')>Left early</option>
+                    <option value="any"   @selected($activeFlag === 'any')>Late or left early</option>
+                </select>
+            </div>
             <button type="submit"
                 style="padding:0.4rem 1rem;background:#6366f1;color:#fff;border:none;border-radius:6px;font-size:0.8125rem;font-weight:600;cursor:pointer;">
                 Apply
@@ -51,7 +63,10 @@
             @endphp
             <div style="display:flex;gap:0.375rem;flex-wrap:wrap;align-items:center;">
                 @foreach($presets as $label => [$pFrom, $pTo])
-                <a href="{{ route('clocking.reports.index', array_merge(['from' => $pFrom, 'to' => $pTo], $activeEmp ? ['employee_id' => $activeEmp] : [])) }}"
+                @php $presetParams = ['from' => $pFrom, 'to' => $pTo];
+                     if ($activeEmp)  $presetParams['employee_id'] = $activeEmp;
+                     if ($activeFlag) $presetParams['flag'] = $activeFlag; @endphp
+                <a href="{{ route('clocking.reports.index', $presetParams) }}"
                    style="padding:0.35rem 0.625rem;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;font-size:0.75rem;color:#475569;text-decoration:none;white-space:nowrap;">
                     {{ $label }}
                 </a>

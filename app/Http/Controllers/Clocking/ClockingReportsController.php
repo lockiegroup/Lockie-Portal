@@ -102,7 +102,9 @@ class ClockingReportsController extends Controller
             ->groupBy('employee_id')
             ->map(fn($rows) => $rows->pluck('date')->map(fn($d) => (string) $d)->flip()->toArray());
 
-        $report = $employees->map(function ($emp) use ($allPunches, $absentByEmp, $from, $to, $tz, $defaultBreakMins) {
+        $flag = $request->input('flag', '');
+
+        $report = $employees->map(function ($emp) use ($allPunches, $absentByEmp, $from, $to, $tz, $defaultBreakMins, $flag) {
             $punches   = $allPunches->get($emp->id, collect())->groupBy(fn($p) => $p->punched_at->format('Y-m-d'));
             $absentSet = $absentByEmp->get($emp->id, []);
             $breakMins = $emp->break_override_minutes ?? $defaultBreakMins;
@@ -189,6 +191,14 @@ class ClockingReportsController extends Controller
                 $cursor->addDay();
             }
 
+            if ($flag === 'late') {
+                $days = array_values(array_filter($days, fn($d) => $d['late_by'] !== null));
+            } elseif ($flag === 'early') {
+                $days = array_values(array_filter($days, fn($d) => $d['early_by'] !== null));
+            } elseif ($flag === 'any') {
+                $days = array_values(array_filter($days, fn($d) => $d['late_by'] !== null || $d['early_by'] !== null));
+            }
+
             return [
                 'employee'    => $emp,
                 'days'        => $days,
@@ -196,7 +206,7 @@ class ClockingReportsController extends Controller
                 'days_worked' => collect($days)->filter(fn($d) => $d['first_in'] !== null)->count(),
                 'break_mins'  => $breakMins,
             ];
-        });
+        })->filter(fn($row) => !$flag || count($row['days']) > 0)->values();
 
         return [$from, $to, $report, $defaultBreakMins];
     }
