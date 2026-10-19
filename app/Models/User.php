@@ -38,7 +38,6 @@ class User extends Authenticatable
         'factory_training'   => 'Factory Training',
         'reminders'          => 'Order Reminders',
         'production_planner'  => 'Production Planner',
-        'clocking'            => 'Clocking',
     ];
 
     protected $fillable = ['name', 'email', 'password', 'role', 'is_active', 'permissions', 'modules', 'clocking_category_ids', 'last_login_at', 'operator_pin'];

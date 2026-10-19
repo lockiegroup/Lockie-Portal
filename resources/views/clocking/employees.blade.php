@@ -88,6 +88,9 @@
             <thead>
                 <tr style="border-bottom:1px solid #e2e8f0;background:#f8fafc;">
                     <th style="text-align:left;padding:0.625rem 1rem;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;font-weight:600;">Name</th>
+                    @if($categories->isNotEmpty())
+                    <th style="text-align:left;padding:0.625rem 0.75rem;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;font-weight:600;">Category</th>
+                    @endif
                     <th class="emp-col-schedule-hd" style="text-align:left;padding:0.625rem 0.75rem;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;font-weight:600;">Schedule</th>
                     <th class="emp-col-fob-hd" style="text-align:left;padding:0.625rem 0.75rem;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;font-weight:600;">Fob</th>
                     <th style="text-align:left;padding:0.625rem 0.75rem;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;font-weight:600;">Status</th>
@@ -106,6 +109,18 @@
             @endphp
             <tr style="border-bottom:1px solid #f1f5f9;" id="emp-row-{{ $emp->id }}">
                 <td style="padding:0.75rem 1rem;font-weight:600;color:#1e293b;">{{ $emp->name }}</td>
+                @if($categories->isNotEmpty())
+                <td style="padding:0.75rem 0.75rem;">
+                    @if($emp->category)
+                        <span style="display:inline-flex;align-items:center;gap:5px;font-size:0.8125rem;color:#475569;">
+                            <span style="width:9px;height:9px;border-radius:50%;background:{{ $emp->category->color }};flex-shrink:0;"></span>
+                            {{ $emp->category->name }}
+                        </span>
+                    @else
+                        <span style="color:#cbd5e1;font-size:0.8125rem;">—</span>
+                    @endif
+                </td>
+                @endif
                 <td class="emp-col-schedule" style="padding:0.75rem 0.75rem;color:#475569;">{{ $days ?: '—' }}</td>
                 <td class="emp-col-fob" style="padding:0.75rem 0.75rem;font-family:monospace;color:#64748b;">{{ $fob?->uid ?? '—' }}</td>
                 <td style="padding:0.75rem 0.75rem;">
