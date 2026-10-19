@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Clocking;
 
 use App\Http\Controllers\Controller;
 use App\Models\ClockingAbsentOverride;
+use App\Models\ClockingAlertRecipient;
 use App\Models\ClockingEmployee;
 use App\Models\ClockingPunch;
 use App\Models\ClockingSettingRecord;
@@ -20,7 +21,9 @@ class ClockingReportsController extends Controller
         $empQuery = ClockingEmployee::where('is_active', true)->orderBy('name');
         $user = auth()->user();
         if (!$user->can('clocking_admin')) {
-            $empQuery->whereIn('category_id', $user->clocking_category_ids ?: []);
+            $catIds = ClockingAlertRecipient::where('email', $user->email)
+                ->whereNotNull('category_id')->pluck('category_id')->unique()->toArray();
+            $empQuery->whereIn('category_id', $catIds);
         }
         $allEmployees = $empQuery->get(['id', 'name']);
         return view('clocking.reports', compact('report', 'from', 'to', 'defaultBreakMins', 'allEmployees'));
@@ -88,10 +91,14 @@ class ClockingReportsController extends Controller
 
         $employeeQuery = ClockingEmployee::with('category')->where('is_active', true)->orderBy('name');
 
-        // Scope to the manager's assigned categories unless full admin
+        // Scope to the manager's categories (derived from alert recipients) unless full admin
         $user = auth()->user();
         if (!$user->can('clocking_admin')) {
-            $categoryIds = $user->clocking_category_ids ?: [];
+            $categoryIds = ClockingAlertRecipient::where('email', $user->email)
+                ->whereNotNull('category_id')
+                ->pluck('category_id')
+                ->unique()
+                ->toArray();
             $employeeQuery->whereIn('category_id', $categoryIds);
         }
 

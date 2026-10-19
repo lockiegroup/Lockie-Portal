@@ -23,7 +23,6 @@ class User extends Authenticatable
         'imports'             => 'Imports',
         'production_settings' => 'Production Settings',
         'clocking_admin'      => 'Clocking Admin',
-        'clocking_manager'    => 'Clocking Manager',
     ];
 
     const MODULES = [
@@ -40,7 +39,7 @@ class User extends Authenticatable
         'production_planner'  => 'Production Planner',
     ];
 
-    protected $fillable = ['name', 'email', 'password', 'role', 'is_active', 'permissions', 'modules', 'clocking_category_ids', 'last_login_at', 'operator_pin'];
+    protected $fillable = ['name', 'email', 'password', 'role', 'is_active', 'permissions', 'modules', 'last_login_at', 'operator_pin'];
     protected $hidden   = ['password', 'remember_token', 'operator_pin'];
 
     protected function casts(): array
@@ -50,9 +49,8 @@ class User extends Authenticatable
             'operator_pin'  => 'hashed',
             'is_active'     => 'boolean',
             'permissions'   => 'array',
-            'modules'               => 'array',
-            'clocking_category_ids' => 'array',
-            'last_login_at'         => 'datetime',
+            'modules'       => 'array',
+            'last_login_at' => 'datetime',
         ];
     }
 

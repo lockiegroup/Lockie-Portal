@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Clocking;
 use App\Http\Controllers\Controller;
 use App\Models\ClockingAbsentOverride;
 use App\Models\ClockingAlertLog;
+use App\Models\ClockingAlertRecipient;
 use App\Models\ClockingDevice;
 use App\Models\ClockingEmployee;
 use App\Models\ClockingPunch;
@@ -86,8 +87,14 @@ class ClockingController extends Controller
     private function scopedCategoryIds(): ?array
     {
         $user = auth()->user();
-        if ($user->can('clocking_admin')) return null; // null = no restriction
-        return $user->clocking_category_ids ?: [];
+        if ($user->can('clocking_admin')) return null;
+        return ClockingAlertRecipient::where('email', $user->email)
+            ->whereNotNull('category_id')
+            ->pluck('category_id')
+            ->unique()
+            ->map(fn($id) => (int) $id)
+            ->values()
+            ->toArray();
     }
 
     /** Generate a one-time registration code for a new or existing device. */

@@ -73,26 +73,6 @@
                         <p style="font-size:0.75rem;color:#94a3b8;margin-top:6px;">Grant access to admin sections. Leave all unticked for a standard staff account.</p>
                     </div>
 
-                    @if($clockingCategories->isNotEmpty())
-                    <div id="clocking-manager-categories" style="display:{{ $user->hasPermission('clocking_manager') ? 'block' : 'none' }};margin-bottom:1.25rem;">
-                        <label class="block text-sm font-medium text-slate-700 mb-2">Clocking Manager — Visible Categories</label>
-                        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:0.625rem;padding:12px 16px;display:flex;flex-direction:column;gap:8px;">
-                            @foreach($clockingCategories as $cat)
-                            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
-                                <input type="checkbox" name="clocking_cat[]" value="{{ $cat->id }}"
-                                    style="width:16px;height:16px;accent-color:#6366f1;cursor:pointer;"
-                                    {{ in_array($cat->id, $user->clocking_category_ids ?? []) ? 'checked' : '' }}>
-                                <span style="display:inline-flex;align-items:center;gap:6px;font-size:0.875rem;color:#334155;">
-                                    <span style="width:10px;height:10px;border-radius:50%;background:{{ $cat->color }};flex-shrink:0;"></span>
-                                    {{ $cat->name }}
-                                </span>
-                            </label>
-                            @endforeach
-                        </div>
-                        <p style="font-size:0.75rem;color:#94a3b8;margin-top:6px;">Tick the categories this manager can see. Leave all unticked to show nothing.</p>
-                    </div>
-                    @endif
-
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-2">Module Visibility</label>
                         <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:0.625rem;padding:12px 16px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
@@ -154,14 +134,6 @@
     </main>
 
     <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const cb = document.querySelector('input[name="perm_clocking_manager"]');
-        const panel = document.getElementById('clocking-manager-categories');
-        if (cb && panel) {
-            cb.addEventListener('change', () => { panel.style.display = cb.checked ? 'block' : 'none'; });
-        }
-    });
-
     function togglePermissions(role) {
         document.getElementById('staff-controls').style.display = role === 'master' ? 'none' : '';
     }
