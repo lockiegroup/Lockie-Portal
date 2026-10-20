@@ -1,23 +1,24 @@
 <x-layout title="Clocking — Lockie Portal">
-<main style="max-width:900px;margin:0 auto;padding:2rem 1.5rem;">
+<main class="max-w-4xl mx-auto px-4 sm:px-6 py-8">
 
-    <div style="margin-bottom:1.5rem;">
-        <h1 style="font-size:1.5rem;font-weight:700;color:#1e293b;margin:0 0 1rem;">Clocking</h1>
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-slate-800 mb-4">Clocking</h1>
         @include('clocking._tabs', ['active' => 'dashboard'])
     </div>
 
     {{-- Who's In Now --}}
-    <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:1.5rem;margin-bottom:1.5rem;">
-        <h2 style="font-size:0.9375rem;font-weight:700;color:#1e293b;margin:0 0 1rem;">Who's In Now</h2>
+    <div class="bg-white rounded-xl border border-slate-200 p-6 mb-6">
+        <h2 class="text-[0.9375rem] font-bold text-slate-800 mb-4">Who's In Now</h2>
         @if($inNow->isEmpty())
-            <p style="color:#94a3b8;font-size:0.875rem;">Nobody is currently clocked in.</p>
+            <p class="text-slate-400 text-sm">Nobody is currently clocked in.</p>
         @else
-        <table style="width:100%;border-collapse:collapse;font-size:0.875rem;">
+        <div class="overflow-x-auto">
+        <table class="w-full text-sm border-collapse">
             <thead>
-                <tr style="border-bottom:1px solid #e2e8f0;color:#64748b;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;">
-                    <th style="text-align:left;padding:0.5rem 0.75rem 0.5rem 0;">Name</th>
-                    <th style="text-align:left;padding:0.5rem 0.75rem;">Clocked In</th>
-                    <th style="text-align:left;padding:0.5rem 0.75rem;">Duration</th>
+                <tr>
+                    <th class="text-left py-2 pr-3 text-xs text-slate-500 uppercase tracking-wide border-b border-slate-200">Name</th>
+                    <th class="text-left py-2 px-3 text-xs text-slate-500 uppercase tracking-wide border-b border-slate-200">Clocked In</th>
+                    <th class="text-left py-2 px-3 text-xs text-slate-500 uppercase tracking-wide border-b border-slate-200">Duration</th>
                 </tr>
             </thead>
             <tbody>
@@ -35,149 +36,155 @@
                     if ($lateBy === 0) $lateBy = null;
                 }
             @endphp
-            <tr style="border-bottom:1px solid #f1f5f9;">
-                <td style="padding:0.625rem 0.75rem 0.625rem 0;font-weight:600;color:#1e293b;">{{ $punch->employee->name }}</td>
-                <td style="padding:0.625rem 0.75rem;color:#475569;">
+            <tr class="border-b border-slate-50">
+                <td class="py-2.5 pr-3 font-semibold text-slate-800">{{ $punch->employee->name }}</td>
+                <td class="py-2.5 px-3 text-slate-600">
                     {{ $sinceL->format('H:i') }}
                     @if($lateBy)
-                        <span style="margin-left:5px;background:#fee2e2;color:#b91c1c;padding:1px 6px;border-radius:99px;font-size:0.7rem;font-weight:600;white-space:nowrap;">{{ $lateBy }}m late</span>
+                        <span class="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full text-[0.7rem] font-semibold bg-red-100 text-red-700 whitespace-nowrap">{{ $lateBy }}m late</span>
                     @endif
                 </td>
-                <td style="padding:0.625rem 0.75rem;color:#64748b;">{{ $dur }}</td>
+                <td class="py-2.5 px-3 text-slate-500">{{ $dur }}</td>
             </tr>
             @endforeach
             </tbody>
         </table>
+        </div>
         @endif
     </div>
 
     {{-- Scheduled today — not yet clocked in --}}
     @if($notClockedIn->isNotEmpty())
-    <div style="background:#fff;border-radius:14px;border:1px solid #fed7aa;padding:1.5rem;margin-bottom:1.5rem;">
-        <h2 style="font-size:0.9375rem;font-weight:700;color:#92400e;margin:0 0 1rem;">
+    <div class="bg-white rounded-xl border border-orange-200 p-6 mb-6">
+        <h2 class="text-[0.9375rem] font-bold text-amber-800 mb-4">
             Not Clocked In Yet
-            <span style="font-size:0.75rem;font-weight:500;background:#fff7ed;color:#c2410c;padding:2px 8px;border-radius:99px;border:1px solid #fed7aa;margin-left:0.5rem;">{{ $notClockedIn->count() }}</span>
+            <span class="text-xs font-medium bg-orange-50 text-orange-700 px-2 py-0.5 rounded-full border border-orange-200 ml-2">{{ $notClockedIn->count() }}</span>
         </h2>
-        <table style="width:100%;border-collapse:collapse;font-size:0.875rem;">
+        <div class="overflow-x-auto">
+        <table class="w-full text-sm border-collapse">
             <thead>
-                <tr style="border-bottom:1px solid #fde8ca;color:#92400e;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;">
-                    <th style="text-align:left;padding:0.5rem 0.75rem 0.5rem 0;">Name</th>
-                    <th style="text-align:left;padding:0.5rem 0.75rem;">Category</th>
-                    <th style="text-align:left;padding:0.5rem 0;">Scheduled Start</th>
+                <tr>
+                    <th class="text-left py-2 pr-3 text-xs text-amber-800 uppercase tracking-wide border-b border-orange-200">Name</th>
+                    <th class="text-left py-2 px-3 text-xs text-amber-800 uppercase tracking-wide border-b border-orange-200">Category</th>
+                    <th class="text-left py-2 pr-0 pl-3 text-xs text-amber-800 uppercase tracking-wide border-b border-orange-200">Scheduled Start</th>
                 </tr>
             </thead>
             <tbody>
             @foreach($notClockedIn as $emp)
             @php $start = $emp->schedule[$dayKey]['start'] ?? '—'; @endphp
-            <tr style="border-bottom:1px solid #fff7ed;">
-                <td style="padding:0.625rem 0.75rem 0.625rem 0;font-weight:600;color:#1e293b;">{{ $emp->name }}</td>
-                <td style="padding:0.625rem 0.75rem;color:#64748b;">
+            <tr class="border-b border-orange-50">
+                <td class="py-2.5 pr-3 font-semibold text-slate-800">{{ $emp->name }}</td>
+                <td class="py-2.5 px-3 text-slate-500">
                     @if($emp->category)
-                        <span style="display:inline-flex;align-items:center;gap:5px;">
-                            <span style="width:8px;height:8px;border-radius:50%;background:{{ $emp->category->color }};flex-shrink:0;"></span>
+                        <span class="inline-flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:{{ $emp->category->color }}"></span>
                             {{ $emp->category->name }}
                         </span>
                     @else
-                        <span style="color:#cbd5e1;">—</span>
+                        <span class="text-slate-300">—</span>
                     @endif
                 </td>
-                <td style="padding:0.625rem 0;color:#92400e;font-weight:600;">
+                <td class="py-2.5 pl-3 text-amber-800 font-semibold">
                     @php
                         $scheduledStart = \Carbon\Carbon::createFromFormat('H:i', $start, config('app.timezone'))->setDateFrom($now);
                         $lateBy = max(0, (int) floor(($now->timestamp - $scheduledStart->timestamp) / 60));
                     @endphp
                     {{ $start }}
                     @if($lateBy > 0)
-                        <span style="font-size:0.7rem;color:#ef4444;margin-left:0.25rem;">{{ $lateBy }}m late</span>
+                        <span class="text-[0.7rem] text-red-500 ml-1">{{ $lateBy }}m late</span>
                     @endif
                 </td>
             </tr>
             @endforeach
             </tbody>
         </table>
+        </div>
     </div>
     @endif
 
     {{-- Recent Alerts --}}
-    <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:1.5rem;margin-bottom:1.5rem;">
-        <h2 style="font-size:0.9375rem;font-weight:700;color:#1e293b;margin:0 0 1rem;">Recent Alerts</h2>
+    <div class="bg-white rounded-xl border border-slate-200 p-6 mb-6">
+        <h2 class="text-[0.9375rem] font-bold text-slate-800 mb-4">Recent Alerts</h2>
         @if($recentAlerts->isEmpty())
-            <p style="color:#94a3b8;font-size:0.875rem;">No alerts have been sent yet.</p>
+            <p class="text-slate-400 text-sm">No alerts have been sent yet.</p>
         @else
-        <table style="width:100%;border-collapse:collapse;font-size:0.875rem;">
+        <div class="overflow-x-auto">
+        <table class="w-full text-sm border-collapse">
             <thead>
-                <tr style="border-bottom:1px solid #e2e8f0;color:#64748b;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;">
-                    <th style="text-align:left;padding:0.5rem 0.75rem 0.5rem 0;">Employee</th>
-                    <th style="text-align:left;padding:0.5rem 0.75rem;">Type</th>
-                    <th style="text-align:left;padding:0.5rem 0.75rem;">Date</th>
-                    <th style="text-align:left;padding:0.5rem 0;">Sent</th>
+                <tr>
+                    <th class="text-left py-2 pr-3 text-xs text-slate-500 uppercase tracking-wide border-b border-slate-200">Employee</th>
+                    <th class="text-left py-2 px-3 text-xs text-slate-500 uppercase tracking-wide border-b border-slate-200">Type</th>
+                    <th class="text-left py-2 px-3 text-xs text-slate-500 uppercase tracking-wide border-b border-slate-200">Date</th>
+                    <th class="text-left py-2 pl-3 text-xs text-slate-500 uppercase tracking-wide border-b border-slate-200">Sent</th>
                 </tr>
             </thead>
             <tbody>
             @foreach($recentAlerts as $log)
-            <tr style="border-bottom:1px solid #f1f5f9;">
-                <td style="padding:0.5rem 0.75rem 0.5rem 0;font-weight:600;color:#1e293b;">{{ $log->employee?->name ?? '—' }}</td>
-                <td style="padding:0.5rem 0.75rem;">
+            <tr class="border-b border-slate-50">
+                <td class="py-2.5 pr-3 font-semibold text-slate-800">{{ $log->employee?->name ?? '—' }}</td>
+                <td class="py-2.5 px-3">
                     @if($log->alert_type === 'clockout')
-                        <span style="background:#fef3c7;color:#92400e;padding:2px 7px;border-radius:99px;font-size:0.7rem;font-weight:600;">Didn't clock out</span>
+                        <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[0.7rem] font-semibold bg-amber-100 text-amber-800">Didn't clock out</span>
                     @else
-                        <span style="background:#fee2e2;color:#991b1b;padding:2px 7px;border-radius:99px;font-size:0.7rem;font-weight:600;">Didn't clock in</span>
+                        <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[0.7rem] font-semibold bg-red-100 text-red-700">Didn't clock in</span>
                     @endif
                 </td>
-                <td style="padding:0.5rem 0.75rem;color:#475569;">{{ \Carbon\Carbon::parse($log->alert_date)->format('d M Y') }}</td>
-                <td style="padding:0.5rem 0;color:#64748b;">{{ $log->sent_at->setTimezone(config('app.timezone'))->format('H:i') }}</td>
+                <td class="py-2.5 px-3 text-slate-600">{{ \Carbon\Carbon::parse($log->alert_date)->format('d M Y') }}</td>
+                <td class="py-2.5 pl-3 text-slate-500">{{ $log->sent_at->setTimezone(config('app.timezone'))->format('H:i') }}</td>
             </tr>
             @endforeach
             </tbody>
         </table>
+        </div>
         @endif
     </div>
 
     {{-- Kiosk Devices (admin only) --}}
     @if($isAdmin)
-    <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:1.5rem;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem;">
-            <h2 style="font-size:0.9375rem;font-weight:700;color:#1e293b;margin:0;">Kiosk Devices</h2>
+    <div class="bg-white rounded-xl border border-slate-200 p-6">
+        <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+            <h2 class="text-[0.9375rem] font-bold text-slate-800">Kiosk Devices</h2>
             <button onclick="showRegister()"
-                style="padding:0.4rem 0.875rem;background:#1e293b;color:#fff;border:none;border-radius:7px;font-size:0.8125rem;font-weight:600;cursor:pointer;">
+                class="px-3.5 py-2 bg-slate-900 text-white text-sm font-semibold rounded-lg hover:bg-slate-700 transition-colors cursor-pointer border-0">
                 + Register New Device
             </button>
         </div>
 
-        <div id="register-form" style="display:none;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:1rem;margin-bottom:1rem;">
-            <p style="font-size:0.8125rem;color:#64748b;margin-bottom:0.75rem;">Enter a name for the new device, then take the 6-digit code to the kiosk.</p>
-            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+        <div id="register-form" class="hidden bg-slate-50 border border-slate-200 rounded-lg p-4 mb-4">
+            <p class="text-[0.8125rem] text-slate-500 mb-3">Enter a name for the new device, then take the 6-digit code to the kiosk.</p>
+            <div class="flex gap-2 flex-wrap">
                 <input type="text" id="device-name" placeholder="e.g. Main Door" maxlength="80"
-                    style="flex:1;min-width:180px;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:7px;font-size:0.875rem;">
+                    class="flex-1 min-w-[180px] px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
                 <button onclick="generateCode()"
-                    style="padding:0.5rem 1rem;background:#6366f1;color:#fff;border:none;border-radius:7px;font-size:0.875rem;font-weight:600;cursor:pointer;">
+                    class="px-4 py-2 bg-indigo-500 text-white text-sm font-semibold rounded-lg hover:bg-indigo-600 transition-colors cursor-pointer border-0">
                     Generate Code
                 </button>
             </div>
-            <div id="register-result" style="margin-top:0.75rem;font-size:0.875rem;min-height:1.5rem;"></div>
+            <div id="register-result" class="mt-3 text-sm min-h-[1.5rem]"></div>
         </div>
 
         @if($devices->isEmpty())
-            <p style="color:#94a3b8;font-size:0.875rem;">No devices registered yet.</p>
+            <p class="text-slate-400 text-sm">No devices registered yet.</p>
         @else
-        <table style="width:100%;border-collapse:collapse;font-size:0.875rem;">
+        <div class="overflow-x-auto">
+        <table class="w-full text-sm border-collapse">
             <thead>
-                <tr style="border-bottom:1px solid #e2e8f0;color:#64748b;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;">
-                    <th style="text-align:left;padding:0.5rem 0.75rem 0.5rem 0;">Name</th>
-                    <th style="text-align:left;padding:0.5rem 0.75rem;">Last Seen</th>
-                    <th></th>
+                <tr>
+                    <th class="text-left py-2 pr-3 text-xs text-slate-500 uppercase tracking-wide border-b border-slate-200">Name</th>
+                    <th class="text-left py-2 px-3 text-xs text-slate-500 uppercase tracking-wide border-b border-slate-200">Last Seen</th>
+                    <th class="border-b border-slate-200"></th>
                 </tr>
             </thead>
             <tbody>
             @foreach($devices as $dev)
-            <tr style="border-bottom:1px solid #f1f5f9;" id="dev-row-{{ $dev->id }}">
-                <td style="padding:0.625rem 0.75rem 0.625rem 0;font-weight:600;color:#1e293b;">{{ $dev->name }}</td>
-                <td style="padding:0.625rem 0.75rem;color:#475569;">
+            <tr class="border-b border-slate-50" id="dev-row-{{ $dev->id }}">
+                <td class="py-2.5 pr-3 font-semibold text-slate-800">{{ $dev->name }}</td>
+                <td class="py-2.5 px-3 text-slate-600">
                     {{ $dev->last_seen_at ? $dev->last_seen_at->setTimezone('Europe/London')->format('d M Y H:i') : 'Never' }}
                 </td>
-                <td style="padding:0.625rem 0;text-align:right;">
+                <td class="py-2.5 pl-3 text-right">
                     <button onclick="deleteDevice({{ $dev->id }})"
-                        style="padding:3px 10px;background:none;border:1px solid #fecaca;border-radius:6px;color:#ef4444;font-size:0.75rem;cursor:pointer;">
+                        class="px-2.5 py-1 border border-red-200 text-red-500 text-xs rounded-md bg-transparent cursor-pointer">
                         Delete
                     </button>
                 </td>
@@ -185,6 +192,7 @@
             @endforeach
             </tbody>
         </table>
+        </div>
         @endif
     </div>
     @endif
@@ -196,7 +204,7 @@ const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 
 function showRegister() {
     const f = document.getElementById('register-form');
-    f.style.display = f.style.display === 'none' ? 'block' : 'none';
+    f.classList.toggle('hidden');
 }
 
 async function generateCode() {

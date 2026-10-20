@@ -1,8 +1,8 @@
 <x-layout title="Reports — Clocking">
-<main style="max-width:1000px;width:100%;margin:0 auto;padding:2rem 1.5rem;box-sizing:border-box;">
+<main class="max-w-5xl mx-auto px-4 sm:px-6 py-8">
 
-    <div style="margin-bottom:1.5rem;">
-        <h1 style="font-size:1.5rem;font-weight:700;color:#1e293b;margin:0 0 1rem;">Clocking</h1>
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-slate-800 mb-4">Clocking</h1>
         @include('clocking._tabs', ['active' => 'reports'])
     </div>
 
@@ -15,23 +15,23 @@
         if ($activeEmp)  $exportParams['employee_id'] = $activeEmp;
         if ($activeFlag) $exportParams['flag'] = $activeFlag;
     @endphp
-    <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:1.5rem;margin-bottom:1.5rem;">
-        <form method="GET" action="{{ route('clocking.reports.index') }}" style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:flex-end;">
+    <div class="bg-white rounded-xl border border-slate-200 p-6 mb-6">
+        <form method="GET" action="{{ route('clocking.reports.index') }}" class="flex gap-3 flex-wrap items-end">
             <div>
-                <label style="font-size:0.75rem;color:#64748b;display:block;margin-bottom:3px;">From</label>
+                <label class="block text-xs text-slate-500 mb-1">From</label>
                 <input type="date" name="from" value="{{ $from->format('Y-m-d') }}"
-                    style="padding:0.4rem 0.6rem;border:1px solid #e2e8f0;border-radius:6px;font-size:0.875rem;">
+                    class="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
             </div>
             <div>
-                <label style="font-size:0.75rem;color:#64748b;display:block;margin-bottom:3px;">To</label>
+                <label class="block text-xs text-slate-500 mb-1">To</label>
                 <input type="date" name="to" value="{{ $to->format('Y-m-d') }}"
-                    style="padding:0.4rem 0.6rem;border:1px solid #e2e8f0;border-radius:6px;font-size:0.875rem;">
+                    class="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
             </div>
             @if($allEmployees->isNotEmpty())
             <div>
-                <label style="font-size:0.75rem;color:#64748b;display:block;margin-bottom:3px;">Employee</label>
+                <label class="block text-xs text-slate-500 mb-1">Employee</label>
                 <select name="employee_id" onchange="this.form.submit()"
-                    style="padding:0.4rem 0.6rem;border:1px solid #e2e8f0;border-radius:6px;font-size:0.875rem;background:#fff;">
+                    class="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-sky-500">
                     <option value="">All employees</option>
                     @foreach($allEmployees as $emp)
                     <option value="{{ $emp->id }}" @selected($activeEmp == $emp->id)>{{ $emp->name }}</option>
@@ -40,9 +40,9 @@
             </div>
             @endif
             <div>
-                <label style="font-size:0.75rem;color:#64748b;display:block;margin-bottom:3px;">Show</label>
+                <label class="block text-xs text-slate-500 mb-1">Show</label>
                 <select name="flag" onchange="this.form.submit()"
-                    style="padding:0.4rem 0.6rem;border:1px solid #e2e8f0;border-radius:6px;font-size:0.875rem;background:#fff;">
+                    class="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-sky-500">
                     <option value=""      @selected($activeFlag === '')>All days</option>
                     <option value="late"  @selected($activeFlag === 'late')>Late arrivals</option>
                     <option value="early" @selected($activeFlag === 'early')>Left early</option>
@@ -50,7 +50,7 @@
                 </select>
             </div>
             <button type="submit"
-                style="padding:0.4rem 1rem;background:#6366f1;color:#fff;border:none;border-radius:6px;font-size:0.8125rem;font-weight:600;cursor:pointer;">
+                class="px-4 py-2 bg-indigo-500 text-white text-[0.8125rem] font-semibold rounded-lg hover:bg-indigo-600 transition-colors cursor-pointer border-0">
                 Apply
             </button>
             @php
@@ -61,24 +61,24 @@
                     'This year'  => [now($tz)->startOfYear()->format('Y-m-d'), now($tz)->endOfYear()->format('Y-m-d')],
                 ];
             @endphp
-            <div style="display:flex;gap:0.375rem;flex-wrap:wrap;align-items:center;">
+            <div class="flex gap-1.5 flex-wrap items-center">
                 @foreach($presets as $label => [$pFrom, $pTo])
                 @php $presetParams = ['from' => $pFrom, 'to' => $pTo];
                      if ($activeEmp)  $presetParams['employee_id'] = $activeEmp;
                      if ($activeFlag) $presetParams['flag'] = $activeFlag; @endphp
                 <a href="{{ route('clocking.reports.index', $presetParams) }}"
-                   style="padding:0.35rem 0.625rem;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;font-size:0.75rem;color:#475569;text-decoration:none;white-space:nowrap;">
+                   class="px-2.5 py-1.5 bg-slate-100 border border-slate-200 rounded-lg text-xs text-slate-600 no-underline whitespace-nowrap hover:bg-slate-200 transition-colors">
                     {{ $label }}
                 </a>
                 @endforeach
             </div>
             <a href="{{ route('clocking.reports.export', $exportParams) }}"
-               style="padding:0.4rem 0.875rem;background:#1e293b;color:#fff;border-radius:6px;font-size:0.8125rem;font-weight:600;text-decoration:none;white-space:nowrap;margin-left:auto;">
+               class="px-3.5 py-2 bg-slate-900 text-white text-[0.8125rem] font-semibold rounded-lg no-underline whitespace-nowrap hover:bg-slate-700 transition-colors sm:ml-auto">
                 ↓ Export CSV
             </a>
         </form>
         @if($defaultBreakMins > 0)
-        <p style="margin:0.75rem 0 0;font-size:0.75rem;color:#94a3b8;">
+        <p class="mt-3 text-xs text-slate-400">
             Default break deduction: {{ $defaultBreakMins }} min per day. Per-employee overrides apply where set.
         </p>
         @endif
@@ -90,40 +90,40 @@
         $totalH = intdiv($row['total_mins'], 60);
         $totalM = $row['total_mins'] % 60;
     @endphp
-    <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;margin-bottom:1rem;overflow:hidden;">
+    <div class="bg-white rounded-xl border border-slate-200 mb-4 overflow-hidden">
 
         {{-- Employee header --}}
-        <div style="display:flex;align-items:center;gap:0.75rem;padding:1rem 1.25rem;background:#f8fafc;border-bottom:1px solid #e2e8f0;cursor:pointer;"
+        <div class="flex items-center gap-3 px-5 py-4 bg-slate-50 border-b border-slate-200 cursor-pointer"
              onclick="toggleEmployee({{ $loop->index }})">
             @if($row['employee']->category)
-            <span style="width:10px;height:10px;border-radius:50%;background:{{ $row['employee']->category->color }};flex-shrink:0;"></span>
+            <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background:{{ $row['employee']->category->color }}"></span>
             @endif
-            <span style="font-weight:700;color:#1e293b;flex:1;font-size:0.9375rem;">{{ $row['employee']->name }}</span>
+            <span class="font-bold text-slate-800 flex-1 text-[0.9375rem]">{{ $row['employee']->name }}</span>
             @if($row['employee']->category)
-            <span style="font-size:0.75rem;color:#94a3b8;">{{ $row['employee']->category->name }}</span>
+            <span class="text-xs text-slate-400">{{ $row['employee']->category->name }}</span>
             @endif
-            <span style="font-size:0.8125rem;color:#475569;">{{ $row['days_worked'] }} day{{ $row['days_worked'] != 1 ? 's' : '' }}</span>
-            <span style="font-weight:700;color:#6366f1;font-size:0.9375rem;min-width:70px;text-align:right;">
+            <span class="text-[0.8125rem] text-slate-600">{{ $row['days_worked'] }} day{{ $row['days_worked'] != 1 ? 's' : '' }}</span>
+            <span class="font-bold text-indigo-600 text-[0.9375rem] min-w-[70px] text-right">
                 {{ $totalH }}h {{ sprintf('%02d', $totalM) }}m
             </span>
-            <span id="chevron-{{ $loop->index }}" style="color:#94a3b8;font-size:0.75rem;transition:transform 0.15s;">▼</span>
+            <span id="chevron-{{ $loop->index }}" class="text-slate-400 text-xs transition-transform">▼</span>
         </div>
 
         {{-- Day table --}}
-        <div id="emp-{{ $loop->index }}" style="overflow-x:auto;">
+        <div id="emp-{{ $loop->index }}" class="overflow-x-auto">
         @if(empty($row['days']))
-            <p style="padding:1rem 1.25rem;color:#94a3b8;font-size:0.875rem;margin:0;">No data for this period.</p>
+            <p class="px-5 py-4 text-slate-400 text-sm">No data for this period.</p>
         @else
-        <table style="width:100%;border-collapse:collapse;font-size:0.8125rem;min-width:600px;">
+        <table class="w-full border-collapse text-[0.8125rem]" style="min-width:600px;">
             <thead>
-                <tr style="border-bottom:1px solid #e2e8f0;color:#64748b;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.05em;background:#fafafa;">
-                    <th style="text-align:left;padding:0.5rem 0.75rem 0.5rem 1.25rem;font-weight:600;">Date</th>
-                    <th style="text-align:left;padding:0.5rem 0.75rem;font-weight:600;">Scheduled</th>
-                    <th style="text-align:left;padding:0.5rem 0.75rem;font-weight:600;">Clock In</th>
-                    <th style="text-align:left;padding:0.5rem 0.75rem;font-weight:600;">Clock Out</th>
-                    <th style="text-align:right;padding:0.5rem 0.75rem;font-weight:600;">Break</th>
-                    <th style="text-align:right;padding:0.5rem 0.75rem;font-weight:600;">Hours</th>
-                    <th style="text-align:left;padding:0.5rem 1.25rem 0.5rem 0.75rem;font-weight:600;">Notes</th>
+                <tr class="border-b border-slate-200 bg-slate-50/50">
+                    <th class="text-left py-2 pl-5 pr-3 text-[0.7rem] text-slate-500 uppercase tracking-wide font-semibold">Date</th>
+                    <th class="text-left py-2 px-3 text-[0.7rem] text-slate-500 uppercase tracking-wide font-semibold">Scheduled</th>
+                    <th class="text-left py-2 px-3 text-[0.7rem] text-slate-500 uppercase tracking-wide font-semibold">Clock In</th>
+                    <th class="text-left py-2 px-3 text-[0.7rem] text-slate-500 uppercase tracking-wide font-semibold">Clock Out</th>
+                    <th class="text-right py-2 px-3 text-[0.7rem] text-slate-500 uppercase tracking-wide font-semibold">Break</th>
+                    <th class="text-right py-2 px-3 text-[0.7rem] text-slate-500 uppercase tracking-wide font-semibold">Hours</th>
+                    <th class="text-left py-2 pl-3 pr-5 text-[0.7rem] text-slate-500 uppercase tracking-wide font-semibold">Notes</th>
                 </tr>
             </thead>
             <tbody>
@@ -133,63 +133,63 @@
                 $bm = $day['billable_mins'] % 60;
                 $rowBg = $day['no_show'] ? '#fff8f8' : ($day['is_absent'] ? '#fffbf0' : '#fff');
             @endphp
-            <tr style="border-bottom:1px solid #f1f5f9;background:{{ $rowBg }};">
-                <td style="padding:0.5rem 0.75rem 0.5rem 1.25rem;color:#1e293b;white-space:nowrap;">
-                    <span style="font-weight:600;">{{ $day['date']->format('d M') }}</span>
-                    <span style="color:#94a3b8;margin-left:4px;">{{ $day['date']->format('D') }}</span>
+            <tr class="border-b border-slate-50" style="background:{{ $rowBg }}">
+                <td class="py-2 pl-5 pr-3 text-slate-800 whitespace-nowrap">
+                    <span class="font-semibold">{{ $day['date']->format('d M') }}</span>
+                    <span class="text-slate-400 ml-1">{{ $day['date']->format('D') }}</span>
                 </td>
-                <td style="padding:0.5rem 0.75rem;color:#64748b;white-space:nowrap;">
+                <td class="py-2 px-3 text-slate-500 whitespace-nowrap">
                     @if(!empty($day['schedule']['start']))
                         {{ $day['schedule']['start'] }}@if(!empty($day['schedule']['end'])) – {{ $day['schedule']['end'] }}@endif
                     @else
-                        <span style="color:#e2e8f0;">—</span>
+                        <span class="text-slate-200">—</span>
                     @endif
                 </td>
-                <td style="padding:0.5rem 0.75rem;white-space:nowrap;">
+                <td class="py-2 px-3 whitespace-nowrap">
                     @if($day['first_in'])
-                        <span style="color:#1e293b;font-weight:500;">{{ $day['first_in']->format('H:i') }}</span>
+                        <span class="text-slate-800 font-medium">{{ $day['first_in']->format('H:i') }}</span>
                     @elseif($day['is_absent'])
-                        <span style="color:#d97706;font-size:0.7rem;font-weight:600;text-transform:uppercase;">Absent</span>
+                        <span class="text-amber-600 text-[0.7rem] font-semibold uppercase">Absent</span>
                     @elseif($day['no_show'])
-                        <span style="color:#ef4444;font-size:0.7rem;font-weight:600;text-transform:uppercase;">No show</span>
+                        <span class="text-red-500 text-[0.7rem] font-semibold uppercase">No show</span>
                     @else
-                        <span style="color:#cbd5e1;">—</span>
+                        <span class="text-slate-300">—</span>
                     @endif
                 </td>
-                <td style="padding:0.5rem 0.75rem;white-space:nowrap;">
+                <td class="py-2 px-3 whitespace-nowrap">
                     @if($day['last_out'])
-                        <span style="color:#1e293b;font-weight:500;">{{ $day['last_out']->format('H:i') }}</span>
+                        <span class="text-slate-800 font-medium">{{ $day['last_out']->format('H:i') }}</span>
                     @elseif($day['first_in'])
-                        <span style="color:#f59e0b;font-size:0.7rem;font-weight:600;">Still in</span>
+                        <span class="text-amber-500 text-[0.7rem] font-semibold">Still in</span>
                     @else
-                        <span style="color:#cbd5e1;">—</span>
+                        <span class="text-slate-300">—</span>
                     @endif
                 </td>
-                <td style="padding:0.5rem 0.75rem;text-align:right;color:#94a3b8;">
+                <td class="py-2 px-3 text-right text-slate-400">
                     {{ $day['break_mins'] > 0 ? $day['break_mins'].'m' : '—' }}
                 </td>
-                <td style="padding:0.5rem 0.75rem;text-align:right;white-space:nowrap;">
+                <td class="py-2 px-3 text-right whitespace-nowrap">
                     @if($day['billable_mins'] > 0)
-                        <span style="font-weight:600;color:#1e293b;">{{ $bh }}h {{ sprintf('%02d', $bm) }}m</span>
+                        <span class="font-semibold text-slate-800">{{ $bh }}h {{ sprintf('%02d', $bm) }}m</span>
                     @else
-                        <span style="color:#cbd5e1;">—</span>
+                        <span class="text-slate-300">—</span>
                     @endif
                 </td>
-                <td style="padding:0.5rem 1.25rem 0.5rem 0.75rem;">
+                <td class="py-2 pl-3 pr-5">
                     @if($day['late_by'])
-                        <span style="background:#fee2e2;color:#b91c1c;padding:1px 6px;border-radius:99px;font-size:0.68rem;font-weight:600;white-space:nowrap;margin-right:3px;">Late {{ $day['late_by'] }}m</span>
+                        <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[0.68rem] font-semibold bg-red-100 text-red-700 whitespace-nowrap mr-1">Late {{ $day['late_by'] }}m</span>
                     @endif
                     @if($day['early_by'])
-                        <span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:99px;font-size:0.68rem;font-weight:600;white-space:nowrap;">Left early {{ $day['early_by'] }}m</span>
+                        <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[0.68rem] font-semibold bg-amber-100 text-amber-800 whitespace-nowrap">Left early {{ $day['early_by'] }}m</span>
                     @endif
                 </td>
             </tr>
             @endforeach
             </tbody>
             <tfoot>
-                <tr style="border-top:2px solid #e2e8f0;background:#f8fafc;">
-                    <td colspan="5" style="padding:0.5rem 0.75rem 0.5rem 1.25rem;font-weight:700;color:#475569;font-size:0.75rem;">Total</td>
-                    <td style="padding:0.5rem 0.75rem;text-align:right;font-weight:700;color:#6366f1;">
+                <tr class="border-t-2 border-slate-200 bg-slate-50">
+                    <td colspan="5" class="py-2 pl-5 pr-3 font-bold text-slate-600 text-xs">Total</td>
+                    <td class="py-2 px-3 text-right font-bold text-indigo-600">
                         {{ $totalH }}h {{ sprintf('%02d', $totalM) }}m
                     </td>
                     <td></td>
@@ -200,7 +200,7 @@
         </div>
     </div>
     @empty
-    <p style="color:#94a3b8;font-size:0.875rem;">No active employees found.</p>
+    <p class="text-slate-400 text-sm">No active employees found.</p>
     @endforelse
 
 </main>

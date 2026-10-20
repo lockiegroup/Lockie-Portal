@@ -2,45 +2,45 @@
 
     <main class="max-w-5xl mx-auto px-4 sm:px-6 py-8">
 
-        <div style="margin-bottom:2rem;">
+        <div class="mb-8">
             <h1 class="text-2xl font-bold text-slate-800">Welcome back, {{ explode(' ', auth()->user()->name)[0] }}</h1>
             <p class="text-slate-500 mt-1">Here's what's happening today.</p>
         </div>
 
         {{-- ── Key Actions ── --}}
         @if($myTasks !== null)
-            <h2 style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.875rem;">My Key Actions</h2>
+            <h2 class="text-[0.7rem] font-bold text-slate-400 uppercase tracking-[0.08em] mb-3.5">My Key Actions</h2>
 
             @if($myTasks->isEmpty())
-                <div style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:0.875rem;padding:2rem;text-align:center;margin-bottom:2.5rem;">
-                    <p style="font-size:0.875rem;color:#94a3b8;">No open tasks assigned to you.</p>
+                <div class="bg-slate-50 border border-dashed border-slate-200 rounded-[0.875rem] p-8 text-center mb-10">
+                    <p class="text-sm text-slate-400">No open tasks assigned to you.</p>
                 </div>
             @else
-                <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:2.5rem;">
+                <div class="flex flex-col gap-2.5 mb-10">
                     @foreach($myTasks as $groupId => $tasks)
                         @php $group = $tasks->first()->group; @endphp
-                        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:0.875rem;padding:1.25rem 1.5rem;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.875rem;">
+                        <div class="bg-white border border-slate-200 rounded-[0.875rem] px-6 py-5 shadow-sm">
+                            <div class="flex items-center justify-between mb-3.5">
                                 <a href="{{ route('key-actions.show', $group) }}"
-                                   style="font-size:0.875rem;font-weight:600;color:#1e293b;text-decoration:none;">
+                                   class="text-sm font-semibold text-slate-800 no-underline hover:text-sky-600 transition-colors">
                                     {{ $group->name }}
                                 </a>
-                                <span style="font-size:0.75rem;color:#94a3b8;font-weight:500;">{{ $tasks->count() }} task{{ $tasks->count() !== 1 ? 's' : '' }}</span>
+                                <span class="text-xs text-slate-400 font-medium">{{ $tasks->count() }} task{{ $tasks->count() !== 1 ? 's' : '' }}</span>
                             </div>
                             @php
                                 $labelDots = ['yellow' => '#ca8a04', 'red' => '#dc2626', 'green' => '#16a34a'];
                                 $visible   = $tasks->take(3);
                                 $remaining = $tasks->count() - $visible->count();
                             @endphp
-                            <div style="display:flex;flex-direction:column;gap:5px;">
+                            <div class="flex flex-col gap-1">
                                 @foreach($visible as $task)
-                                    <div style="display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:7px;background:#f8fafc;border:1px solid #f1f5f9;">
-                                        <span style="width:7px;height:7px;border-radius:50%;background:{{ $labelDots[$task->label] ?? '#e2e8f0' }};flex-shrink:0;"></span>
-                                        <span style="font-size:0.8125rem;color:#334155;flex:1;">{{ $task->title }}</span>
+                                    <div class="flex items-center gap-2.5 px-2.5 py-1.5 rounded-[7px] bg-slate-50 border border-slate-100">
+                                        <span style="width:7px;height:7px;border-radius:50%;flex-shrink:0;background:{{ $labelDots[$task->label] ?? '#e2e8f0' }};"></span>
+                                        <span class="text-[0.8125rem] text-slate-700 flex-1">{{ $task->title }}</span>
                                     </div>
                                 @endforeach
                                 @if($remaining > 0)
-                                    <a href="{{ route('key-actions.show', $group) }}" style="font-size:0.75rem;color:#64748b;padding:4px 10px;text-decoration:none;">
+                                    <a href="{{ route('key-actions.show', $group) }}" class="text-xs text-slate-500 px-2.5 py-1 no-underline hover:text-slate-700">
                                         + {{ $remaining }} more task{{ $remaining !== 1 ? 's' : '' }}
                                     </a>
                                 @endif
@@ -53,12 +53,12 @@
 
         {{-- ── Print Schedule ── --}}
         @if($printStats !== null)
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.875rem;">
-                <h2 style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;">Print Schedule</h2>
-                <a href="{{ route('print.overview') }}" style="font-size:0.75rem;color:#64748b;text-decoration:none;">View full overview &rarr;</a>
+            <div class="flex items-center justify-between mb-3.5">
+                <h2 class="text-[0.7rem] font-bold text-slate-400 uppercase tracking-[0.08em]">Print Schedule</h2>
+                <a href="{{ route('print.overview') }}" class="text-xs text-slate-500 no-underline hover:text-slate-700">View full overview &rarr;</a>
             </div>
 
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:2.5rem;">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 mb-10">
                 @foreach($printStats as $key => $stat)
                     @php
                         $hasJobs  = $stat['job_count'] > 0;
@@ -69,18 +69,18 @@
                         elseif ($leadDays <= 10){ $leadColour = '#d97706'; }
                         else                    { $leadColour = '#dc2626'; }
                     @endphp
-                    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:0.875rem;padding:1.125rem 1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-                        <p style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.5rem;">{{ $stat['label'] }}</p>
-                        <div style="display:flex;align-items:baseline;gap:5px;margin-bottom:0.625rem;">
-                            <span style="font-size:1.875rem;font-weight:700;line-height:1;color:{{ $leadColour }};">{{ $hasJobs ? number_format($leadDays, 1) : '0' }}</span>
-                            <span style="font-size:0.8125rem;color:#94a3b8;font-weight:500;">day lead</span>
+                    <div class="bg-white border border-slate-200 rounded-[0.875rem] px-5 py-[1.125rem] shadow-sm">
+                        <p class="text-[0.7rem] font-bold text-slate-400 uppercase tracking-[0.08em] mb-2">{{ $stat['label'] }}</p>
+                        <div class="flex items-baseline gap-1 mb-2.5">
+                            <span class="text-[1.875rem] font-bold leading-none" style="color:{{ $leadColour }};">{{ $hasJobs ? number_format($leadDays, 1) : '0' }}</span>
+                            <span class="text-[0.8125rem] text-slate-400 font-medium">day lead</span>
                         </div>
-                        <div style="font-size:0.8125rem;color:#64748b;">
-                            <span style="font-weight:600;color:#1e293b;">{{ $stat['job_count'] }}</span> job{{ $stat['job_count'] !== 1 ? 's' : '' }}
+                        <div class="text-[0.8125rem] text-slate-500">
+                            <span class="font-semibold text-slate-800">{{ $stat['job_count'] }}</span> job{{ $stat['job_count'] !== 1 ? 's' : '' }}
                             @if($hasLate)
-                                &bull; <span style="color:#dc2626;font-weight:600;">{{ $stat['late_count'] }} late</span>
+                                &bull; <span class="text-red-600 font-semibold">{{ $stat['late_count'] }} late</span>
                             @elseif($hasJobs)
-                                &bull; <span style="color:#16a34a;">all on track</span>
+                                &bull; <span class="text-green-600">all on track</span>
                             @endif
                         </div>
                     </div>
@@ -88,9 +88,9 @@
             </div>
 
             @if($printNotes && trim($printNotes) !== '')
-                <div style="background:#fff;border:1px solid #e2e8f0;border-radius:0.875rem;padding:1.125rem 1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.04);margin-top:14px;">
-                    <p style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">Notes &amp; Updates</p>
-                    <p style="font-size:0.875rem;color:#334155;line-height:1.6;white-space:pre-wrap;">{{ $printNotes }}</p>
+                <div class="bg-white border border-slate-200 rounded-[0.875rem] px-5 py-[1.125rem] shadow-sm mt-3.5">
+                    <p class="text-[0.7rem] font-bold text-slate-400 uppercase tracking-[0.08em] mb-2">Notes &amp; Updates</p>
+                    <p class="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{{ $printNotes }}</p>
                 </div>
             @endif
 
@@ -98,8 +98,8 @@
 
         {{-- Fallback if nothing to show --}}
         @if($myTasks === null && $printStats === null)
-            <div style="background:#f8fafc;border:1px dashed #e2e8f0;border-radius:0.875rem;padding:3rem;text-align:center;">
-                <p style="font-size:0.9375rem;color:#94a3b8;">Nothing to show here yet — use the sidebar to navigate.</p>
+            <div class="bg-slate-50 border border-dashed border-slate-200 rounded-[0.875rem] p-12 text-center">
+                <p class="text-[0.9375rem] text-slate-400">Nothing to show here yet — use the sidebar to navigate.</p>
             </div>
         @endif
 

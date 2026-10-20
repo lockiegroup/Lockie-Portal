@@ -1,18 +1,18 @@
 <x-layout title="Activity Log — Lockie Portal">
 
-    <main class="max-w-5xl mx-auto px-6 py-10">
+    <main class="max-w-5xl mx-auto px-4 sm:px-6 py-8">
 
-        <div style="margin-bottom:1.75rem;">
-            <h1 style="font-size:1.5rem;font-weight:700;color:#0f172a;margin:0 0 0.25rem;">Activity Log</h1>
-            <p style="font-size:0.875rem;color:#64748b;margin:0;">All recorded actions across the portal.</p>
+        <div class="mb-7">
+            <h1 class="text-2xl font-bold text-slate-800 mb-1">Activity Log</h1>
+            <p class="text-sm text-slate-500">All recorded actions across the portal.</p>
         </div>
 
         {{-- Filters --}}
-        <form method="GET" style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-bottom:1.5rem;align-items:flex-end;">
+        <form method="GET" class="flex flex-wrap gap-3 mb-6 items-end">
             <div>
-                <label style="display:block;font-size:0.72rem;font-weight:600;color:#64748b;margin-bottom:4px;">Staff Member</label>
+                <label class="block text-[0.72rem] font-semibold text-slate-500 mb-1">Staff Member</label>
                 <select name="user_id"
-                    style="padding:0.45rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;background:#fff;color:#0f172a;outline:none;min-width:160px;"
+                    class="px-3 py-[0.45rem] border border-slate-200 rounded-lg text-sm bg-white text-slate-800 outline-none min-w-[160px] focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                     onchange="this.form.submit()">
                     <option value="">All staff</option>
                     @foreach($users as $u)
@@ -21,9 +21,9 @@
                 </select>
             </div>
             <div>
-                <label style="display:block;font-size:0.72rem;font-weight:600;color:#64748b;margin-bottom:4px;">Category</label>
+                <label class="block text-[0.72rem] font-semibold text-slate-500 mb-1">Category</label>
                 <select name="category"
-                    style="padding:0.45rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;background:#fff;color:#0f172a;outline:none;min-width:160px;"
+                    class="px-3 py-[0.45rem] border border-slate-200 rounded-lg text-sm bg-white text-slate-800 outline-none min-w-[160px] focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                     onchange="this.form.submit()">
                     <option value="">All categories</option>
                     @foreach($categories as $key => $label)
@@ -33,8 +33,7 @@
             </div>
             @if($userId || $category)
             <a href="{{ route('admin.activity-log') }}"
-                style="padding:0.45rem 0.9rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.8rem;color:#64748b;text-decoration:none;background:#fff;"
-                onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">
+                class="px-3.5 py-[0.45rem] border border-slate-200 rounded-lg text-sm text-slate-500 bg-white no-underline hover:bg-slate-50 transition-colors">
                 Clear
             </a>
             @endif
@@ -65,16 +64,16 @@
             ];
         @endphp
 
-        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
-            <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
-            <table style="width:100%;border-collapse:collapse;font-size:0.875rem;min-width:560px;">
+        <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+            <div class="overflow-x-auto">
+            <table class="w-full text-sm border-collapse" style="min-width:560px;">
                 <thead>
-                    <tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;">
-                        <th style="padding:0.75rem 1rem;text-align:left;font-weight:700;color:#374151;white-space:nowrap;">When</th>
-                        <th style="padding:0.75rem 1rem;text-align:left;font-weight:700;color:#374151;">Staff Member</th>
-                        <th style="padding:0.75rem 1rem;text-align:left;font-weight:700;color:#374151;">Action</th>
-                        <th style="padding:0.75rem 1rem;text-align:left;font-weight:700;color:#374151;">Detail</th>
-                        <th style="padding:0.75rem 1rem;text-align:left;font-weight:700;color:#374151;white-space:nowrap;">IP Address</th>
+                    <tr class="bg-slate-50 border-b-2 border-slate-200">
+                        <th class="text-left px-4 py-3 font-bold text-slate-700 whitespace-nowrap">When</th>
+                        <th class="text-left px-4 py-3 font-bold text-slate-700">Staff Member</th>
+                        <th class="text-left px-4 py-3 font-bold text-slate-700">Action</th>
+                        <th class="text-left px-4 py-3 font-bold text-slate-700">Detail</th>
+                        <th class="text-left px-4 py-3 font-bold text-slate-700 whitespace-nowrap">IP Address</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -82,27 +81,27 @@
                     @php
                         [$label, $bg, $color] = $actionLabels[$log->action] ?? [ucfirst(str_replace(['.','_'], ' ', $log->action)), '#f1f5f9', '#374151'];
                     @endphp
-                    <tr style="border-bottom:1px solid #f1f5f9;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
-                        <td style="padding:0.7rem 1rem;white-space:nowrap;color:#64748b;font-size:0.78rem;">
+                    <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                        <td class="px-4 py-2.5 whitespace-nowrap text-slate-500 text-[0.78rem]">
                             <span title="{{ $log->created_at->format('d M Y H:i:s') }}">
                                 {{ $log->created_at->format('d M Y') }}<br>
-                                <span style="color:#94a3b8;">{{ $log->created_at->format('H:i') }}</span>
+                                <span class="text-slate-400">{{ $log->created_at->format('H:i') }}</span>
                             </span>
                         </td>
-                        <td style="padding:0.7rem 1rem;font-weight:500;color:#0f172a;white-space:nowrap;">
+                        <td class="px-4 py-2.5 font-medium text-slate-800 whitespace-nowrap">
                             {{ $log->user?->name ?? '—' }}
                         </td>
-                        <td style="padding:0.7rem 1rem;white-space:nowrap;">
-                            <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:0.72rem;font-weight:600;background:{{ $bg }};color:{{ $color }};">
+                        <td class="px-4 py-2.5 whitespace-nowrap">
+                            <span class="inline-block px-2 py-0.5 rounded-full text-[0.72rem] font-semibold" style="background:{{ $bg }};color:{{ $color }};">
                                 {{ $label }}
                             </span>
                         </td>
-                        <td style="padding:0.7rem 1rem;color:#374151;font-size:0.82rem;">{{ $log->description }}</td>
-                        <td style="padding:0.7rem 1rem;color:#94a3b8;font-size:0.78rem;white-space:nowrap;">{{ $log->ip_address ?? '—' }}</td>
+                        <td class="px-4 py-2.5 text-slate-700 text-[0.82rem]">{{ $log->description }}</td>
+                        <td class="px-4 py-2.5 text-slate-400 text-[0.78rem] whitespace-nowrap">{{ $log->ip_address ?? '—' }}</td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="5" style="padding:3rem;text-align:center;color:#94a3b8;font-size:0.875rem;">No activity recorded yet.</td>
+                        <td colspan="5" class="px-4 py-12 text-center text-slate-400 text-sm">No activity recorded yet.</td>
                     </tr>
                     @endforelse
                 </tbody>
@@ -112,7 +111,7 @@
 
         {{-- Pagination --}}
         @if($logs->hasPages())
-        <div style="margin-top:1rem;display:flex;justify-content:center;">
+        <div class="mt-4 flex justify-center">
             {{ $logs->links() }}
         </div>
         @endif

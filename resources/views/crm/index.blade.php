@@ -2,7 +2,7 @@
 <main class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
 
     {{-- Header --}}
-    <div style="margin-bottom:1.75rem;">
+    <div class="mb-7">
         <h1 class="text-2xl font-bold text-slate-800">Customer Insights</h1>
         <p class="text-slate-500 mt-1 text-sm">Ranked by spend in the last 12 months vs the prior 12 months.</p>
         @if($salesFrom && $salesTo)
@@ -11,12 +11,12 @@
     </div>
 
     {{-- Filters --}}
-    <form method="GET" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:1.25rem;">
+    <form method="GET" class="flex gap-2.5 flex-wrap items-center mb-5">
         <input type="text" name="search" value="{{ $search }}" placeholder="Search customer or code…"
-            style="flex:1;min-width:180px;padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;color:#1e293b;background:#fff;outline:none;">
+            class="flex-1 min-w-[180px] px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-sky-500">
 
         <select name="warehouse"
-            style="padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;color:#1e293b;background:#fff;">
+            class="px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-sky-500">
             <option value="">All Warehouses</option>
             @foreach($warehouses as $w)
                 <option value="{{ $w }}" {{ $warehouse === $w ? 'selected' : '' }}>{{ $w }}</option>
@@ -24,30 +24,30 @@
         </select>
 
         <button type="submit"
-            style="padding:8px 16px;background:#1e293b;color:#fff;border:none;border-radius:8px;font-size:0.875rem;font-weight:500;cursor:pointer;">
+            class="px-4 py-2 bg-slate-900 text-white text-sm font-medium rounded-lg border-0 cursor-pointer hover:bg-slate-700 transition-colors">
             Filter
         </button>
 
         @if($search || $warehouse || $filter)
             <a href="{{ route('crm.index') }}"
-               style="padding:8px 14px;background:#f1f5f9;color:#64748b;border-radius:8px;font-size:0.875rem;text-decoration:none;">
+               class="px-3.5 py-2 bg-slate-100 text-slate-500 text-sm rounded-lg no-underline hover:bg-slate-200 transition-colors">
                 Clear
             </a>
         @endif
 
         <a href="{{ route('crm.export', array_filter(['search' => $search, 'warehouse' => $warehouse, 'filter' => $filter, 'contacted_days' => $filter === 'contacted' ? $contactedDays : null])) }}"
-           style="padding:8px 14px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;border-radius:8px;font-size:0.875rem;font-weight:500;text-decoration:none;white-space:nowrap;">
+           class="px-3.5 py-2 bg-green-50 text-green-700 border border-green-200 text-sm font-medium rounded-lg no-underline whitespace-nowrap hover:bg-green-100 transition-colors">
             ↓ Export CSV
         </a>
 
         <button type="button" onclick="openBulkModal()"
-            style="padding:8px 14px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:8px;font-size:0.875rem;font-weight:500;cursor:pointer;white-space:nowrap;">
+            class="px-3.5 py-2 bg-blue-50 text-blue-700 border border-blue-200 text-sm font-medium rounded-lg cursor-pointer whitespace-nowrap hover:bg-blue-100 transition-colors">
             Bulk Log Contact
         </button>
     </form>
 
     {{-- Quick filter tabs --}}
-    <div style="display:flex;gap:8px;margin-bottom:{{ $filter === 'contacted' ? '0.5rem' : '1.5rem' }};flex-wrap:wrap;align-items:center;">
+    <div class="flex gap-2 flex-wrap items-center {{ $filter === 'contacted' ? 'mb-2' : 'mb-6' }}">
         <a href="{{ route('crm.index', array_filter(['warehouse' => $warehouse, 'search' => $search])) }}"
            style="padding:6px 14px;border-radius:999px;font-size:0.8125rem;font-weight:500;text-decoration:none;
                   {{ !$filter ? 'background:#1e293b;color:#fff;' : 'background:#f1f5f9;color:#64748b;' }}">
@@ -72,8 +72,8 @@
 
     {{-- Period chips (only when "Recently contacted" is active) --}}
     @if($filter === 'contacted')
-    <div style="display:flex;gap:6px;margin-bottom:1.5rem;align-items:center;">
-        <span style="font-size:0.75rem;color:#94a3b8;font-weight:500;">Period:</span>
+    <div class="flex gap-1.5 mb-6 items-center flex-wrap">
+        <span class="text-xs text-slate-400 font-medium">Period:</span>
         @foreach(['all' => 'All time', 7 => '7 days', 30 => '30 days', 60 => '60 days', 90 => '90 days'] as $days => $label)
             <a href="{{ route('crm.index', array_filter(['filter' => 'contacted', 'contacted_days' => $days, 'warehouse' => $warehouse, 'search' => $search])) }}"
                style="padding:3px 10px;border-radius:999px;font-size:0.75rem;font-weight:500;text-decoration:none;
@@ -85,8 +85,8 @@
     @endif
 
     {{-- Table --}}
-    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:0.875rem;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-        <div style="overflow-x:auto;">
+    <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <div class="overflow-x-auto">
         <table style="width:100%;border-collapse:collapse;font-size:0.875rem;min-width:900px;">
             <thead>
                 <tr style="background:#f8fafc;border-bottom:1px solid #e2e8f0;">
