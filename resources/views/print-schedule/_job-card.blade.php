@@ -22,7 +22,7 @@
     }
 @endphp
 
-<div class="job-card bg-white rounded-xl border shadow-sm select-none {{ $activeRun ? 'border-green-400' : ($portalPaused ? 'border-amber-400' : ($job->is_manual ? 'border-green-300' : 'border-slate-200')) }}" style="padding: 1.25rem 1.5rem;"
+<div class="job-card bg-white rounded-xl border shadow-sm select-none px-6 py-5 {{ $activeRun ? 'border-green-400' : ($portalPaused ? 'border-amber-400' : ($job->is_manual ? 'border-green-300' : 'border-slate-200')) }}"
      data-job-id="{{ $job->id }}"
      data-order-number="{{ $job->order_number }}"
      data-current-board="{{ $job->board }}"
@@ -32,7 +32,7 @@
      id="job-card-{{ $job->id }}">
 
     {{-- Row 1: Drag handle | Order number | Customer | Board select --}}
-    <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:0.75rem;">
+    <div class="flex items-start gap-2.5 mb-3">
         <span class="drag-handle cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 mt-0.5 flex-shrink-0 pt-0.5" title="Drag to reorder">
             <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                 <circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/>
@@ -45,7 +45,7 @@
                 <span class="font-mono text-xs text-slate-400 font-medium">{{ $job->order_number }}</span>
                 <span class="text-sm font-medium text-slate-800 truncate">{{ $job->customer_name }}</span>
                 @if($job->is_manual)
-                    <span style="font-size:0.65rem;font-weight:700;background:#dcfce7;color:#15803d;padding:1px 6px;border-radius:9999px;text-transform:uppercase;letter-spacing:0.05em;">Manual</span>
+                    <span class="text-[0.65rem] font-bold bg-green-100 text-green-700 px-1.5 py-px rounded-full uppercase tracking-wide">Manual</span>
                 @endif
                 @php
                     $badgeKey  = (str_starts_with($job->order_number, 'ASM-') && preg_match('/\b(SO-\d+)\b/', $job->line_comment ?? '', $_m))
@@ -54,11 +54,11 @@
                     $lineCount = isset($orderLineCounts) ? ($orderLineCounts[$badgeKey] ?? 1) : 1;
                 @endphp
                 @if($lineCount > 1)
-                    <span style="font-size:0.65rem;font-weight:700;background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:9999px;text-transform:uppercase;letter-spacing:0.05em;">{{ $lineCount }} lines</span>
+                    <span class="text-[0.65rem] font-bold bg-amber-100 text-amber-800 px-1.5 py-px rounded-full uppercase tracking-wide">{{ $lineCount }} lines</span>
                 @endif
             </div>
             @if($orderDateFmt || $job->customer_ref)
-                <div style="display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:3px;">
+                <div class="flex flex-wrap gap-x-3 gap-y-1 mt-0.5">
                     @if($orderDateFmt)
                         <span class="text-xs text-slate-400">Ordered: {{ $orderDateFmt }}</span>
                     @endif
@@ -95,12 +95,13 @@
 
     {{-- Late warning (also updated live by JS recalculateLateFlags) --}}
     <div id="late-banner-{{ $job->id }}"
-         style="background:#fef2f2;border:1px solid #fecaca;border-radius:0.5rem;padding:6px 10px;margin-bottom:0.75rem;display:{{ ($job->is_late ?? false) ? 'flex' : 'none' }};align-items:center;gap:6px;">
-        <svg style="width:14px;height:14px;color:#dc2626;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+         class="bg-red-50 border border-red-200 rounded-lg px-2.5 py-1.5 mb-3 items-center gap-1.5"
+         style="display:{{ ($job->is_late ?? false) ? 'flex' : 'none' }}">
+        <svg class="w-3.5 h-3.5 text-red-600 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
             <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
         </svg>
-        <span class="late-text" style="font-size:0.75rem;color:#dc2626;font-weight:500;">
+        <span class="late-text text-xs text-red-600 font-medium">
             @if($job->is_late ?? false)
                 Estimated late by {{ $job->days_overdue }} day{{ $job->days_overdue !== 1 ? 's' : '' }}
                 &mdash; est. {{ $job->est_completion->format('d M') }}
@@ -111,7 +112,7 @@
     {{-- Row 3: Line comment (print data) --}}
     @if($job->line_comment)
         <div class="mb-3 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
-            <p class="font-mono text-xs text-blue-800" style="white-space:pre-wrap;word-break:break-word;">{{ $job->line_comment }}</p>
+            <p class="font-mono text-xs text-blue-800 whitespace-pre-wrap break-words">{{ $job->line_comment }}</p>
         </div>
     @endif
 
@@ -120,21 +121,20 @@
         @php $addrSummary = collect([$job->delivery_name, $job->delivery_city, $job->delivery_postcode])->filter()->implode(', ') ?: 'Delivery address'; @endphp
         <div class="mb-3">
             <button type="button" onclick="toggleDelivery({{ $job->id }})"
-                style="display:flex;align-items:center;gap:6px;font-size:0.75rem;color:#94a3b8;background:none;border:none;cursor:pointer;padding:0;"
-                onmouseover="this.style.color='#475569'" onmouseout="this.style.color='#94a3b8'">
-                <svg style="width:13px;height:13px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                class="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-600 bg-transparent border-0 cursor-pointer p-0 transition-colors">
+                <svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
                 </svg>
                 <span id="delivery-label-{{ $job->id }}" data-summary="{{ $addrSummary }}">{{ $addrSummary }}</span>
             </button>
-            <div id="delivery-detail-{{ $job->id }}" style="display:none;margin-top:6px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;">
-                <p style="font-size:0.75rem;color:#475569;white-space:pre-line;margin:0;">{{ $job->delivery_address }}</p>
+            <div id="delivery-detail-{{ $job->id }}" style="display:none" class="mt-1.5 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                <p class="text-xs text-slate-600 whitespace-pre-line m-0">{{ $job->delivery_address }}</p>
             </div>
         </div>
     @endif
 
     {{-- Row 4: Order total · packs · required date --}}
-    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;margin-bottom:0.75rem;font-size:0.875rem;color:#475569;">
+    <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mb-3 text-sm text-slate-600">
         <span>
             <span class="text-xs text-slate-400">{{ str_starts_with($job->order_number, 'ASM-') ? 'SO Value:' : 'Net Price:' }} </span>
             <span class="font-medium text-slate-700">&pound;{{ number_format(str_starts_with($job->order_number, 'ASM-') ? (float)$job->order_total : (float)$job->line_total, 2) }}</span>
@@ -152,7 +152,8 @@
 
         {{-- Estimated out (machine boards only; updated live by JS) --}}
         <span id="est-out-{{ $job->id }}"
-              style="{{ ($job->est_completion ?? null) ? '' : 'display:none;' }}font-size:0.7rem;color:#94a3b8;">@if($job->est_completion ?? null)&rarr; est del. {{ $job->est_completion->format('d M') }}@endif</span>
+              class="text-[0.7rem] text-slate-400"
+              style="{{ ($job->est_completion ?? null) ? '' : 'display:none;' }}">@if($job->est_completion ?? null)&rarr; est del. {{ $job->est_completion->format('d M') }}@endif</span>
 
         {{-- Required date --}}
         <div class="flex items-center gap-1">
@@ -207,9 +208,9 @@
                     class="text-xs border border-slate-300 rounded px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-rose-500">
                 <button id="date-save-btn-{{ $job->id }}"
                     onclick="saveDate({{ $job->id }})"
-                    style="background:#e11d48;color:#fff;font-size:0.75rem;padding:2px 8px;border-radius:4px;border:none;cursor:pointer;">Save</button>
+                    class="bg-rose-600 text-white text-xs px-2 py-0.5 rounded border-0 cursor-pointer">Save</button>
                 <button onclick="cancelDate({{ $job->id }})"
-                    style="font-size:0.75rem;color:#64748b;padding:2px 4px;background:none;border:none;cursor:pointer;">&#10005;</button>
+                    class="text-xs text-slate-500 px-1 py-0.5 bg-transparent border-0 cursor-pointer">&#10005;</button>
             </span>
         </div>
     </div>
@@ -237,19 +238,19 @@
 
     {{-- Running indicator --}}
     @if($activeRun)
-        <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:6px 10px;margin-bottom:0.75rem;">
-            <div style="display:flex;align-items:center;gap:7px;">
-                <span style="width:8px;height:8px;border-radius:50%;background:#16a34a;display:inline-block;animation:psRun 1.5s infinite;flex-shrink:0;"></span>
-                <span style="font-size:0.75rem;color:#15803d;font-weight:600;">Running on {{ ucwords(str_replace('_', ' ', $activeRun->machine)) }}</span>
-                <span style="font-size:0.75rem;color:#86efac;">—</span>
-                <span style="font-size:0.75rem;color:#16a34a;">{{ $activeRun->user?->name ?? 'Operator' }}, since {{ $activeRun->started_at->format('H:i') }}</span>
+        <div class="bg-green-50 border border-green-300 rounded-lg px-2.5 py-1.5 mb-3">
+            <div class="flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-green-600 inline-block flex-shrink-0" style="animation:psRun 1.5s infinite;"></span>
+                <span class="text-xs text-green-700 font-semibold">Running on {{ ucwords(str_replace('_', ' ', $activeRun->machine)) }}</span>
+                <span class="text-xs text-green-300">—</span>
+                <span class="text-xs text-green-600">{{ $activeRun->user?->name ?? 'Operator' }}, since {{ $activeRun->started_at->format('H:i') }}</span>
             </div>
             @if($activeRun->progress_packs !== null)
-                <div style="font-size:0.75rem;color:#15803d;margin-top:3px;padding-left:15px;">
+                <div class="text-xs text-green-700 mt-0.5 pl-3.5">
                     Last update {{ $activeRun->progress_at->format('H:i') }}: <strong>{{ number_format($activeRun->progress_packs) }} packs total</strong>
                 </div>
             @elseif($prevPacks > 0)
-                <div style="font-size:0.75rem;color:#15803d;margin-top:3px;padding-left:15px;">
+                <div class="text-xs text-green-700 mt-0.5 pl-3.5">
                     <strong>{{ number_format($prevPacks) }} packs</strong> done before this run
                 </div>
             @endif
@@ -262,22 +263,22 @@
             // packs_produced is the cumulative total at the time the run ended
             $totalEndedPacks = $lastRun->packs_produced ?? $lastRun->progress_packs;
         @endphp
-        <div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:6px 10px;margin-bottom:0.75rem;">
-            <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
-                <span style="font-size:0.75rem;">■</span>
-                <span style="font-size:0.75rem;color:#475569;font-weight:600;">Ended on {{ ucwords(str_replace('_', ' ', $lastRun->machine)) }}</span>
-                <span style="font-size:0.75rem;color:#94a3b8;">at {{ $lastRun->ended_at->format('H:i') }}</span>
+        <div class="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 mb-3">
+            <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="text-xs">■</span>
+                <span class="text-xs text-slate-600 font-semibold">Ended on {{ ucwords(str_replace('_', ' ', $lastRun->machine)) }}</span>
+                <span class="text-xs text-slate-400">at {{ $lastRun->ended_at->format('H:i') }}</span>
                 @if($totalEndedPacks !== null)
-                    <span style="font-size:0.75rem;color:#475569;">— <strong>{{ number_format($totalEndedPacks) }} packs</strong></span>
+                    <span class="text-xs text-slate-600">— <strong>{{ number_format($totalEndedPacks) }} packs</strong></span>
                 @endif
                 @if($lastRun->fully_complete)
-                    <span style="font-size:0.7rem;font-weight:700;background:#dcfce7;color:#15803d;padding:1px 7px;border-radius:9999px;">✓ Fully complete</span>
+                    <span class="text-[0.7rem] font-bold bg-green-100 text-green-700 px-1.5 py-px rounded-full">✓ Fully complete</span>
                 @else
-                    <span style="font-size:0.7rem;font-weight:700;background:#fef3c7;color:#92400e;padding:1px 7px;border-radius:9999px;">Partial run</span>
+                    <span class="text-[0.7rem] font-bold bg-amber-100 text-amber-800 px-1.5 py-px rounded-full">Partial run</span>
                 @endif
             </div>
             @if($lastRun->user)
-                <div style="font-size:0.75rem;color:#94a3b8;margin-top:3px;padding-left:15px;">
+                <div class="text-xs text-slate-400 mt-0.5 pl-3.5">
                     Operator: {{ $lastRun->user->name }}
                 </div>
             @endif
@@ -287,12 +288,12 @@
     {{-- Paused indicator --}}
     @if($portalPaused)
         @php $pausedPacks = $lastRun->packs_produced ?? $lastRun->progress_packs; @endphp
-        <div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:6px 10px;margin-bottom:0.75rem;">
-            <div style="display:flex;align-items:center;gap:7px;">
-                <span style="font-size:0.75rem;">⏸</span>
-                <span style="font-size:0.75rem;color:#92400e;font-weight:600;">Paused on {{ ucwords(str_replace('_', ' ', $lastRun->machine)) }}</span>
+        <div class="bg-amber-50 border border-amber-300 rounded-lg px-2.5 py-1.5 mb-3">
+            <div class="flex items-center gap-1.5">
+                <span class="text-xs">⏸</span>
+                <span class="text-xs text-amber-800 font-semibold">Paused on {{ ucwords(str_replace('_', ' ', $lastRun->machine)) }}</span>
                 @if($pausedPacks !== null)
-                    <span style="font-size:0.75rem;color:#b45309;">— {{ number_format($pausedPacks) }} packs done</span>
+                    <span class="text-xs text-amber-700">— {{ number_format($pausedPacks) }} packs done</span>
                 @endif
             </div>
             @if($lastRun->pause_type || $lastRun->pause_reason)
@@ -304,9 +305,9 @@
                         'breakdown'    => 'Breakdown' . ($lastRun->pause_reason ? ': ' . $lastRun->pause_reason : ''),
                         default        => $lastRun->pause_reason,
                     };
-                    $pauseColour = ($lastRun->pause_type === 'breakdown') ? '#b91c1c' : '#b45309';
+                    $isBreakdown = ($lastRun->pause_type === 'breakdown');
                 @endphp
-                <div style="font-size:0.75rem;color:{{ $pauseColour }};margin-top:3px;padding-left:15px;">
+                <div class="text-xs mt-0.5 pl-3.5 {{ $isBreakdown ? 'text-red-700' : 'text-amber-700' }}">
                     <strong>{{ $pauseDisplay }}</strong>
                     &nbsp;·&nbsp; Paused at {{ $lastRun->ended_at->format('H:i') }}
                 </div>
@@ -315,7 +316,7 @@
     @endif
 
     {{-- Row 5: Material checked | Notes toggle | Part complete --}}
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+    <div class="flex items-center gap-2 flex-wrap">
 
         {{-- Material checked toggle --}}
         <button id="material-btn-{{ $job->id }}"
@@ -332,15 +333,13 @@
 
         {{-- Notes toggle --}}
         <button onclick="toggleNotes({{ $job->id }})"
-            style="display:inline-flex;align-items:center;gap:6px;font-size:0.75rem;border-radius:8px;padding:5px 12px;border:1px solid;cursor:pointer;transition:opacity 0.15s;
-                {{ $noteCount > 0 ? 'background:#ffb66c;border-color:#e09040;color:#000;font-weight:600;' : 'background:#f8fafc;border-color:#e2e8f0;color:#64748b;font-weight:400;' }}">
-            <svg style="width:14px;height:14px;flex-shrink:0;" viewBox="0 0 24 24" fill="{{ $noteCount > 0 ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="2">
+            class="inline-flex items-center gap-1.5 text-xs rounded-lg px-3 py-1.5 border cursor-pointer transition-colors {{ $noteCount > 0 ? 'bg-orange-300 border-orange-400 text-black font-semibold' : 'bg-slate-50 border-slate-200 text-slate-600' }}">
+            <svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="{{ $noteCount > 0 ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="2">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
             Notes
             <span id="note-count-{{ $job->id }}"
-                style="display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 4px;font-size:0.7rem;border-radius:9px;
-                    {{ $noteCount > 0 ? 'background:rgba(0,0,0,0.18);color:#000;font-weight:700;' : 'background:#e2e8f0;color:#64748b;' }}">{{ $noteCount }}</span>
+                class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[0.7rem] rounded-full {{ $noteCount > 0 ? 'bg-black/20 text-black font-bold' : 'bg-slate-200 text-slate-600' }}">{{ $noteCount }}</span>
         </button>
 
         {{-- Download Labels --}}
@@ -352,17 +351,16 @@
             data-default-pack="{{ $_lNum['defaultPack'] }}"
             data-universeal="{{ stripos($job->customer_name ?? '', 'universeal') !== false ? '1' : '0' }}"
             data-label-name="{{ strtoupper(explode(' ', trim($job->customer_name ?? 'UNIVERSEAL'))[0]) }}"
-            style="display:inline-flex;align-items:center;gap:5px;font-size:0.75rem;border-radius:8px;padding:5px 12px;border:1px solid #e2e8f0;background:#f8fafc;color:#475569;cursor:pointer;"
-            onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'">
-            <svg style="width:13px;height:13px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            class="inline-flex items-center gap-1.5 text-xs rounded-lg px-3 py-1.5 border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 cursor-pointer transition-colors">
+            <svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
             Labels
         </button>
 
         {{-- Part complete --}}
-        <div style="display:flex;align-items:center;gap:4px;">
-            <span id="complete-display-{{ $job->id }}" style="display:flex;align-items:center;gap:4px;">
+        <div class="flex items-center gap-1">
+            <span id="complete-display-{{ $job->id }}" class="flex items-center gap-1">
                 <button onclick="editComplete({{ $job->id }})"
                     class="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg px-3 py-1.5 transition-colors">
                     <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -381,38 +379,35 @@
                 <span class="text-xs text-slate-400">/ {{ $job->order_quantity }}</span>
                 <button id="complete-save-btn-{{ $job->id }}"
                     onclick="saveComplete({{ $job->id }})"
-                    style="background:#e11d48;color:#fff;font-size:0.75rem;padding:2px 8px;border-radius:4px;border:none;cursor:pointer;">Save</button>
+                    class="text-xs bg-rose-600 text-white px-2 py-0.5 rounded border-0 cursor-pointer">Save</button>
                 <button onclick="cancelComplete({{ $job->id }})"
-                    style="font-size:0.75rem;color:#64748b;padding:2px 4px;background:none;border:none;cursor:pointer;">&#10005;</button>
+                    class="text-xs text-slate-500 px-1 py-0.5 bg-transparent border-0 cursor-pointer">&#10005;</button>
             </span>
         </div>
     </div>
 
     {{-- Manual job actions --}}
     @if($job->is_manual)
-    <div style="display:flex;gap:8px;margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid #f1f5f9;">
+    <div class="flex gap-2 mt-3 pt-3 border-t border-slate-100">
         <button onclick="openEditManualModal({{ $job->id }}, {{ json_encode($job->product_code) }}, {{ json_encode($job->product_description) }}, {{ json_encode($job->line_comment) }}, {{ json_encode($job->customer_name) }}, {{ json_encode($job->customer_ref) }}, {{ json_encode($job->order_number) }}, {{ $job->order_quantity }}, '{{ $job->required_date ? $job->required_date->format('Y-m-d') : '' }}')"
-            style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:6px 10px;background:#eff6ff;color:#1d4ed8;font-size:0.75rem;font-weight:600;border-radius:8px;border:1px solid #bfdbfe;cursor:pointer;"
-            onmouseover="this.style.background='#dbeafe'" onmouseout="this.style.background='#eff6ff'">
-            <svg style="width:12px;height:12px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            class="flex-1 flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-blue-50 text-blue-700 text-xs font-semibold rounded-lg border border-blue-200 hover:bg-blue-100 cursor-pointer transition-colors">
+            <svg class="w-3 h-3 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
             </svg>
             Edit
         </button>
         <button onclick="archiveManualJob({{ $job->id }})"
-            style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:6px 10px;background:#f8fafc;color:#64748b;font-size:0.75rem;font-weight:600;border-radius:8px;border:1px solid #e2e8f0;cursor:pointer;"
-            onmouseover="this.style.borderColor='#94a3b8'" onmouseout="this.style.borderColor='#e2e8f0'">
-            <svg style="width:12px;height:12px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            class="flex-1 flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-slate-50 text-slate-600 text-xs font-semibold rounded-lg border border-slate-200 hover:border-slate-400 cursor-pointer transition-colors">
+            <svg class="w-3 h-3 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>
             </svg>
             Archive
         </button>
         <button onclick="deleteManualJob({{ $job->id }}, {{ json_encode($job->product_description) }})"
             title="Permanently delete this job"
-            style="display:flex;align-items:center;justify-content:center;padding:6px 8px;background:#fff;color:#dc2626;font-size:0.75rem;border-radius:8px;border:1px solid #fecaca;cursor:pointer;flex-shrink:0;"
-            onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='#fff'">
-            <svg style="width:13px;height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            class="flex items-center justify-center px-2 py-1.5 bg-white text-red-600 text-xs rounded-lg border border-red-200 hover:bg-red-50 cursor-pointer flex-shrink-0 transition-colors">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
             </svg>
         </button>
@@ -420,12 +415,12 @@
     @endif
 
     {{-- Notes panel (hidden by default) --}}
-    <div id="notes-panel-{{ $job->id }}" style="display:none;margin-top:0.75rem;border-top:1px solid #f1f5f9;padding-top:0.75rem;">
+    <div id="notes-panel-{{ $job->id }}" style="display:none" class="mt-3 border-t border-slate-100 pt-3">
 
         {{-- Existing notes --}}
-        <div id="notes-list-{{ $job->id }}" style="display:flex;flex-direction:column;gap:8px;margin-bottom:0.75rem;">
+        <div id="notes-list-{{ $job->id }}" class="flex flex-col gap-2 mb-3">
             @forelse($job->notes->sortByDesc('created_at') as $note)
-                <div class="note-item" style="display:flex;gap:8px;font-size:0.875rem;background:#f8fafc;border-radius:0.5rem;padding:0.75rem;" id="note-{{ $note->id }}">
+                <div class="note-item flex gap-2 text-sm bg-slate-50 rounded-lg p-3" id="note-{{ $note->id }}">
                     <div class="flex-1 min-w-0">
                         <p class="text-slate-700">{{ $note->body }}</p>
                         <p class="text-xs text-slate-400 mt-1">
@@ -443,7 +438,7 @@
         </div>
 
         {{-- Add note --}}
-        <div style="display:flex;gap:8px;">
+        <div class="flex gap-2">
             <input type="text"
                 id="note-input-{{ $job->id }}"
                 placeholder="Add a note…"
