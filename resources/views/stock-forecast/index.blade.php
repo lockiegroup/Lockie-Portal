@@ -1,17 +1,17 @@
 <x-layout title="Stock Forecast — Lockie Portal">
 
-<main style="max-width:1400px;margin:0 auto;padding:2rem 1.5rem;">
+<main class="max-w-[1400px] mx-auto px-4 sm:px-6 py-8">
 
     {{-- Header --}}
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap;">
+    <div class="flex items-start justify-between gap-4 mb-6 flex-wrap">
         <div>
-            <h1 style="font-size:1.5rem;font-weight:700;color:#1e293b;margin:0 0 4px;">Stock Forecast</h1>
-            <p style="font-size:0.875rem;color:#64748b;margin:0;">
+            <h1 class="text-2xl font-bold text-slate-800 mb-1">Stock Forecast</h1>
+            <p class="text-sm text-slate-500 m-0">
                 Live stock levels, incoming orders, and reorder recommendations per warehouse.
             </p>
         </div>
-        <div style="display:flex;align-items:center;gap:12px;flex-shrink:0;">
-            <span id="sync-status" style="font-size:0.8rem;color:#94a3b8;">
+        <div class="flex items-center gap-3 flex-shrink-0">
+            <span id="sync-status" class="text-[0.8rem] text-slate-400">
                 @if($lastSynced)
                     Last synced {{ \Carbon\Carbon::parse($lastSynced)->diffForHumans() }}
                 @else
@@ -19,9 +19,8 @@
                 @endif
             </span>
             <button id="sync-btn" onclick="runSync()"
-                style="display:flex;align-items:center;gap:7px;padding:8px 16px;background:#0f172a;color:white;border:none;border-radius:8px;font-size:0.875rem;font-weight:600;cursor:pointer;transition:background 0.15s;"
-                onmouseover="this.style.background='#1e293b'" onmouseout="this.style.background='#0f172a'">
-                <svg id="sync-icon" style="width:15px;height:15px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                class="flex items-center gap-1.5 px-4 py-2 bg-slate-900 text-white border-none rounded-lg text-sm font-semibold cursor-pointer hover:bg-slate-800 transition-colors">
+                <svg id="sync-icon" class="w-[15px] h-[15px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                     <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
                     <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
                 </svg>
@@ -32,11 +31,11 @@
 
     {{-- Filters --}}
     <form method="GET" action="{{ route('stock-forecast.index') }}"
-        style="background:white;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;margin-bottom:1.25rem;display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;">
+        class="bg-white border border-slate-200 rounded-xl px-4 py-3.5 mb-5 flex flex-wrap gap-2.5 items-end">
 
-        <div style="flex:1;min-width:160px;">
-            <label style="display:block;font-size:0.75rem;font-weight:600;color:#64748b;margin-bottom:5px;">Warehouse</label>
-            <select name="warehouse" style="width:100%;padding:7px 10px;border:1px solid #cbd5e1;border-radius:7px;font-size:0.875rem;color:#1e293b;background:white;">
+        <div class="flex-1 min-w-[160px]">
+            <label class="block text-[0.75rem] font-semibold text-slate-500 mb-1.5">Warehouse</label>
+            <select name="warehouse" class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-sm text-slate-800 bg-white">
                 <option value="">All warehouses</option>
                 @foreach($warehouses as $code => $name)
                     <option value="{{ $code }}" {{ $warehouseFilter === $code ? 'selected' : '' }}>{{ $name }}</option>
@@ -44,9 +43,9 @@
             </select>
         </div>
 
-        <div style="flex:1;min-width:160px;">
-            <label style="display:block;font-size:0.75rem;font-weight:600;color:#64748b;margin-bottom:5px;">Supplier</label>
-            <select name="supplier" style="width:100%;padding:7px 10px;border:1px solid #cbd5e1;border-radius:7px;font-size:0.875rem;color:#1e293b;background:white;">
+        <div class="flex-1 min-w-[160px]">
+            <label class="block text-[0.75rem] font-semibold text-slate-500 mb-1.5">Supplier</label>
+            <select name="supplier" class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-sm text-slate-800 bg-white">
                 <option value="">All suppliers</option>
                 @foreach($suppliers as $s)
                     <option value="{{ $s }}" {{ $supplierFilter === $s ? 'selected' : '' }}>{{ $s }}</option>
@@ -54,9 +53,9 @@
             </select>
         </div>
 
-        <div style="flex:1;min-width:140px;">
-            <label style="display:block;font-size:0.75rem;font-weight:600;color:#64748b;margin-bottom:5px;">Status</label>
-            <select name="status" style="width:100%;padding:7px 10px;border:1px solid #cbd5e1;border-radius:7px;font-size:0.875rem;color:#1e293b;background:white;">
+        <div class="flex-1 min-w-[140px]">
+            <label class="block text-[0.75rem] font-semibold text-slate-500 mb-1.5">Status</label>
+            <select name="status" class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-sm text-slate-800 bg-white">
                 <option value="">All statuses</option>
                 <option value="critical"   {{ $statusFilter === 'critical'   ? 'selected' : '' }}>🔴 Critical</option>
                 <option value="order_now"  {{ $statusFilter === 'order_now'  ? 'selected' : '' }}>🟠 Order Now</option>
@@ -65,20 +64,20 @@
             </select>
         </div>
 
-        <div style="flex:2;min-width:200px;">
-            <label style="display:block;font-size:0.75rem;font-weight:600;color:#64748b;margin-bottom:5px;">Search</label>
+        <div class="flex-[2] min-w-[200px]">
+            <label class="block text-[0.75rem] font-semibold text-slate-500 mb-1.5">Search</label>
             <input type="text" name="search" value="{{ $search }}" placeholder="Product code or name…"
-                style="width:100%;box-sizing:border-box;padding:7px 10px;border:1px solid #cbd5e1;border-radius:7px;font-size:0.875rem;color:#1e293b;">
+                class="w-full box-border px-2.5 py-1.5 border border-slate-300 rounded-lg text-sm text-slate-800">
         </div>
 
-        <div style="display:flex;gap:8px;">
+        <div class="flex gap-2">
             <button type="submit"
-                style="padding:7px 16px;background:#0369a1;color:white;border:none;border-radius:7px;font-size:0.875rem;font-weight:600;cursor:pointer;">
+                class="px-4 py-1.5 bg-sky-700 text-white border-none rounded-lg text-sm font-semibold cursor-pointer hover:bg-sky-800">
                 Filter
             </button>
             @if($warehouseFilter || $supplierFilter || $statusFilter || $search)
             <a href="{{ route('stock-forecast.index') }}"
-                style="padding:7px 14px;background:#f1f5f9;color:#475569;border-radius:7px;font-size:0.875rem;font-weight:600;text-decoration:none;">
+                class="px-3.5 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-sm font-semibold no-underline hover:bg-slate-200">
                 Reset
             </a>
             @endif
@@ -87,29 +86,29 @@
 
     {{-- Results summary --}}
     @if($total > 0)
-    <p style="font-size:0.8rem;color:#94a3b8;margin-bottom:10px;">
+    <p class="text-[0.8rem] text-slate-400 mb-2.5">
         Showing {{ $rows->count() }} of {{ number_format($total) }} rows
         @if($lastPage > 1) — Page {{ $page }} of {{ $lastPage }}@endif
     </p>
     @endif
 
     {{-- Table --}}
-    <div style="background:white;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;">
-        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
-        <table style="width:100%;border-collapse:collapse;font-size:0.8rem;min-width:960px;">
+    <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <div class="overflow-x-auto">
+        <table class="w-full border-collapse text-[0.8rem]" style="min-width:960px;">
             <thead>
-                <tr style="border-bottom:1px solid #e2e8f0;background:#f8fafc;">
-                    <th style="text-align:left;padding:10px 14px;font-weight:600;color:#64748b;white-space:nowrap;">Code</th>
-                    <th style="text-align:left;padding:10px 14px;font-weight:600;color:#64748b;">Product</th>
-                    <th style="text-align:left;padding:10px 14px;font-weight:600;color:#64748b;white-space:nowrap;">Supplier</th>
-                    <th style="text-align:left;padding:10px 14px;font-weight:600;color:#64748b;white-space:nowrap;">Warehouse</th>
-                    <th style="text-align:right;padding:10px 14px;font-weight:600;color:#64748b;white-space:nowrap;">On Hand</th>
-                    <th style="text-align:right;padding:10px 14px;font-weight:600;color:#64748b;white-space:nowrap;">Incoming</th>
-                    <th style="text-align:right;padding:10px 14px;font-weight:600;color:#64748b;white-space:nowrap;">Avg Wk</th>
-                    <th style="text-align:right;padding:10px 14px;font-weight:600;color:#64748b;white-space:nowrap;">Wks Left</th>
-                    <th style="text-align:left;padding:10px 14px;font-weight:600;color:#64748b;white-space:nowrap;">Reorder By</th>
-                    <th style="text-align:center;padding:10px 14px;font-weight:600;color:#64748b;white-space:nowrap;">Status</th>
-                    <th style="text-align:center;padding:10px 14px;font-weight:600;color:#64748b;white-space:nowrap;">Lead (wks)</th>
+                <tr class="border-b border-slate-200 bg-slate-50">
+                    <th class="text-left px-3.5 py-2.5 font-semibold text-slate-500 whitespace-nowrap">Code</th>
+                    <th class="text-left px-3.5 py-2.5 font-semibold text-slate-500">Product</th>
+                    <th class="text-left px-3.5 py-2.5 font-semibold text-slate-500 whitespace-nowrap">Supplier</th>
+                    <th class="text-left px-3.5 py-2.5 font-semibold text-slate-500 whitespace-nowrap">Warehouse</th>
+                    <th class="text-right px-3.5 py-2.5 font-semibold text-slate-500 whitespace-nowrap">On Hand</th>
+                    <th class="text-right px-3.5 py-2.5 font-semibold text-slate-500 whitespace-nowrap">Incoming</th>
+                    <th class="text-right px-3.5 py-2.5 font-semibold text-slate-500 whitespace-nowrap">Avg Wk</th>
+                    <th class="text-right px-3.5 py-2.5 font-semibold text-slate-500 whitespace-nowrap">Wks Left</th>
+                    <th class="text-left px-3.5 py-2.5 font-semibold text-slate-500 whitespace-nowrap">Reorder By</th>
+                    <th class="text-center px-3.5 py-2.5 font-semibold text-slate-500 whitespace-nowrap">Status</th>
+                    <th class="text-center px-3.5 py-2.5 font-semibold text-slate-500 whitespace-nowrap">Lead (wks)</th>
                 </tr>
             </thead>
             <tbody>
@@ -123,73 +122,73 @@
                     ];
                     $sc = $statusColors[$line->computed_status] ?? $statusColors['ok'];
                 @endphp
-                <tr style="border-bottom:1px solid #f1f5f9;" class="forecast-row">
-                    <td style="padding:9px 14px;font-family:monospace;font-size:0.78rem;color:#334155;white-space:nowrap;">
+                <tr class="border-b border-slate-100 forecast-row hover:bg-slate-50">
+                    <td class="px-3.5 py-2 font-mono text-[0.78rem] text-slate-700 whitespace-nowrap">
                         {{ $line->product->product_code }}
                     </td>
-                    <td style="padding:9px 14px;color:#1e293b;max-width:220px;">
-                        <span style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ $line->product->product_name }}">
+                    <td class="px-3.5 py-2 text-slate-800 max-w-[220px]">
+                        <span class="block overflow-hidden text-ellipsis whitespace-nowrap" title="{{ $line->product->product_name }}">
                             {{ $line->product->product_name }}
                         </span>
                     </td>
-                    <td style="padding:9px 14px;color:#64748b;white-space:nowrap;max-width:140px;">
-                        <span style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ $line->product->supplier_name }}">
+                    <td class="px-3.5 py-2 text-slate-500 whitespace-nowrap max-w-[140px]">
+                        <span class="block overflow-hidden text-ellipsis whitespace-nowrap" title="{{ $line->product->supplier_name }}">
                             {{ $line->product->supplier_name ?? '—' }}
                         </span>
                     </td>
-                    <td style="padding:9px 14px;color:#475569;white-space:nowrap;">{{ $line->warehouse_name }}</td>
-                    <td style="padding:9px 14px;text-align:right;font-variant-numeric:tabular-nums;color:#1e293b;white-space:nowrap;">
+                    <td class="px-3.5 py-2 text-slate-600 whitespace-nowrap">{{ $line->warehouse_name }}</td>
+                    <td class="px-3.5 py-2 text-right tabular-nums text-slate-800 whitespace-nowrap">
                         {{ number_format($line->qty_on_hand, 0) }}
                     </td>
-                    <td style="padding:9px 14px;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;">
+                    <td class="px-3.5 py-2 text-right tabular-nums whitespace-nowrap">
                         @if($line->qty_incoming > 0)
-                            <span style="color:#0369a1;">+{{ number_format($line->qty_incoming, 0) }}</span>
+                            <span class="text-sky-700">+{{ number_format($line->qty_incoming, 0) }}</span>
                             @if($line->po_expected_date)
-                                <br><span style="font-size:0.72rem;color:#94a3b8;">{{ $line->po_expected_date->format('d M') }}</span>
+                                <br><span class="text-[0.72rem] text-slate-400">{{ $line->po_expected_date->format('d M') }}</span>
                             @endif
                         @else
-                            <span style="color:#cbd5e1;">—</span>
+                            <span class="text-slate-300">—</span>
                         @endif
                     </td>
-                    <td style="padding:9px 14px;text-align:right;font-variant-numeric:tabular-nums;color:#475569;white-space:nowrap;">
+                    <td class="px-3.5 py-2 text-right tabular-nums text-slate-600 whitespace-nowrap">
                         @if($line->computed_avg_weekly > 0)
                             {{ number_format($line->computed_avg_weekly, 1) }}
                         @else
-                            <span style="color:#cbd5e1;">—</span>
+                            <span class="text-slate-300">—</span>
                         @endif
                     </td>
-                    <td style="padding:9px 14px;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;">
+                    <td class="px-3.5 py-2 text-right tabular-nums whitespace-nowrap">
                         @if($line->computed_weeks_left === 999)
-                            <span style="color:#16a34a;">∞</span>
+                            <span class="text-green-600">∞</span>
                         @else
-                            <span style="font-weight:600;color:{{ $sc['color'] }};">{{ $line->computed_weeks_left }}</span>
+                            <span class="font-semibold" style="color:{{ $sc['color'] }};">{{ $line->computed_weeks_left }}</span>
                         @endif
                     </td>
-                    <td style="padding:9px 14px;white-space:nowrap;color:#475569;">
+                    <td class="px-3.5 py-2 whitespace-nowrap text-slate-600">
                         @if($line->computed_weeks_left === 999)
-                            <span style="color:#cbd5e1;">—</span>
+                            <span class="text-slate-300">—</span>
                         @else
                             {{ $line->computed_reorder_by->format('d M Y') }}
                         @endif
                     </td>
-                    <td style="padding:9px 14px;text-align:center;white-space:nowrap;">
-                        <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:0.72rem;font-weight:600;background:{{ $sc['bg'] }};color:{{ $sc['color'] }};">
+                    <td class="px-3.5 py-2 text-center whitespace-nowrap">
+                        <span class="inline-block px-2 py-0.5 rounded-full text-[0.72rem] font-semibold" style="background:{{ $sc['bg'] }};color:{{ $sc['color'] }};">
                             {{ $sc['label'] }}
                         </span>
                     </td>
-                    <td style="padding:9px 14px;text-align:center;">
+                    <td class="px-3.5 py-2 text-center">
                         <input type="number" min="1" max="52"
                             value="{{ $line->lead_time_override ?? '' }}"
                             placeholder="{{ $line->computed_lead_time }}"
                             data-line-id="{{ $line->id }}"
                             title="Leave blank to use supplier default ({{ $line->computed_lead_time }} wks)"
-                            style="width:56px;padding:4px 6px;border:1px solid #e2e8f0;border-radius:6px;font-size:0.8rem;text-align:center;color:#334155;"
+                            class="w-14 px-1.5 py-1 border border-slate-200 rounded-md text-[0.8rem] text-center text-slate-700"
                             onchange="saveLeadTime(this)">
                     </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="11" style="padding:48px;text-align:center;color:#94a3b8;">
+                    <td colspan="11" class="px-4 py-12 text-center text-slate-400">
                         @if($total === 0 && !$warehouseFilter && !$supplierFilter && !$statusFilter && $search === '')
                             No data yet — click <strong>Sync from Unleashed</strong> to pull live stock figures.
                         @else
@@ -205,11 +204,10 @@
 
     {{-- Pagination --}}
     @if($lastPage > 1)
-    <div style="display:flex;justify-content:center;gap:8px;margin-top:1rem;flex-wrap:wrap;">
+    <div class="flex justify-center gap-2 mt-4 flex-wrap">
         @for($p = 1; $p <= $lastPage; $p++)
             <a href="{{ request()->fullUrlWithQuery(['page' => $p]) }}"
-                style="padding:5px 12px;border-radius:6px;font-size:0.8rem;font-weight:500;text-decoration:none;
-                    {{ $p === $page ? 'background:#0f172a;color:white;' : 'background:#f1f5f9;color:#475569;' }}">
+                class="px-3 py-1 rounded-md text-[0.8rem] font-medium no-underline {{ $p === $page ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' }}">
                 {{ $p }}
             </a>
         @endfor

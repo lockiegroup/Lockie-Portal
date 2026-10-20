@@ -1,15 +1,15 @@
 <x-layout title="A/B Testing — Lockie Portal">
-<main style="max-width:1200px;margin:0 auto;padding:2rem 1.5rem;">
+<main class="max-w-[1200px] mx-auto px-4 sm:px-6 py-8">
 
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1.75rem;flex-wrap:wrap;">
+    <div class="flex items-start justify-between gap-4 mb-7 flex-wrap">
         <div>
-            <h1 style="font-size:1.5rem;font-weight:700;color:#1e293b;margin:0 0 0.25rem;">A/B Testing</h1>
-            <p style="color:#64748b;font-size:0.875rem;margin:0;">Track email test results and build rules for each marketing division.</p>
+            <h1 class="text-2xl font-bold text-slate-800 mb-1">A/B Testing</h1>
+            <p class="text-slate-500 text-sm">Track email test results and build rules for each marketing division.</p>
         </div>
         @if($canEdit)
-        <div style="display:flex;gap:0.5rem;align-items:center;">
+        <div class="flex gap-2 items-center">
             <button onclick="openAddDivisionModal()"
-                style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.45rem 0.875rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-size:0.8125rem;cursor:pointer;">
+                class="inline-flex items-center gap-1.5 px-3.5 py-[0.45rem] rounded-lg border border-slate-200 bg-white text-slate-500 text-[0.8125rem] cursor-pointer hover:bg-slate-50 transition-colors">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Add Division
             </button>
@@ -19,17 +19,17 @@
 
     {{-- Division Tabs --}}
     @if($divisions->isEmpty())
-    <div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:3rem;text-align:center;color:#94a3b8;font-size:0.875rem;">
+    <div class="bg-white rounded-xl border border-slate-200 p-12 text-center text-slate-400 text-sm">
         No divisions yet. Add one to get started.
     </div>
     @else
 
-    <div style="display:flex;gap:0.25rem;border-bottom:2px solid #e2e8f0;margin-bottom:1.5rem;overflow-x:auto;scrollbar-width:none;">
+    <div class="flex gap-1 border-b-2 border-slate-200 mb-6 overflow-x-auto [scrollbar-width:none]">
         @foreach($divisions as $i => $division)
         <button onclick="showTab({{ $division->id }})"
             id="tab-btn-{{ $division->id }}"
-            style="padding:0.6rem 1.25rem;font-size:0.875rem;font-weight:600;border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;color:#64748b;transition:color 0.15s,border-color 0.15s;"
-            class="tab-btn">
+            style="border:none;border-bottom:2px solid transparent;margin-bottom:-2px;"
+            class="px-5 py-[0.6rem] text-sm font-semibold bg-transparent cursor-pointer whitespace-nowrap text-slate-500 transition-colors tab-btn">
             {{ $division->name }}
         </button>
         @endforeach
@@ -38,15 +38,15 @@
     @foreach($divisions as $division)
     <div id="tab-{{ $division->id }}" class="tab-panel" style="display:none;">
 
-        <div style="display:grid;grid-template-columns:1fr 340px;gap:1.5rem;align-items:start;">
+        <div class="grid gap-6 items-start" style="grid-template-columns:1fr 340px;">
 
             {{-- Test History --}}
             <div>
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
-                    <h2 style="font-size:1rem;font-weight:700;color:#1e293b;margin:0;">Test History</h2>
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-base font-bold text-slate-800">Test History</h2>
                     @if($canEdit)
                     <button onclick="openLogTestModal({{ $division->id }}, '{{ addslashes($division->name) }}')"
-                        style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.45rem 0.875rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.8125rem;font-weight:600;border:none;cursor:pointer;">
+                        class="inline-flex items-center gap-1.5 px-3.5 py-[0.45rem] rounded-lg bg-slate-900 text-white text-[0.8125rem] font-semibold border-0 cursor-pointer hover:bg-slate-800 transition-colors">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                         Log Campaign
                     </button>
@@ -54,11 +54,11 @@
                 </div>
 
                 @if($division->tests->isEmpty())
-                <div style="background:#fff;border-radius:10px;border:1px solid #e2e8f0;padding:2.5rem;text-align:center;color:#94a3b8;font-size:0.875rem;">
+                <div class="bg-white rounded-[10px] border border-slate-200 p-10 text-center text-slate-400 text-sm">
                     No tests logged yet.
                 </div>
                 @else
-                <div id="tests-{{ $division->id }}" style="display:flex;flex-direction:column;gap:0.75rem;">
+                <div id="tests-{{ $division->id }}" class="flex flex-col gap-3">
                     @foreach($division->tests as $test)
                     @php
                         $testJson = json_encode([
@@ -78,29 +78,29 @@
                             'revenue'          => $test->revenue,
                         ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
                     @endphp
-                    <div data-test-id="{{ $test->id }}" style="background:#fff;border-radius:10px;border:1px solid #e2e8f0;padding:1.25rem;">
-                        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:0.5rem;margin-bottom:0.75rem;">
-                            <div style="flex:1;min-width:0;">
-                                <div style="font-weight:700;color:#1e293b;font-size:0.9375rem;">{{ $test->campaign_name }}</div>
-                                <div style="font-size:0.75rem;color:#94a3b8;margin-top:0.15rem;">
+                    <div data-test-id="{{ $test->id }}" class="bg-white rounded-[10px] border border-slate-200 p-5">
+                        <div class="flex items-start justify-between gap-2 mb-3">
+                            <div class="flex-1 min-w-0">
+                                <div class="font-bold text-slate-800 text-[0.9375rem]">{{ $test->campaign_name }}</div>
+                                <div class="text-xs text-slate-400 mt-0.5">
                                     {{ $test->sent_at->format('d M Y') }}
                                     @if($test->test_type) &middot; {{ $test->test_type_label }} @endif
                                     @if($test->user) &middot; {{ $test->user->name }} @endif
                                 </div>
                                 @if($test->revenue !== null)
-                                <div style="margin-top:0.4rem;font-size:0.8125rem;font-weight:600;color:#0f172a;">Revenue: £{{ number_format($test->revenue, 2) }}</div>
+                                <div class="mt-1.5 text-[0.8125rem] font-semibold text-slate-900">Revenue: £{{ number_format($test->revenue, 2) }}</div>
                                 @endif
                             </div>
                             @if($canEdit)
-                            <div style="display:flex;gap:0.125rem;flex-shrink:0;">
+                            <div class="flex gap-0.5 flex-shrink-0">
                                 <button onclick="openEditTestModal({{ $test->id }}, this)"
-                                    style="background:none;border:none;cursor:pointer;color:#cbd5e1;padding:4px;border-radius:4px;line-height:0;"
+                                    class="bg-transparent border-0 cursor-pointer text-slate-300 p-1 rounded leading-none hover:text-slate-500 transition-colors"
                                     title="Edit"
                                     data-test='{!! $testJson !!}'>
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                 </button>
                                 <button onclick="deleteTest({{ $test->id }}, this)"
-                                    style="background:none;border:none;cursor:pointer;color:#cbd5e1;padding:4px;border-radius:4px;line-height:0;"
+                                    class="bg-transparent border-0 cursor-pointer text-slate-300 p-1 rounded leading-none hover:text-red-400 transition-colors"
                                     title="Delete">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
                                 </button>
@@ -109,47 +109,59 @@
                         </div>
 
                         @if($test->variant_a)
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
-                            <div style="padding:0.75rem;border-radius:8px;border:1px solid {{ $test->winner === 'a' ? '#bbf7d0' : '#e2e8f0' }};background:{{ $test->winner === 'a' ? '#f0fdf4' : '#f8fafc' }};">
-                                <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:{{ $test->winner === 'a' ? '#16a34a' : '#94a3b8' }};margin-bottom:0.35rem;">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="p-3 rounded-lg border {{ $test->winner === 'a' ? 'border-green-200 bg-green-50' : 'border-slate-200 bg-slate-50' }}">
+                                <div class="text-[0.7rem] font-bold uppercase tracking-[0.08em] mb-1.5 {{ $test->winner === 'a' ? 'text-green-600' : 'text-slate-400' }}">
                                     Variant A @if($test->winner === 'a') ✓ Winner @endif
                                 </div>
-                                <div style="font-size:0.8125rem;color:#334155;">{{ $test->variant_a }}</div>
+                                <div class="text-[0.8125rem] text-slate-700">{{ $test->variant_a }}</div>
                                 @if($test->variant_a_result !== null || $test->variant_a_ctr !== null)
-                                <div style="display:flex;gap:0.75rem;margin-top:0.5rem;flex-wrap:wrap;">
+                                <div class="flex gap-3 mt-2 flex-wrap">
                                     @if($test->variant_a_result !== null)
-                                    <div><div style="font-size:0.65rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Open</div><div style="font-size:0.9375rem;font-weight:700;color:{{ $test->winner === 'a' ? '#16a34a' : '#1e293b' }};">{{ $test->variant_a_result }}%</div></div>
+                                    <div>
+                                        <div class="text-[0.65rem] text-slate-400 uppercase tracking-[0.06em]">Open</div>
+                                        <div class="text-[0.9375rem] font-bold {{ $test->winner === 'a' ? 'text-green-600' : 'text-slate-800' }}">{{ $test->variant_a_result }}%</div>
+                                    </div>
                                     @endif
                                     @if($test->variant_a_ctr !== null)
-                                    <div><div style="font-size:0.65rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">CTR</div><div style="font-size:0.9375rem;font-weight:700;color:{{ $test->winner === 'a' ? '#16a34a' : '#1e293b' }};">{{ $test->variant_a_ctr }}%</div></div>
+                                    <div>
+                                        <div class="text-[0.65rem] text-slate-400 uppercase tracking-[0.06em]">CTR</div>
+                                        <div class="text-[0.9375rem] font-bold {{ $test->winner === 'a' ? 'text-green-600' : 'text-slate-800' }}">{{ $test->variant_a_ctr }}%</div>
+                                    </div>
                                     @endif
                                 </div>
                                 @endif
                             </div>
-                            <div style="padding:0.75rem;border-radius:8px;border:1px solid {{ $test->winner === 'b' ? '#bbf7d0' : '#e2e8f0' }};background:{{ $test->winner === 'b' ? '#f0fdf4' : '#f8fafc' }};">
-                                <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:{{ $test->winner === 'b' ? '#16a34a' : '#94a3b8' }};margin-bottom:0.35rem;">
+                            <div class="p-3 rounded-lg border {{ $test->winner === 'b' ? 'border-green-200 bg-green-50' : 'border-slate-200 bg-slate-50' }}">
+                                <div class="text-[0.7rem] font-bold uppercase tracking-[0.08em] mb-1.5 {{ $test->winner === 'b' ? 'text-green-600' : 'text-slate-400' }}">
                                     Variant B @if($test->winner === 'b') ✓ Winner @endif
                                 </div>
-                                <div style="font-size:0.8125rem;color:#334155;">{{ $test->variant_b }}</div>
+                                <div class="text-[0.8125rem] text-slate-700">{{ $test->variant_b }}</div>
                                 @if($test->variant_b_result !== null || $test->variant_b_ctr !== null)
-                                <div style="display:flex;gap:0.75rem;margin-top:0.5rem;flex-wrap:wrap;">
+                                <div class="flex gap-3 mt-2 flex-wrap">
                                     @if($test->variant_b_result !== null)
-                                    <div><div style="font-size:0.65rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Open</div><div style="font-size:0.9375rem;font-weight:700;color:{{ $test->winner === 'b' ? '#16a34a' : '#1e293b' }};">{{ $test->variant_b_result }}%</div></div>
+                                    <div>
+                                        <div class="text-[0.65rem] text-slate-400 uppercase tracking-[0.06em]">Open</div>
+                                        <div class="text-[0.9375rem] font-bold {{ $test->winner === 'b' ? 'text-green-600' : 'text-slate-800' }}">{{ $test->variant_b_result }}%</div>
+                                    </div>
                                     @endif
                                     @if($test->variant_b_ctr !== null)
-                                    <div><div style="font-size:0.65rem;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">CTR</div><div style="font-size:0.9375rem;font-weight:700;color:{{ $test->winner === 'b' ? '#16a34a' : '#1e293b' }};">{{ $test->variant_b_ctr }}%</div></div>
+                                    <div>
+                                        <div class="text-[0.65rem] text-slate-400 uppercase tracking-[0.06em]">CTR</div>
+                                        <div class="text-[0.9375rem] font-bold {{ $test->winner === 'b' ? 'text-green-600' : 'text-slate-800' }}">{{ $test->variant_b_ctr }}%</div>
+                                    </div>
                                     @endif
                                 </div>
                                 @endif
                             </div>
                         </div>
                         @if($test->winner === 'inconclusive')
-                        <div style="margin-top:0.6rem;font-size:0.75rem;color:#94a3b8;">Result: Inconclusive</div>
+                        <div class="mt-2 text-xs text-slate-400">Result: Inconclusive</div>
                         @endif
                         @endif
 
                         @if($test->notes)
-                        <div style="margin-top:0.75rem;padding:0.6rem 0.75rem;background:#f8fafc;border-radius:6px;font-size:0.8125rem;color:#475569;border-left:3px solid #e2e8f0;">{{ $test->notes }}</div>
+                        <div class="mt-3 px-3 py-[0.6rem] bg-slate-50 rounded-md text-[0.8125rem] text-slate-600 border-l-[3px] border-l-slate-200">{{ $test->notes }}</div>
                         @endif
                     </div>
                     @endforeach
@@ -159,44 +171,43 @@
 
             {{-- Rules --}}
             <div>
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
-                    <h2 style="font-size:1rem;font-weight:700;color:#1e293b;margin:0;">Rules &amp; Learnings</h2>
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-base font-bold text-slate-800">Rules &amp; Learnings</h2>
                     @if($canEdit)
                     <button onclick="openAddRuleModal({{ $division->id }})"
-                        style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.45rem 0.875rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-size:0.8125rem;cursor:pointer;">
+                        class="inline-flex items-center gap-1.5 px-3.5 py-[0.45rem] rounded-lg border border-slate-200 bg-white text-slate-500 text-[0.8125rem] cursor-pointer hover:bg-slate-50 transition-colors">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                         Add Rule
                     </button>
                     @endif
                 </div>
 
-                <div id="rules-{{ $division->id }}" style="background:#fff;border-radius:10px;border:1px solid #e2e8f0;overflow:hidden;">
+                <div id="rules-{{ $division->id }}" class="bg-white rounded-[10px] border border-slate-200 overflow-hidden">
                     @if($division->rules->isEmpty())
-                    <div style="padding:2rem;text-align:center;color:#94a3b8;font-size:0.875rem;" id="rules-empty-{{ $division->id }}">
+                    <div class="p-8 text-center text-slate-400 text-sm" id="rules-empty-{{ $division->id }}">
                         No rules yet. Add learnings from your test results.
                     </div>
                     @else
-                    <ol id="rules-list-{{ $division->id }}" style="list-style:none;margin:0;padding:0.5rem;">
+                    <ol id="rules-list-{{ $division->id }}" class="list-none m-0 p-2">
                         @foreach($division->rules as $rule)
                         <li data-rule-id="{{ $rule->id }}"
-                            style="display:flex;align-items:flex-start;gap:0.5rem;padding:0.625rem 0.5rem;border-radius:6px;cursor:{{ $canEdit ? 'grab' : 'default' }};"
-                            class="rule-item">
+                            class="flex items-start gap-2 px-2 py-[0.625rem] rounded-md {{ $canEdit ? 'cursor-grab' : 'cursor-default' }} rule-item hover:bg-slate-50 transition-colors">
                             @if($canEdit)
-                            <span style="color:#cbd5e1;padding-top:2px;flex-shrink:0;cursor:grab;">
+                            <span class="text-slate-300 pt-0.5 flex-shrink-0 cursor-grab">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="5" r="1" fill="currentColor"/><circle cx="9" cy="12" r="1" fill="currentColor"/><circle cx="9" cy="19" r="1" fill="currentColor"/><circle cx="15" cy="5" r="1" fill="currentColor"/><circle cx="15" cy="12" r="1" fill="currentColor"/><circle cx="15" cy="19" r="1" fill="currentColor"/></svg>
                             </span>
                             @endif
-                            <span class="rule-num" style="flex-shrink:0;font-size:0.75rem;font-weight:700;color:#94a3b8;padding-top:2px;min-width:18px;">{{ $loop->iteration }}.</span>
-                            <span class="rule-body" style="flex:1;font-size:0.8125rem;color:#334155;line-height:1.55;">{{ $rule->body }}</span>
+                            <span class="rule-num flex-shrink-0 text-xs font-bold text-slate-400 pt-0.5 min-w-[18px]">{{ $loop->iteration }}.</span>
+                            <span class="rule-body flex-1 text-[0.8125rem] text-slate-700 leading-[1.55]">{{ $rule->body }}</span>
                             @if($canEdit)
-                            <div style="display:flex;gap:0.25rem;flex-shrink:0;">
+                            <div class="flex gap-1 flex-shrink-0">
                                 <button onclick="openEditRuleModal({{ $rule->id }}, this)"
-                                    style="background:none;border:none;cursor:pointer;color:#94a3b8;padding:3px;border-radius:4px;line-height:0;"
+                                    class="bg-transparent border-0 cursor-pointer text-slate-400 p-0.5 rounded leading-none hover:text-slate-600 transition-colors"
                                     title="Edit">
                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                 </button>
                                 <button onclick="deleteRule({{ $rule->id }}, this)"
-                                    style="background:none;border:none;cursor:pointer;color:#94a3b8;padding:3px;border-radius:4px;line-height:0;"
+                                    class="bg-transparent border-0 cursor-pointer text-slate-400 p-0.5 rounded leading-none hover:text-red-400 transition-colors"
                                     title="Delete">
                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
                                 </button>
@@ -207,14 +218,14 @@
                     </ol>
                     @endif
                     @if($canEdit && $division->rules->isNotEmpty())
-                    <div id="rules-empty-{{ $division->id }}" style="display:none;padding:2rem;text-align:center;color:#94a3b8;font-size:0.875rem;">No rules yet.</div>
+                    <div id="rules-empty-{{ $division->id }}" class="hidden p-8 text-center text-slate-400 text-sm">No rules yet.</div>
                     @endif
                 </div>
 
                 @if($canEdit)
-                <div style="margin-top:0.75rem;text-align:right;">
+                <div class="mt-3 text-right">
                     <button onclick="deleteDivision({{ $division->id }}, '{{ addslashes($division->name) }}')"
-                        style="font-size:0.75rem;color:#cbd5e1;background:none;border:none;cursor:pointer;">
+                        class="text-xs text-slate-300 bg-transparent border-0 cursor-pointer hover:text-red-400 transition-colors">
                         Delete division
                     </button>
                 </div>
@@ -230,45 +241,45 @@
 </main>
 
 {{-- Log Campaign Modal --}}
-<div id="log-test-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(15,23,42,0.5);align-items:center;justify-content:center;padding:1rem;">
-    <div style="background:#fff;border-radius:14px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
-        <div style="padding:1.5rem;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;">
-            <h2 style="margin:0;font-size:1.0625rem;font-weight:700;color:#1e293b;">Log Campaign — <span id="log-modal-division-name"></span></h2>
-            <button onclick="closeLogTestModal()" style="background:none;border:none;cursor:pointer;color:#94a3b8;padding:4px;line-height:0;">
+<div id="log-test-modal" class="fixed inset-0 z-[1000] bg-slate-900/50 items-center justify-center p-4" style="display:none;">
+    <div class="bg-white rounded-2xl w-full max-w-[560px] max-h-[90vh] overflow-y-auto shadow-[0_20px_60px_rgba(0,0,0,0.2)]">
+        <div class="px-6 py-5 border-b border-slate-200 flex items-center justify-between">
+            <h2 class="text-[1.0625rem] font-bold text-slate-800">Log Campaign — <span id="log-modal-division-name"></span></h2>
+            <button onclick="closeLogTestModal()" class="bg-transparent border-0 cursor-pointer text-slate-400 p-1 leading-none hover:text-slate-600 transition-colors">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
         </div>
-        <form id="log-test-form" style="padding:1.5rem;display:flex;flex-direction:column;gap:1rem;">
+        <form id="log-test-form" class="p-6 flex flex-col gap-4">
             <input type="hidden" id="log-division-id">
 
             <div>
-                <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">Campaign Name</label>
+                <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Campaign Name</label>
                 <input id="log-campaign" type="text" placeholder="e.g. Jan Newsletter"
-                    style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;">
+                    class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
             </div>
 
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+            <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">Date Sent</label>
+                    <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Date Sent</label>
                     <input id="log-sent-at" type="date"
-                        style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;">
+                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                 </div>
                 <div>
-                    <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">Revenue Earned <span style="font-weight:400;color:#94a3b8;">(£, optional)</span></label>
+                    <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Revenue Earned <span class="font-normal text-slate-400">(£, optional)</span></label>
                     <input id="log-revenue" type="number" min="0" step="0.01" placeholder="0.00"
-                        style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;">
+                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                 </div>
             </div>
 
-            <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.875rem;font-weight:600;color:#374151;cursor:pointer;user-select:none;">
-                <input type="checkbox" id="log-ab-toggle" onchange="toggleAbSection('log')" style="width:15px;height:15px;cursor:pointer;">
+            <label class="flex items-center gap-2 text-sm font-semibold text-slate-700 cursor-pointer select-none">
+                <input type="checkbox" id="log-ab-toggle" onchange="toggleAbSection('log')" class="w-[15px] h-[15px] cursor-pointer">
                 Include A/B test details?
             </label>
 
-            <div id="log-ab-section" style="display:none;flex-direction:column;gap:1rem;padding:1rem;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;">
+            <div id="log-ab-section" class="flex-col gap-4 p-4 bg-slate-50 rounded-[10px] border border-slate-200" style="display:none;">
                 <div>
-                    <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">What Was Tested</label>
-                    <select id="log-test-type" style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;background:#fff;">
+                    <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">What Was Tested</label>
+                    <select id="log-test-type" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 bg-white outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                         <option value="">— Select type —</option>
                         @foreach($testTypes as $key => $label)
                         <option value="{{ $key }}">{{ $label }}</option>
@@ -276,45 +287,45 @@
                     </select>
                 </div>
 
-                <div style="display:grid;grid-template-columns:1fr 80px 80px;gap:0.5rem;align-items:end;">
+                <div class="grid gap-2 items-end" style="grid-template-columns:1fr 80px 80px;">
                     <div>
-                        <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">Variant A</label>
+                        <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Variant A</label>
                         <input id="log-variant-a" type="text" placeholder="e.g. 'Don't miss out!'"
-                            style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;">
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                     </div>
                     <div>
-                        <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">Open %</label>
+                        <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Open %</label>
                         <input id="log-result-a" type="number" min="0" max="100" step="0.01" placeholder="—"
-                            style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;">
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                     </div>
                     <div>
-                        <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">CTR %</label>
+                        <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">CTR %</label>
                         <input id="log-ctr-a" type="number" min="0" max="100" step="0.01" placeholder="—"
-                            style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;">
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                     </div>
                 </div>
 
-                <div style="display:grid;grid-template-columns:1fr 80px 80px;gap:0.5rem;align-items:end;">
+                <div class="grid gap-2 items-end" style="grid-template-columns:1fr 80px 80px;">
                     <div>
-                        <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">Variant B</label>
+                        <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Variant B</label>
                         <input id="log-variant-b" type="text" placeholder="e.g. 'New arrivals inside'"
-                            style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;">
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                     </div>
                     <div>
-                        <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">Open %</label>
+                        <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Open %</label>
                         <input id="log-result-b" type="number" min="0" max="100" step="0.01" placeholder="—"
-                            style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;">
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                     </div>
                     <div>
-                        <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">CTR %</label>
+                        <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">CTR %</label>
                         <input id="log-ctr-b" type="number" min="0" max="100" step="0.01" placeholder="—"
-                            style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;">
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                     </div>
                 </div>
 
                 <div>
-                    <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">Winner</label>
-                    <select id="log-winner" style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;background:#fff;">
+                    <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Winner</label>
+                    <select id="log-winner" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 bg-white outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                         <option value="">— Not yet known —</option>
                         <option value="a">Variant A</option>
                         <option value="b">Variant B</option>
@@ -324,20 +335,20 @@
             </div>
 
             <div>
-                <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">Notes <span style="font-weight:400;color:#94a3b8;">(optional)</span></label>
+                <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Notes <span class="font-normal text-slate-400">(optional)</span></label>
                 <textarea id="log-notes" rows="2" placeholder="Any observations or context..."
-                    style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;resize:vertical;"></textarea>
+                    class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 resize-y outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"></textarea>
             </div>
 
-            <div id="log-test-error" style="display:none;background:#fef2f2;border:1px solid #fecaca;color:#991b1b;font-size:0.8125rem;border-radius:8px;padding:0.625rem 0.875rem;"></div>
+            <div id="log-test-error" class="bg-red-50 border border-red-200 text-red-800 text-[0.8125rem] rounded-lg px-3.5 py-[0.625rem]" style="display:none;"></div>
 
-            <div style="display:flex;justify-content:flex-end;gap:0.5rem;padding-top:0.5rem;">
+            <div class="flex justify-end gap-2 pt-2">
                 <button type="button" onclick="closeLogTestModal()"
-                    style="padding:0.5rem 1rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#374151;font-size:0.875rem;cursor:pointer;">
+                    class="px-4 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm cursor-pointer hover:bg-slate-50 transition-colors">
                     Cancel
                 </button>
                 <button type="button" id="log-test-submit" onclick="submitLogTest()"
-                    style="padding:0.5rem 1rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.875rem;font-weight:600;border:none;cursor:pointer;">
+                    class="px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-semibold border-0 cursor-pointer hover:bg-slate-800 transition-colors">
                     Log Campaign
                 </button>
             </div>
@@ -346,27 +357,27 @@
 </div>
 
 {{-- Add Rule Modal --}}
-<div id="add-rule-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(15,23,42,0.5);align-items:center;justify-content:center;padding:1rem;">
-    <div style="background:#fff;border-radius:14px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
-        <div style="padding:1.25rem 1.5rem;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;">
-            <h2 style="margin:0;font-size:1rem;font-weight:700;color:#1e293b;">Add Rule</h2>
-            <button onclick="closeAddRuleModal()" style="background:none;border:none;cursor:pointer;color:#94a3b8;padding:4px;line-height:0;">
+<div id="add-rule-modal" class="fixed inset-0 z-[1000] bg-slate-900/50 items-center justify-center p-4" style="display:none;">
+    <div class="bg-white rounded-2xl w-full max-w-[480px] shadow-[0_20px_60px_rgba(0,0,0,0.2)]">
+        <div class="px-6 py-5 border-b border-slate-200 flex items-center justify-between">
+            <h2 class="text-base font-bold text-slate-800">Add Rule</h2>
+            <button onclick="closeAddRuleModal()" class="bg-transparent border-0 cursor-pointer text-slate-400 p-1 leading-none hover:text-slate-600 transition-colors">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
         </div>
-        <div style="padding:1.5rem;">
+        <div class="p-6">
             <input type="hidden" id="add-rule-division-id">
-            <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">Rule / Learning</label>
+            <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Rule / Learning</label>
             <textarea id="add-rule-body" rows="3" placeholder="e.g. Earlier send times (9am) consistently outperform 11am across all product lines"
-                style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;resize:vertical;"></textarea>
-            <div id="add-rule-error" style="display:none;margin-top:0.5rem;background:#fef2f2;border:1px solid #fecaca;color:#991b1b;font-size:0.8125rem;border-radius:8px;padding:0.5rem 0.75rem;"></div>
-            <div style="display:flex;justify-content:flex-end;gap:0.5rem;margin-top:1rem;">
+                class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 resize-y outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"></textarea>
+            <div id="add-rule-error" class="mt-2 bg-red-50 border border-red-200 text-red-800 text-[0.8125rem] rounded-lg px-3 py-2" style="display:none;"></div>
+            <div class="flex justify-end gap-2 mt-4">
                 <button onclick="closeAddRuleModal()"
-                    style="padding:0.5rem 1rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#374151;font-size:0.875rem;cursor:pointer;">
+                    class="px-4 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm cursor-pointer hover:bg-slate-50 transition-colors">
                     Cancel
                 </button>
                 <button onclick="submitAddRule()"
-                    style="padding:0.5rem 1rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.875rem;font-weight:600;border:none;cursor:pointer;">
+                    class="px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-semibold border-0 cursor-pointer hover:bg-slate-800 transition-colors">
                     Add Rule
                 </button>
             </div>
@@ -375,27 +386,27 @@
 </div>
 
 {{-- Edit Rule Modal --}}
-<div id="edit-rule-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(15,23,42,0.5);align-items:center;justify-content:center;padding:1rem;">
-    <div style="background:#fff;border-radius:14px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
-        <div style="padding:1.25rem 1.5rem;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;">
-            <h2 style="margin:0;font-size:1rem;font-weight:700;color:#1e293b;">Edit Rule</h2>
-            <button onclick="closeEditRuleModal()" style="background:none;border:none;cursor:pointer;color:#94a3b8;padding:4px;line-height:0;">
+<div id="edit-rule-modal" class="fixed inset-0 z-[1000] bg-slate-900/50 items-center justify-center p-4" style="display:none;">
+    <div class="bg-white rounded-2xl w-full max-w-[480px] shadow-[0_20px_60px_rgba(0,0,0,0.2)]">
+        <div class="px-6 py-5 border-b border-slate-200 flex items-center justify-between">
+            <h2 class="text-base font-bold text-slate-800">Edit Rule</h2>
+            <button onclick="closeEditRuleModal()" class="bg-transparent border-0 cursor-pointer text-slate-400 p-1 leading-none hover:text-slate-600 transition-colors">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
         </div>
-        <div style="padding:1.5rem;">
+        <div class="p-6">
             <input type="hidden" id="edit-rule-id">
-            <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">Rule / Learning</label>
+            <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Rule / Learning</label>
             <textarea id="edit-rule-body" rows="3"
-                style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;resize:vertical;"></textarea>
-            <div id="edit-rule-error" style="display:none;margin-top:0.5rem;background:#fef2f2;border:1px solid #fecaca;color:#991b1b;font-size:0.8125rem;border-radius:8px;padding:0.5rem 0.75rem;"></div>
-            <div style="display:flex;justify-content:flex-end;gap:0.5rem;margin-top:1rem;">
+                class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 resize-y outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"></textarea>
+            <div id="edit-rule-error" class="mt-2 bg-red-50 border border-red-200 text-red-800 text-[0.8125rem] rounded-lg px-3 py-2" style="display:none;"></div>
+            <div class="flex justify-end gap-2 mt-4">
                 <button onclick="closeEditRuleModal()"
-                    style="padding:0.5rem 1rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#374151;font-size:0.875rem;cursor:pointer;">
+                    class="px-4 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm cursor-pointer hover:bg-slate-50 transition-colors">
                     Cancel
                 </button>
                 <button onclick="submitEditRule()"
-                    style="padding:0.5rem 1rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.875rem;font-weight:600;border:none;cursor:pointer;">
+                    class="px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-semibold border-0 cursor-pointer hover:bg-slate-800 transition-colors">
                     Save
                 </button>
             </div>
@@ -404,26 +415,26 @@
 </div>
 
 {{-- Add Division Modal --}}
-<div id="add-division-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(15,23,42,0.5);align-items:center;justify-content:center;padding:1rem;">
-    <div style="background:#fff;border-radius:14px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
-        <div style="padding:1.25rem 1.5rem;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;">
-            <h2 style="margin:0;font-size:1rem;font-weight:700;color:#1e293b;">Add Division</h2>
-            <button onclick="closeAddDivisionModal()" style="background:none;border:none;cursor:pointer;color:#94a3b8;padding:4px;line-height:0;">
+<div id="add-division-modal" class="fixed inset-0 z-[1000] bg-slate-900/50 items-center justify-center p-4" style="display:none;">
+    <div class="bg-white rounded-2xl w-full max-w-[400px] shadow-[0_20px_60px_rgba(0,0,0,0.2)]">
+        <div class="px-6 py-5 border-b border-slate-200 flex items-center justify-between">
+            <h2 class="text-base font-bold text-slate-800">Add Division</h2>
+            <button onclick="closeAddDivisionModal()" class="bg-transparent border-0 cursor-pointer text-slate-400 p-1 leading-none hover:text-slate-600 transition-colors">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
         </div>
-        <div style="padding:1.5rem;">
-            <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">Division Name</label>
+        <div class="p-6">
+            <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Division Name</label>
             <input id="add-division-name" type="text" placeholder="e.g. JW Products"
-                style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;">
-            <div id="add-division-error" style="display:none;margin-top:0.5rem;background:#fef2f2;border:1px solid #fecaca;color:#991b1b;font-size:0.8125rem;border-radius:8px;padding:0.5rem 0.75rem;"></div>
-            <div style="display:flex;justify-content:flex-end;gap:0.5rem;margin-top:1rem;">
+                class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
+            <div id="add-division-error" class="mt-2 bg-red-50 border border-red-200 text-red-800 text-[0.8125rem] rounded-lg px-3 py-2" style="display:none;"></div>
+            <div class="flex justify-end gap-2 mt-4">
                 <button onclick="closeAddDivisionModal()"
-                    style="padding:0.5rem 1rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#374151;font-size:0.875rem;cursor:pointer;">
+                    class="px-4 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm cursor-pointer hover:bg-slate-50 transition-colors">
                     Cancel
                 </button>
                 <button onclick="submitAddDivision()"
-                    style="padding:0.5rem 1rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.875rem;font-weight:600;border:none;cursor:pointer;">
+                    class="px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-semibold border-0 cursor-pointer hover:bg-slate-800 transition-colors">
                     Add Division
                 </button>
             </div>
@@ -432,45 +443,45 @@
 </div>
 
 {{-- Edit Test Modal --}}
-<div id="edit-test-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(15,23,42,0.5);align-items:center;justify-content:center;padding:1rem;">
-    <div style="background:#fff;border-radius:14px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
-        <div style="padding:1.5rem;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;">
-            <h2 style="margin:0;font-size:1.0625rem;font-weight:700;color:#1e293b;">Edit Test</h2>
-            <button onclick="closeEditTestModal()" style="background:none;border:none;cursor:pointer;color:#94a3b8;padding:4px;line-height:0;">
+<div id="edit-test-modal" class="fixed inset-0 z-[1000] bg-slate-900/50 items-center justify-center p-4" style="display:none;">
+    <div class="bg-white rounded-2xl w-full max-w-[560px] max-h-[90vh] overflow-y-auto shadow-[0_20px_60px_rgba(0,0,0,0.2)]">
+        <div class="px-6 py-5 border-b border-slate-200 flex items-center justify-between">
+            <h2 class="text-[1.0625rem] font-bold text-slate-800">Edit Test</h2>
+            <button onclick="closeEditTestModal()" class="bg-transparent border-0 cursor-pointer text-slate-400 p-1 leading-none hover:text-slate-600 transition-colors">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
         </div>
-        <form id="edit-test-form" style="padding:1.5rem;display:flex;flex-direction:column;gap:1rem;">
+        <form id="edit-test-form" class="p-6 flex flex-col gap-4">
             <input type="hidden" id="edit-test-id">
 
             <div>
-                <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">Campaign Name</label>
+                <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Campaign Name</label>
                 <input id="edit-campaign" type="text"
-                    style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;">
+                    class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
             </div>
 
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+            <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">Date Sent</label>
+                    <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Date Sent</label>
                     <input id="edit-sent-at" type="date"
-                        style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;">
+                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                 </div>
                 <div>
-                    <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">Revenue Earned <span style="font-weight:400;color:#94a3b8;">(£, optional)</span></label>
+                    <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Revenue Earned <span class="font-normal text-slate-400">(£, optional)</span></label>
                     <input id="edit-revenue" type="number" min="0" step="0.01" placeholder="0.00"
-                        style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;">
+                        class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                 </div>
             </div>
 
-            <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.875rem;font-weight:600;color:#374151;cursor:pointer;user-select:none;">
-                <input type="checkbox" id="edit-ab-toggle" onchange="toggleAbSection('edit')" style="width:15px;height:15px;cursor:pointer;">
+            <label class="flex items-center gap-2 text-sm font-semibold text-slate-700 cursor-pointer select-none">
+                <input type="checkbox" id="edit-ab-toggle" onchange="toggleAbSection('edit')" class="w-[15px] h-[15px] cursor-pointer">
                 Include A/B test details?
             </label>
 
-            <div id="edit-ab-section" style="display:none;flex-direction:column;gap:1rem;padding:1rem;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;">
+            <div id="edit-ab-section" class="flex-col gap-4 p-4 bg-slate-50 rounded-[10px] border border-slate-200" style="display:none;">
                 <div>
-                    <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">What Was Tested</label>
-                    <select id="edit-test-type" style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;background:#fff;">
+                    <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">What Was Tested</label>
+                    <select id="edit-test-type" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 bg-white outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                         <option value="">— Select type —</option>
                         @foreach($testTypes as $key => $label)
                         <option value="{{ $key }}">{{ $label }}</option>
@@ -478,45 +489,45 @@
                     </select>
                 </div>
 
-                <div style="display:grid;grid-template-columns:1fr 80px 80px;gap:0.5rem;align-items:end;">
+                <div class="grid gap-2 items-end" style="grid-template-columns:1fr 80px 80px;">
                     <div>
-                        <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">Variant A</label>
+                        <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Variant A</label>
                         <input id="edit-variant-a" type="text"
-                            style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;">
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                     </div>
                     <div>
-                        <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">Open %</label>
+                        <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Open %</label>
                         <input id="edit-result-a" type="number" min="0" max="100" step="0.01" placeholder="—"
-                            style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;">
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                     </div>
                     <div>
-                        <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">CTR %</label>
+                        <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">CTR %</label>
                         <input id="edit-ctr-a" type="number" min="0" max="100" step="0.01" placeholder="—"
-                            style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;">
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                     </div>
                 </div>
 
-                <div style="display:grid;grid-template-columns:1fr 80px 80px;gap:0.5rem;align-items:end;">
+                <div class="grid gap-2 items-end" style="grid-template-columns:1fr 80px 80px;">
                     <div>
-                        <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">Variant B</label>
+                        <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Variant B</label>
                         <input id="edit-variant-b" type="text"
-                            style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;">
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                     </div>
                     <div>
-                        <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">Open %</label>
+                        <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Open %</label>
                         <input id="edit-result-b" type="number" min="0" max="100" step="0.01" placeholder="—"
-                            style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;">
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                     </div>
                     <div>
-                        <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">CTR %</label>
+                        <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">CTR %</label>
                         <input id="edit-ctr-b" type="number" min="0" max="100" step="0.01" placeholder="—"
-                            style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;">
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                     </div>
                 </div>
 
                 <div>
-                    <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">Winner</label>
-                    <select id="edit-winner" style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;background:#fff;">
+                    <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Winner</label>
+                    <select id="edit-winner" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 bg-white outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                         <option value="">— Not yet known —</option>
                         <option value="a">Variant A</option>
                         <option value="b">Variant B</option>
@@ -526,20 +537,20 @@
             </div>
 
             <div>
-                <label style="display:block;font-size:0.8125rem;font-weight:600;color:#374151;margin-bottom:0.35rem;">Notes <span style="font-weight:400;color:#94a3b8;">(optional)</span></label>
+                <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Notes <span class="font-normal text-slate-400">(optional)</span></label>
                 <textarea id="edit-notes" rows="2"
-                    style="width:100%;box-sizing:border-box;padding:0.5rem 0.75rem;border:1px solid #d1d5db;border-radius:8px;font-size:0.875rem;color:#1e293b;resize:vertical;"></textarea>
+                    class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 resize-y outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"></textarea>
             </div>
 
-            <div id="edit-test-error" style="display:none;background:#fef2f2;border:1px solid #fecaca;color:#991b1b;font-size:0.8125rem;border-radius:8px;padding:0.625rem 0.875rem;"></div>
+            <div id="edit-test-error" class="bg-red-50 border border-red-200 text-red-800 text-[0.8125rem] rounded-lg px-3.5 py-[0.625rem]" style="display:none;"></div>
 
-            <div style="display:flex;justify-content:flex-end;gap:0.5rem;padding-top:0.5rem;">
+            <div class="flex justify-end gap-2 pt-2">
                 <button type="button" onclick="closeEditTestModal()"
-                    style="padding:0.5rem 1rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#374151;font-size:0.875rem;cursor:pointer;">
+                    class="px-4 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm cursor-pointer hover:bg-slate-50 transition-colors">
                     Cancel
                 </button>
                 <button type="button" id="edit-test-submit" onclick="submitEditTest()"
-                    style="padding:0.5rem 1rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.875rem;font-weight:600;border:none;cursor:pointer;">
+                    class="px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-semibold border-0 cursor-pointer hover:bg-slate-800 transition-colors">
                     Save Changes
                 </button>
             </div>

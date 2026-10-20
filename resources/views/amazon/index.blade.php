@@ -1,88 +1,88 @@
 <x-layout title="Amazon & Xero — Lockie Portal">
 
-<main style="max-width:1400px;margin:0 auto;padding:2rem 1.5rem;">
+<main class="max-w-[1400px] mx-auto px-4 sm:px-6 py-8">
 
     {{-- Header --}}
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:1.5rem;">
+    <div class="flex items-start justify-between flex-wrap gap-3 mb-6">
         <div>
-            <h1 style="font-size:1.5rem;font-weight:700;color:#1e293b;margin:0;">Amazon & Xero</h1>
-            <p style="font-size:0.875rem;color:#64748b;margin:0.25rem 0 0;">Settlement reconciliation and Xero posting.</p>
+            <h1 class="text-2xl font-bold text-slate-800 m-0">Amazon & Xero</h1>
+            <p class="text-sm text-slate-500 mt-1 m-0">Settlement reconciliation and Xero posting.</p>
         </div>
-        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
-            <button id="sync-btn" onclick="runSync()" style="background:#1e293b;color:#fff;border:none;border-radius:0.5rem;padding:0.5rem 1rem;font-size:0.875rem;cursor:pointer;font-weight:600;">
+        <div class="flex gap-2 flex-wrap">
+            <button id="sync-btn" onclick="runSync()" class="bg-slate-800 text-white border-none rounded-lg px-4 py-2 text-sm cursor-pointer font-semibold hover:bg-slate-700">
                 Sync Settlements
             </button>
             @if(!$hasXeroToken)
-            <a href="{{ route('amazon.xero.connect') }}" style="background:#00b9a5;color:#fff;border-radius:0.5rem;padding:0.5rem 1rem;font-size:0.875rem;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;">
+            <a href="{{ route('amazon.xero.connect') }}" class="bg-teal-500 text-white rounded-lg px-4 py-2 text-sm font-semibold no-underline inline-flex items-center hover:bg-teal-600">
                 Connect Xero
             </a>
             @else
-            <span style="background:#dcfce7;color:#166534;border-radius:0.5rem;padding:0.5rem 1rem;font-size:0.875rem;font-weight:600;">
+            <span class="bg-green-100 text-green-800 rounded-lg px-4 py-2 text-sm font-semibold">
                 ✓ Xero Connected
             </span>
-            <a href="{{ route('amazon.xero.connect') }}" style="background:#f1f5f9;color:#475569;border-radius:0.5rem;padding:0.5rem 1rem;font-size:0.875rem;font-weight:600;text-decoration:none;">
+            <a href="{{ route('amazon.xero.connect') }}" class="bg-slate-100 text-slate-600 rounded-lg px-4 py-2 text-sm font-semibold no-underline hover:bg-slate-200">
                 Reconnect Xero
             </a>
             @endif
-            <a href="{{ route('amazon.profit') }}" style="background:#f1f5f9;color:#475569;border-radius:0.5rem;padding:0.5rem 1rem;font-size:0.875rem;font-weight:600;text-decoration:none;">
+            <a href="{{ route('amazon.profit') }}" class="bg-slate-100 text-slate-600 rounded-lg px-4 py-2 text-sm font-semibold no-underline hover:bg-slate-200">
                 Profit Report →
             </a>
         </div>
     </div>
 
     @if(session('success'))
-    <div style="background:#dcfce7;border:1px solid #86efac;color:#166534;padding:0.75rem 1rem;border-radius:0.5rem;margin-bottom:1rem;font-size:0.875rem;">
+    <div class="bg-green-100 border border-green-300 text-green-800 px-4 py-3 rounded-lg mb-4 text-sm">
         {{ session('success') }}
     </div>
     @endif
     @if(session('error'))
-    <div style="background:#fee2e2;border:1px solid #fca5a5;color:#991b1b;padding:0.75rem 1rem;border-radius:0.5rem;margin-bottom:1rem;font-size:0.875rem;">
+    <div class="bg-red-100 border border-red-300 text-red-800 px-4 py-3 rounded-lg mb-4 text-sm">
         {{ session('error') }}
     </div>
     @endif
 
     {{-- Summary Cards --}}
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem;">
-        <div style="background:#fff;border-radius:0.75rem;box-shadow:0 1px 4px rgba(0,0,0,0.07);padding:1.25rem;">
-            <p style="font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 0.5rem;">Total Settlements</p>
-            <p style="font-size:1.75rem;font-weight:700;color:#1e293b;margin:0;">{{ number_format($totalSettlements) }}</p>
+    <div class="grid gap-4 mb-6" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));">
+        <div class="bg-white rounded-xl shadow-sm px-5 py-5">
+            <p class="text-[0.75rem] font-semibold text-slate-500 uppercase tracking-wide mb-2 m-0">Total Settlements</p>
+            <p class="text-[1.75rem] font-bold text-slate-800 m-0">{{ number_format($totalSettlements) }}</p>
         </div>
-        <div style="background:#fff;border-radius:0.75rem;box-shadow:0 1px 4px rgba(0,0,0,0.07);padding:1.25rem;">
-            <p style="font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 0.5rem;">Pending Xero Posts</p>
-            <p style="font-size:1.75rem;font-weight:700;color:{{ $pendingXero > 0 ? '#d97706' : '#16a34a' }};margin:0;">{{ number_format($pendingXero) }}</p>
+        <div class="bg-white rounded-xl shadow-sm px-5 py-5">
+            <p class="text-[0.75rem] font-semibold text-slate-500 uppercase tracking-wide mb-2 m-0">Pending Xero Posts</p>
+            <p class="text-[1.75rem] font-bold m-0" style="color:{{ $pendingXero > 0 ? '#d97706' : '#16a34a' }};">{{ number_format($pendingXero) }}</p>
         </div>
-        <div style="background:#fff;border-radius:0.75rem;box-shadow:0 1px 4px rgba(0,0,0,0.07);padding:1.25rem;">
-            <p style="font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 0.5rem;">Last Sync</p>
-            <p style="font-size:1rem;font-weight:700;color:#1e293b;margin:0;">{{ $lastSync ? \Carbon\Carbon::parse($lastSync)->diffForHumans() : 'Never' }}</p>
+        <div class="bg-white rounded-xl shadow-sm px-5 py-5">
+            <p class="text-[0.75rem] font-semibold text-slate-500 uppercase tracking-wide mb-2 m-0">Last Sync</p>
+            <p class="text-base font-bold text-slate-800 m-0">{{ $lastSync ? \Carbon\Carbon::parse($lastSync)->diffForHumans() : 'Never' }}</p>
         </div>
     </div>
 
     {{-- Sync status message --}}
-    <div id="sync-msg" style="display:none;padding:0.75rem 1rem;border-radius:0.5rem;margin-bottom:1rem;font-size:0.875rem;"></div>
+    <div id="sync-msg" style="display:none;" class="px-4 py-3 rounded-lg mb-4 text-sm"></div>
 
     {{-- Settlements Table --}}
-    <div style="background:#fff;border-radius:0.75rem;box-shadow:0 1px 4px rgba(0,0,0,0.07);overflow:hidden;">
-        <div style="padding:1rem 1.25rem;border-bottom:1px solid #f1f5f9;">
-            <h2 style="font-size:1rem;font-weight:700;color:#1e293b;margin:0;">Settlements</h2>
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-100">
+            <h2 class="text-base font-bold text-slate-800 m-0">Settlements</h2>
         </div>
-        <div style="overflow-x:auto;">
-            <table style="border-collapse:collapse;width:100%;font-size:0.8125rem;">
+        <div class="overflow-x-auto">
+            <table class="border-collapse w-full text-[0.8125rem]">
                 <thead>
-                    <tr style="background:#f8fafc;">
-                        <th style="text-align:left;padding:0.625rem 1rem;font-weight:700;color:#334155;border-bottom:2px solid #e2e8f0;white-space:nowrap;">Settlement ID</th>
-                        <th style="text-align:left;padding:0.625rem 1rem;font-weight:700;color:#334155;border-bottom:2px solid #e2e8f0;white-space:nowrap;">Period</th>
-                        <th style="text-align:right;padding:0.625rem 1rem;font-weight:700;color:#334155;border-bottom:2px solid #e2e8f0;white-space:nowrap;">Deposit</th>
-                        <th style="text-align:center;padding:0.625rem 1rem;font-weight:700;color:#334155;border-bottom:2px solid #e2e8f0;white-space:nowrap;">CSV</th>
-                        <th style="text-align:left;padding:0.625rem 1rem;font-weight:700;color:#334155;border-bottom:2px solid #e2e8f0;white-space:nowrap;">Processed</th>
-                        <th style="text-align:right;padding:0.625rem 1rem;font-weight:700;color:#334155;border-bottom:2px solid #e2e8f0;white-space:nowrap;">Actions</th>
+                    <tr class="bg-slate-50">
+                        <th class="text-left px-4 py-2.5 font-bold text-slate-700 border-b-2 border-slate-200 whitespace-nowrap">Settlement ID</th>
+                        <th class="text-left px-4 py-2.5 font-bold text-slate-700 border-b-2 border-slate-200 whitespace-nowrap">Period</th>
+                        <th class="text-right px-4 py-2.5 font-bold text-slate-700 border-b-2 border-slate-200 whitespace-nowrap">Deposit</th>
+                        <th class="text-center px-4 py-2.5 font-bold text-slate-700 border-b-2 border-slate-200 whitespace-nowrap">CSV</th>
+                        <th class="text-left px-4 py-2.5 font-bold text-slate-700 border-b-2 border-slate-200 whitespace-nowrap">Processed</th>
+                        <th class="text-right px-4 py-2.5 font-bold text-slate-700 border-b-2 border-slate-200 whitespace-nowrap">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="settlements-body">
-                    <tr><td colspan="6" style="text-align:center;padding:2rem;color:#94a3b8;font-size:0.875rem;">Loading…</td></tr>
+                    <tr><td colspan="6" class="text-center px-4 py-8 text-slate-400 text-sm">Loading…</td></tr>
                 </tbody>
             </table>
         </div>
-        <div id="settlements-pagination" style="padding:0.75rem 1rem;border-top:1px solid #f1f5f9;display:flex;gap:0.5rem;flex-wrap:wrap;"></div>
+        <div id="settlements-pagination" class="px-4 py-3 border-t border-slate-100 flex gap-2 flex-wrap"></div>
     </div>
 
 </main>

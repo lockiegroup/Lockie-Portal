@@ -534,17 +534,17 @@
 <div class="jobs-screen">
 
     @if(session('error'))
-        <div style="background:#450a0a;border:1px solid #dc2626;color:#fca5a5;padding:12px 16px;border-radius:10px;margin-bottom:16px;">
+        <div class="bg-[#450a0a] border border-red-600 text-red-300 px-4 py-3 rounded-lg mb-4">
             {{ session('error') }}
         </div>
     @endif
 
     @if(session('start_blocked'))
-        <div style="background:#431407;border:2px solid #ea580c;color:#fed7aa;padding:14px 16px;border-radius:12px;margin-bottom:16px;display:flex;align-items:center;gap:12px;">
-            <span style="font-size:1.25rem;flex-shrink:0;">⚠️</span>
+        <div class="flex items-center gap-3 bg-[#431407] border-2 border-orange-600 text-orange-200 px-4 py-3.5 rounded-xl mb-4">
+            <span class="text-xl flex-shrink-0">⚠️</span>
             <div>
-                <div style="font-weight:700;font-size:1rem;margin-bottom:3px;">Can't start — another job is already running</div>
-                <div style="font-size:0.875rem;opacity:0.85;">
+                <div class="font-bold text-base mb-0.5">Can't start — another job is already running</div>
+                <div class="text-sm opacity-85">
                     <strong>{{ session('start_blocked') }}</strong> is currently running on this machine.
                     Please <strong>pause</strong> or <strong>end</strong> that job before starting a new one.
                 </div>
@@ -553,7 +553,7 @@
     @endif
 
     @if(session('handover_error'))
-        <div style="background:#450a0a;border:1px solid #dc2626;color:#fca5a5;padding:12px 16px;border-radius:10px;margin-bottom:16px;">
+        <div class="bg-[#450a0a] border border-red-600 text-red-300 px-4 py-3 rounded-lg mb-4">
             {{ session('handover_error') }}
         </div>
     @endif
@@ -653,10 +653,10 @@
                             <div class="job-desc">{{ $job->product_description }}</div>
                         @endif
                         @if($job->line_comment)
-                            <div class="job-comment" style="white-space:pre-wrap;">{{ $job->line_comment }}</div>
+                            <div class="job-comment whitespace-pre-wrap">{{ $job->line_comment }}</div>
                         @endif
                         @if($job->delivery_name)
-                            <div style="font-size:0.8rem;color:#475569;margin-top:4px;">&#x1F4CD; {{ $job->delivery_name }}</div>
+                            <div class="text-[0.8rem] text-slate-500 mt-1">&#x1F4CD; {{ $job->delivery_name }}</div>
                         @endif
                     </div>
 
@@ -688,14 +688,14 @@
                         by <span>{{ $activeRun->user?->name ?? 'Unknown' }}</span>
                         @if($activeRun->progress_packs !== null)
                             &nbsp;·&nbsp;
-                            <span style="color:#4ade80;font-weight:600;">{{ number_format($activeRun->progress_packs) }} packs done</span>
-                            <span style="color:#475569;"> (updated {{ $activeRun->progress_at->format('H:i') }})</span>
+                            <span class="text-green-400 font-semibold">{{ number_format($activeRun->progress_packs) }} packs done</span>
+                            <span class="text-slate-500"> (updated {{ $activeRun->progress_at->format('H:i') }})</span>
                         @elseif($prevPacks > 0)
                             &nbsp;·&nbsp;
-                            <span style="color:#4ade80;font-weight:600;">{{ number_format($prevPacks) }} packs from previous runs</span>
+                            <span class="text-green-400 font-semibold">{{ number_format($prevPacks) }} packs from previous runs</span>
                         @endif
                     </div>
-                    <div id="countdown-{{ $job->id }}" style="font-size:0.78rem;color:#64748b;margin-top:5px;"></div>
+                    <div id="countdown-{{ $job->id }}" class="text-[0.78rem] text-slate-500 mt-1.5"></div>
                 @elseif($state === 'paused' && $lastRun)
                     <div class="job-run-info">
                         Paused at {{ $lastRun->ended_at->format('H:i') }}
@@ -721,7 +721,7 @@
                 <div class="job-actions">
 
                     @if($state === 'idle')
-                        <form method="POST" action="{{ route('tablet.jobs.start', [$machine, $job]) }}" style="margin:0;">
+                        <form method="POST" action="{{ route('tablet.jobs.start', [$machine, $job]) }}">
                             @csrf
                             <button type="submit" class="btn btn-success btn-lg">▶ Start Job</button>
                         </form>
@@ -734,14 +734,14 @@
                             data-started-at="{{ $activeRun->started_at->timestamp * 1000 }}"
                             data-progress-at="{{ $activeRun->progress_at ? $activeRun->progress_at->timestamp * 1000 : '' }}"
                             onsubmit="return confirmProgressUpdate(this)"
-                            style="display:flex;align-items:center;gap:10px;flex:1;min-width:220px;background:#0f172a;border:2px solid #334155;border-radius:10px;padding:8px 12px;">
+                            class="flex items-center gap-2.5 flex-1 min-w-[220px] bg-slate-950 border-2 border-slate-700 rounded-lg px-3 py-2">
                             @csrf
-                            <label style="font-size:0.85rem;color:#64748b;white-space:nowrap;font-weight:600;">Packs done:</label>
+                            <label class="text-[0.85rem] text-slate-500 whitespace-nowrap font-semibold">Packs done:</label>
                             <input type="number" name="progress_packs" min="0" max="{{ $job->order_quantity }}"
                                 value="{{ $activeRun->progress_packs !== null ? $activeRun->progress_packs : ($prevPacks ?: '') }}"
                                 placeholder="{{ $prevPacks > 0 ? $prevPacks : '0' }}"
                                 inputmode="numeric"
-                                style="flex:1;background:transparent;border:none;color:#f1f5f9;font-size:1.25rem;font-weight:700;outline:none;width:80px;">
+                                class="flex-1 bg-transparent border-none text-slate-100 text-xl font-bold outline-none w-20">
                             <button type="submit" class="btn btn-success btn-sm">Update</button>
                         </form>
 
@@ -760,7 +760,7 @@
 
                     @elseif($state === 'paused')
                         @php $pausedCurrentPacks = $lastRun->packs_produced ?? $lastRun->progress_packs ?? $prevPacks; @endphp
-                        <form method="POST" action="{{ route('tablet.jobs.resume', [$machine, $job]) }}" style="margin:0;">
+                        <form method="POST" action="{{ route('tablet.jobs.resume', [$machine, $job]) }}">
                             @csrf
                             <button type="submit" class="btn btn-success btn-lg">▶ Resume</button>
                         </form>
@@ -774,7 +774,7 @@
                         </button>
 
                     @elseif($state === 'done')
-                        <form method="POST" action="{{ route('tablet.jobs.start', [$machine, $job]) }}" style="margin:0;">
+                        <form method="POST" action="{{ route('tablet.jobs.start', [$machine, $job]) }}">
                             @csrf
                             <button type="submit" class="btn btn-ghost btn-md">↺ Start Again</button>
                         </form>
@@ -785,7 +785,7 @@
                         $cardIndex = $jobCardIndex[$job->id] ?? 1;
                     @endphp
                     @if($cardTotal > 1)
-                        <span style="margin-left:auto;align-self:center;font-size:0.7rem;font-weight:700;background:#1e3a5f;color:#7dd3fc;padding:2px 8px;border-radius:9999px;text-transform:uppercase;letter-spacing:0.05em;">Card {{ $cardIndex }} of {{ $cardTotal }}</span>
+                        <span class="ml-auto self-center text-[0.7rem] font-bold bg-[#1e3a5f] text-sky-300 px-2 py-0.5 rounded-full uppercase tracking-wide">Card {{ $cardIndex }} of {{ $cardTotal }}</span>
                     @endif
                 </div>
             </div>
