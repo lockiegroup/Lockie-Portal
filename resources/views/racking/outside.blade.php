@@ -1,164 +1,191 @@
 <x-layout title="Outside Storage — Racking — Lockie Portal">
-<main style="max-width:1100px;margin:0 auto;padding:2rem 1.5rem;">
+<main class="max-w-[1100px] mx-auto px-4 sm:px-6 py-8">
 
 {{-- Header --}}
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1.5rem;">
-    <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+<div class="flex items-center justify-between flex-wrap gap-4 mb-6">
+    <div class="flex items-center gap-4 flex-wrap">
         <a href="{{ route('racking.index') }}"
-           style="font-size:0.8125rem;color:#64748b;text-decoration:none;display:inline-flex;align-items:center;gap:.3rem;padding:.3rem .75rem;border:1px solid #e2e8f0;border-radius:6px;background:#fff;">
+           class="text-[0.8125rem] text-slate-500 no-underline inline-flex items-center gap-1 px-3 py-1.5 border border-slate-200 rounded-md bg-white hover:bg-slate-50 transition-colors">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
             Main Racking
         </a>
         <div>
-            <h1 style="font-size:1.4rem;font-weight:700;color:#1e293b;margin:0 0 .2rem;">Outside Storage</h1>
-            <p style="color:#64748b;font-size:0.875rem;margin:0;">{{ $items->count() }} items currently in outside storage</p>
+            <h1 class="text-[1.4rem] font-bold text-slate-800 mb-0.5">Outside Storage</h1>
+            <p class="text-slate-500 text-sm">{{ $items->count() }} items currently in outside storage</p>
         </div>
     </div>
     <button onclick="document.getElementById('add-modal').style.display='flex'"
-        style="padding:.5rem 1rem;background:#0f172a;color:#fff;border:none;border-radius:8px;font-size:.8125rem;font-weight:700;cursor:pointer;">
+        class="px-4 py-2 bg-slate-900 text-white border-0 rounded-lg text-[0.8125rem] font-bold cursor-pointer hover:bg-slate-800 transition-colors">
         + Add Item
     </button>
 </div>
 
 @if(session('success'))
-<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:.75rem 1rem;margin-bottom:1rem;color:#166534;font-size:.875rem;">{{ session('success') }}</div>
+<div class="bg-green-50 border border-green-200 rounded-lg px-4 py-3 mb-4 text-green-800 text-sm">{{ session('success') }}</div>
 @endif
 
 {{-- Table --}}
-<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;">
-    <table style="width:100%;border-collapse:collapse;font-size:.8125rem;">
+<div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+    <div class="overflow-x-auto">
+    <table class="w-full border-collapse text-[0.8125rem]">
         <thead>
-            <tr style="background:#f8fafc;border-bottom:1px solid #e2e8f0;">
-                <th style="padding:.7rem 1rem;text-align:left;font-weight:600;color:#374151;">Date Stored</th>
-                <th style="padding:.7rem 1rem;text-align:left;font-weight:600;color:#374151;">Colour / Type</th>
-                <th style="padding:.7rem 1rem;text-align:left;font-weight:600;color:#374151;">Quantity</th>
-                <th style="padding:.7rem 1rem;text-align:left;font-weight:600;color:#374151;">Ref</th>
-                <th style="padding:.7rem 1rem;text-align:left;font-weight:600;color:#374151;">Year</th>
-                <th style="padding:.7rem 1rem;text-align:left;font-weight:600;color:#374151;">Return Date</th>
-                <th style="padding:.7rem 1rem;text-align:left;font-weight:600;color:#374151;">Notes</th>
-                <th style="padding:.7rem;width:160px;"></th>
+            <tr class="bg-slate-50 border-b border-slate-200">
+                <th class="px-4 py-3 text-left font-semibold text-slate-700">Date Stored</th>
+                <th class="px-4 py-3 text-left font-semibold text-slate-700">Colour / Type</th>
+                <th class="px-4 py-3 text-left font-semibold text-slate-700">Quantity</th>
+                <th class="px-4 py-3 text-left font-semibold text-slate-700">Ref</th>
+                <th class="px-4 py-3 text-left font-semibold text-slate-700">Year</th>
+                <th class="px-4 py-3 text-left font-semibold text-slate-700">Return Date</th>
+                <th class="px-4 py-3 text-left font-semibold text-slate-700">Notes</th>
+                <th class="px-3 py-3 w-40"></th>
             </tr>
         </thead>
         <tbody>
         @forelse($items as $item)
-        <tr style="border-bottom:1px solid #f1f5f9;">
-            <td style="padding:.65rem 1rem;color:#374151;">{{ $item->storage_date?->format('d/m/Y') }}</td>
-            <td style="padding:.65rem 1rem;font-weight:500;color:#1e293b;">{{ $item->colour }}</td>
-            <td style="padding:.65rem 1rem;color:#374151;">{{ $item->quantity }}</td>
-            <td style="padding:.65rem 1rem;color:#64748b;">{{ $item->ref }}</td>
-            <td style="padding:.65rem 1rem;color:#64748b;">{{ $item->year }}</td>
-            <td style="padding:.65rem 1rem;">
+        <tr class="border-b border-slate-100">
+            <td class="px-4 py-2.5 text-slate-700">{{ $item->storage_date?->format('d/m/Y') }}</td>
+            <td class="px-4 py-2.5 font-medium text-slate-800">{{ $item->colour }}</td>
+            <td class="px-4 py-2.5 text-slate-700">{{ $item->quantity }}</td>
+            <td class="px-4 py-2.5 text-slate-500">{{ $item->ref }}</td>
+            <td class="px-4 py-2.5 text-slate-500">{{ $item->year }}</td>
+            <td class="px-4 py-2.5">
                 @if($item->return_date)
-                    <span style="background:#dcfce7;color:#166534;border-radius:5px;padding:2px 8px;font-size:.75rem;">{{ $item->return_date->format('d/m/Y') }}</span>
+                    <span class="bg-green-100 text-green-800 rounded px-2 py-0.5 text-[0.75rem]">{{ $item->return_date->format('d/m/Y') }}</span>
                 @else
-                    <span style="color:#94a3b8;font-size:.75rem;">—</span>
+                    <span class="text-slate-300 text-[0.75rem]">—</span>
                 @endif
             </td>
-            <td style="padding:.65rem 1rem;color:#64748b;font-size:.75rem;">{{ $item->notes }}</td>
-            <td style="padding:.5rem .75rem;text-align:right;white-space:nowrap;">
+            <td class="px-4 py-2.5 text-slate-500 text-[0.75rem]">{{ $item->notes }}</td>
+            <td class="px-3 py-2 text-right whitespace-nowrap">
                 <button onclick="openMoveToRack({{ $item->id }}, {{ json_encode($item->colour) }})"
-                    style="font-size:.75rem;color:#854d0e;background:#fefce8;border:1px solid #fde68a;border-radius:5px;padding:3px 8px;cursor:pointer;margin-right:3px;font-weight:600;">→ Racking</button>
+                    class="text-[0.75rem] text-yellow-800 bg-yellow-50 border border-yellow-300 rounded px-2 py-0.5 cursor-pointer mr-1 font-semibold hover:bg-yellow-100 transition-colors">→ Racking</button>
                 <button onclick="openEdit({{ $item->id }},{{ json_encode($item) }})"
-                    style="font-size:.75rem;color:#475569;background:none;border:1px solid #e2e8f0;border-radius:5px;padding:3px 8px;cursor:pointer;margin-right:3px;">Edit</button>
-                <form action="{{ route('racking.outside.destroy', $item) }}" method="POST" style="display:inline;" onsubmit="return confirm('Remove this item?')">
+                    class="text-[0.75rem] text-slate-600 bg-transparent border border-slate-200 rounded px-2 py-0.5 cursor-pointer mr-1 hover:bg-slate-50 transition-colors">Edit</button>
+                <form action="{{ route('racking.outside.destroy', $item) }}" method="POST" class="inline" onsubmit="return confirm('Remove this item?')">
                     @csrf @method('DELETE')
-                    <button type="submit" style="font-size:.75rem;color:#dc2626;background:none;border:1px solid #fecaca;border-radius:5px;padding:3px 8px;cursor:pointer;">Del</button>
+                    <button type="submit" class="text-[0.75rem] text-red-600 bg-transparent border border-red-200 rounded px-2 py-0.5 cursor-pointer hover:bg-red-50 transition-colors">Del</button>
                 </form>
             </td>
         </tr>
         @empty
-        <tr><td colspan="8" style="padding:3rem;text-align:center;color:#94a3b8;">No items in outside storage.</td></tr>
+        <tr><td colspan="8" class="p-12 text-center text-slate-400">No items in outside storage.</td></tr>
         @endforelse
         </tbody>
     </table>
+    </div>
 </div>
 
-@php
-    $fStyle = 'width:100%;border:1px solid #e2e8f0;border-radius:7px;padding:.5rem .75rem;font-size:.875rem;margin-bottom:1rem;box-sizing:border-box;';
-    $lStyle = 'display:block;font-size:.8125rem;font-weight:600;color:#374151;margin-bottom:.35rem;';
-@endphp
-
 {{-- Add Modal --}}
-<div id="add-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:1rem;">
-    <div style="background:#fff;border-radius:14px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25);">
-        <div style="padding:1.25rem 1.5rem;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
-            <h2 style="font-size:1rem;font-weight:700;color:#1e293b;margin:0;">Add Outside Storage Item</h2>
-            <button onclick="document.getElementById('add-modal').style.display='none'" style="background:none;border:none;font-size:1.25rem;cursor:pointer;color:#64748b;">✕</button>
+<div id="add-modal" style="display:none;" class="fixed inset-0 bg-black/50 z-[1000] items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div class="px-6 py-5 border-b border-slate-200 flex justify-between items-center">
+            <h2 class="text-base font-bold text-slate-800">Add Outside Storage Item</h2>
+            <button onclick="document.getElementById('add-modal').style.display='none'" class="bg-transparent border-0 text-xl cursor-pointer text-slate-500 hover:text-slate-700">✕</button>
         </div>
-        <form action="{{ route('racking.outside.store') }}" method="POST" style="padding:1.5rem;">
+        <form action="{{ route('racking.outside.store') }}" method="POST" class="p-6">
             @csrf
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 1rem;">
-                <div><label style="{{ $lStyle }}">Date Stored</label><input type="date" name="storage_date" style="{{ $fStyle }}"></div>
-                <div><label style="{{ $lStyle }}">Return Date</label><input type="date" name="return_date" style="{{ $fStyle }}"></div>
+            <div class="grid grid-cols-2 gap-x-4">
+                <div>
+                    <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Date Stored</label>
+                    <input type="date" name="storage_date" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-4 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Return Date</label>
+                    <input type="date" name="return_date" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-4 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
+                </div>
             </div>
-            <label style="{{ $lStyle }}">Colour / Type</label>
-            <input type="text" name="colour" style="{{ $fStyle }}" placeholder="Green Zip, Pink Booklets…">
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 1rem;">
-                <div><label style="{{ $lStyle }}">Quantity</label><input type="text" name="quantity" style="{{ $fStyle }}" placeholder="294,000"></div>
-                <div><label style="{{ $lStyle }}">Ref</label><input type="text" name="ref" style="{{ $fStyle }}" placeholder="105"></div>
-                <div><label style="{{ $lStyle }}">Year</label><input type="number" name="year" style="{{ $fStyle }}" placeholder="{{ date('Y') }}" min="2000" max="2100"></div>
+            <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Colour / Type</label>
+            <input type="text" name="colour" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-4 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent" placeholder="Green Zip, Pink Booklets…">
+            <div class="grid grid-cols-3 gap-x-4">
+                <div>
+                    <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Quantity</label>
+                    <input type="text" name="quantity" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-4 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent" placeholder="294,000">
+                </div>
+                <div>
+                    <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Ref</label>
+                    <input type="text" name="ref" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-4 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent" placeholder="105">
+                </div>
+                <div>
+                    <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Year</label>
+                    <input type="number" name="year" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-4 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent" placeholder="{{ date('Y') }}" min="2000" max="2100">
+                </div>
             </div>
-            <label style="{{ $lStyle }}">Notes</label>
-            <textarea name="notes" rows="2" style="{{ $fStyle }}resize:vertical;"></textarea>
-            <div style="display:flex;justify-content:flex-end;gap:.75rem;margin-top:.5rem;">
+            <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Notes</label>
+            <textarea name="notes" rows="2" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-4 outline-none resize-y focus:ring-2 focus:ring-sky-500 focus:border-transparent"></textarea>
+            <div class="flex justify-end gap-3 mt-2">
                 <button type="button" onclick="document.getElementById('add-modal').style.display='none'"
-                    style="padding:.6rem 1.25rem;background:#f1f5f9;color:#374151;border:1px solid #e2e8f0;border-radius:8px;font-size:.875rem;cursor:pointer;">Cancel</button>
+                    class="px-5 py-2.5 bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-sm cursor-pointer hover:bg-slate-200 transition-colors">Cancel</button>
                 <button type="submit"
-                    style="padding:.6rem 1.5rem;background:#0f172a;color:#fff;border:none;border-radius:8px;font-size:.875rem;font-weight:700;cursor:pointer;">Add</button>
+                    class="px-6 py-2.5 bg-slate-900 text-white border-0 rounded-lg text-sm font-bold cursor-pointer hover:bg-slate-800 transition-colors">Add</button>
             </div>
         </form>
     </div>
 </div>
 
 {{-- Edit Modal --}}
-<div id="edit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:1rem;">
-    <div style="background:#fff;border-radius:14px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25);">
-        <div style="padding:1.25rem 1.5rem;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
-            <h2 style="font-size:1rem;font-weight:700;color:#1e293b;margin:0;">Edit Outside Storage Item</h2>
-            <button onclick="document.getElementById('edit-modal').style.display='none'" style="background:none;border:none;font-size:1.25rem;cursor:pointer;color:#64748b;">✕</button>
+<div id="edit-modal" style="display:none;" class="fixed inset-0 bg-black/50 z-[1000] items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div class="px-6 py-5 border-b border-slate-200 flex justify-between items-center">
+            <h2 class="text-base font-bold text-slate-800">Edit Outside Storage Item</h2>
+            <button onclick="document.getElementById('edit-modal').style.display='none'" class="bg-transparent border-0 text-xl cursor-pointer text-slate-500 hover:text-slate-700">✕</button>
         </div>
-        <form id="edit-form" method="POST" style="padding:1.5rem;">
+        <form id="edit-form" method="POST" class="p-6">
             @csrf @method('PUT')
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 1rem;">
-                <div><label style="{{ $lStyle }}">Date Stored</label><input type="date" name="storage_date" id="edit-storage-date" style="{{ $fStyle }}"></div>
-                <div><label style="{{ $lStyle }}">Return Date</label><input type="date" name="return_date" id="edit-return-date" style="{{ $fStyle }}"></div>
+            <div class="grid grid-cols-2 gap-x-4">
+                <div>
+                    <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Date Stored</label>
+                    <input type="date" name="storage_date" id="edit-storage-date" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-4 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Return Date</label>
+                    <input type="date" name="return_date" id="edit-return-date" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-4 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
+                </div>
             </div>
-            <label style="{{ $lStyle }}">Colour / Type</label>
-            <input type="text" name="colour" id="edit-colour" style="{{ $fStyle }}">
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 1rem;">
-                <div><label style="{{ $lStyle }}">Quantity</label><input type="text" name="quantity" id="edit-quantity" style="{{ $fStyle }}"></div>
-                <div><label style="{{ $lStyle }}">Ref</label><input type="text" name="ref" id="edit-ref" style="{{ $fStyle }}"></div>
-                <div><label style="{{ $lStyle }}">Year</label><input type="number" name="year" id="edit-year" style="{{ $fStyle }}" min="2000" max="2100"></div>
+            <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Colour / Type</label>
+            <input type="text" name="colour" id="edit-colour" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-4 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
+            <div class="grid grid-cols-3 gap-x-4">
+                <div>
+                    <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Quantity</label>
+                    <input type="text" name="quantity" id="edit-quantity" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-4 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Ref</label>
+                    <input type="text" name="ref" id="edit-ref" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-4 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Year</label>
+                    <input type="number" name="year" id="edit-year" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-4 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent" min="2000" max="2100">
+                </div>
             </div>
-            <label style="{{ $lStyle }}">Notes</label>
-            <textarea name="notes" id="edit-notes" rows="2" style="{{ $fStyle }}resize:vertical;"></textarea>
-            <div style="display:flex;justify-content:flex-end;gap:.75rem;margin-top:.5rem;">
+            <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Notes</label>
+            <textarea name="notes" id="edit-notes" rows="2" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-4 outline-none resize-y focus:ring-2 focus:ring-sky-500 focus:border-transparent"></textarea>
+            <div class="flex justify-end gap-3 mt-2">
                 <button type="button" onclick="document.getElementById('edit-modal').style.display='none'"
-                    style="padding:.6rem 1.25rem;background:#f1f5f9;color:#374151;border:1px solid #e2e8f0;border-radius:8px;font-size:.875rem;cursor:pointer;">Cancel</button>
+                    class="px-5 py-2.5 bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-sm cursor-pointer hover:bg-slate-200 transition-colors">Cancel</button>
                 <button type="submit"
-                    style="padding:.6rem 1.5rem;background:#0f172a;color:#fff;border:none;border-radius:8px;font-size:.875rem;font-weight:700;cursor:pointer;">Save</button>
+                    class="px-6 py-2.5 bg-slate-900 text-white border-0 rounded-lg text-sm font-bold cursor-pointer hover:bg-slate-800 transition-colors">Save</button>
             </div>
         </form>
     </div>
 </div>
 
 {{-- Move to Racking Modal --}}
-<div id="move-rack-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:1rem;">
-    <div style="background:#fff;border-radius:14px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.25);">
-        <div style="padding:1.25rem 1.5rem;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
+<div id="move-rack-modal" style="display:none;" class="fixed inset-0 bg-black/50 z-[1000] items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-sm shadow-2xl">
+        <div class="px-6 py-5 border-b border-slate-200 flex justify-between items-center">
             <div>
-                <h2 style="font-size:1rem;font-weight:700;color:#1e293b;margin:0;">Move to Racking</h2>
-                <p id="move-rack-desc" style="font-size:.8125rem;color:#64748b;margin:.25rem 0 0;"></p>
+                <h2 class="text-base font-bold text-slate-800">Move to Racking</h2>
+                <p id="move-rack-desc" class="text-[0.8125rem] text-slate-500 mt-1"></p>
             </div>
-            <button onclick="document.getElementById('move-rack-modal').style.display='none'" style="background:none;border:none;font-size:1.25rem;cursor:pointer;color:#64748b;">✕</button>
+            <button onclick="document.getElementById('move-rack-modal').style.display='none'" class="bg-transparent border-0 text-xl cursor-pointer text-slate-500 hover:text-slate-700">✕</button>
         </div>
-        <form id="move-rack-form" method="POST" style="padding:1.5rem;">
+        <form id="move-rack-form" method="POST" class="p-6">
             @csrf
-            <p style="font-size:.875rem;color:#475569;margin:0 0 1rem;">Choose the racking slot to move this item into. The slot must be empty.</p>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 1rem;">
+            <p class="text-sm text-slate-600 mb-4">Choose the racking slot to move this item into. The slot must be empty.</p>
+            <div class="grid grid-cols-2 gap-x-4">
                 <div>
-                    <label style="{{ $lStyle }}">Bay</label>
-                    <select name="bay" id="move-rack-bay" style="{{ $fStyle }}">
+                    <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Bay</label>
+                    <select name="bay" id="move-rack-bay" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-4 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                         @foreach(['A','B','C','D','E','F','G','H'] as $letter)
                             @foreach([1,2,3] as $level)
                                 <option value="{{ $letter.$level }}">{{ $letter.$level }}</option>
@@ -167,24 +194,24 @@
                     </select>
                 </div>
                 <div>
-                    <label style="{{ $lStyle }}">Slot</label>
-                    <select name="slot_number" id="move-rack-slot" style="{{ $fStyle }}">
+                    <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1.5">Slot</label>
+                    <select name="slot_number" id="move-rack-slot" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-4 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                         @for($s=1;$s<=4;$s++)<option value="{{ $s }}">Slot {{ $s }}</option>@endfor
                     </select>
                 </div>
             </div>
-            <div style="display:flex;justify-content:flex-end;gap:.75rem;margin-top:.25rem;">
+            <div class="flex justify-end gap-3 mt-1">
                 <button type="button" onclick="document.getElementById('move-rack-modal').style.display='none'"
-                    style="padding:.6rem 1.25rem;background:#f1f5f9;color:#374151;border:1px solid #e2e8f0;border-radius:8px;font-size:.875rem;cursor:pointer;">Cancel</button>
+                    class="px-5 py-2.5 bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-sm cursor-pointer hover:bg-slate-200 transition-colors">Cancel</button>
                 <button type="submit"
-                    style="padding:.6rem 1.5rem;background:#0f172a;color:#fff;border:none;border-radius:8px;font-size:.875rem;font-weight:700;cursor:pointer;">Move to Racking</button>
+                    class="px-5 py-2.5 bg-slate-900 text-white border-0 rounded-lg text-sm font-bold cursor-pointer hover:bg-slate-800 transition-colors">Move to Racking</button>
             </div>
         </form>
     </div>
 </div>
 
 @if(session('error'))
-<div style="position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:.75rem 1.25rem;color:#991b1b;font-size:.875rem;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.1);">
+<div class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-red-50 border border-red-200 rounded-lg px-5 py-3 text-red-800 text-sm z-[9999] shadow-lg">
     {{ session('error') }}
 </div>
 @endif

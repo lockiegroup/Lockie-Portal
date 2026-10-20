@@ -1,82 +1,79 @@
 <x-layout title="Policy Settings — Lockie Portal">
 
-    <main style="max-width:860px;margin:0 auto;padding:2rem 1rem;">
+    <main class="max-w-3xl mx-auto px-4 sm:px-6 py-8">
 
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1.75rem;">
+        <div class="flex items-start justify-between flex-wrap gap-4 mb-7">
             <div>
-                <h1 style="font-size:1.5rem;font-weight:700;color:#0f172a;margin:0 0 0.25rem;">Policy Settings</h1>
-                <p style="font-size:0.875rem;color:#64748b;margin:0;">Upload and manage company policy documents.</p>
+                <h1 class="text-2xl font-bold text-slate-900 mb-1">Policy Settings</h1>
+                <p class="text-sm text-slate-500">Upload and manage company policy documents.</p>
             </div>
-            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+            <div class="flex gap-2 flex-wrap">
                 <button onclick="openCatModal()"
-                    style="padding:0.5rem 1rem;background:#fff;color:#374151;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;font-weight:600;cursor:pointer;">
+                    class="px-4 py-2 bg-white text-slate-700 border border-slate-200 rounded-lg text-sm font-semibold cursor-pointer hover:bg-slate-50 transition-colors">
                     Manage Categories
                 </button>
                 <button onclick="openUploadModal()"
-                    style="padding:0.5rem 1.1rem;background:#0f172a;color:#fff;border:none;border-radius:8px;font-size:0.875rem;font-weight:600;cursor:pointer;">
+                    class="px-4 py-2 bg-slate-900 text-white border-0 rounded-lg text-sm font-semibold cursor-pointer hover:bg-slate-800 transition-colors">
                     + Upload Policy
                 </button>
             </div>
         </div>
 
         @if(session('success'))
-        <div style="background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d;padding:0.75rem 1rem;border-radius:8px;font-size:0.875rem;margin-bottom:1.25rem;">
+        <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm mb-5">
             {{ session('success') }}
         </div>
         @endif
 
         @if($policies->isEmpty())
-            <div style="text-align:center;padding:4rem 1rem;background:#fff;border-radius:12px;border:1px solid #e2e8f0;">
-                <p style="color:#64748b;font-size:0.875rem;">No policies uploaded yet. Click <strong>Upload Policy</strong> to get started.</p>
+            <div class="text-center py-16 px-4 bg-white rounded-xl border border-slate-200">
+                <p class="text-slate-500 text-sm">No policies uploaded yet. Click <strong>Upload Policy</strong> to get started.</p>
             </div>
         @else
-        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
-            <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
-            <table style="width:100%;border-collapse:collapse;font-size:0.875rem;min-width:540px;">
+        <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+            <div class="overflow-x-auto">
+            <table class="w-full border-collapse text-sm" style="min-width:540px;">
                 <thead>
-                    <tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;">
-                        <th style="padding:0.75rem 1rem;text-align:left;font-weight:700;color:#374151;">Title</th>
-                        <th style="padding:0.75rem 1rem;text-align:left;font-weight:700;color:#374151;">Category</th>
-                        <th style="padding:0.75rem 1rem;text-align:left;font-weight:700;color:#374151;">File</th>
-                        <th style="padding:0.75rem 1rem;text-align:left;font-weight:700;color:#374151;white-space:nowrap;">Last Updated</th>
-                        <th style="padding:0.75rem 1rem;"></th>
+                    <tr class="bg-slate-50 border-b-2 border-slate-200">
+                        <th class="px-4 py-3 text-left font-bold text-slate-700">Title</th>
+                        <th class="px-4 py-3 text-left font-bold text-slate-700">Category</th>
+                        <th class="px-4 py-3 text-left font-bold text-slate-700">File</th>
+                        <th class="px-4 py-3 text-left font-bold text-slate-700 whitespace-nowrap">Last Updated</th>
+                        <th class="px-4 py-3"></th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($policies as $policy)
-                    <tr style="border-bottom:1px solid #f1f5f9;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
-                        <td style="padding:0.75rem 1rem;font-weight:500;color:#0f172a;">
+                    <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                        <td class="px-4 py-3 font-medium text-slate-900">
                             {{ $policy->title }}
                             @if($policy->description)
-                            <p style="font-size:0.75rem;color:#64748b;margin:0.1rem 0 0;font-weight:400;">{{ Str::limit($policy->description, 60) }}</p>
+                            <p class="text-[0.72rem] text-slate-500 mt-0.5 font-normal">{{ Str::limit($policy->description, 60) }}</p>
                             @endif
                         </td>
-                        <td style="padding:0.75rem 1rem;color:#64748b;">{{ $policy->category ?: '—' }}</td>
-                        <td style="padding:0.75rem 1rem;">
+                        <td class="px-4 py-3 text-slate-500">{{ $policy->category ?: '—' }}</td>
+                        <td class="px-4 py-3">
                             <a href="{{ route('policies.download', $policy) }}" target="_blank"
-                               style="color:#2563eb;font-size:0.78rem;text-decoration:none;display:inline-flex;align-items:center;gap:4px;"
-                               onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
-                                <svg style="width:12px;height:12px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                               class="text-blue-600 text-[0.78rem] no-underline inline-flex items-center gap-1 hover:underline">
+                                <svg class="w-3 h-3 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                                     <polyline points="14 2 14 8 20 8"/>
                                 </svg>
                                 {{ Str::limit($policy->file_name, 30) }}
                             </a>
                         </td>
-                        <td style="padding:0.75rem 1rem;font-size:0.78rem;white-space:nowrap;color:#64748b;">
+                        <td class="px-4 py-3 text-[0.78rem] whitespace-nowrap text-slate-500">
                             {{ $policy->last_reviewed_at ? $policy->last_reviewed_at->format('d M Y') : '—' }}
                         </td>
-                        <td style="padding:0.75rem 1rem;text-align:right;white-space:nowrap;">
+                        <td class="px-4 py-3 text-right whitespace-nowrap">
                             <button onclick="openEditModal({{ $policy->id }}, {{ json_encode($policy->title) }}, {{ json_encode($policy->category) }}, {{ json_encode($policy->description) }}, {{ json_encode($policy->last_reviewed_at?->format('Y-m-d')) }})"
-                                style="background:none;border:1px solid #e2e8f0;border-radius:6px;padding:4px 10px;font-size:0.75rem;font-weight:500;color:#374151;cursor:pointer;margin-right:4px;"
-                                onmouseover="this.style.borderColor='#94a3b8'" onmouseout="this.style.borderColor='#e2e8f0'">
+                                class="bg-transparent border border-slate-200 rounded-md px-2.5 py-1 text-[0.75rem] font-medium text-slate-700 cursor-pointer mr-1 hover:border-slate-400 transition-colors">
                                 Edit
                             </button>
-                            <form action="{{ route('admin.policies.destroy', $policy) }}" method="POST" style="display:inline;" onsubmit="return confirm('Delete this policy? This cannot be undone.')">
+                            <form action="{{ route('admin.policies.destroy', $policy) }}" method="POST" class="inline" onsubmit="return confirm('Delete this policy? This cannot be undone.')">
                                 @csrf @method('DELETE')
                                 <button type="submit"
-                                    style="background:none;border:1px solid #fecaca;border-radius:6px;padding:4px 10px;font-size:0.75rem;font-weight:500;color:#dc2626;cursor:pointer;"
-                                    onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='none'">
+                                    class="bg-transparent border border-red-200 rounded-md px-2.5 py-1 text-[0.75rem] font-medium text-red-600 cursor-pointer hover:bg-red-50 transition-colors">
                                     Delete
                                 </button>
                             </form>
@@ -92,67 +89,63 @@
     </main>
 
     {{-- Upload Modal --}}
-    <div id="upload-modal" style="display:none;position:fixed;inset:0;z-index:50;align-items:center;justify-content:center;padding:1rem;">
-        <div style="position:absolute;inset:0;background:rgba(15,23,42,0.45);" onclick="closeUploadModal()"></div>
-        <div style="position:relative;background:#fff;border-radius:14px;padding:1.5rem;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,0.15);max-height:90vh;overflow-y:auto;">
-            <h2 style="font-size:1rem;font-weight:700;color:#0f172a;margin:0 0 1.25rem;">Upload Policy</h2>
+    <div id="upload-modal" style="display:none;" class="fixed inset-0 z-50 items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/45" onclick="closeUploadModal()"></div>
+        <div class="relative bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
+            <h2 class="text-base font-bold text-slate-900 mb-5">Upload Policy</h2>
 
             <form action="{{ route('admin.policies.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
 
-                <div style="margin-bottom:1rem;">
-                    <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Title <span style="color:#dc2626;">*</span></label>
+                <div class="mb-4">
+                    <label class="block text-[0.75rem] font-semibold text-slate-700 mb-1.5">Title <span class="text-red-600">*</span></label>
                     <input type="text" name="title" required placeholder="e.g. Health & Safety Policy"
-                        style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
-                        onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                        class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                 </div>
 
-                <div style="margin-bottom:1rem;">
-                    <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">
-                        Category <span style="color:#94a3b8;font-weight:400;">(optional)</span>
+                <div class="mb-4">
+                    <label class="block text-[0.75rem] font-semibold text-slate-700 mb-1.5">
+                        Category <span class="text-slate-400 font-normal">(optional)</span>
                     </label>
                     <select name="category"
-                        style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;background:#fff;color:#0f172a;box-sizing:border-box;outline:none;"
-                        onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                        class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                         <option value="">— No category —</option>
                         @foreach($categories as $cat)
                         <option value="{{ $cat->name }}">{{ $cat->name }}</option>
                         @endforeach
                     </select>
                     @if($categories->isEmpty())
-                    <p style="font-size:0.72rem;color:#94a3b8;margin:4px 0 0;">No categories yet — click <strong>Manage Categories</strong> to add some.</p>
+                    <p class="text-[0.72rem] text-slate-400 mt-1">No categories yet — click <strong>Manage Categories</strong> to add some.</p>
                     @endif
                 </div>
 
-                <div style="margin-bottom:1rem;">
-                    <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Description <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+                <div class="mb-4">
+                    <label class="block text-[0.75rem] font-semibold text-slate-700 mb-1.5">Description <span class="text-slate-400 font-normal">(optional)</span></label>
                     <textarea name="description" rows="2" placeholder="Brief description of this policy…"
-                        style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;resize:vertical;"
-                        onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'"></textarea>
+                        class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none resize-y focus:ring-2 focus:ring-sky-500 focus:border-transparent"></textarea>
                 </div>
 
-                <div style="margin-bottom:1rem;">
-                    <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Last Updated <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+                <div class="mb-4">
+                    <label class="block text-[0.75rem] font-semibold text-slate-700 mb-1.5">Last Updated <span class="text-slate-400 font-normal">(optional)</span></label>
                     <input type="date" name="last_reviewed_at"
-                        style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
-                        onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
-                    <p style="font-size:0.72rem;color:#94a3b8;margin:4px 0 0;">The date this policy was last checked and confirmed up to date.</p>
+                        class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
+                    <p class="text-[0.72rem] text-slate-400 mt-1">The date this policy was last checked and confirmed up to date.</p>
                 </div>
 
-                <div style="margin-bottom:1.5rem;">
-                    <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">PDF File <span style="color:#dc2626;">*</span></label>
+                <div class="mb-6">
+                    <label class="block text-[0.75rem] font-semibold text-slate-700 mb-1.5">PDF File <span class="text-red-600">*</span></label>
                     <input type="file" name="file" accept=".pdf" required
-                        style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;background:#f8fafc;cursor:pointer;">
-                    <p style="font-size:0.72rem;color:#94a3b8;margin:4px 0 0;">PDF only, max 20 MB</p>
+                        class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 cursor-pointer">
+                    <p class="text-[0.72rem] text-slate-400 mt-1">PDF only, max 20 MB</p>
                 </div>
 
-                <div style="display:flex;gap:0.5rem;">
+                <div class="flex gap-2">
                     <button type="button" onclick="closeUploadModal()"
-                        style="flex:1;padding:0.5rem;border:1px solid #e2e8f0;background:#f8fafc;color:#374151;font-size:0.875rem;font-weight:500;border-radius:8px;cursor:pointer;">
+                        class="flex-1 py-2 border border-slate-200 bg-slate-50 text-slate-700 text-sm font-medium rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
                         Cancel
                     </button>
                     <button type="submit"
-                        style="flex:2;padding:0.5rem;background:#0f172a;color:#fff;font-size:0.875rem;font-weight:600;border-radius:8px;border:none;cursor:pointer;">
+                        class="flex-[2] py-2 bg-slate-900 text-white text-sm font-semibold rounded-lg border-0 cursor-pointer hover:bg-slate-800 transition-colors">
                         Upload
                     </button>
                 </div>
@@ -161,28 +154,26 @@
     </div>
 
     {{-- Edit Modal --}}
-    <div id="edit-modal" style="display:none;position:fixed;inset:0;z-index:50;align-items:center;justify-content:center;padding:1rem;">
-        <div style="position:absolute;inset:0;background:rgba(15,23,42,0.45);" onclick="closeEditModal()"></div>
-        <div style="position:relative;background:#fff;border-radius:14px;padding:1.5rem;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,0.15);max-height:90vh;overflow-y:auto;">
-            <h2 style="font-size:1rem;font-weight:700;color:#0f172a;margin:0 0 1.25rem;">Edit Policy</h2>
+    <div id="edit-modal" style="display:none;" class="fixed inset-0 z-50 items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/45" onclick="closeEditModal()"></div>
+        <div class="relative bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
+            <h2 class="text-base font-bold text-slate-900 mb-5">Edit Policy</h2>
 
             <form id="edit-form" method="POST" enctype="multipart/form-data">
                 @csrf @method('PUT')
 
-                <div style="margin-bottom:1rem;">
-                    <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Title <span style="color:#dc2626;">*</span></label>
+                <div class="mb-4">
+                    <label class="block text-[0.75rem] font-semibold text-slate-700 mb-1.5">Title <span class="text-red-600">*</span></label>
                     <input type="text" id="edit-title" name="title" required
-                        style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
-                        onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                        class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                 </div>
 
-                <div style="margin-bottom:1rem;">
-                    <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">
-                        Category <span style="color:#94a3b8;font-weight:400;">(optional)</span>
+                <div class="mb-4">
+                    <label class="block text-[0.75rem] font-semibold text-slate-700 mb-1.5">
+                        Category <span class="text-slate-400 font-normal">(optional)</span>
                     </label>
                     <select id="edit-category" name="category"
-                        style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;background:#fff;color:#0f172a;box-sizing:border-box;outline:none;"
-                        onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                        class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white text-slate-900 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                         <option value="">— No category —</option>
                         @foreach($categories as $cat)
                         <option value="{{ $cat->name }}">{{ $cat->name }}</option>
@@ -190,34 +181,32 @@
                     </select>
                 </div>
 
-                <div style="margin-bottom:1rem;">
-                    <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Description <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+                <div class="mb-4">
+                    <label class="block text-[0.75rem] font-semibold text-slate-700 mb-1.5">Description <span class="text-slate-400 font-normal">(optional)</span></label>
                     <textarea id="edit-description" name="description" rows="2"
-                        style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;resize:vertical;"
-                        onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'"></textarea>
+                        class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none resize-y focus:ring-2 focus:ring-sky-500 focus:border-transparent"></textarea>
                 </div>
 
-                <div style="margin-bottom:1rem;">
-                    <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Last Updated <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+                <div class="mb-4">
+                    <label class="block text-[0.75rem] font-semibold text-slate-700 mb-1.5">Last Updated <span class="text-slate-400 font-normal">(optional)</span></label>
                     <input type="date" id="edit-reviewed" name="last_reviewed_at"
-                        style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
-                        onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                        class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                 </div>
 
-                <div style="margin-bottom:1.5rem;">
-                    <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Replace PDF <span style="color:#94a3b8;font-weight:400;">(leave blank to keep existing)</span></label>
+                <div class="mb-6">
+                    <label class="block text-[0.75rem] font-semibold text-slate-700 mb-1.5">Replace PDF <span class="text-slate-400 font-normal">(leave blank to keep existing)</span></label>
                     <input type="file" name="file" accept=".pdf"
-                        style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;background:#f8fafc;cursor:pointer;">
-                    <p style="font-size:0.72rem;color:#94a3b8;margin:4px 0 0;">PDF only, max 20 MB</p>
+                        class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-50 cursor-pointer">
+                    <p class="text-[0.72rem] text-slate-400 mt-1">PDF only, max 20 MB</p>
                 </div>
 
-                <div style="display:flex;gap:0.5rem;">
+                <div class="flex gap-2">
                     <button type="button" onclick="closeEditModal()"
-                        style="flex:1;padding:0.5rem;border:1px solid #e2e8f0;background:#f8fafc;color:#374151;font-size:0.875rem;font-weight:500;border-radius:8px;cursor:pointer;">
+                        class="flex-1 py-2 border border-slate-200 bg-slate-50 text-slate-700 text-sm font-medium rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
                         Cancel
                     </button>
                     <button type="submit"
-                        style="flex:2;padding:0.5rem;background:#0f172a;color:#fff;font-size:0.875rem;font-weight:600;border-radius:8px;border:none;cursor:pointer;">
+                        class="flex-[2] py-2 bg-slate-900 text-white text-sm font-semibold rounded-lg border-0 cursor-pointer hover:bg-slate-800 transition-colors">
                         Save Changes
                     </button>
                 </div>
@@ -226,42 +215,40 @@
     </div>
 
     {{-- Manage Categories Modal --}}
-    <div id="cat-modal" style="display:none;position:fixed;inset:0;z-index:50;align-items:center;justify-content:center;padding:1rem;">
-        <div style="position:absolute;inset:0;background:rgba(15,23,42,0.45);" onclick="closeCatModal()"></div>
-        <div style="position:relative;background:#fff;border-radius:14px;padding:1.5rem;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.15);max-height:85vh;overflow-y:auto;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;">
-                <h2 style="font-size:1rem;font-weight:700;color:#0f172a;margin:0;">Manage Categories</h2>
-                <button onclick="closeCatModal()" style="background:none;border:none;cursor:pointer;color:#94a3b8;padding:4px;line-height:0;">
-                    <svg style="width:18px;height:18px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+    <div id="cat-modal" style="display:none;" class="fixed inset-0 z-50 items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/45" onclick="closeCatModal()"></div>
+        <div class="relative bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[85vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-5">
+                <h2 class="text-base font-bold text-slate-900">Manage Categories</h2>
+                <button onclick="closeCatModal()" class="bg-transparent border-0 cursor-pointer text-slate-400 p-1 leading-none hover:text-slate-700">
+                    <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                         <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                     </svg>
                 </button>
             </div>
 
-            <ul id="cat-list" style="list-style:none;padding:0;margin:0 0 1rem;">
+            <ul id="cat-list" class="list-none p-0 mb-4">
                 @forelse($categories as $cat)
-                <li id="cat-item-{{ $cat->id }}" style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:0.4rem;background:#f8fafc;">
-                    <span style="font-size:0.875rem;color:#0f172a;font-weight:500;">{{ $cat->name }}</span>
+                <li id="cat-item-{{ $cat->id }}" class="flex items-center justify-between px-3 py-2 border border-slate-200 rounded-lg mb-1.5 bg-slate-50">
+                    <span class="text-sm text-slate-900 font-medium">{{ $cat->name }}</span>
                     <button onclick="deleteCategory({{ $cat->id }})"
-                        style="background:none;border:none;cursor:pointer;color:#94a3b8;padding:2px 6px;font-size:0.75rem;border-radius:4px;"
-                        onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='#94a3b8'">Remove</button>
+                        class="bg-transparent border-0 cursor-pointer text-slate-400 px-1.5 py-0.5 text-[0.75rem] rounded hover:text-red-600 transition-colors">Remove</button>
                 </li>
                 @empty
-                <li id="cat-empty" style="padding:1rem;text-align:center;color:#94a3b8;font-size:0.875rem;">No categories yet.</li>
+                <li id="cat-empty" class="p-4 text-center text-slate-400 text-sm">No categories yet.</li>
                 @endforelse
             </ul>
 
-            <div style="display:flex;gap:0.5rem;">
+            <div class="flex gap-2">
                 <input type="text" id="new-cat-name" placeholder="New category name…"
-                    style="flex:1;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;outline:none;"
-                    onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'"
+                    class="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                     onkeydown="if(event.key==='Enter'){addCategory();}">
                 <button onclick="addCategory()"
-                    style="padding:0.5rem 1rem;background:#0f172a;color:#fff;font-size:0.875rem;font-weight:600;border-radius:8px;border:none;cursor:pointer;white-space:nowrap;">
+                    class="px-4 py-2 bg-slate-900 text-white text-sm font-semibold rounded-lg border-0 cursor-pointer whitespace-nowrap hover:bg-slate-800 transition-colors">
                     + Add
                 </button>
             </div>
-            <p style="font-size:0.72rem;color:#94a3b8;margin:0.5rem 0 0;">Removing a category doesn't delete the policies — they just become uncategorised.</p>
+            <p class="text-[0.72rem] text-slate-400 mt-2">Removing a category doesn't delete the policies — they just become uncategorised.</p>
         </div>
     </div>
 
@@ -316,10 +303,9 @@
 
             const li = document.createElement('li');
             li.id = `cat-item-${data.id}`;
-            li.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:0.4rem;background:#f8fafc;';
-            li.innerHTML = `<span style="font-size:0.875rem;color:#0f172a;font-weight:500;">${data.name}</span>
-                <button onclick="deleteCategory(${data.id})" style="background:none;border:none;cursor:pointer;color:#94a3b8;padding:2px 6px;font-size:0.75rem;border-radius:4px;"
-                    onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='#94a3b8'">Remove</button>`;
+            li.className = 'flex items-center justify-between px-3 py-2 border border-slate-200 rounded-lg mb-1.5 bg-slate-50';
+            li.innerHTML = `<span class="text-sm text-slate-900 font-medium">${data.name}</span>
+                <button onclick="deleteCategory(${data.id})" class="bg-transparent border-0 cursor-pointer text-slate-400 px-1.5 py-0.5 text-xs rounded hover:text-red-600 transition-colors">Remove</button>`;
             list.appendChild(li);
 
             refreshCategorySelects(data.name, data.id);
@@ -342,11 +328,10 @@
             if (!document.querySelector('#cat-list li')) {
                 const li = document.createElement('li');
                 li.id = 'cat-empty';
-                li.style.cssText = 'padding:1rem;text-align:center;color:#94a3b8;font-size:0.875rem;';
+                li.className = 'p-4 text-center text-slate-400 text-sm';
                 li.textContent = 'No categories yet.';
                 document.getElementById('cat-list').appendChild(li);
             }
-            // Remove from dropdowns
             document.querySelectorAll('select[name="category"] option').forEach(opt => {
                 if (opt.dataset.catId == id) opt.remove();
             });

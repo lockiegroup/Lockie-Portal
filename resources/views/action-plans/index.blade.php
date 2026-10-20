@@ -1,22 +1,22 @@
 <x-layout title="Action Plans — Lockie Portal">
-<main style="max-width:1100px;margin:0 auto;padding:2rem 1.5rem;">
+<main class="max-w-[1100px] mx-auto px-6 py-8">
 
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1.75rem;flex-wrap:wrap;">
+    <div class="flex items-start justify-between gap-4 mb-7 flex-wrap">
         <div>
-            <h1 style="font-size:1.5rem;font-weight:700;color:#1e293b;margin:0 0 0.25rem;">Action Plans</h1>
-            <p style="color:#64748b;font-size:0.875rem;margin:0;">Group task lists with member-based access.</p>
+            <h1 class="text-2xl font-bold text-slate-800 mb-1">Action Plans</h1>
+            <p class="text-sm text-slate-500">Group task lists with member-based access.</p>
         </div>
-        <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+        <div class="flex gap-2 items-center flex-wrap">
             @can('admin')
             <a href="{{ $showArchived ? route('action-plans.index') : route('action-plans.index', ['archived' => 1]) }}"
-                style="display:inline-flex;align-items:center;padding:0.45rem 0.875rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-size:0.8125rem;cursor:pointer;text-decoration:none;">
+                class="inline-flex items-center px-3.5 py-[0.45rem] rounded-lg border border-slate-200 bg-white text-slate-500 text-[0.8125rem] no-underline hover:bg-slate-50 transition-colors">
                 {{ $showArchived ? '← Active Plans' : 'Archived' }}
             </a>
             @endcan
             @if(!$showArchived)
             @can('admin')
             <button onclick="document.getElementById('create-plan-modal').style.display='flex'"
-                style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.5rem 1rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.8125rem;font-weight:600;border:none;cursor:pointer;">
+                class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-slate-900 text-white text-[0.8125rem] font-semibold border-0 cursor-pointer">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 New Plan
             </button>
@@ -26,69 +26,69 @@
     </div>
 
     @if(session('success'))
-    <div style="margin-bottom:1rem;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;font-size:0.875rem;border-radius:8px;padding:0.75rem 1rem;">{{ session('success') }}</div>
+    <div class="mb-4 bg-green-50 border border-green-200 text-green-800 text-sm rounded-lg px-4 py-3">{{ session('success') }}</div>
     @endif
 
     @if($plans->isEmpty())
-    <div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:3rem;text-align:center;color:#94a3b8;font-size:0.875rem;">
+    <div class="bg-white rounded-xl border border-slate-200 px-12 py-12 text-center text-slate-400 text-sm">
         {{ $showArchived ? 'No archived plans.' : 'No action plans yet.' }}
         @if(!$showArchived) @can('admin') Click "New Plan" to create one.@endcan @endif
     </div>
     @else
-    <div id="plans-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;">
+    <div id="plans-grid" class="grid gap-4" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr));">
         @foreach($plans as $plan)
         <div data-id="{{ $plan->id }}"
-            style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;display:flex;flex-direction:column;{{ $plan->is_archived ? 'opacity:0.7;' : '' }}position:relative;">
+            class="bg-white rounded-xl border border-slate-200 flex flex-col relative {{ $plan->is_archived ? 'opacity-70' : '' }}">
 
             {{-- Clickable body --}}
-            <div onclick="window.location.href='{{ route('action-plans.show', $plan) }}'" style="display:flex;flex-direction:column;gap:0.6rem;padding:1.25rem 1.5rem;flex:1;cursor:pointer;">
-                <div style="display:flex;align-items:center;gap:0.5rem;padding-right:2rem;">
+            <div onclick="window.location.href='{{ route('action-plans.show', $plan) }}'" class="flex flex-col gap-2.5 px-6 py-5 flex-1 cursor-pointer">
+                <div class="flex items-center gap-2 pr-8">
                     @can('admin')
                     @if(!$showArchived)
-                    <span class="drag-handle" onclick="event.stopPropagation()" style="cursor:grab;color:#d1d5db;flex-shrink:0;line-height:0;" title="Drag to reorder">
+                    <span class="drag-handle text-slate-300 flex-shrink-0 leading-none cursor-grab" onclick="event.stopPropagation()" title="Drag to reorder">
                         <svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor"><circle cx="2" cy="2" r="1.25"/><circle cx="8" cy="2" r="1.25"/><circle cx="2" cy="7" r="1.25"/><circle cx="8" cy="7" r="1.25"/><circle cx="2" cy="12" r="1.25"/><circle cx="8" cy="12" r="1.25"/></svg>
                     </span>
                     @endif
                     @endcan
-                    <span style="font-size:0.9375rem;font-weight:700;color:#1e293b;line-height:1.3;">{{ $plan->name }}</span>
+                    <span class="text-[0.9375rem] font-bold text-slate-800 leading-snug">{{ $plan->name }}</span>
                 </div>
 
                 @if($plan->start_date || $plan->end_date)
-                <p style="font-size:0.75rem;color:#94a3b8;margin:0;">
+                <p class="text-xs text-slate-400 m-0">
                     {{ $plan->start_date?->format('d M Y') ?? '—' }} &rarr; {{ $plan->end_date?->format('d M Y') ?? '—' }}
                 </p>
                 @endif
 
                 @if($plan->description)
-                <p style="color:#64748b;font-size:0.8125rem;margin:0;line-height:1.4;">{{ $plan->description }}</p>
+                <p class="text-slate-500 text-[0.8125rem] m-0 leading-snug">{{ $plan->description }}</p>
                 @endif
 
                 @if($plan->members->isNotEmpty())
-                <div style="display:flex;flex-wrap:wrap;gap:0.3rem;margin-top:0.1rem;">
+                <div class="flex flex-wrap gap-1 mt-0.5">
                     @foreach($plan->members as $m)
-                    <span style="padding:2px 9px;border-radius:9999px;background:#f1f5f9;color:#475569;font-size:0.72rem;font-weight:500;">{{ $m->user->name }}</span>
+                    <span class="px-2 py-px rounded-full bg-slate-100 text-slate-500 text-[0.72rem] font-medium">{{ $m->user->name }}</span>
                     @endforeach
                 </div>
                 @endif
             </div>
 
             {{-- Footer --}}
-            <div onclick="event.stopPropagation()" style="padding:0.75rem 1.5rem;border-top:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;">
-                <span style="font-size:0.8rem;color:#94a3b8;">{{ $plan->items()->count() }} {{ str('task')->plural($plan->items()->count()) }}</span>
+            <div onclick="event.stopPropagation()" class="px-6 py-3 border-t border-slate-50 flex items-center justify-between">
+                <span class="text-[0.8rem] text-slate-400">{{ $plan->items()->count() }} {{ str('task')->plural($plan->items()->count()) }}</span>
                 @can('admin')
                 @if($plan->is_archived)
-                <form action="{{ route('action-plans.unarchive', $plan) }}" method="POST" style="margin:0;">
+                <form action="{{ route('action-plans.unarchive', $plan) }}" method="POST" class="m-0">
                     @csrf
-                    <button type="submit" style="padding:3px 10px;border-radius:6px;border:1px solid #bbf7d0;background:#f0fdf4;color:#166534;font-size:0.72rem;cursor:pointer;">Restore</button>
+                    <button type="submit" class="px-2.5 py-px rounded-md border border-green-200 bg-green-50 text-green-800 text-[0.72rem] cursor-pointer">Restore</button>
                 </form>
                 @else
-                <div style="display:flex;gap:0.375rem;align-items:center;">
+                <div class="flex gap-1.5 items-center">
                     <button type="button"
                         onclick="event.stopPropagation(); openEditPlan({{ $plan->id }}, '{{ addslashes($plan->name) }}', '{{ addslashes($plan->description ?? '') }}', '{{ $plan->start_date?->format('Y-m-d') }}', '{{ $plan->end_date?->format('Y-m-d') }}')"
-                        style="padding:3px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-size:0.75rem;cursor:pointer;">Edit</button>
+                        class="px-2.5 py-px rounded-md border border-slate-200 bg-white text-slate-500 text-[0.75rem] cursor-pointer hover:bg-slate-50 transition-colors">Edit</button>
                     <button type="button"
                         onclick="event.stopPropagation(); openManageMembers({{ $plan->id }})"
-                        style="padding:3px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-size:0.75rem;cursor:pointer;">Members</button>
+                        class="px-2.5 py-px rounded-md border border-slate-200 bg-white text-slate-500 text-[0.75rem] cursor-pointer hover:bg-slate-50 transition-colors">Members</button>
                 </div>
                 @endif
                 @endcan
@@ -103,110 +103,110 @@
 @can('admin')
 @if(!$showArchived)
 {{-- Create plan modal --}}
-<div id="create-plan-modal" style="display:none;position:fixed;inset:0;z-index:100;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);padding:1rem;">
-    <div style="background:#fff;border-radius:14px;width:100%;max-width:480px;padding:1.5rem;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
-        <h2 style="font-size:1rem;font-weight:700;color:#1e293b;margin:0 0 1.25rem;">New Action Plan</h2>
+<div id="create-plan-modal" style="display:none;" class="fixed inset-0 z-[100] items-center justify-center bg-black/45 p-4">
+    <div class="bg-white rounded-2xl w-full max-w-[480px] p-6 shadow-2xl">
+        <h2 class="text-base font-bold text-slate-800 mb-5">New Action Plan</h2>
         <form action="{{ route('action-plans.store') }}" method="POST">
             @csrf
-            <div style="margin-bottom:0.875rem;">
-                <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Plan Name *</label>
+            <div class="mb-3.5">
+                <label class="block text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Plan Name *</label>
                 <input type="text" name="name" required maxlength="150"
-                    style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
+                    class="w-full border border-slate-200 rounded-lg px-2.5 py-2 text-[0.8125rem] text-slate-700 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
             </div>
-            <div style="margin-bottom:0.875rem;">
-                <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Description</label>
+            <div class="mb-3.5">
+                <label class="block text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Description</label>
                 <textarea name="description" rows="2"
-                    style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.8125rem;color:#334155;resize:vertical;box-sizing:border-box;"></textarea>
+                    class="w-full border border-slate-200 rounded-lg px-2.5 py-2 text-[0.8125rem] text-slate-700 resize-y outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"></textarea>
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1.25rem;">
+            <div class="grid grid-cols-2 gap-3 mb-5">
                 <div>
-                    <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Start Date</label>
-                    <input type="date" name="start_date" style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
+                    <label class="block text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Start Date</label>
+                    <input type="date" name="start_date" class="w-full border border-slate-200 rounded-lg px-2.5 py-2 text-[0.8125rem] text-slate-700 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                 </div>
                 <div>
-                    <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">End Date</label>
-                    <input type="date" name="end_date" style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
+                    <label class="block text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">End Date</label>
+                    <input type="date" name="end_date" class="w-full border border-slate-200 rounded-lg px-2.5 py-2 text-[0.8125rem] text-slate-700 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                 </div>
             </div>
-            <div style="display:flex;gap:0.5rem;">
-                <button type="submit" style="padding:0.45rem 1rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.8125rem;font-weight:600;border:none;cursor:pointer;">Create Plan</button>
+            <div class="flex gap-2">
+                <button type="submit" class="px-4 py-[0.45rem] rounded-lg bg-slate-900 text-white text-[0.8125rem] font-semibold border-0 cursor-pointer">Create Plan</button>
                 <button type="button" onclick="document.getElementById('create-plan-modal').style.display='none'"
-                    style="padding:0.45rem 1rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.8125rem;cursor:pointer;">Cancel</button>
+                    class="px-4 py-[0.45rem] rounded-lg border border-slate-200 bg-white text-slate-700 text-[0.8125rem] cursor-pointer hover:bg-slate-50 transition-colors">Cancel</button>
             </div>
         </form>
     </div>
 </div>
 
 {{-- Edit plan modal --}}
-<div id="edit-plan-modal" style="display:none;position:fixed;inset:0;z-index:100;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);padding:1rem;">
-    <div style="background:#fff;border-radius:14px;width:100%;max-width:480px;padding:1.5rem;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
-        <h2 style="font-size:1rem;font-weight:700;color:#1e293b;margin:0 0 1.25rem;">Edit Plan</h2>
+<div id="edit-plan-modal" style="display:none;" class="fixed inset-0 z-[100] items-center justify-center bg-black/45 p-4">
+    <div class="bg-white rounded-2xl w-full max-w-[480px] p-6 shadow-2xl">
+        <h2 class="text-base font-bold text-slate-800 mb-5">Edit Plan</h2>
         <form id="edit-plan-form" method="POST">
             @csrf @method('PUT')
-            <div style="margin-bottom:0.875rem;">
-                <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Plan Name *</label>
+            <div class="mb-3.5">
+                <label class="block text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Plan Name *</label>
                 <input type="text" id="edit-plan-name" name="name" required maxlength="150"
-                    style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
+                    class="w-full border border-slate-200 rounded-lg px-2.5 py-2 text-[0.8125rem] text-slate-700 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
             </div>
-            <div style="margin-bottom:0.875rem;">
-                <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Description</label>
+            <div class="mb-3.5">
+                <label class="block text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Description</label>
                 <textarea id="edit-plan-desc" name="description" rows="2"
-                    style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.8125rem;color:#334155;resize:vertical;box-sizing:border-box;"></textarea>
+                    class="w-full border border-slate-200 rounded-lg px-2.5 py-2 text-[0.8125rem] text-slate-700 resize-y outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"></textarea>
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.875rem;">
+            <div class="grid grid-cols-2 gap-3 mb-3.5">
                 <div>
-                    <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Start Date</label>
-                    <input type="date" id="edit-plan-start" name="start_date" style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
+                    <label class="block text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Start Date</label>
+                    <input type="date" id="edit-plan-start" name="start_date" class="w-full border border-slate-200 rounded-lg px-2.5 py-2 text-[0.8125rem] text-slate-700 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                 </div>
                 <div>
-                    <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">End Date</label>
-                    <input type="date" id="edit-plan-end" name="end_date" style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
+                    <label class="block text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">End Date</label>
+                    <input type="date" id="edit-plan-end" name="end_date" class="w-full border border-slate-200 rounded-lg px-2.5 py-2 text-[0.8125rem] text-slate-700 outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                 </div>
             </div>
-            <div style="display:flex;gap:0.5rem;margin-bottom:0.5rem;">
-                <button type="submit" style="padding:0.45rem 1rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.8125rem;font-weight:600;border:none;cursor:pointer;">Save</button>
+            <div class="flex gap-2 mb-2">
+                <button type="submit" class="px-4 py-[0.45rem] rounded-lg bg-slate-900 text-white text-[0.8125rem] font-semibold border-0 cursor-pointer">Save</button>
                 <button type="button" onclick="document.getElementById('edit-plan-modal').style.display='none'"
-                    style="padding:0.45rem 1rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.8125rem;cursor:pointer;">Cancel</button>
+                    class="px-4 py-[0.45rem] rounded-lg border border-slate-200 bg-white text-slate-700 text-[0.8125rem] cursor-pointer hover:bg-slate-50 transition-colors">Cancel</button>
             </div>
         </form>
-        <div style="display:flex;gap:0.5rem;padding-top:0.5rem;border-top:1px solid #f1f5f9;flex-wrap:wrap;">
-            <form id="duplicate-plan-form" method="POST" style="margin:0;">
+        <div class="flex gap-2 pt-2 border-t border-slate-50 flex-wrap">
+            <form id="duplicate-plan-form" method="POST" class="m-0">
                 @csrf
-                <button type="submit" style="padding:0.35rem 0.75rem;border-radius:7px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.75rem;cursor:pointer;">Duplicate</button>
+                <button type="submit" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 text-[0.75rem] cursor-pointer hover:bg-slate-50 transition-colors">Duplicate</button>
             </form>
-            <form id="archive-plan-form" method="POST" style="margin:0;">
+            <form id="archive-plan-form" method="POST" class="m-0">
                 @csrf
-                <button type="submit" style="padding:0.35rem 0.75rem;border-radius:7px;border:1px solid #fed7aa;background:#fff;color:#c2410c;font-size:0.75rem;cursor:pointer;">Archive Plan</button>
+                <button type="submit" class="px-3 py-1.5 rounded-lg border border-orange-200 bg-white text-orange-700 text-[0.75rem] cursor-pointer hover:bg-orange-50 transition-colors">Archive Plan</button>
             </form>
-            <form id="delete-plan-form" method="POST" style="margin:0;" onsubmit="return confirm('Delete this plan and all its tasks?')">
+            <form id="delete-plan-form" method="POST" class="m-0" onsubmit="return confirm('Delete this plan and all its tasks?')">
                 @csrf @method('DELETE')
-                <button type="submit" style="padding:0.35rem 0.75rem;border-radius:7px;border:1px solid #fca5a5;background:#fff;color:#dc2626;font-size:0.75rem;cursor:pointer;">Delete Plan</button>
+                <button type="submit" class="px-3 py-1.5 rounded-lg border border-red-300 bg-white text-red-600 text-[0.75rem] cursor-pointer hover:bg-red-50 transition-colors">Delete Plan</button>
             </form>
         </div>
     </div>
 </div>
 
 {{-- Manage members modal --}}
-<div id="manage-members-modal" style="display:none;position:fixed;inset:0;z-index:100;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);padding:1rem;">
-    <div style="background:#fff;border-radius:14px;width:100%;max-width:420px;padding:1.5rem;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
-        <h2 style="font-size:1rem;font-weight:700;color:#1e293b;margin:0 0 1.25rem;">Manage Members</h2>
-        <div id="members-list" style="margin-bottom:1rem;display:flex;flex-direction:column;gap:0.375rem;"></div>
+<div id="manage-members-modal" style="display:none;" class="fixed inset-0 z-[100] items-center justify-center bg-black/45 p-4">
+    <div class="bg-white rounded-2xl w-full max-w-[420px] p-6 shadow-2xl">
+        <h2 class="text-base font-bold text-slate-800 mb-5">Manage Members</h2>
+        <div id="members-list" class="mb-4 flex flex-col gap-1.5"></div>
         <form id="add-member-form" method="POST">
             @csrf
-            <div style="display:flex;gap:0.5rem;align-items:center;">
+            <div class="flex gap-2 items-center">
                 <select name="user_id" required
-                    style="flex:1;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:0.8125rem;color:#334155;background:#fff;box-sizing:border-box;">
+                    class="flex-1 border border-slate-200 rounded-lg px-2.5 py-2 text-[0.8125rem] text-slate-700 bg-white outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                     <option value="">Add a member…</option>
                     @foreach($allUsers as $u)
                     <option value="{{ $u->id }}">{{ $u->name }}</option>
                     @endforeach
                 </select>
-                <button type="submit" style="padding:0.45rem 0.875rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.8125rem;font-weight:600;border:none;cursor:pointer;white-space:nowrap;">Add</button>
+                <button type="submit" class="px-3.5 py-[0.45rem] rounded-lg bg-slate-900 text-white text-[0.8125rem] font-semibold border-0 cursor-pointer whitespace-nowrap">Add</button>
             </div>
         </form>
-        <div style="margin-top:1rem;text-align:right;">
+        <div class="mt-4 text-right">
             <button type="button" onclick="document.getElementById('manage-members-modal').style.display='none'"
-                style="padding:0.45rem 1rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.8125rem;cursor:pointer;">Done</button>
+                class="px-4 py-[0.45rem] rounded-lg border border-slate-200 bg-white text-slate-700 text-[0.8125rem] cursor-pointer hover:bg-slate-50 transition-colors">Done</button>
         </div>
     </div>
 </div>

@@ -1,21 +1,21 @@
 <x-layout title="Movement Log — Racking — Lockie Portal">
-<main style="max-width:1200px;margin:0 auto;padding:2rem 1.5rem;">
+<main class="max-w-[1200px] mx-auto px-4 sm:px-6 py-8">
 
 {{-- Header --}}
-<div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem;">
+<div class="flex items-center gap-4 flex-wrap mb-6">
     <a href="{{ route('racking.index') }}"
-       style="font-size:0.8125rem;color:#64748b;text-decoration:none;display:inline-flex;align-items:center;gap:.3rem;padding:.3rem .75rem;border:1px solid #e2e8f0;border-radius:6px;background:#fff;">
+       class="text-[0.8125rem] text-slate-500 no-underline inline-flex items-center gap-1 px-3 py-1.5 border border-slate-200 rounded-md bg-white hover:bg-slate-50 transition-colors">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
         Main Racking
     </a>
     <div>
-        <h1 style="font-size:1.4rem;font-weight:700;color:#1e293b;margin:0 0 .2rem;">Movement Log</h1>
-        <p style="color:#64748b;font-size:0.875rem;margin:0;">Automatically recorded whenever a slot or outside storage item is added, moved, or removed.</p>
+        <h1 class="text-[1.4rem] font-bold text-slate-800 mb-0.5">Movement Log</h1>
+        <p class="text-slate-500 text-sm">Automatically recorded whenever a slot or outside storage item is added, moved, or removed.</p>
     </div>
 </div>
 
 @if(session('success'))
-<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:.75rem 1rem;margin-bottom:1rem;color:#166534;font-size:.875rem;">{{ session('success') }}</div>
+<div class="bg-green-50 border border-green-200 rounded-lg px-4 py-3 mb-4 text-green-800 text-sm">{{ session('success') }}</div>
 @endif
 
 @php
@@ -34,55 +34,57 @@ function actionBadge($type) {
 @endphp
 
 {{-- Log table --}}
-<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;">
-    <table style="width:100%;border-collapse:collapse;font-size:.8125rem;">
+<div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+    <div class="overflow-x-auto">
+    <table class="w-full border-collapse text-[0.8125rem]">
         <thead>
-            <tr style="background:#f8fafc;border-bottom:1px solid #e2e8f0;">
-                <th style="padding:.7rem 1rem;text-align:left;font-weight:600;color:#374151;white-space:nowrap;">Date &amp; Time</th>
-                <th style="padding:.7rem .75rem;text-align:left;font-weight:600;color:#374151;width:110px;">Action</th>
-                <th style="padding:.7rem 1rem;text-align:left;font-weight:600;color:#374151;">Description</th>
-                <th style="padding:.7rem 1rem;text-align:left;font-weight:600;color:#374151;width:110px;">Quantity</th>
-                <th style="padding:.7rem .75rem;text-align:left;font-weight:600;color:#374151;width:90px;">From</th>
-                <th style="padding:.7rem .75rem;text-align:left;font-weight:600;color:#374151;width:90px;">To</th>
-                <th style="padding:.7rem 1rem;text-align:left;font-weight:600;color:#374151;width:130px;">By</th>
-                <th style="padding:.7rem;width:52px;"></th>
+            <tr class="bg-slate-50 border-b border-slate-200">
+                <th class="px-4 py-3 text-left font-semibold text-slate-700 whitespace-nowrap">Date &amp; Time</th>
+                <th class="px-3 py-3 text-left font-semibold text-slate-700 w-28">Action</th>
+                <th class="px-4 py-3 text-left font-semibold text-slate-700">Description</th>
+                <th class="px-4 py-3 text-left font-semibold text-slate-700 w-28">Quantity</th>
+                <th class="px-3 py-3 text-left font-semibold text-slate-700 w-24">From</th>
+                <th class="px-3 py-3 text-left font-semibold text-slate-700 w-24">To</th>
+                <th class="px-4 py-3 text-left font-semibold text-slate-700 w-32">By</th>
+                <th class="px-3 py-3 w-14"></th>
             </tr>
         </thead>
         <tbody>
         @forelse($movements as $m)
         @php $badge = actionBadge($m->action_type); @endphp
-        <tr style="border-bottom:1px solid #f1f5f9;">
-            <td style="padding:.6rem 1rem;color:#64748b;white-space:nowrap;">
+        <tr class="border-b border-slate-100">
+            <td class="px-4 py-2.5 text-slate-500 whitespace-nowrap">
                 {{ $m->created_at ? $m->created_at->format('d/m/y H:i') : $m->moved_at->format('d/m/y') }}
             </td>
-            <td style="padding:.6rem .75rem;">
-                <span style="background:{{ $badge['bg'] }};color:{{ $badge['color'] }};border-radius:5px;padding:2px 8px;font-size:.7rem;font-weight:700;white-space:nowrap;">{{ $badge['label'] }}</span>
+            <td class="px-3 py-2.5">
+                <span class="rounded px-2 py-0.5 text-[0.7rem] font-bold whitespace-nowrap" style="background:{{ $badge['bg'] }};color:{{ $badge['color'] }};">{{ $badge['label'] }}</span>
             </td>
-            <td style="padding:.6rem 1rem;font-weight:500;color:#1e293b;">{{ $m->description }}</td>
-            <td style="padding:.6rem 1rem;color:#374151;">{{ $m->quantity }}</td>
-            <td style="padding:.6rem .75rem;">
+            <td class="px-4 py-2.5 font-medium text-slate-800">{{ $m->description }}</td>
+            <td class="px-4 py-2.5 text-slate-700">{{ $m->quantity }}</td>
+            <td class="px-3 py-2.5">
                 @if($m->from_location)
-                <span style="background:#f1f5f9;color:#374151;border-radius:4px;padding:2px 7px;font-weight:600;font-size:.75rem;">{{ $m->from_location }}</span>
-                @else<span style="color:#cbd5e1;font-size:.75rem;">—</span>@endif
+                <span class="bg-slate-100 text-slate-700 rounded px-1.5 py-0.5 font-semibold text-[0.75rem]">{{ $m->from_location }}</span>
+                @else<span class="text-slate-300 text-[0.75rem]">—</span>@endif
             </td>
-            <td style="padding:.6rem .75rem;">
+            <td class="px-3 py-2.5">
                 @if($m->to_location)
-                <span style="background:#dbeafe;color:#1e40af;border-radius:4px;padding:2px 7px;font-weight:600;font-size:.75rem;">{{ $m->to_location }}</span>
-                @else<span style="color:#cbd5e1;font-size:.75rem;">—</span>@endif
+                <span class="bg-blue-100 text-blue-800 rounded px-1.5 py-0.5 font-semibold text-[0.75rem]">{{ $m->to_location }}</span>
+                @else<span class="text-slate-300 text-[0.75rem]">—</span>@endif
             </td>
-            <td style="padding:.6rem 1rem;color:#64748b;">{{ $m->moved_by ?? '—' }}</td>
-            <td style="padding:.5rem .6rem;text-align:right;">
+            <td class="px-4 py-2.5 text-slate-500">{{ $m->moved_by ?? '—' }}</td>
+            <td class="px-2.5 py-2 text-right">
                 <form action="{{ route('racking.movements.destroy', $m) }}" method="POST" onsubmit="return confirm('Delete this log entry?')">
                     @csrf @method('DELETE')
-                    <button type="submit" style="font-size:.7rem;color:#dc2626;background:none;border:1px solid #fecaca;border-radius:4px;padding:2px 7px;cursor:pointer;">Del</button>
+                    <button type="submit" class="text-[0.7rem] text-red-600 bg-transparent border border-red-200 rounded px-1.5 py-0.5 cursor-pointer hover:bg-red-50 transition-colors">Del</button>
                 </form>
             </td>
         </tr>
         @empty
-        <tr><td colspan="8" style="padding:3rem;text-align:center;color:#94a3b8;">No movements recorded yet. Actions on the racking or outside storage pages will appear here automatically.</td></tr>
+        <tr><td colspan="8" class="p-12 text-center text-slate-400">No movements recorded yet. Actions on the racking or outside storage pages will appear here automatically.</td></tr>
         @endforelse
         </tbody>
     </table>
+    </div>
 </div>
 
 </main>
