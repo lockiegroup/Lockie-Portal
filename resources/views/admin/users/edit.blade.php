@@ -21,13 +21,13 @@
 
                 @php $isTabletOnly = old('tablet_only') ? (bool)old('tablet_only') : is_null($user->email); @endphp
 
-                <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:0.625rem;padding:12px 16px;">
-                    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                <div class="bg-sky-50 border border-sky-200 rounded-[0.625rem] px-4 py-3">
+                    <label class="flex items-center gap-2.5 cursor-pointer">
                         <input type="checkbox" name="tablet_only" id="tablet-only" value="1"
-                            style="width:16px;height:16px;accent-color:#0369a1;cursor:pointer;"
+                            class="w-4 h-4 accent-sky-700 cursor-pointer"
                             {{ $isTabletOnly ? 'checked' : '' }}
                             onchange="toggleTabletOnly(this.checked)">
-                        <span style="font-size:0.875rem;font-weight:500;color:#0369a1;">Tablet only — PIN login, no web access</span>
+                        <span class="text-sm font-medium text-sky-700">Tablet only — PIN login, no web access</span>
                     </label>
                 </div>
 
@@ -53,44 +53,44 @@
                 {{-- Staff controls (hidden for master) --}}
                 <div id="staff-controls" style="{{ old('role', $user->role) === 'master' ? 'display:none;' : '' }}">
 
-                    <div style="margin-bottom:1.25rem;">
+                    <div class="mb-5">
                         <label class="block text-sm font-medium text-slate-700 mb-2">Admin Tools</label>
-                        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:0.625rem;padding:12px 16px;display:flex;flex-direction:column;gap:8px;">
+                        <div class="bg-slate-50 border border-slate-200 rounded-[0.625rem] px-4 py-3 flex flex-col gap-2">
                             @foreach($permissions as $key => $label)
                                 @php
                                     $permChecked = old('perm_' . $key) !== null
                                         ? old('perm_' . $key)
                                         : $user->hasPermission($key);
                                 @endphp
-                                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                                <label class="flex items-center gap-2.5 cursor-pointer">
                                     <input type="checkbox" name="perm_{{ $key }}" value="1"
-                                        style="width:16px;height:16px;accent-color:#0369a1;cursor:pointer;"
+                                        class="w-4 h-4 accent-sky-700 cursor-pointer"
                                         {{ $permChecked ? 'checked' : '' }}>
-                                    <span style="font-size:0.875rem;color:#334155;">{{ $label }}</span>
+                                    <span class="text-sm text-slate-700">{{ $label }}</span>
                                 </label>
                             @endforeach
                         </div>
-                        <p style="font-size:0.75rem;color:#94a3b8;margin-top:6px;">Grant access to admin sections. Leave all unticked for a standard staff account.</p>
+                        <p class="text-xs text-slate-400 mt-1.5">Grant access to admin sections. Leave all unticked for a standard staff account.</p>
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-2">Module Visibility</label>
-                        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:0.625rem;padding:12px 16px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                        <div class="bg-slate-50 border border-slate-200 rounded-[0.625rem] px-4 py-3 grid grid-cols-2 gap-2">
                             @foreach($modules as $key => $label)
                                 @php
                                     $modChecked = old('mod_' . $key) !== null
                                         ? old('mod_' . $key)
                                         : $user->hasModule($key);
                                 @endphp
-                                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                                <label class="flex items-center gap-2.5 cursor-pointer">
                                     <input type="checkbox" name="mod_{{ $key }}" value="1"
-                                        style="width:16px;height:16px;accent-color:#16a34a;cursor:pointer;"
+                                        class="w-4 h-4 accent-green-600 cursor-pointer"
                                         {{ $modChecked ? 'checked' : '' }}>
-                                    <span style="font-size:0.875rem;color:#334155;">{{ $label }}</span>
+                                    <span class="text-sm text-slate-700">{{ $label }}</span>
                                 </label>
                             @endforeach
                         </div>
-                        <p style="font-size:0.75rem;color:#94a3b8;margin-top:6px;">Untick any modules this staff member should not see.</p>
+                        <p class="text-xs text-slate-400 mt-1.5">Untick any modules this staff member should not see.</p>
                     </div>
 
                 </div>

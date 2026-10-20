@@ -87,18 +87,18 @@
     {{-- Table --}}
     <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
         <div class="overflow-x-auto">
-        <table style="width:100%;border-collapse:collapse;font-size:0.875rem;min-width:900px;">
+        <table class="w-full text-sm border-collapse" style="min-width:900px;">
             <thead>
-                <tr style="background:#f8fafc;border-bottom:1px solid #e2e8f0;">
-                    <th style="padding:10px 16px;text-align:left;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Customer</th>
-                    <th style="padding:10px 16px;text-align:right;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Last 12m</th>
-                    <th style="padding:10px 16px;text-align:right;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Prev 12m</th>
-                    <th style="padding:10px 16px;text-align:right;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Change</th>
-                    <th style="padding:10px 16px;text-align:left;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Last Order</th>
-                    <th style="padding:10px 16px;text-align:left;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Frequency</th>
-                    <th style="padding:10px 16px;text-align:left;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Expected Next</th>
-                    <th style="padding:10px 16px;text-align:left;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Last Contact</th>
-                    <th style="padding:10px 16px;text-align:left;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;"></th>
+                <tr class="bg-slate-50 border-b border-slate-200">
+                    <th class="px-4 py-2.5 text-left text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide">Customer</th>
+                    <th class="px-4 py-2.5 text-right text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide">Last 12m</th>
+                    <th class="px-4 py-2.5 text-right text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide">Prev 12m</th>
+                    <th class="px-4 py-2.5 text-right text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide">Change</th>
+                    <th class="px-4 py-2.5 text-left text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide">Last Order</th>
+                    <th class="px-4 py-2.5 text-left text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide">Frequency</th>
+                    <th class="px-4 py-2.5 text-left text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide">Expected Next</th>
+                    <th class="px-4 py-2.5 text-left text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide">Last Contact</th>
+                    <th class="px-4 py-2.5"></th>
                 </tr>
             </thead>
             <tbody>
@@ -120,9 +120,9 @@
                             elseif ($daysUntil <= 14)  { $nextColour = '#d97706'; $nextBg = '#fffbeb'; }
                         }
                     @endphp
-                    <tr style="border-bottom:1px solid #f1f5f9;" class="crm-row">
-                        <td style="padding:11px 16px;">
-                            <div style="display:flex;align-items:center;gap:9px;">
+                    <tr class="crm-row border-b border-slate-50">
+                        <td class="px-4 py-3">
+                            <div class="flex items-center gap-2.5">
                                 @if($c->is_dropoff)
                                     <span title="Dropping off" style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#fef2f2;flex-shrink:0;">
                                         <svg style="width:11px;height:11px;color:#dc2626;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
@@ -147,13 +147,13 @@
                                 </div>
                             </div>
                         </td>
-                        <td style="padding:11px 16px;text-align:right;font-weight:600;color:#1e293b;">
+                        <td class="px-4 py-3 text-right font-semibold text-slate-800">
                             £{{ number_format($c->current_total, 0) }}
                         </td>
-                        <td style="padding:11px 16px;text-align:right;color:#64748b;">
+                        <td class="px-4 py-3 text-right text-slate-500">
                             {{ $c->prev_total > 0 ? '£' . number_format($c->prev_total, 0) : '—' }}
                         </td>
-                        <td style="padding:11px 16px;text-align:right;">
+                        <td class="px-4 py-3 text-right">
                             @if($pct !== null && abs($pct) >= 1)
                                 <span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:0.75rem;font-weight:600;color:{{ $pctColour }};background:{{ $pctBg }};">
                                     {{ $pct > 0 ? '+' : '' }}{{ number_format($pct, 0) }}%
