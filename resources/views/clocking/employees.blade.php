@@ -231,15 +231,19 @@ function buildScheduleEditor(containerId, empId) {
                 ${DAY_LABELS[d]}
             </label>
             <div id="${containerId}-${d}-times" style="display:${s.start ? 'flex' : 'none'};align-items:center;gap:0.25rem;margin-top:0.35rem;">
-                <input type="time" id="${containerId}-${d}-start" value="${s.start || '09:00'}"
+                <input type="time" id="${containerId}-${d}-start" value="${s.start || '08:00'}"
                     style="width:80px;padding:3px 5px;border:1px solid #e2e8f0;border-radius:5px;font-size:0.75rem;">
                 <span style="font-size:0.75rem;color:#94a3b8;">to</span>
-                <input type="time" id="${containerId}-${d}-end" value="${s.end || '17:00'}"
+                <input type="time" id="${containerId}-${d}-end" value="${s.end || '16:30'}"
                     style="width:80px;padding:3px 5px;border:1px solid #e2e8f0;border-radius:5px;font-size:0.75rem;">
             </div>
         </div>`;
     });
     html += '</div>';
+    html += `<button type="button" onclick="copyMonToFri('${containerId}')"
+        style="margin-top:0.5rem;padding:3px 10px;background:none;border:1px solid #e2e8f0;border-radius:6px;font-size:0.75rem;color:#475569;cursor:pointer;">
+        Copy Mon → Fri
+    </button>`;
     container.innerHTML = html;
 }
 
@@ -249,14 +253,33 @@ function toggleDayTime(containerId, day) {
     times.style.display = on ? 'flex' : 'none';
 }
 
+function copyMonToFri(containerId) {
+    const monOn    = document.getElementById(`${containerId}-mon-on`);
+    const monStart = document.getElementById(`${containerId}-mon-start`);
+    const monEnd   = document.getElementById(`${containerId}-mon-end`);
+    if (!monOn?.checked) return;
+    const start = monStart?.value || '08:00';
+    const end   = monEnd?.value   || '16:30';
+    ['tue','wed','thu','fri'].forEach(d => {
+        const cb = document.getElementById(`${containerId}-${d}-on`);
+        const times = document.getElementById(`${containerId}-${d}-times`);
+        const s = document.getElementById(`${containerId}-${d}-start`);
+        const e = document.getElementById(`${containerId}-${d}-end`);
+        if (cb) cb.checked = true;
+        if (times) times.style.display = 'flex';
+        if (s) s.value = start;
+        if (e) e.value = end;
+    });
+}
+
 function collectSchedule(containerId) {
     const s = {};
     DAYS.forEach(d => {
         const on = document.getElementById(`${containerId}-${d}-on`)?.checked;
         if (on) {
             s[d] = {
-                start: document.getElementById(`${containerId}-${d}-start`)?.value || '09:00',
-                end:   document.getElementById(`${containerId}-${d}-end`)?.value   || '17:00',
+                start: document.getElementById(`${containerId}-${d}-start`)?.value || '08:00',
+                end:   document.getElementById(`${containerId}-${d}-end`)?.value   || '16:30',
             };
         } else {
             s[d] = {};

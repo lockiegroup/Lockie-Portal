@@ -30,6 +30,12 @@ class ClockingEmployeeController extends Controller
             'schedule'               => 'nullable|array',
             'break_override_minutes' => 'nullable|integer|min:0|max:120',
         ]);
+        if (!empty($data['fob_uid'])) {
+            $taken = ClockingFob::where('uid', $data['fob_uid'])->whereNotNull('employee_id')->with('employee')->first();
+            if ($taken) {
+                return response()->json(['ok' => false, 'message' => "Fob {$data['fob_uid']} is already assigned to {$taken->employee->name}."], 422);
+            }
+        }
         $emp = ClockingEmployee::create([
             'name'                   => $data['name'],
             'category_id'            => $data['category_id'] ?? null,
@@ -52,6 +58,12 @@ class ClockingEmployeeController extends Controller
             'schedule'               => 'nullable|array',
             'break_override_minutes' => 'nullable|integer|min:0|max:120',
         ]);
+        if (!empty($data['fob_uid'])) {
+            $taken = ClockingFob::where('uid', $data['fob_uid'])->whereNotNull('employee_id')->where('employee_id', '!=', $employee->id)->with('employee')->first();
+            if ($taken) {
+                return response()->json(['ok' => false, 'message' => "Fob {$data['fob_uid']} is already assigned to {$taken->employee->name}."], 422);
+            }
+        }
         $employee->update([
             'name'                   => $data['name'],
             'category_id'            => $data['category_id'] ?? null,
