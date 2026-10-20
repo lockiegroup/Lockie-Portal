@@ -1,13 +1,12 @@
 <x-layout title="Print Archive — Lockie Portal">
 
-
     <main class="max-w-6xl mx-auto px-4 sm:px-6 py-8">
 
-        <div style="margin-bottom:1.5rem;">
+        <div class="mb-6">
             <a href="{{ route('print.index') }}" class="text-sm text-slate-400 hover:text-slate-600 transition-colors">&#8592; Print Schedule</a>
         </div>
 
-        <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:1.5rem;">
+        <div class="flex items-end justify-between flex-wrap gap-3 mb-6">
             <div>
                 <h1 class="text-2xl font-bold text-slate-800">Print Archive</h1>
                 <p class="text-sm text-slate-500 mt-1">Search completed jobs for historical print data and order details.</p>
@@ -16,48 +15,41 @@
         </div>
 
         {{-- Search + filters --}}
-        <form method="GET" action="{{ route('print.archive') }}" style="margin-bottom:1.5rem;">
-            {{-- Search bar --}}
-            <div style="position:relative;margin-bottom:10px;">
-                <svg style="position:absolute;left:14px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:#94a3b8;pointer-events:none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <form method="GET" action="{{ route('print.archive') }}" class="mb-6">
+            <div class="relative mb-2.5">
+                <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
                 </svg>
                 <input type="text" name="q" value="{{ $search }}"
                     placeholder="Search order numbers, customer names, refs, product codes, print data…"
                     autocomplete="off"
-                    style="width:100%;padding:10px 120px 10px 40px;border:1px solid #e2e8f0;border-radius:0.75rem;font-size:0.875rem;color:#1e293b;background:#fff;outline:none;box-sizing:border-box;"
-                    onfocus="this.style.borderColor='#e11d48';this.style.boxShadow='0 0 0 3px rgba(225,29,72,0.1)'"
-                    onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
-                <div style="position:absolute;right:8px;top:50%;transform:translateY(-50%);display:flex;gap:6px;">
+                    class="w-full pl-10 pr-32 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 bg-white outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100">
+                <div class="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1.5">
                     @if($search || $dateFrom || $dateTo || $machine)
                         <a href="{{ route('print.archive') }}"
-                            style="font-size:0.75rem;color:#64748b;padding:5px 10px;border-radius:6px;border:1px solid #e2e8f0;background:#f8fafc;text-decoration:none;white-space:nowrap;">
+                            class="text-xs text-slate-500 px-2.5 py-1 rounded-md border border-slate-200 bg-slate-50 no-underline whitespace-nowrap">
                             Clear
                         </a>
                     @endif
                     <button type="submit"
-                        style="background:#1e293b;color:#fff;font-size:0.75rem;padding:5px 14px;border-radius:6px;border:none;cursor:pointer;white-space:nowrap;">
+                        class="bg-slate-900 text-white text-xs px-3.5 py-1 rounded-md border-0 cursor-pointer whitespace-nowrap">
                         Search
                     </button>
                 </div>
             </div>
 
-            {{-- Date + Machine filters --}}
-            <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
-                <span style="font-size:0.75rem;color:#94a3b8;white-space:nowrap;">Archive date:</span>
+            <div class="flex flex-wrap gap-2 items-center">
+                <span class="text-xs text-slate-400 whitespace-nowrap">Archive date:</span>
                 <input type="date" name="date_from" value="{{ $dateFrom }}"
-                    style="font-size:0.8125rem;border:1px solid #e2e8f0;border-radius:8px;padding:5px 10px;color:#334155;background:#fff;outline:none;"
-                    onfocus="this.style.borderColor='#e11d48'" onblur="this.style.borderColor='#e2e8f0'"
+                    class="text-sm border border-slate-200 rounded-lg px-2.5 py-1 text-slate-700 bg-white outline-none focus:border-rose-500"
                     title="Archived from">
-                <span style="font-size:0.75rem;color:#94a3b8;">→</span>
+                <span class="text-xs text-slate-400">→</span>
                 <input type="date" name="date_to" value="{{ $dateTo }}"
-                    style="font-size:0.8125rem;border:1px solid #e2e8f0;border-radius:8px;padding:5px 10px;color:#334155;background:#fff;outline:none;"
-                    onfocus="this.style.borderColor='#e11d48'" onblur="this.style.borderColor='#e2e8f0'"
+                    class="text-sm border border-slate-200 rounded-lg px-2.5 py-1 text-slate-700 bg-white outline-none focus:border-rose-500"
                     title="Archived to">
-
-                <span style="font-size:0.75rem;color:#94a3b8;white-space:nowrap;margin-left:4px;">Machine:</span>
+                <span class="text-xs text-slate-400 whitespace-nowrap ml-1">Machine:</span>
                 <select name="machine"
-                    style="font-size:0.8125rem;border:1px solid #e2e8f0;border-radius:8px;padding:5px 10px;color:#334155;background:#fff;outline:none;">
+                    class="text-sm border border-slate-200 rounded-lg px-2.5 py-1 text-slate-700 bg-white outline-none">
                     <option value="">All machines</option>
                     @foreach($machines as $m)
                         <option value="{{ $m }}" {{ $machine === $m ? 'selected' : '' }}>
@@ -97,34 +89,34 @@
         @else
             <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <div class="overflow-x-auto">
-                    <table style="width:100%;border-collapse:collapse;font-size:0.8125rem;">
+                    <table class="w-full text-[0.8125rem] border-collapse">
                         <thead>
-                            <tr style="background:#f8fafc;border-bottom:1px solid #e2e8f0;">
-                                <th style="padding:10px 16px;text-align:left;font-weight:600;color:#64748b;white-space:nowrap;">Order</th>
-                                <th style="padding:10px 16px;text-align:left;font-weight:600;color:#64748b;white-space:nowrap;">Customer</th>
-                                <th style="padding:10px 16px;text-align:left;font-weight:600;color:#64748b;white-space:nowrap;">Product</th>
-                                <th style="padding:10px 16px;text-align:left;font-weight:600;color:#64748b;">Print Data</th>
-                                <th style="padding:10px 16px;text-align:left;font-weight:600;color:#64748b;white-space:nowrap;">Delivery</th>
-                                <th style="padding:10px 16px;text-align:right;font-weight:600;color:#64748b;white-space:nowrap;">Packs</th>
-                                <th style="padding:10px 16px;text-align:left;font-weight:600;color:#64748b;white-space:nowrap;">Completed</th>
+                            <tr class="bg-slate-50 border-b border-slate-200">
+                                <th class="px-4 py-2.5 text-left font-semibold text-slate-500 whitespace-nowrap">Order</th>
+                                <th class="px-4 py-2.5 text-left font-semibold text-slate-500 whitespace-nowrap">Customer</th>
+                                <th class="px-4 py-2.5 text-left font-semibold text-slate-500 whitespace-nowrap">Product</th>
+                                <th class="px-4 py-2.5 text-left font-semibold text-slate-500">Print Data</th>
+                                <th class="px-4 py-2.5 text-left font-semibold text-slate-500 whitespace-nowrap">Delivery</th>
+                                <th class="px-4 py-2.5 text-right font-semibold text-slate-500 whitespace-nowrap">Packs</th>
+                                <th class="px-4 py-2.5 text-left font-semibold text-slate-500 whitespace-nowrap">Completed</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach($jobs as $job)
-                                <tr style="border-bottom:1px solid #f1f5f9;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
-                                    <td style="padding:10px 16px;vertical-align:top;white-space:nowrap;">
+                                <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                                    <td class="px-4 py-2.5 align-top whitespace-nowrap">
                                         <span class="font-mono text-xs text-slate-500">{{ $job->order_number }}</span>
                                         @if($job->board && $job->board !== 'unplanned')
-                                            <br><span style="font-size:0.7rem;color:#94a3b8;">{{ \App\Models\PrintJob::BOARDS[$job->board] ?? $job->board }}</span>
+                                            <br><span class="text-[0.7rem] text-slate-400">{{ \App\Models\PrintJob::BOARDS[$job->board] ?? $job->board }}</span>
                                         @endif
                                     </td>
-                                    <td style="padding:10px 16px;vertical-align:top;">
+                                    <td class="px-4 py-2.5 align-top">
                                         <span class="text-slate-800 font-medium">{{ $job->customer_name }}</span>
                                         @if($job->customer_ref)
                                             <br><span class="font-mono text-xs text-slate-400">{{ $job->customer_ref }}</span>
                                         @endif
                                     </td>
-                                    <td style="padding:10px 16px;vertical-align:top;white-space:nowrap;">
+                                    <td class="px-4 py-2.5 align-top whitespace-nowrap">
                                         @if($job->product_code)
                                             <span class="font-mono text-xs text-slate-600 font-medium">{{ $job->product_code }}</span>
                                         @endif
@@ -132,34 +124,34 @@
                                             <br><span class="text-xs text-slate-400">{{ $job->product_description }}</span>
                                         @endif
                                     </td>
-                                    <td style="padding:10px 16px;vertical-align:top;max-width:320px;">
+                                    <td class="px-4 py-2.5 align-top max-w-xs">
                                         @if($job->line_comment)
-                                            <span class="font-mono text-xs text-blue-800" style="white-space:pre-wrap;word-break:break-word;">{{ $job->line_comment }}</span>
+                                            <span class="font-mono text-xs text-blue-800 whitespace-pre-wrap break-words">{{ $job->line_comment }}</span>
                                         @else
                                             <span class="text-xs text-slate-300 italic">—</span>
                                         @endif
                                     </td>
-                                    <td style="padding:10px 16px;vertical-align:top;white-space:nowrap;">
+                                    <td class="px-4 py-2.5 align-top whitespace-nowrap">
                                         @if($job->delivery_name || $job->delivery_address)
-                                            <details style="cursor:pointer;">
-                                                <summary style="font-size:0.75rem;color:#64748b;list-style:none;display:flex;align-items:center;gap:4px;">
-                                                    <svg style="width:11px;height:11px;flex-shrink:0;color:#94a3b8;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                            <details class="cursor-pointer">
+                                                <summary class="text-xs text-slate-500 list-none flex items-center gap-1">
+                                                    <svg class="w-3 h-3 flex-shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                                                     {{ $job->delivery_name ?? $job->delivery_city }}
                                                 </summary>
                                                 @if($job->delivery_address)
-                                                    <p style="font-size:0.7rem;color:#64748b;margin:4px 0 0 15px;white-space:normal;max-width:200px;line-height:1.4;">{{ $job->delivery_address }}</p>
+                                                    <p class="text-[0.7rem] text-slate-500 mt-1 ml-4 whitespace-normal max-w-[200px] leading-snug">{{ $job->delivery_address }}</p>
                                                 @endif
                                             </details>
                                         @else
                                             <span class="text-xs text-slate-300 italic">—</span>
                                         @endif
                                     </td>
-                                    <td style="padding:10px 16px;text-align:right;vertical-align:top;white-space:nowrap;">
+                                    <td class="px-4 py-2.5 text-right align-top whitespace-nowrap">
                                         <span class="text-slate-700 font-medium">{{ number_format($job->order_quantity) }}</span>
                                     </td>
-                                    <td style="padding:10px 16px;color:#94a3b8;white-space:nowrap;vertical-align:top;">
+                                    <td class="px-4 py-2.5 text-slate-400 whitespace-nowrap align-top">
                                         @if($job->archive_reason === 'deleted')
-                                            <span style="font-size:0.65rem;background:#fef2f2;color:#dc2626;border:1px solid #fecaca;border-radius:4px;padding:1px 5px;white-space:nowrap;">Deleted from Unleashed</span>
+                                            <span class="text-[0.65rem] bg-red-50 text-red-600 border border-red-200 rounded px-1.5 py-0.5 whitespace-nowrap">Deleted from Unleashed</span>
                                         @else
                                             {{ $job->archived_at->format('d M Y') }}
                                         @endif
@@ -173,29 +165,26 @@
 
             {{-- Pagination --}}
             @if($jobs->hasPages())
-                <div style="margin-top:1.5rem;display:flex;justify-content:center;gap:6px;flex-wrap:wrap;">
+                <div class="mt-6 flex justify-center gap-1.5 flex-wrap">
                     @if($jobs->onFirstPage())
-                        <span style="padding:6px 12px;border-radius:6px;border:1px solid #e2e8f0;color:#cbd5e1;font-size:0.8125rem;">&#8592; Prev</span>
+                        <span class="px-3 py-1.5 rounded-md border border-slate-200 text-slate-300 text-sm">&#8592; Prev</span>
                     @else
                         <a href="{{ $jobs->previousPageUrl() }}"
-                            style="padding:6px 12px;border-radius:6px;border:1px solid #e2e8f0;color:#475569;font-size:0.8125rem;text-decoration:none;background:#fff;">&#8592; Prev</a>
+                            class="px-3 py-1.5 rounded-md border border-slate-200 text-slate-500 text-sm no-underline bg-white hover:bg-slate-50">&#8592; Prev</a>
                     @endif
-
-                    <span style="padding:6px 12px;font-size:0.8125rem;color:#64748b;">
+                    <span class="px-3 py-1.5 text-sm text-slate-500">
                         Page {{ $jobs->currentPage() }} of {{ $jobs->lastPage() }}
                     </span>
-
                     @if($jobs->hasMorePages())
                         <a href="{{ $jobs->nextPageUrl() }}"
-                            style="padding:6px 12px;border-radius:6px;border:1px solid #e2e8f0;color:#475569;font-size:0.8125rem;text-decoration:none;background:#fff;">Next &#8594;</a>
+                            class="px-3 py-1.5 rounded-md border border-slate-200 text-slate-500 text-sm no-underline bg-white hover:bg-slate-50">Next &#8594;</a>
                     @else
-                        <span style="padding:6px 12px;border-radius:6px;border:1px solid #e2e8f0;color:#cbd5e1;font-size:0.8125rem;">Next &#8594;</span>
+                        <span class="px-3 py-1.5 rounded-md border border-slate-200 text-slate-300 text-sm">Next &#8594;</span>
                     @endif
                 </div>
             @endif
         @endif
 
     </main>
-
 
 </x-layout>
