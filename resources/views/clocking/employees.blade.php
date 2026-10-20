@@ -1,33 +1,33 @@
 <x-layout title="Employees — Clocking">
-<main style="max-width:960px;margin:0 auto;padding:2rem 1.5rem;">
+<main class="max-w-4xl mx-auto px-4 sm:px-6 py-8">
 
-    <div style="margin-bottom:1.5rem;">
-        <h1 style="font-size:1.5rem;font-weight:700;color:#1e293b;margin:0 0 1rem;">Clocking</h1>
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-slate-800 mb-4">Clocking</h1>
         @include('clocking._tabs', ['active' => 'employees'])
     </div>
 
     {{-- Add employee --}}
-    <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:1.5rem;margin-bottom:1.5rem;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0;">
-            <h2 style="font-size:0.9375rem;font-weight:700;color:#1e293b;margin:0;">Employees</h2>
+    <div class="bg-white rounded-xl border border-slate-200 p-6 mb-6">
+        <div class="flex items-center justify-between">
+            <h2 class="text-[0.9375rem] font-bold text-slate-800">Employees</h2>
             <button onclick="toggleAddForm()"
-                style="padding:0.4rem 0.875rem;background:#1e293b;color:#fff;border:none;border-radius:7px;font-size:0.8125rem;font-weight:600;cursor:pointer;">
+                class="px-3.5 py-1.5 bg-slate-900 text-white border-0 rounded-lg text-[0.8125rem] font-semibold cursor-pointer hover:bg-slate-700 transition-colors">
                 + Add Employee
             </button>
         </div>
 
-        <div id="add-form" style="display:none;margin-top:1rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:1.25rem;">
-            <p style="font-size:0.8125rem;color:#64748b;margin:0 0 1rem;">Fill in the employee's name and their weekly schedule.</p>
-            <div style="display:flex;flex-wrap:wrap;gap:0.75rem;margin-bottom:0.75rem;">
+        <div id="add-form" style="display:none" class="mt-4 bg-slate-50 border border-slate-200 rounded-lg p-5">
+            <p class="text-[0.8125rem] text-slate-500 mb-4">Fill in the employee's name and their weekly schedule.</p>
+            <div class="flex flex-wrap gap-3 mb-3">
                 <div>
-                    <label style="font-size:0.8125rem;font-weight:600;color:#374151;display:block;margin-bottom:0.25rem;">Name</label>
+                    <label class="text-[0.8125rem] font-semibold text-gray-700 block mb-1">Name</label>
                     <input type="text" id="add-name" placeholder="Full name" maxlength="100"
-                        style="width:100%;min-width:220px;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:7px;font-size:0.875rem;">
+                        class="w-full min-w-[220px] px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500">
                 </div>
                 @if($categories->isNotEmpty())
                 <div>
-                    <label style="font-size:0.8125rem;font-weight:600;color:#374151;display:block;margin-bottom:0.25rem;">Category</label>
-                    <select id="add-category" style="padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:7px;font-size:0.875rem;min-width:160px;">
+                    <label class="text-[0.8125rem] font-semibold text-gray-700 block mb-1">Category</label>
+                    <select id="add-category" class="px-3 py-2 border border-slate-200 rounded-lg text-sm min-w-[160px] focus:outline-none">
                         <option value="">— none —</option>
                         @foreach($categories as $cat)
                         <option value="{{ $cat->id }}">{{ $cat->name }}</option>
@@ -36,65 +36,58 @@
                 </div>
                 @endif
                 <div>
-                    <label style="font-size:0.8125rem;font-weight:600;color:#374151;display:block;margin-bottom:0.25rem;">
-                        Fob UID <span style="font-weight:400;color:#94a3b8;">— type or tap reader</span>
+                    <label class="text-[0.8125rem] font-semibold text-gray-700 block mb-1">
+                        Fob UID <span class="font-normal text-slate-400">— type or tap reader</span>
                     </label>
-                    <div style="display:flex;gap:0.375rem;align-items:center;">
+                    <div class="flex gap-1.5 items-center">
                         <input type="text" id="add-fob" maxlength="20" placeholder="e.g. 0012345678" inputmode="numeric"
-                            style="width:160px;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:7px;font-size:0.875rem;font-family:monospace;">
+                            class="w-40 px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-rose-500">
                         <button type="button" onclick="startCapture('add-fob')"
-                            style="padding:0.45rem 0.75rem;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:7px;font-size:0.75rem;color:#475569;cursor:pointer;">
+                            class="px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-xs text-slate-600 cursor-pointer hover:bg-slate-200 transition-colors">
                             📡 Tap
                         </button>
                     </div>
                 </div>
             </div>
-            <div id="add-schedule" style="margin-bottom:0.75rem;"></div>
-            <div style="margin-bottom:1rem;">
-                <label style="font-size:0.8125rem;font-weight:600;color:#374151;display:block;margin-bottom:0.25rem;">
-                    Break override (minutes) <span style="font-weight:400;color:#94a3b8;">— leave blank to use default</span>
+            <div id="add-schedule" class="mb-3"></div>
+            <div class="mb-4">
+                <label class="text-[0.8125rem] font-semibold text-gray-700 block mb-1">
+                    Break override (minutes) <span class="font-normal text-slate-400">— leave blank to use default</span>
                 </label>
                 <input type="number" id="add-break" min="0" max="120" placeholder="e.g. 30"
-                    style="width:100px;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:7px;font-size:0.875rem;">
+                    class="w-24 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500">
             </div>
-            <div style="display:flex;gap:0.5rem;">
+            <div class="flex gap-2">
                 <button onclick="saveEmployee()"
-                    style="padding:0.5rem 1.25rem;background:#6366f1;color:#fff;border:none;border-radius:7px;font-size:0.875rem;font-weight:600;cursor:pointer;">
+                    class="px-5 py-2 bg-indigo-500 text-white border-0 rounded-lg text-sm font-semibold cursor-pointer hover:bg-indigo-600 transition-colors">
                     Save
                 </button>
                 <button onclick="toggleAddForm()"
-                    style="padding:0.5rem 1rem;background:none;border:1px solid #e2e8f0;border-radius:7px;font-size:0.875rem;color:#64748b;cursor:pointer;">
+                    class="px-4 py-2 bg-transparent border border-slate-200 rounded-lg text-sm text-slate-500 cursor-pointer hover:bg-slate-50 transition-colors">
                     Cancel
                 </button>
             </div>
-            <div id="add-result" style="margin-top:0.5rem;font-size:0.8125rem;"></div>
+            <div id="add-result" class="mt-2 text-[0.8125rem]"></div>
         </div>
     </div>
 
-    <style>
-        @media (max-width: 600px) {
-            .emp-col-schedule, .emp-col-fob { display: none; }
-            .emp-col-schedule-hd, .emp-col-fob-hd { display: none; }
-        }
-    </style>
-
     {{-- Employee list --}}
-    <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;">
+    <div class="bg-white rounded-xl border border-slate-200">
         @if($employees->isEmpty())
-            <p style="padding:1.5rem;color:#94a3b8;font-size:0.875rem;">No employees yet. Add one above.</p>
+            <p class="p-6 text-slate-400 text-sm">No employees yet. Add one above.</p>
         @else
-        <div style="overflow-x:auto;border-radius:14px;">
-        <table style="width:100%;border-collapse:collapse;font-size:0.875rem;" id="emp-table">
+        <div class="overflow-x-auto rounded-xl">
+        <table class="w-full border-collapse text-sm" id="emp-table">
             <thead>
-                <tr style="border-bottom:1px solid #e2e8f0;background:#f8fafc;">
-                    <th style="text-align:left;padding:0.625rem 1rem;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;font-weight:600;">Name</th>
+                <tr class="border-b border-slate-200 bg-slate-50">
+                    <th class="text-left px-4 py-2.5 text-xs uppercase tracking-wide text-slate-500 font-semibold">Name</th>
                     @if($categories->isNotEmpty())
-                    <th style="text-align:left;padding:0.625rem 0.75rem;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;font-weight:600;">Category</th>
+                    <th class="text-left px-3 py-2.5 text-xs uppercase tracking-wide text-slate-500 font-semibold">Category</th>
                     @endif
-                    <th class="emp-col-schedule-hd" style="text-align:left;padding:0.625rem 0.75rem;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;font-weight:600;">Schedule</th>
-                    <th class="emp-col-fob-hd" style="text-align:left;padding:0.625rem 0.75rem;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;font-weight:600;">Fob</th>
-                    <th style="text-align:left;padding:0.625rem 0.75rem;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;font-weight:600;">Status</th>
-                    <th style="padding:0.625rem 1rem;"></th>
+                    <th class="emp-col-schedule-hd text-left px-3 py-2.5 text-xs uppercase tracking-wide text-slate-500 font-semibold">Schedule</th>
+                    <th class="emp-col-fob-hd text-left px-3 py-2.5 text-xs uppercase tracking-wide text-slate-500 font-semibold">Fob</th>
+                    <th class="text-left px-3 py-2.5 text-xs uppercase tracking-wide text-slate-500 font-semibold">Status</th>
+                    <th class="px-4 py-2.5"></th>
                 </tr>
             </thead>
             <tbody>
@@ -107,40 +100,40 @@
                     ->implode(', ');
                 $fob = $emp->fobs->first();
             @endphp
-            <tr style="border-bottom:1px solid #f1f5f9;" id="emp-row-{{ $emp->id }}">
-                <td style="padding:0.75rem 1rem;font-weight:600;color:#1e293b;">{{ $emp->name }}</td>
+            <tr class="border-b border-slate-50" id="emp-row-{{ $emp->id }}">
+                <td class="px-4 py-3 font-semibold text-slate-800">{{ $emp->name }}</td>
                 @if($categories->isNotEmpty())
-                <td style="padding:0.75rem 0.75rem;">
+                <td class="px-3 py-3">
                     @if($emp->category)
-                        <span style="display:inline-flex;align-items:center;gap:5px;font-size:0.8125rem;color:#475569;">
-                            <span style="width:9px;height:9px;border-radius:50%;background:{{ $emp->category->color }};flex-shrink:0;"></span>
+                        <span class="inline-flex items-center gap-1.5 text-[0.8125rem] text-slate-600">
+                            <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background:{{ $emp->category->color }};"></span>
                             {{ $emp->category->name }}
                         </span>
                     @else
-                        <span style="color:#cbd5e1;font-size:0.8125rem;">—</span>
+                        <span class="text-slate-300 text-[0.8125rem]">—</span>
                     @endif
                 </td>
                 @endif
-                <td class="emp-col-schedule" style="padding:0.75rem 0.75rem;color:#475569;">{{ $days ?: '—' }}</td>
-                <td class="emp-col-fob" style="padding:0.75rem 0.75rem;font-family:monospace;color:#64748b;">{{ $fob?->uid ?? '—' }}</td>
-                <td style="padding:0.75rem 0.75rem;">
+                <td class="emp-col-schedule px-3 py-3 text-slate-600">{{ $days ?: '—' }}</td>
+                <td class="emp-col-fob px-3 py-3 font-mono text-slate-500">{{ $fob?->uid ?? '—' }}</td>
+                <td class="px-3 py-3">
                     @if($emp->is_active)
-                        <span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:99px;font-size:0.72rem;font-weight:600;">Active</span>
+                        <span class="bg-green-100 text-green-800 px-2 py-px rounded-full text-[0.72rem] font-semibold">Active</span>
                     @else
-                        <span style="background:#f1f5f9;color:#94a3b8;padding:2px 8px;border-radius:99px;font-size:0.72rem;font-weight:600;">Inactive</span>
+                        <span class="bg-slate-100 text-slate-400 px-2 py-px rounded-full text-[0.72rem] font-semibold">Inactive</span>
                     @endif
                 </td>
-                <td style="padding:0.75rem 1rem;text-align:right;white-space:nowrap;">
+                <td class="px-4 py-3 text-right whitespace-nowrap">
                     <button onclick="openEdit({{ $emp->id }})"
-                        style="padding:3px 10px;background:none;border:1px solid #e2e8f0;border-radius:6px;color:#475569;font-size:0.75rem;cursor:pointer;margin-right:4px;">
+                        class="px-2.5 py-0.5 bg-transparent border border-slate-200 rounded-md text-slate-600 text-xs cursor-pointer mr-1 hover:bg-slate-50 transition-colors">
                         Edit
                     </button>
                     <button onclick="toggleActive({{ $emp->id }}, {{ $emp->is_active ? 'true' : 'false' }})"
-                        style="padding:3px 10px;background:none;border:1px solid {{ $emp->is_active ? '#fecaca' : '#e2e8f0' }};border-radius:6px;color:{{ $emp->is_active ? '#ef4444' : '#64748b' }};font-size:0.75rem;cursor:pointer;">
+                        class="px-2.5 py-0.5 bg-transparent border rounded-md text-xs cursor-pointer transition-colors {{ $emp->is_active ? 'border-red-200 text-red-500 hover:bg-red-50' : 'border-slate-200 text-slate-500 hover:bg-slate-50' }}">
                         {{ $emp->is_active ? 'Deactivate' : 'Reactivate' }}
                     </button>
                     <button onclick="deleteEmployee({{ $emp->id }}, '{{ addslashes($emp->name) }}')"
-                        style="padding:3px 10px;background:none;border:1px solid #fecaca;border-radius:6px;color:#dc2626;font-size:0.75rem;cursor:pointer;margin-left:4px;"
+                        class="px-2.5 py-0.5 bg-transparent border border-red-200 rounded-md text-red-600 text-xs cursor-pointer ml-1 hover:bg-red-50 transition-colors"
                         title="Permanently delete (history is kept)">
                         Delete
                     </button>
@@ -148,18 +141,18 @@
             </tr>
             {{-- Edit row (hidden) --}}
             <tr id="emp-edit-{{ $emp->id }}" style="display:none;">
-                <td colspan="5" style="padding:0;background:#f8fafc;border-bottom:1px solid #e2e8f0;">
-                    <div style="padding:1.25rem 1rem;">
-                        <div style="display:flex;flex-wrap:wrap;gap:0.75rem;margin-bottom:0.75rem;">
+                <td colspan="5" class="p-0 bg-slate-50 border-b border-slate-200">
+                    <div class="p-4">
+                        <div class="flex flex-wrap gap-3 mb-3">
                             <div>
-                                <label style="font-size:0.8125rem;font-weight:600;color:#374151;display:block;margin-bottom:0.25rem;">Name</label>
+                                <label class="text-[0.8125rem] font-semibold text-gray-700 block mb-1">Name</label>
                                 <input type="text" id="edit-name-{{ $emp->id }}" value="{{ $emp->name }}" maxlength="100"
-                                    style="width:100%;min-width:220px;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:7px;font-size:0.875rem;">
+                                    class="w-full min-w-[220px] px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500">
                             </div>
                             @if($categories->isNotEmpty())
                             <div>
-                                <label style="font-size:0.8125rem;font-weight:600;color:#374151;display:block;margin-bottom:0.25rem;">Category</label>
-                                <select id="edit-category-{{ $emp->id }}" style="padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:7px;font-size:0.875rem;min-width:160px;">
+                                <label class="text-[0.8125rem] font-semibold text-gray-700 block mb-1">Category</label>
+                                <select id="edit-category-{{ $emp->id }}" class="px-3 py-2 border border-slate-200 rounded-lg text-sm min-w-[160px] focus:outline-none">
                                     <option value="">— none —</option>
                                     @foreach($categories as $cat)
                                     <option value="{{ $cat->id }}" {{ $emp->category_id == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
@@ -168,38 +161,38 @@
                             </div>
                             @endif
                             <div>
-                                <label style="font-size:0.8125rem;font-weight:600;color:#374151;display:block;margin-bottom:0.25rem;">
-                                    Fob UID <span style="font-weight:400;color:#94a3b8;">— type or tap reader</span>
+                                <label class="text-[0.8125rem] font-semibold text-gray-700 block mb-1">
+                                    Fob UID <span class="font-normal text-slate-400">— type or tap reader</span>
                                 </label>
-                                <div style="display:flex;gap:0.375rem;align-items:center;">
+                                <div class="flex gap-1.5 items-center">
                                     <input type="text" id="edit-fob-{{ $emp->id }}" maxlength="20" inputmode="numeric"
                                         value="{{ $fob?->uid ?? '' }}" placeholder="none assigned"
-                                        style="width:160px;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:7px;font-size:0.875rem;font-family:monospace;">
+                                        class="w-40 px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-rose-500">
                                     <button type="button" onclick="startCapture('edit-fob-{{ $emp->id }}')"
-                                        style="padding:0.45rem 0.75rem;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:7px;font-size:0.75rem;color:#475569;cursor:pointer;">
+                                        class="px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-xs text-slate-600 cursor-pointer hover:bg-slate-200 transition-colors">
                                         📡 Tap
                                     </button>
                                 </div>
                             </div>
                         </div>
-                        <div id="edit-schedule-{{ $emp->id }}" style="margin-bottom:0.75rem;"></div>
-                        <div style="margin-bottom:1rem;">
-                            <label style="font-size:0.8125rem;font-weight:600;color:#374151;display:block;margin-bottom:0.25rem;">Break override (mins)</label>
+                        <div id="edit-schedule-{{ $emp->id }}" class="mb-3"></div>
+                        <div class="mb-4">
+                            <label class="text-[0.8125rem] font-semibold text-gray-700 block mb-1">Break override (mins)</label>
                             <input type="number" id="edit-break-{{ $emp->id }}" min="0" max="120"
                                 value="{{ $emp->break_override_minutes ?? '' }}" placeholder="default"
-                                style="width:100px;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:7px;font-size:0.875rem;">
+                                class="w-24 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500">
                         </div>
-                        <div style="display:flex;gap:0.5rem;">
+                        <div class="flex gap-2">
                             <button onclick="updateEmployee({{ $emp->id }})"
-                                style="padding:0.5rem 1.25rem;background:#6366f1;color:#fff;border:none;border-radius:7px;font-size:0.875rem;font-weight:600;cursor:pointer;">
+                                class="px-5 py-2 bg-indigo-500 text-white border-0 rounded-lg text-sm font-semibold cursor-pointer hover:bg-indigo-600 transition-colors">
                                 Save
                             </button>
                             <button onclick="closeEdit({{ $emp->id }})"
-                                style="padding:0.5rem 1rem;background:none;border:1px solid #e2e8f0;border-radius:7px;font-size:0.875rem;color:#64748b;cursor:pointer;">
+                                class="px-4 py-2 bg-transparent border border-slate-200 rounded-lg text-sm text-slate-500 cursor-pointer hover:bg-slate-50 transition-colors">
                                 Cancel
                             </button>
                         </div>
-                        <div id="edit-result-{{ $emp->id }}" style="margin-top:0.5rem;font-size:0.8125rem;"></div>
+                        <div id="edit-result-{{ $emp->id }}" class="mt-2 text-[0.8125rem]"></div>
                     </div>
                 </td>
             </tr>
