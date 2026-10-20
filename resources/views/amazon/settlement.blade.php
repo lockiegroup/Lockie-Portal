@@ -8,39 +8,39 @@
 .amz-num { text-align:right; font-variant-numeric:tabular-nums; }
 </style>
 
-<main style="max-width:1400px;margin:0 auto;padding:2rem 1.5rem;">
+<main class="max-w-[1400px] mx-auto px-4 sm:px-6 py-8">
 
     {{-- Header --}}
-    <div style="margin-bottom:1.25rem;">
-        <a href="{{ route('amazon.index') }}" style="font-size:0.8rem;color:#64748b;text-decoration:none;display:inline-flex;align-items:center;gap:4px;margin-bottom:8px;">
+    <div class="mb-5">
+        <a href="{{ route('amazon.index') }}" class="text-[0.8rem] text-slate-500 no-underline inline-flex items-center gap-1 mb-2 hover:text-slate-700">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
             Amazon & Xero
         </a>
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div class="flex items-center justify-between flex-wrap gap-3">
             <div>
-                <h1 style="font-size:1.25rem;font-weight:700;color:#1e293b;margin:0;font-family:monospace;">{{ $settlement->settlement_id }}</h1>
-                <p style="font-size:0.875rem;color:#64748b;margin:0.25rem 0 0;">
+                <h1 class="text-[1.25rem] font-bold text-slate-800 m-0 font-mono">{{ $settlement->settlement_id }}</h1>
+                <p class="text-sm text-slate-500 mt-1 m-0">
                     {{ $settlement->start_date?->format('d M Y') }} → {{ $settlement->end_date?->format('d M Y') }}
                     &nbsp;·&nbsp; Deposit: <strong>£{{ number_format($settlement->deposit_amount, 2) }}</strong>
-                    &nbsp;·&nbsp; Status: <span style="font-weight:600;">{{ ucfirst($settlement->status) }}</span>
+                    &nbsp;·&nbsp; Status: <span class="font-semibold">{{ ucfirst($settlement->status) }}</span>
                 </p>
             </div>
-            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
+            <div class="flex gap-2 flex-wrap items-center">
                 <button id="lookup-btn" onclick="lookupUnleashed()"
-                    style="background:#e0f2fe;color:#0369a1;border:none;border-radius:0.5rem;padding:0.5rem 1rem;font-size:0.875rem;font-weight:600;cursor:pointer;">
+                    class="bg-sky-100 text-sky-700 border-none rounded-lg px-4 py-2 text-sm font-semibold cursor-pointer hover:bg-sky-200">
                     ⟳ Lookup SO Numbers
                 </button>
                 <button id="reprocess-btn" onclick="reprocess()"
-                    style="background:#fef9c3;color:#854d0e;border:none;border-radius:0.5rem;padding:0.5rem 1rem;font-size:0.875rem;font-weight:600;cursor:pointer;">
+                    class="bg-yellow-100 text-yellow-800 border-none rounded-lg px-4 py-2 text-sm font-semibold cursor-pointer hover:bg-yellow-200">
                     ↺ Recalculate
                 </button>
-<a href="{{ route('amazon.settlement.csv', $settlement) }}"
-                    style="background:#1e293b;color:#fff;border-radius:0.5rem;padding:0.5rem 1rem;font-size:0.875rem;font-weight:600;text-decoration:none;display:inline-block;">
+                <a href="{{ route('amazon.settlement.csv', $settlement) }}"
+                    class="bg-slate-800 text-white rounded-lg px-4 py-2 text-sm font-semibold no-underline inline-block hover:bg-slate-700">
                     ↓ Download CSV
                 </a>
                 @if($settlement->status === 'pending')
                 <button onclick="postToXero()"
-                    style="background:#00b9a5;color:#fff;border:none;border-radius:0.5rem;padding:0.5rem 1rem;font-size:0.875rem;font-weight:600;cursor:pointer;">
+                    class="bg-teal-500 text-white border-none rounded-lg px-4 py-2 text-sm font-semibold cursor-pointer hover:bg-teal-600">
                     Post to Xero
                 </button>
                 @endif
@@ -48,14 +48,14 @@
         </div>
     </div>
 
-    <div id="status-msg" style="display:none;margin-bottom:1rem;padding:0.75rem 1rem;border-radius:0.5rem;font-size:0.875rem;"></div>
+    <div id="status-msg" style="display:none;" class="mb-4 px-4 py-3 rounded-lg text-sm"></div>
 
     {{-- Orders table --}}
-    <div style="background:#fff;border-radius:0.75rem;box-shadow:0 1px 4px rgba(0,0,0,0.07);overflow:hidden;margin-bottom:1.5rem;">
-        <div style="padding:0.875rem 1.25rem;border-bottom:1px solid #f1f5f9;">
-            <h2 style="font-size:0.9375rem;font-weight:700;color:#1e293b;margin:0;">Orders ({{ count($orders) }})</h2>
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
+        <div class="px-5 py-3.5 border-b border-slate-100">
+            <h2 class="text-[0.9375rem] font-bold text-slate-800 m-0">Orders ({{ count($orders) }})</h2>
         </div>
-        <div style="overflow-x:auto;">
+        <div class="overflow-x-auto">
             <table class="amz-table">
                 <thead>
                     <tr>
@@ -68,16 +68,16 @@
                 <tbody>
                 @foreach($orders as $order)
                 <tr>
-                    <td style="font-family:monospace;font-size:0.75rem;color:#475569;">{{ $order['amazon_order_id'] }}</td>
-                    <td style="font-size:0.8125rem;">{{ $order['unleashed_order_no'] ?? '—' }}</td>
-                    <td style="color:#64748b;">{{ $order['date'] }}</td>
+                    <td class="font-mono text-[0.75rem] text-slate-600">{{ $order['amazon_order_id'] }}</td>
+                    <td class="text-[0.8125rem]">{{ $order['unleashed_order_no'] ?? '—' }}</td>
+                    <td class="text-slate-500">{{ $order['date'] }}</td>
                     <td class="amz-num">£{{ number_format($order['computed_amount'], 2) }}</td>
                 </tr>
                 @endforeach
                 </tbody>
                 <tfoot>
-                    <tr style="font-weight:700;background:#f8fafc;border-top:2px solid #e2e8f0;">
-                        <td colspan="3" style="padding:0.5rem 0.75rem;color:#64748b;font-size:0.75rem;">Total Orders</td>
+                    <tr class="font-bold bg-slate-50 border-t-2 border-slate-200">
+                        <td colspan="3" class="px-3 py-2 text-slate-500 text-[0.75rem]">Total Orders</td>
                         <td class="amz-num">£{{ number_format(array_sum(array_column(array_values($orders), 'computed_amount')), 2) }}</td>
                     </tr>
                 </tfoot>
@@ -86,11 +86,11 @@
     </div>
 
     {{-- Fee summary --}}
-    <div style="background:#fff;border-radius:0.75rem;box-shadow:0 1px 4px rgba(0,0,0,0.07);overflow:hidden;">
-        <div style="padding:0.875rem 1.25rem;border-bottom:1px solid #f1f5f9;">
-            <h2 style="font-size:0.9375rem;font-weight:700;color:#1e293b;margin:0;">Fee Summary</h2>
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-slate-100">
+            <h2 class="text-[0.9375rem] font-bold text-slate-800 m-0">Fee Summary</h2>
         </div>
-        <div style="overflow-x:auto;">
+        <div class="overflow-x-auto">
             <table class="amz-table">
                 <thead>
                     <tr>
@@ -103,8 +103,8 @@
                 @foreach($feeSummary as $fee)
                 <tr>
                     <td>{{ $fee['account_code'] }}</td>
-                    <td class="amz-num" style="{{ $fee['gross'] < 0 ? 'color:#dc2626;' : '' }}">£{{ number_format($fee['gross'], 2) }}</td>
-                    <td class="amz-num" style="color:#94a3b8;">{{ $fee['count'] }}</td>
+                    <td class="amz-num {{ $fee['gross'] < 0 ? 'text-red-600' : '' }}">£{{ number_format($fee['gross'], 2) }}</td>
+                    <td class="amz-num text-slate-400">{{ $fee['count'] }}</td>
                 </tr>
                 @endforeach
                 </tbody>
