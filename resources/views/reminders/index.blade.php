@@ -8,23 +8,23 @@
             <p class="text-slate-500 mt-1 text-sm">Track and chase church envelope orders month by month.</p>
         </div>
 
-        <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
-            <form method="GET" action="{{ route('reminders.index') }}" style="display:flex;align-items:center;gap:0.5rem;">
+        <div class="flex items-center gap-3 flex-wrap">
+            <form method="GET" action="{{ route('reminders.index') }}" class="flex items-center gap-2">
                 <select name="month" onchange="this.form.submit()"
-                    style="border:1px solid #e2e8f0;border-radius:8px;padding:6px 10px;font-size:0.875rem;color:#334155;background:#fff;cursor:pointer;">
+                    class="border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm text-slate-700 bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-sky-500">
                     @foreach(range(1, 12) as $m)
                     <option value="{{ $m }}" {{ $m == $month ? 'selected' : '' }}>{{ date('F', mktime(0,0,0,$m,1)) }}</option>
                     @endforeach
                 </select>
                 <select name="year" onchange="this.form.submit()"
-                    style="border:1px solid #e2e8f0;border-radius:8px;padding:6px 10px;font-size:0.875rem;color:#334155;background:#fff;cursor:pointer;">
+                    class="border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm text-slate-700 bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-sky-500">
                     @foreach($years as $y)
                     <option value="{{ $y }}" {{ $y == $year ? 'selected' : '' }}>{{ $y }}</option>
                     @endforeach
                 </select>
             </form>
             <a href="{{ route('reminders.overview') }}"
-                style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.4rem 0.875rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.8125rem;font-weight:600;text-decoration:none;">
+                class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 text-[0.8125rem] font-semibold no-underline hover:bg-slate-50 transition-colors">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
                 Overview
             </a>
@@ -39,11 +39,11 @@
     @endif
 
     {{-- Stats + actions bar --}}
-    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:0.75rem;margin-bottom:1.25rem;">
-        <span class="stat-count" style="display:inline-flex;align-items:center;padding:0.25rem 0.75rem;border-radius:9999px;font-size:0.8125rem;font-weight:600;background:#f1f5f9;color:#475569;">{{ $totalCount }} total</span>
-        <span class="stat-count" style="display:inline-flex;align-items:center;padding:0.25rem 0.75rem;border-radius:9999px;font-size:0.8125rem;font-weight:600;background:#dcfce7;color:#166534;">{{ $orderedCount }} ordered</span>
-        <span class="stat-count" style="display:inline-flex;align-items:center;padding:0.25rem 0.75rem;border-radius:9999px;font-size:0.8125rem;font-weight:600;background:#fef3c7;color:#92400e;">{{ $pendingCount }} pending</span>
-        <div style="flex:1;"></div>
+    <div class="flex flex-wrap items-center gap-3 mb-5">
+        <span class="stat-count inline-flex items-center px-3 py-1 rounded-full text-[0.8125rem] font-semibold bg-slate-100 text-slate-600">{{ $totalCount }} total</span>
+        <span class="stat-count inline-flex items-center px-3 py-1 rounded-full text-[0.8125rem] font-semibold bg-green-100 text-green-800">{{ $orderedCount }} ordered</span>
+        <span class="stat-count inline-flex items-center px-3 py-1 rounded-full text-[0.8125rem] font-semibold bg-amber-100 text-amber-800">{{ $pendingCount }} pending</span>
+        <div class="flex-1"></div>
         @if($totalCount > 0)
         <form action="{{ route('reminders.clear-month') }}" method="POST"
             onsubmit="return confirm('Delete all {{ $totalCount }} entries for {{ date('F Y', mktime(0,0,0,$month,1,$year)) }}? This cannot be undone.')">
@@ -51,13 +51,13 @@
             <input type="hidden" name="year"  value="{{ $year }}">
             <input type="hidden" name="month" value="{{ $month }}">
             <button type="submit"
-                style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.4rem 0.875rem;border-radius:8px;border:1px solid #fca5a5;background:#fff;color:#dc2626;font-size:0.8125rem;font-weight:600;cursor:pointer;">
+                class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-red-300 bg-white text-red-600 text-[0.8125rem] font-semibold cursor-pointer hover:bg-red-50 transition-colors">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
                 Clear Month
             </button>
         </form>
         <button onclick="openExportModal()"
-            style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.4rem 0.875rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.8125rem;font-weight:600;border:none;cursor:pointer;">
+            class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-slate-900 text-white text-[0.8125rem] font-semibold border-0 cursor-pointer hover:bg-slate-700 transition-colors">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             Export for Mailchimp
         </button>
@@ -67,40 +67,40 @@
     {{-- Import accordion --}}
     <div class="bg-white rounded-xl border border-slate-200 mb-6">
         <button onclick="toggleImports()" id="imports-toggle"
-            style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:0.875rem 1.25rem;background:none;border:none;cursor:pointer;font-family:inherit;">
-            <span style="font-size:0.875rem;font-weight:600;color:#334155;">Import Data</span>
-            <svg id="imports-chevron" style="width:14px;height:14px;color:#94a3b8;transition:transform 0.2s;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            class="w-full flex items-center justify-between px-5 py-3.5 bg-transparent border-0 cursor-pointer font-[inherit]">
+            <span class="text-sm font-semibold text-slate-700">Import Data</span>
+            <svg id="imports-chevron" class="w-3.5 h-3.5 text-slate-400 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
-        <div id="imports-panel" style="display:none;border-top:1px solid #f1f5f9;">
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));">
-                <div style="padding:1.25rem;border-right:1px solid #f1f5f9;">
-                    <p style="font-size:0.8125rem;font-weight:600;color:#334155;margin-bottom:0.25rem;">Datafile Export</p>
-                    <p style="font-size:0.75rem;color:#94a3b8;margin-bottom:0.875rem;">Customer list for this month. Use Clear Month first to fully reset.</p>
+        <div id="imports-panel" style="display:none;" class="border-t border-slate-50">
+            <div class="grid grid-cols-1 sm:grid-cols-3">
+                <div class="p-5 border-r border-slate-50">
+                    <p class="text-[0.8125rem] font-semibold text-slate-700 mb-1">Datafile Export</p>
+                    <p class="text-xs text-slate-400 mb-3.5">Customer list for this month. Use Clear Month first to fully reset.</p>
                     <form action="{{ route('reminders.import-entries') }}" method="POST" enctype="multipart/form-data" class="flex flex-col gap-2">
                         @csrf
                         <input type="hidden" name="year" value="{{ $year }}"><input type="hidden" name="month" value="{{ $month }}">
                         <input type="file" name="file" accept=".xlsx,.xls,.csv,.txt" required class="block text-sm text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-slate-100 file:text-slate-700 file:font-medium file:cursor-pointer hover:file:bg-slate-200 transition">
-                        <button type="submit" style="align-self:flex-start;padding:0.375rem 0.75rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.8125rem;font-weight:600;border:none;cursor:pointer;">Import Entries</button>
+                        <button type="submit" class="self-start px-3 py-1.5 rounded-lg bg-slate-900 text-white text-[0.8125rem] font-semibold border-0 cursor-pointer hover:bg-slate-700 transition-colors">Import Entries</button>
                     </form>
                 </div>
-                <div style="padding:1.25rem;border-right:1px solid #f1f5f9;">
-                    <p style="font-size:0.8125rem;font-weight:600;color:#334155;margin-bottom:0.25rem;">Phone Numbers</p>
-                    <p style="font-size:0.75rem;color:#94a3b8;margin-bottom:0.875rem;">Stock-Code, Telephone, Mobile. Merges both and applies to all months.</p>
+                <div class="p-5 border-r border-slate-50">
+                    <p class="text-[0.8125rem] font-semibold text-slate-700 mb-1">Phone Numbers</p>
+                    <p class="text-xs text-slate-400 mb-3.5">Stock-Code, Telephone, Mobile. Merges both and applies to all months.</p>
                     <form action="{{ route('reminders.import-phones') }}" method="POST" enctype="multipart/form-data" class="flex flex-col gap-2">
                         @csrf
                         <input type="hidden" name="year" value="{{ $year }}"><input type="hidden" name="month" value="{{ $month }}">
                         <input type="file" name="file" accept=".xlsx,.xls,.csv,.txt" required class="block text-sm text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-slate-100 file:text-slate-700 file:font-medium file:cursor-pointer hover:file:bg-slate-200 transition">
-                        <button type="submit" style="align-self:flex-start;padding:0.375rem 0.75rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.8125rem;font-weight:600;border:none;cursor:pointer;">Import Phones</button>
+                        <button type="submit" class="self-start px-3 py-1.5 rounded-lg bg-slate-900 text-white text-[0.8125rem] font-semibold border-0 cursor-pointer hover:bg-slate-700 transition-colors">Import Phones</button>
                     </form>
                 </div>
-                <div style="padding:1.25rem;">
-                    <p style="font-size:0.8125rem;font-weight:600;color:#334155;margin-bottom:0.25rem;">Orders (OK) Import</p>
-                    <p style="font-size:0.75rem;color:#94a3b8;margin-bottom:0.875rem;">Datafile order export. Marks accounts as Ordered across all months.</p>
+                <div class="p-5">
+                    <p class="text-[0.8125rem] font-semibold text-slate-700 mb-1">Orders (OK) Import</p>
+                    <p class="text-xs text-slate-400 mb-3.5">Datafile order export. Marks accounts as Ordered across all months.</p>
                     <form action="{{ route('reminders.import-orders') }}" method="POST" enctype="multipart/form-data" class="flex flex-col gap-2">
                         @csrf
                         <input type="hidden" name="year" value="{{ $year }}"><input type="hidden" name="month" value="{{ $month }}">
                         <input type="file" name="file" accept=".xlsx,.xls,.csv,.txt" required class="block text-sm text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-slate-100 file:text-slate-700 file:font-medium file:cursor-pointer hover:file:bg-slate-200 transition">
-                        <button type="submit" style="align-self:flex-start;padding:0.375rem 0.75rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.8125rem;font-weight:600;border:none;cursor:pointer;">Import Orders</button>
+                        <button type="submit" class="self-start px-3 py-1.5 rounded-lg bg-slate-900 text-white text-[0.8125rem] font-semibold border-0 cursor-pointer hover:bg-slate-700 transition-colors">Import Orders</button>
                     </form>
                 </div>
             </div>
@@ -108,8 +108,8 @@
     </div>
 
     {{-- Status filter pills --}}
-    <div style="display:flex;flex-wrap:wrap;gap:0.375rem;margin-bottom:1rem;align-items:center;">
-        <span style="font-size:0.7rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-right:0.25rem;">Filter:</span>
+    <div class="flex flex-wrap gap-1.5 mb-4 items-center">
+        <span class="text-[0.7rem] font-semibold text-slate-400 uppercase tracking-wide mr-1">Filter:</span>
         <button onclick="filterByStatus(null)" id="filter-all"
             style="display:inline-flex;align-items:center;padding:0.2rem 0.625rem;border-radius:9999px;font-size:0.7rem;font-weight:600;border:2px solid #0f172a;background:#0f172a;color:#fff;cursor:pointer;">All</button>
         @foreach(\App\Models\ReminderEntry::STATUSES as $key => $label)
@@ -123,24 +123,24 @@
 
     {{-- Main table --}}
     @if($entries->isEmpty())
-    <div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:3rem;text-align:center;color:#94a3b8;font-size:0.875rem;">
+    <div class="bg-white rounded-xl border border-slate-200 px-4 py-12 text-center text-slate-400 text-sm">
         No entries for {{ date('F Y', mktime(0,0,0,$month,1,$year)) }}. Use the import above to load this month's customers.
     </div>
     @else
-    <div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;">
-        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
-        <table id="reminders-table" style="width:100%;min-width:700px;border-collapse:collapse;font-size:0.8125rem;">
+    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div class="overflow-x-auto">
+        <table id="reminders-table" class="w-full text-[0.8125rem] border-collapse" style="min-width:700px;">
             <thead>
-                <tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;">
-                    <th style="padding:0.625rem 0.75rem;text-align:left;font-size:0.695rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;width:80px;">Account</th>
-                    <th style="padding:0.625rem 0.75rem;text-align:left;font-size:0.695rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Name</th>
-                    <th style="padding:0.625rem 0.75rem;text-align:left;font-size:0.695rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Email</th>
-                    <th style="padding:0.625rem 0.75rem;text-align:right;font-size:0.695rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;width:80px;">Value</th>
-                    <th style="padding:0.625rem 0.75rem;text-align:left;font-size:0.695rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;width:150px;">Phone</th>
-                    <th style="padding:0.625rem 0.75rem;text-align:left;font-size:0.695rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;width:100px;">Last Called</th>
-                    <th style="padding:0.625rem 0.75rem;text-align:left;font-size:0.695rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;width:195px;">Status</th>
-                    <th style="padding:0.625rem 0.75rem;text-align:center;font-size:0.695rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;width:75px;">Ordered</th>
-                    <th style="width:32px;"></th>
+                <tr class="bg-slate-50 border-b-2 border-slate-200">
+                    <th class="px-3 py-2.5 text-left text-[0.695rem] font-bold text-slate-500 uppercase tracking-wide w-20">Account</th>
+                    <th class="px-3 py-2.5 text-left text-[0.695rem] font-bold text-slate-500 uppercase tracking-wide">Name</th>
+                    <th class="px-3 py-2.5 text-left text-[0.695rem] font-bold text-slate-500 uppercase tracking-wide">Email</th>
+                    <th class="px-3 py-2.5 text-right text-[0.695rem] font-bold text-slate-500 uppercase tracking-wide w-20">Value</th>
+                    <th class="px-3 py-2.5 text-left text-[0.695rem] font-bold text-slate-500 uppercase tracking-wide w-36">Phone</th>
+                    <th class="px-3 py-2.5 text-left text-[0.695rem] font-bold text-slate-500 uppercase tracking-wide w-24">Last Called</th>
+                    <th class="px-3 py-2.5 text-left text-[0.695rem] font-bold text-slate-500 uppercase tracking-wide w-48">Status</th>
+                    <th class="px-3 py-2.5 text-center text-[0.695rem] font-bold text-slate-500 uppercase tracking-wide w-20">Ordered</th>
+                    <th class="w-8"></th>
                 </tr>
             </thead>
             <tbody>
@@ -199,92 +199,95 @@
                 </tr>
 
                 {{-- Expandable detail row --}}
-                <tr id="detail-{{ $entry->id }}" style="display:none;background:#f8fafc;border-bottom:2px solid #e2e8f0;">
-                    <td colspan="9" style="padding:0;">
-                        <div style="padding:1.25rem 1.5rem;">
+                <tr id="detail-{{ $entry->id }}" style="display:none;" class="bg-slate-50 border-b-2 border-slate-200">
+                    <td colspan="9" class="p-0">
+                        <div class="px-6 py-5">
 
                             {{-- Two-column grid: Account Details | Call Log --}}
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
 
                                 {{-- Left: Editable account details --}}
                                 <div>
-                                    <p style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.125rem;">Account Details</p>
-                                    <p style="font-size:0.7rem;color:#cbd5e1;margin-bottom:0.75rem;">Changes save automatically.</p>
-                                    @php $inp = 'border:1px solid #e2e8f0;border-radius:7px;padding:0.35rem 0.5rem;font-size:0.8rem;color:#334155;background:#fff;width:100%;box-sizing:border-box;'; $lbl = 'font-size:0.7rem;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;display:block;margin-bottom:0.25rem;'; @endphp
-                                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem 0.75rem;">
-                                        <div style="grid-column:span 2;">
-                                            <label style="{{ $lbl }}">Name</label>
+                                    <p class="text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-0.5">Account Details</p>
+                                    <p class="text-[0.7rem] text-slate-300 mb-3">Changes save automatically.</p>
+                                    @php
+                                        $inp = 'w-full px-2 py-1.5 border border-slate-200 rounded-lg text-[0.8rem] text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-sky-500';
+                                        $lbl = 'block text-[0.7rem] text-slate-500 font-semibold uppercase tracking-wide mb-1';
+                                    @endphp
+                                    <div class="grid grid-cols-2 gap-x-3 gap-y-2">
+                                        <div class="col-span-2">
+                                            <label class="{{ $lbl }}">Name</label>
                                             <input type="text" data-field="name" value="{{ $entry->name }}"
                                                 onblur="updateEntry({{ $entry->id }}, 'name', this.value || null)"
-                                                style="{{ $inp }}">
+                                                class="{{ $inp }}">
                                         </div>
                                         <div>
-                                            <label style="{{ $lbl }}">Address</label>
+                                            <label class="{{ $lbl }}">Address</label>
                                             <input type="text" data-field="add1" value="{{ $entry->add1 }}"
                                                 onblur="updateEntry({{ $entry->id }}, 'add1', this.value || null)"
-                                                style="{{ $inp }}">
+                                                class="{{ $inp }}">
                                         </div>
                                         <div>
-                                            <label style="{{ $lbl }}">Postcode</label>
+                                            <label class="{{ $lbl }}">Postcode</label>
                                             <input type="text" data-field="postcode" value="{{ $entry->postcode }}"
                                                 onblur="updateEntry({{ $entry->id }}, 'postcode', this.value || null)"
-                                                style="{{ $inp }}font-family:monospace;">
+                                                class="{{ $inp }} font-mono">
                                         </div>
-                                        <div style="grid-column:span 2;">
-                                            <label style="{{ $lbl }}">Email</label>
+                                        <div class="col-span-2">
+                                            <label class="{{ $lbl }}">Email</label>
                                             <input type="email" data-field="email" value="{{ $entry->email }}"
                                                 onblur="updateEntry({{ $entry->id }}, 'email', this.value || null)"
-                                                style="{{ $inp }}">
+                                                class="{{ $inp }}">
                                         </div>
                                         <div>
-                                            <label style="{{ $lbl }}">Phone</label>
+                                            <label class="{{ $lbl }}">Phone</label>
                                             <input type="text" data-field="phone" value="{{ $entry->phone }}"
                                                 onblur="updateEntry({{ $entry->id }}, 'phone', this.value || null)"
-                                                style="{{ $inp }}font-family:monospace;">
+                                                class="{{ $inp }} font-mono">
                                         </div>
                                         <div>
-                                            <label style="{{ $lbl }}">Description</label>
+                                            <label class="{{ $lbl }}">Description</label>
                                             <input type="text" data-field="description" value="{{ $entry->description }}"
                                                 onblur="updateEntry({{ $entry->id }}, 'description', this.value || null)"
-                                                style="{{ $inp }}">
+                                                class="{{ $inp }}">
                                         </div>
                                         <div>
-                                            <label style="{{ $lbl }}">Doc No</label>
+                                            <label class="{{ $lbl }}">Doc No</label>
                                             <input type="text" data-field="doc_no" value="{{ $entry->doc_no }}"
                                                 onblur="updateEntry({{ $entry->id }}, 'doc_no', this.value || null)"
-                                                style="{{ $inp }}font-family:monospace;">
+                                                class="{{ $inp }} font-mono">
                                         </div>
                                         <div>
-                                            <label style="{{ $lbl }}">Env Sets</label>
+                                            <label class="{{ $lbl }}">Env Sets</label>
                                             <input type="number" data-field="env_sets" value="{{ $entry->env_sets ? (int)(float)$entry->env_sets : '' }}"
                                                 onblur="updateEntry({{ $entry->id }}, 'env_sets', this.value || null)"
-                                                style="{{ $inp }}">
+                                                class="{{ $inp }}">
                                         </div>
                                         <div>
-                                            <label style="{{ $lbl }}">Box Colour</label>
+                                            <label class="{{ $lbl }}">Box Colour</label>
                                             <input type="text" data-field="box_colour" value="{{ $entry->box_colour ? strtolower($entry->box_colour) : '' }}"
                                                 onblur="updateEntry({{ $entry->id }}, 'box_colour', this.value || null)"
-                                                style="{{ $inp }}">
+                                                class="{{ $inp }}">
                                         </div>
                                         <div>
-                                            <label style="{{ $lbl }}">Env Colour</label>
+                                            <label class="{{ $lbl }}">Env Colour</label>
                                             <input type="text" data-field="env_colour" value="{{ $entry->env_colour ? strtolower($entry->env_colour) : '' }}"
                                                 onblur="updateEntry({{ $entry->id }}, 'env_colour', this.value || null)"
-                                                style="{{ $inp }}">
+                                                class="{{ $inp }}">
                                         </div>
                                     </div>
                                 </div>
 
                                 {{-- Right: Call log --}}
-                                <div style="border-left:1px solid #e2e8f0;padding-left:1.5rem;">
-                                    <p style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.75rem;">Call Log</p>
-                                    <div style="display:flex;flex-direction:column;gap:0.75rem;">
-                                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+                                <div class="border-l border-slate-200 pl-6">
+                                    <p class="text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-3">Call Log</p>
+                                    <div class="flex flex-col gap-3">
+                                        <div class="grid grid-cols-2 gap-3">
                                             <div>
-                                                <label style="font-size:0.7rem;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;display:block;margin-bottom:0.25rem;">Called By</label>
+                                                <label class="{{ $lbl }}">Called By</label>
                                                 <select data-field="called_by_user_id"
                                                     onchange="updateEntry({{ $entry->id }}, 'called_by_user_id', this.value || null)"
-                                                    style="border:1px solid #e2e8f0;border-radius:7px;padding:0.375rem 0.5rem;font-size:0.8125rem;color:#334155;background:#fff;cursor:pointer;width:100%;">
+                                                    class="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-sm text-slate-700 bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-sky-500">
                                                     <option value="">— Not called —</option>
                                                     @foreach($users as $user)
                                                     <option value="{{ $user->id }}" {{ $entry->called_by_user_id == $user->id ? 'selected' : '' }}>{{ $user->name }}</option>
@@ -292,18 +295,18 @@
                                                 </select>
                                             </div>
                                             <div>
-                                                <label style="font-size:0.7rem;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;display:block;margin-bottom:0.25rem;">Called Date</label>
+                                                <label class="{{ $lbl }}">Called Date</label>
                                                 <input type="date" data-field="called_date" value="{{ $entry->called_date?->format('Y-m-d') }}"
                                                     onchange="updateEntry({{ $entry->id }}, 'called_date', this.value || null)"
-                                                    style="border:1px solid #e2e8f0;border-radius:7px;padding:0.375rem 0.5rem;font-size:0.8125rem;color:#334155;background:#fff;width:100%;">
+                                                    class="w-full px-2 py-1.5 border border-slate-200 rounded-lg text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-sky-500">
                                             </div>
                                         </div>
                                         <div>
-                                            <label style="font-size:0.7rem;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;display:block;margin-bottom:0.25rem;">Call Notes</label>
+                                            <label class="{{ $lbl }}">Call Notes</label>
                                             <input type="text" data-field="call_notes" value="{{ $entry->call_notes }}"
                                                 onblur="updateEntry({{ $entry->id }}, 'call_notes', this.value || null)"
                                                 placeholder="e.g. Left voicemail, call back Friday…"
-                                                style="border:1px solid #e2e8f0;border-radius:7px;padding:0.375rem 0.625rem;font-size:0.8125rem;color:#334155;background:#fff;width:100%;box-sizing:border-box;">
+                                                class="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-sky-500">
                                         </div>
                                     </div>
                                 </div>
@@ -311,22 +314,22 @@
                             </div>
 
                             {{-- Move to month --}}
-                            <div style="border-top:1px solid #e2e8f0;margin-top:1rem;padding-top:0.875rem;display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
-                                <span style="font-size:0.75rem;font-weight:600;color:#64748b;white-space:nowrap;">Move to month:</span>
+                            <div class="border-t border-slate-200 mt-4 pt-3.5 flex items-center gap-3 flex-wrap">
+                                <span class="text-xs font-semibold text-slate-500 whitespace-nowrap">Move to month:</span>
                                 <select id="move-month-{{ $entry->id }}"
-                                    style="border:1px solid #e2e8f0;border-radius:7px;padding:0.35rem 0.5rem;font-size:0.8125rem;color:#334155;background:#fff;cursor:pointer;">
+                                    class="border border-slate-200 rounded-lg px-2 py-1.5 text-sm text-slate-700 bg-white cursor-pointer focus:outline-none">
                                     @foreach(range(1, 12) as $m)
                                     <option value="{{ $m }}" {{ $m == $month ? 'selected' : '' }}>{{ date('F', mktime(0,0,0,$m,1)) }}</option>
                                     @endforeach
                                 </select>
                                 <select id="move-year-{{ $entry->id }}"
-                                    style="border:1px solid #e2e8f0;border-radius:7px;padding:0.35rem 0.5rem;font-size:0.8125rem;color:#334155;background:#fff;cursor:pointer;">
+                                    class="border border-slate-200 rounded-lg px-2 py-1.5 text-sm text-slate-700 bg-white cursor-pointer focus:outline-none">
                                     @foreach($years as $y)
                                     <option value="{{ $y }}" {{ $y == $year ? 'selected' : '' }}>{{ $y }}</option>
                                     @endforeach
                                 </select>
                                 <button onclick="moveEntryToMonth({{ $entry->id }}, this)"
-                                    style="padding:0.35rem 0.875rem;border-radius:7px;background:#dc2626;color:#fff;border:none;font-size:0.8125rem;font-weight:600;cursor:pointer;white-space:nowrap;">
+                                    class="px-3.5 py-1.5 rounded-lg bg-red-600 text-white border-0 text-sm font-semibold cursor-pointer whitespace-nowrap hover:bg-red-700 transition-colors">
                                     Move →
                                 </button>
                             </div>
@@ -345,56 +348,56 @@
 </main>
 
 {{-- Export modal --}}
-<div id="export-modal" style="display:none;position:fixed;inset:0;z-index:100;background:rgba(0,0,0,0.4);align-items:center;justify-content:center;">
-    <div style="background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,0.2);width:100%;max-width:560px;margin:1rem;overflow:hidden;">
-        <div style="padding:1.25rem 1.5rem;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;">
-            <h2 style="font-size:1rem;font-weight:700;color:#0f172a;margin:0;">Export for Mailchimp</h2>
-            <button onclick="closeExportModal()" style="background:none;border:none;cursor:pointer;color:#94a3b8;padding:4px;line-height:0;">
+<div id="export-modal" style="display:none;" class="fixed inset-0 z-[100] bg-black/40 items-center justify-center">
+    <div class="bg-white rounded-[14px] shadow-2xl w-full max-w-[560px] mx-4 overflow-hidden">
+        <div class="px-6 py-5 border-b border-slate-50 flex items-center justify-between">
+            <h2 class="text-base font-bold text-slate-950">Export for Mailchimp</h2>
+            <button onclick="closeExportModal()" class="bg-transparent border-0 cursor-pointer text-slate-400 p-1 leading-none hover:text-slate-600 transition-colors">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
         </div>
-        <form id="export-form" action="{{ route('reminders.export') }}" method="POST" style="padding:1.5rem;">
+        <form id="export-form" action="{{ route('reminders.export') }}" method="POST" class="p-6">
             @csrf
             <input type="hidden" name="year" value="{{ $year }}">
-            <div style="margin-bottom:1.25rem;">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.625rem;">
-                    <p style="font-size:0.8125rem;font-weight:700;color:#334155;margin:0;">Months to export</p>
-                    <div style="display:flex;gap:0.5rem;">
-                        <button type="button" onclick="checkAllMonths(true)"  style="font-size:0.7rem;color:#0369a1;background:none;border:none;cursor:pointer;padding:0;">All</button>
-                        <button type="button" onclick="checkAllMonths(false)" style="font-size:0.7rem;color:#94a3b8;background:none;border:none;cursor:pointer;padding:0;">None</button>
+            <div class="mb-5">
+                <div class="flex items-center justify-between mb-2.5">
+                    <p class="text-[0.8125rem] font-bold text-slate-700">Months to export</p>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="checkAllMonths(true)"  class="text-[0.7rem] text-sky-700 bg-transparent border-0 cursor-pointer p-0">All</button>
+                        <button type="button" onclick="checkAllMonths(false)" class="text-[0.7rem] text-slate-400 bg-transparent border-0 cursor-pointer p-0">None</button>
                     </div>
                 </div>
-                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.375rem;">
+                <div class="grid grid-cols-4 gap-1.5">
                     @foreach(range(1,12) as $m)
-                    <label style="display:flex;align-items:center;gap:0.375rem;font-size:0.8125rem;color:#334155;padding:0.375rem 0.5rem;border:1px solid #e2e8f0;border-radius:7px;cursor:pointer;background:#fafafa;">
-                        <input type="checkbox" name="months[]" value="{{ $m }}" {{ $m == $month ? 'checked' : '' }} style="width:14px;height:14px;cursor:pointer;accent-color:#0f172a;">
+                    <label class="flex items-center gap-1.5 text-[0.8125rem] text-slate-700 px-2 py-1.5 border border-slate-200 rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100 transition-colors">
+                        <input type="checkbox" name="months[]" value="{{ $m }}" {{ $m == $month ? 'checked' : '' }} class="w-3.5 h-3.5 cursor-pointer accent-slate-900">
                         {{ date('M', mktime(0,0,0,$m,1)) }}
                     </label>
                     @endforeach
                 </div>
             </div>
             @php $defaultExportStatuses = ['pending']; @endphp
-            <div style="margin-bottom:1.5rem;">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.625rem;">
-                    <p style="font-size:0.8125rem;font-weight:700;color:#334155;margin:0;">Statuses to include</p>
-                    <div style="display:flex;gap:0.5rem;">
-                        <button type="button" onclick="checkAllStatuses(true)"  style="font-size:0.7rem;color:#0369a1;background:none;border:none;cursor:pointer;padding:0;">All</button>
-                        <button type="button" onclick="checkAllStatuses(false)" style="font-size:0.7rem;color:#94a3b8;background:none;border:none;cursor:pointer;padding:0;">None</button>
+            <div class="mb-6">
+                <div class="flex items-center justify-between mb-2.5">
+                    <p class="text-[0.8125rem] font-bold text-slate-700">Statuses to include</p>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="checkAllStatuses(true)"  class="text-[0.7rem] text-sky-700 bg-transparent border-0 cursor-pointer p-0">All</button>
+                        <button type="button" onclick="checkAllStatuses(false)" class="text-[0.7rem] text-slate-400 bg-transparent border-0 cursor-pointer p-0">None</button>
                     </div>
                 </div>
-                <div style="display:flex;flex-direction:column;gap:0.25rem;">
+                <div class="flex flex-col gap-1">
                     @foreach(\App\Models\ReminderEntry::STATUSES as $key => $label)
                     @php $sc2 = \App\Models\ReminderEntry::STATUS_COLOURS[$key] ?? ['bg'=>'#f8fafc','text'=>'#334155']; @endphp
-                    <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.8125rem;padding:0.375rem 0.625rem;border-radius:7px;cursor:pointer;background:{{ $sc2['bg'] }};">
-                        <input type="checkbox" name="statuses[]" value="{{ $key }}" {{ in_array($key, $defaultExportStatuses) ? 'checked' : '' }} style="width:14px;height:14px;cursor:pointer;accent-color:#0f172a;">
-                        <span style="color:{{ $sc2['text'] }};font-weight:500;">{{ $label }}</span>
+                    <label style="background:{{ $sc2['bg'] }};" class="flex items-center gap-2 text-[0.8125rem] px-2.5 py-1.5 rounded-lg cursor-pointer">
+                        <input type="checkbox" name="statuses[]" value="{{ $key }}" {{ in_array($key, $defaultExportStatuses) ? 'checked' : '' }} class="w-3.5 h-3.5 cursor-pointer accent-slate-900">
+                        <span style="color:{{ $sc2['text'] }};" class="font-medium">{{ $label }}</span>
                     </label>
                     @endforeach
                 </div>
             </div>
-            <div style="display:flex;gap:0.75rem;justify-content:flex-end;">
-                <button type="button" onclick="closeExportModal()" style="padding:0.5rem 1rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-size:0.875rem;font-weight:600;cursor:pointer;">Cancel</button>
-                <button type="submit" style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.5rem 1.25rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.875rem;font-weight:600;border:none;cursor:pointer;">
+            <div class="flex gap-3 justify-end">
+                <button type="button" onclick="closeExportModal()" class="px-4 py-2 rounded-lg border border-slate-200 bg-white text-slate-500 text-sm font-semibold cursor-pointer hover:bg-slate-50 transition-colors">Cancel</button>
+                <button type="submit" class="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-slate-900 text-white text-sm font-semibold border-0 cursor-pointer hover:bg-slate-700 transition-colors">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                     Download Excel
                 </button>

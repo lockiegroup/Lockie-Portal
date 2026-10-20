@@ -7,10 +7,10 @@
             <p class="text-slate-500 mt-1 text-sm">Progress breakdown by month for {{ $year }}.</p>
         </div>
 
-        <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
-            <form method="GET" action="{{ route('reminders.overview') }}" style="display:flex;align-items:center;gap:0.5rem;">
+        <div class="flex items-center gap-3 flex-wrap">
+            <form method="GET" action="{{ route('reminders.overview') }}" class="flex items-center gap-2">
                 <select name="year" onchange="this.form.submit()"
-                    style="border:1px solid #e2e8f0;border-radius:8px;padding:6px 10px;font-size:0.875rem;color:#334155;background:#fff;cursor:pointer;">
+                    class="border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm text-slate-700 bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-sky-500">
                     @foreach($availableYears as $y)
                     <option value="{{ $y }}" {{ $y == $year ? 'selected' : '' }}>{{ $y }}</option>
                     @endforeach
@@ -18,44 +18,44 @@
             </form>
 
             <a href="{{ route('reminders.index') }}"
-                style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.4rem 0.875rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.8125rem;font-weight:600;text-decoration:none;">
+                class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 text-[0.8125rem] font-semibold no-underline hover:bg-slate-50 transition-colors">
                 ← Back to Reminders
             </a>
         </div>
     </div>
 
     @if(empty($byMonth))
-    <div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:3rem;text-align:center;color:#94a3b8;font-size:0.875rem;">
+    <div class="bg-white rounded-xl border border-slate-200 px-4 py-12 text-center text-slate-400 text-sm">
         No reminder data for {{ $year }}.
     </div>
     @else
 
     {{-- Status colour legend --}}
-    <div style="display:flex;flex-wrap:wrap;gap:0.375rem;margin-bottom:1.25rem;align-items:center;">
-        <span style="font-size:0.7rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-right:0.25rem;">Status:</span>
+    <div class="flex flex-wrap gap-1.5 mb-5 items-center">
+        <span class="text-[0.7rem] font-semibold text-slate-400 uppercase tracking-wide mr-1">Status:</span>
         @foreach(\App\Models\ReminderEntry::STATUSES as $key => $label)
         @php $colours = \App\Models\ReminderEntry::STATUS_COLOURS[$key] ?? ['bg'=>'#fff','text'=>'#334155']; @endphp
-        <span style="display:inline-flex;align-items:center;padding:0.2rem 0.625rem;border-radius:9999px;font-size:0.7rem;font-weight:500;background:{{ $colours['bg'] }};color:{{ $colours['text'] }};outline:1px solid rgba(0,0,0,0.08);">
+        <span style="background:{{ $colours['bg'] }};color:{{ $colours['text'] }};" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[0.7rem] font-medium outline outline-1 outline-black/[0.08]">
             {{ $label }}
         </span>
         @endforeach
     </div>
 
-    <div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;">
-        <div style="overflow-x:auto;">
-            <table style="width:100%;border-collapse:collapse;font-size:0.8125rem;">
+    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-[0.8125rem] border-collapse">
                 <thead>
-                    <tr style="background:#f8fafc;">
-                        <th style="padding:0.625rem 1rem;text-align:left;font-size:0.7rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid #e2e8f0;white-space:nowrap;position:sticky;left:0;background:#f8fafc;z-index:2;">Month</th>
-                        <th style="padding:0.625rem 0.75rem;text-align:right;font-size:0.7rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid #e2e8f0;white-space:nowrap;">Total</th>
+                    <tr class="bg-slate-50">
+                        <th class="px-4 py-2.5 text-left text-[0.7rem] font-bold text-slate-500 uppercase tracking-wide border-b border-slate-200 whitespace-nowrap sticky left-0 bg-slate-50 z-[2]">Month</th>
+                        <th class="px-3 py-2.5 text-right text-[0.7rem] font-bold text-slate-500 uppercase tracking-wide border-b border-slate-200 whitespace-nowrap">Total</th>
                         @foreach(\App\Models\ReminderEntry::STATUSES as $key => $label)
                         @php $colours = \App\Models\ReminderEntry::STATUS_COLOURS[$key] ?? ['bg'=>'#fff','text'=>'#334155']; @endphp
-                        <th style="padding:0.625rem 0.75rem;text-align:right;font-size:0.7rem;font-weight:700;color:{{ $colours['text'] }};text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid #e2e8f0;white-space:nowrap;background:{{ $colours['bg'] }};">
+                        <th style="background:{{ $colours['bg'] }};color:{{ $colours['text'] }};" class="px-3 py-2.5 text-right text-[0.7rem] font-bold uppercase tracking-wide border-b border-slate-200 whitespace-nowrap">
                             {{ $label }}
                         </th>
                         @endforeach
-                        <th style="padding:0.625rem 0.75rem;text-align:center;font-size:0.7rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid #e2e8f0;white-space:nowrap;">% Ordered</th>
-                        <th style="padding:0.625rem 0.75rem;border-bottom:1px solid #e2e8f0;"></th>
+                        <th class="px-3 py-2.5 text-center text-[0.7rem] font-bold text-slate-500 uppercase tracking-wide border-b border-slate-200 whitespace-nowrap">% Ordered</th>
+                        <th class="px-3 py-2.5 border-b border-slate-200"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -72,33 +72,33 @@
                         }
                         $totals['__total'] = ($totals['__total'] ?? 0) + $total;
                     @endphp
-                    <tr style="border-bottom:1px solid #f1f5f9;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
-                        <td style="padding:0.625rem 1rem;font-weight:600;color:#334155;white-space:nowrap;position:sticky;left:0;background:#fff;z-index:1;">
+                    <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                        <td class="px-4 py-2.5 font-semibold text-slate-700 whitespace-nowrap sticky left-0 bg-white z-[1]">
                             {{ date('F', mktime(0,0,0,$m,1,$year)) }}
                         </td>
-                        <td style="padding:0.625rem 0.75rem;text-align:right;font-weight:600;color:#334155;">{{ $total }}</td>
+                        <td class="px-3 py-2.5 text-right font-semibold text-slate-700">{{ $total }}</td>
                         @foreach(\App\Models\ReminderEntry::STATUSES as $key => $label)
                         @php
                             $cnt = $monthData[$key] ?? 0;
                             $colours = \App\Models\ReminderEntry::STATUS_COLOURS[$key] ?? ['bg'=>'#fff','text'=>'#334155'];
                         @endphp
-                        <td style="padding:0.625rem 0.75rem;text-align:right;color:{{ $cnt > 0 ? $colours['text'] : '#cbd5e1' }};font-weight:{{ $cnt > 0 ? '600' : '400' }};">
+                        <td style="color:{{ $cnt > 0 ? $colours['text'] : '#cbd5e1' }};" class="px-3 py-2.5 text-right {{ $cnt > 0 ? 'font-semibold' : '' }}">
                             {{ $cnt > 0 ? $cnt : '—' }}
                         </td>
                         @endforeach
-                        <td style="padding:0.625rem 0.75rem;text-align:center;">
+                        <td class="px-3 py-2.5 text-center">
                             @if($total > 0)
-                            <div style="display:flex;align-items:center;gap:0.5rem;justify-content:flex-end;">
-                                <div style="width:60px;height:6px;border-radius:9999px;background:#e2e8f0;overflow:hidden;">
-                                    <div style="height:100%;width:{{ $pct }}%;background:#16a34a;border-radius:9999px;"></div>
+                            <div class="flex items-center gap-2 justify-end">
+                                <div class="w-15 h-1.5 rounded-full bg-slate-200 overflow-hidden">
+                                    <div style="width:{{ $pct }}%;" class="h-full bg-green-600 rounded-full"></div>
                                 </div>
-                                <span style="font-size:0.75rem;font-weight:600;color:#334155;min-width:32px;text-align:right;">{{ $pct }}%</span>
+                                <span class="text-xs font-semibold text-slate-700 min-w-8 text-right">{{ $pct }}%</span>
                             </div>
                             @endif
                         </td>
-                        <td style="padding:0.5rem 0.75rem;text-align:right;">
+                        <td class="px-3 py-2 text-right">
                             <a href="{{ route('reminders.index', ['year' => $year, 'month' => $m]) }}"
-                                style="font-size:0.75rem;font-weight:600;color:#0369a1;text-decoration:none;white-space:nowrap;">
+                                class="text-xs font-semibold text-sky-700 no-underline whitespace-nowrap hover:text-sky-900 transition-colors">
                                 View →
                             </a>
                         </td>
@@ -107,12 +107,12 @@
                 </tbody>
                 @if(!empty($totals))
                 <tfoot>
-                    <tr style="background:#f8fafc;border-top:2px solid #e2e8f0;">
-                        <td style="padding:0.625rem 1rem;font-weight:700;color:#334155;position:sticky;left:0;background:#f8fafc;">Total</td>
-                        <td style="padding:0.625rem 0.75rem;text-align:right;font-weight:700;color:#334155;">{{ $totals['__total'] ?? 0 }}</td>
+                    <tr class="bg-slate-50 border-t-2 border-slate-200">
+                        <td class="px-4 py-2.5 font-bold text-slate-700 sticky left-0 bg-slate-50">Total</td>
+                        <td class="px-3 py-2.5 text-right font-bold text-slate-700">{{ $totals['__total'] ?? 0 }}</td>
                         @foreach(\App\Models\ReminderEntry::STATUSES as $key => $label)
                         @php $cnt = $totals[$key] ?? 0; $colours = \App\Models\ReminderEntry::STATUS_COLOURS[$key] ?? ['bg'=>'#fff','text'=>'#334155']; @endphp
-                        <td style="padding:0.625rem 0.75rem;text-align:right;font-weight:700;color:{{ $cnt > 0 ? $colours['text'] : '#cbd5e1' }};">
+                        <td style="color:{{ $cnt > 0 ? $colours['text'] : '#cbd5e1' }};" class="px-3 py-2.5 text-right font-bold">
                             {{ $cnt > 0 ? $cnt : '—' }}
                         </td>
                         @endforeach
@@ -121,12 +121,12 @@
                             $grandOrdered = $totals['order_placed'] ?? 0;
                             $grandPct     = $grandTotal > 0 ? round($grandOrdered / $grandTotal * 100) : 0;
                         @endphp
-                        <td style="padding:0.625rem 0.75rem;text-align:center;">
-                            <div style="display:flex;align-items:center;gap:0.5rem;justify-content:flex-end;">
-                                <div style="width:60px;height:6px;border-radius:9999px;background:#e2e8f0;overflow:hidden;">
-                                    <div style="height:100%;width:{{ $grandPct }}%;background:#16a34a;border-radius:9999px;"></div>
+                        <td class="px-3 py-2.5 text-center">
+                            <div class="flex items-center gap-2 justify-end">
+                                <div class="w-15 h-1.5 rounded-full bg-slate-200 overflow-hidden">
+                                    <div style="width:{{ $grandPct }}%;" class="h-full bg-green-600 rounded-full"></div>
                                 </div>
-                                <span style="font-size:0.75rem;font-weight:700;color:#334155;min-width:32px;text-align:right;">{{ $grandPct }}%</span>
+                                <span class="text-xs font-bold text-slate-700 min-w-8 text-right">{{ $grandPct }}%</span>
                             </div>
                         </td>
                         <td></td>

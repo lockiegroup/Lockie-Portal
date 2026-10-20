@@ -29,28 +29,28 @@
 @media(max-width:500px){ .panel { width:100%; } }
 </style>
 
-<div style="padding:1.25rem 1.5rem 0.75rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;max-width:100%;">
-    <div style="display:flex;align-items:center;gap:0.75rem;">
-        <a href="{{ route('key-actions.index') }}" style="font-size:0.8125rem;color:#64748b;text-decoration:none;">← Key Actions</a>
-        <span style="color:#cbd5e1;">|</span>
-        <h1 style="font-size:1.1rem;font-weight:700;color:#1e293b;margin:0;">{{ $group->name }}</h1>
+<div class="px-6 pt-5 pb-3 flex items-center justify-between flex-wrap gap-3 max-w-full">
+    <div class="flex items-center gap-3">
+        <a href="{{ route('key-actions.index') }}" class="text-[0.8125rem] text-slate-500 no-underline">← Key Actions</a>
+        <span class="text-slate-300">|</span>
+        <h1 class="text-[1.1rem] font-bold text-slate-800 m-0">{{ $group->name }}</h1>
     </div>
-    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
+    <div class="flex gap-2 flex-wrap items-center">
         @if($group->agenda_path)
         <a href="{{ route('key-actions.agenda.download', $group) }}" target="_blank"
-           style="background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;border-radius:0.5rem;padding:0.4rem 0.875rem;font-size:0.8125rem;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:0.35rem;">
-            <svg style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+           class="bg-green-50 text-green-800 border border-green-200 rounded-lg px-3.5 py-1.5 text-[0.8125rem] font-semibold no-underline inline-flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
             View Agenda
         </a>
         @endif
         @if($isGroupAdmin)
         <button onclick="openManageMembers()"
-                style="background:#f1f5f9;color:#475569;border:none;border-radius:0.5rem;padding:0.4rem 0.875rem;font-size:0.8125rem;font-weight:600;cursor:pointer;">
+                class="bg-slate-100 text-slate-600 border-0 rounded-lg px-3.5 py-1.5 text-[0.8125rem] font-semibold cursor-pointer hover:bg-slate-200 transition-colors">
             Manage Group
         </button>
         @endif
         <button onclick="openAddTask(null, null)"
-                style="background:#1e293b;color:#fff;border:none;border-radius:0.5rem;padding:0.4rem 0.875rem;font-size:0.8125rem;font-weight:600;cursor:pointer;">
+                class="bg-slate-900 text-white border-0 rounded-lg px-3.5 py-1.5 text-[0.8125rem] font-semibold cursor-pointer hover:bg-slate-700 transition-colors">
             + Add Task
         </button>
     </div>
@@ -64,7 +64,7 @@
         <div class="col-header">
             <span class="col-drag-handle" title="Drag to reorder">⠿</span>
             <span class="col-title">{{ $col['user']->name }}</span>
-            <span style="background:#e2e8f0;color:#64748b;border-radius:9999px;padding:1px 8px;font-size:0.7rem;font-weight:700;">{{ $col['tasks']->count() }}</span>
+            <span class="bg-slate-200 text-slate-500 rounded-full px-2 py-px text-[0.7rem] font-bold">{{ $col['tasks']->count() }}</span>
         </div>
         <div class="task-list" id="list-{{ $col['user']->id }}">
             @foreach($col['tasks'] as $task)
@@ -74,7 +74,7 @@
         <button class="add-task-btn" onclick="openAddTask({{ $col['user']->id }}, null)">+ Add task</button>
         @if(isset($col['shared']) && $col['shared']->count())
         <div class="shared-section" style="margin-top:0.5rem;border-top:1px dashed #e2e8f0;padding-top:0.5rem;">
-            <div style="font-size:0.65rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.35rem;">Shared</div>
+            <div class="text-[0.65rem] font-bold text-slate-400 uppercase tracking-wide mb-1.5">Shared</div>
             @foreach($col['shared'] as $task)
                 @include('key-actions._task', ['task' => $task])
             @endforeach
@@ -94,13 +94,13 @@
         <div class="col-header">
             <span class="col-drag-handle" title="Drag to reorder">⠿</span>
             <span class="col-title">{{ $col['bucket']->name }}</span>
-            <div style="display:flex;align-items:center;gap:0.4rem;">
-                <span style="background:#e2e8f0;color:#64748b;border-radius:9999px;padding:1px 8px;font-size:0.7rem;font-weight:700;">{{ $col['tasks']->count() }}</span>
+            <div class="flex items-center gap-1.5">
+                <span class="bg-slate-200 text-slate-500 rounded-full px-2 py-px text-[0.7rem] font-bold">{{ $col['tasks']->count() }}</span>
                 @if($isGroupAdmin)
                 <button onclick="renameBucket({{ $col['bucket']->id }}, '{{ addslashes($col['bucket']->name) }}')"
-                        title="Rename" style="background:none;border:none;cursor:pointer;color:#94a3b8;padding:0;font-size:0.75rem;line-height:1;">✎</button>
+                        title="Rename" class="bg-transparent border-0 cursor-pointer text-slate-400 p-0 text-xs leading-none">✎</button>
                 <button onclick="deleteBucket({{ $col['bucket']->id }})"
-                        title="Delete" style="background:none;border:none;cursor:pointer;color:#fca5a5;padding:0;font-size:0.75rem;line-height:1;">✕</button>
+                        title="Delete" class="bg-transparent border-0 cursor-pointer text-red-300 p-0 text-xs leading-none">✕</button>
                 @endif
             </div>
         </div>

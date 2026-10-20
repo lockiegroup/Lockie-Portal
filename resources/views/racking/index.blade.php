@@ -126,22 +126,22 @@
 }
 </style>
 
-<main style="max-width:1400px;margin:0 auto;padding:1.5rem;">
+<main class="max-w-[1400px] mx-auto px-6 py-6">
 
 {{-- Header --}}
-<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1.25rem;">
+<div class="flex items-center justify-between flex-wrap gap-4 mb-5">
     <div>
-        <h1 style="font-size:1.4rem;font-weight:700;color:#1e293b;margin:0;">Pallet Racking</h1>
+        <h1 class="text-[1.4rem] font-bold text-slate-800 m-0">Pallet Racking</h1>
     </div>
-    <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
-        <a href="{{ route('racking.outside') }}" style="padding:.45rem .875rem;background:#fff;border:1px solid #e2e8f0;border-radius:7px;font-size:.8125rem;color:#374151;text-decoration:none;font-weight:600;">
-            Outside Storage <span style="background:#e2e8f0;border-radius:8px;padding:1px 6px;font-size:.7rem;margin-left:3px;">{{ $outsideCount }}</span>
+    <div class="flex gap-2 flex-wrap">
+        <a href="{{ route('racking.outside') }}" class="px-3.5 py-1.5 bg-white border border-slate-200 rounded-lg text-[0.8125rem] text-slate-700 no-underline font-semibold hover:bg-slate-50 transition-colors">
+            Outside Storage <span class="bg-slate-200 rounded-lg px-1.5 py-px text-[0.7rem] ml-0.5">{{ $outsideCount }}</span>
         </a>
-        <a href="{{ route('racking.movements') }}" style="padding:.45rem .875rem;background:#fff;border:1px solid #e2e8f0;border-radius:7px;font-size:.8125rem;color:#374151;text-decoration:none;font-weight:600;">
+        <a href="{{ route('racking.movements') }}" class="px-3.5 py-1.5 bg-white border border-slate-200 rounded-lg text-[0.8125rem] text-slate-700 no-underline font-semibold hover:bg-slate-50 transition-colors">
             Movements
         </a>
         <button onclick="window.print()"
-            style="padding:.45rem .875rem;background:#0f172a;color:#fff;border:none;border-radius:7px;font-size:.8125rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:.35rem;">
+            class="px-3.5 py-1.5 bg-slate-900 text-white border-0 rounded-lg text-[0.8125rem] font-semibold cursor-pointer flex items-center gap-1.5 hover:bg-slate-700 transition-colors">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
             Print
         </button>
@@ -149,35 +149,35 @@
 </div>
 
 @if(session('success'))
-<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:.6rem 1rem;margin-bottom:1rem;color:#166534;font-size:.875rem;">{{ session('success') }}</div>
+<div class="bg-green-50 border border-green-200 rounded-lg px-4 py-2.5 mb-4 text-green-700 text-sm">{{ session('success') }}</div>
 @endif
 
 {{-- Stats --}}
-<div style="display:flex;flex-wrap:wrap;gap:.75rem;margin-bottom:1.5rem;">
-    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:.875rem 1.25rem;display:flex;align-items:center;gap:.75rem;">
-        <div style="font-size:1.75rem;font-weight:700;color:#1e293b;">{{ $filledCount }}</div>
-        <div style="font-size:.75rem;color:#64748b;font-weight:600;line-height:1.3;">Filled<br>Spaces</div>
+<div class="flex flex-wrap gap-3 mb-6">
+    <div class="bg-white border border-slate-200 rounded-xl px-5 py-3.5 flex items-center gap-3">
+        <div class="text-[1.75rem] font-bold text-slate-800">{{ $filledCount }}</div>
+        <div class="text-xs text-slate-500 font-semibold leading-tight">Filled<br>Spaces</div>
     </div>
-    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:.875rem 1.25rem;display:flex;align-items:center;gap:.75rem;">
-        <div style="font-size:1.75rem;font-weight:700;color:#16a34a;">{{ $emptyCount }}</div>
-        <div style="font-size:.75rem;color:#166534;font-weight:600;line-height:1.3;">Empty<br>Spaces</div>
+    <div class="bg-green-50 border border-green-200 rounded-xl px-5 py-3.5 flex items-center gap-3">
+        <div class="text-[1.75rem] font-bold text-green-600">{{ $emptyCount }}</div>
+        <div class="text-xs text-green-800 font-semibold leading-tight">Empty<br>Spaces</div>
     </div>
-    <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:.875rem 1.25rem;display:flex;align-items:center;gap:.75rem;">
-        <div style="font-size:1.75rem;font-weight:700;color:#dc2626;">{{ $unusableCount }}</div>
-        <div style="font-size:.75rem;color:#991b1b;font-weight:600;line-height:1.3;">Unusable<br>Spaces</div>
+    <div class="bg-red-50 border border-red-200 rounded-xl px-5 py-3.5 flex items-center gap-3">
+        <div class="text-[1.75rem] font-bold text-red-600">{{ $unusableCount }}</div>
+        <div class="text-xs text-red-800 font-semibold leading-tight">Unusable<br>Spaces</div>
     </div>
-    <div style="background:#fefce8;border:1px solid #fde68a;border-radius:10px;padding:.875rem 1.25rem;display:flex;align-items:center;gap:.75rem;">
-        <div style="font-size:1.75rem;font-weight:700;color:#ca8a04;">{{ $forOutsideCount }}</div>
-        <div style="font-size:.75rem;color:#854d0e;font-weight:600;line-height:1.3;">For Outside<br>Storage</div>
+    <div class="bg-yellow-50 border border-yellow-200 rounded-xl px-5 py-3.5 flex items-center gap-3">
+        <div class="text-[1.75rem] font-bold text-yellow-600">{{ $forOutsideCount }}</div>
+        <div class="text-xs text-yellow-800 font-semibold leading-tight">For Outside<br>Storage</div>
     </div>
     {{-- Division legend --}}
-    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:.875rem 1.25rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
-        <span style="font-size:.75rem;color:#64748b;font-weight:600;margin-right:.25rem;">Key:</span>
-        <span style="background:#fff;border:1.5px solid #d1d5db;border-radius:5px;padding:3px 10px;font-size:.75rem;font-weight:600;color:#374151;">Lockie Church</span>
-        <span style="background:#fde8d3;border:1.5px solid #f9c9a0;border-radius:5px;padding:3px 10px;font-size:.75rem;font-weight:600;color:#92400e;">JW Products</span>
-        <span style="background:#e8d5e8;border:1.5px solid #d4aed4;border-radius:5px;padding:3px 10px;font-size:.75rem;font-weight:600;color:#6b21a8;">Hammond &amp; Harper</span>
-        <span style="background:#d4edda;border:1.5px solid #a3d9b1;border-radius:5px;padding:3px 10px;font-size:.75rem;font-weight:600;color:#166534;">Available</span>
-        <span style="background:#c8c8c8;border:1.5px solid #a8a8a8;border-radius:5px;padding:3px 10px;font-size:.75rem;font-weight:600;color:#374151;">Unusable</span>
+    <div class="bg-white border border-slate-200 rounded-xl px-5 py-3.5 flex items-center gap-2 flex-wrap">
+        <span class="text-xs text-slate-500 font-semibold mr-1">Key:</span>
+        <span class="bg-white border-[1.5px] border-slate-300 rounded-[5px] px-2.5 py-0.5 text-xs font-semibold text-slate-700">Lockie Church</span>
+        <span class="border-[1.5px] border-[#f9c9a0] rounded-[5px] px-2.5 py-0.5 text-xs font-semibold text-amber-800" style="background:#fde8d3;">JW Products</span>
+        <span class="border-[1.5px] border-[#d4aed4] rounded-[5px] px-2.5 py-0.5 text-xs font-semibold text-purple-800" style="background:#e8d5e8;">Hammond &amp; Harper</span>
+        <span class="border-[1.5px] border-[#a3d9b1] rounded-[5px] px-2.5 py-0.5 text-xs font-semibold text-green-800" style="background:#d4edda;">Available</span>
+        <span class="bg-[#c8c8c8] border-[1.5px] border-[#a8a8a8] rounded-[5px] px-2.5 py-0.5 text-xs font-semibold text-slate-700">Unusable</span>
     </div>
 </div>
 

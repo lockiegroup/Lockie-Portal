@@ -2,30 +2,30 @@
 <main class="max-w-5xl mx-auto px-4 sm:px-6 py-8">
 
     {{-- Back --}}
-    <div style="margin-bottom:1.5rem;">
+    <div class="mb-6">
         <a href="{{ route('crm.index', ['warehouse' => $warehouse]) }}"
-           style="font-size:0.875rem;color:#94a3b8;text-decoration:none;">&#8592; Customer Insights</a>
+           class="text-sm text-slate-400 no-underline">&#8592; Customer Insights</a>
     </div>
 
     {{-- Header --}}
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:2rem;">
+    <div class="flex items-start justify-between flex-wrap gap-3 mb-8">
         <div>
             <h1 class="text-2xl font-bold text-slate-800">{{ $customer ?: $customerCode }}</h1>
-            <p style="font-size:0.875rem;color:#94a3b8;margin-top:3px;">
+            <p class="text-sm text-slate-400 mt-0.5">
                 {{ $customerCode }}
                 @if($keyAccount)
-                    &bull; <a href="{{ route('key-accounts.index') }}" style="color:#6366f1;text-decoration:none;">View Key Accounts &rarr;</a>
+                    &bull; <a href="{{ route('key-accounts.index') }}" class="text-indigo-500 no-underline">View Key Accounts &rarr;</a>
                 @endif
             </p>
             @if($keyAccount && $keyAccount->user_id)
-            <div style="display:flex;align-items:center;gap:10px;margin-top:10px;">
+            <div class="flex items-center gap-2.5 mt-2.5">
                 <span style="display:inline-block;padding:3px 10px;border-radius:999px;font-size:0.8125rem;font-weight:600;
                              background:{{ $keyAccount->type === 'key' ? '#e0f2fe' : '#d1fae5' }};
                              color:{{ $keyAccount->type === 'key' ? '#0369a1' : '#059669' }};">
                     {{ $keyAccount->type === 'key' ? 'Key Account' : 'Growth Account' }}
                 </span>
-                <span style="font-size:0.875rem;color:#64748b;">
-                    Account manager: <strong style="color:#334155;">{{ $keyAccount->user->name }}</strong>
+                <span class="text-sm text-slate-500">
+                    Account manager: <strong class="text-slate-700">{{ $keyAccount->user->name }}</strong>
                 </span>
             </div>
             @endif
@@ -33,9 +33,9 @@
 
         {{-- Warehouse filter --}}
         @if($warehouses->count() > 1)
-        <form method="GET" style="display:flex;gap:8px;align-items:center;">
+        <form method="GET" class="flex gap-2 items-center">
             <select name="warehouse" onchange="this.form.submit()"
-                style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;color:#1e293b;background:#fff;">
+                class="px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-sky-500">
                 <option value="">All Warehouses</option>
                 @foreach($warehouses as $w)
                     <option value="{{ $w }}" {{ $warehouse === $w ? 'selected' : '' }}>{{ $w }}</option>
@@ -52,22 +52,22 @@
         $lastOrderDate = $lastOrder ? \Carbon\Carbon::parse($lastOrder) : null;
         $daysSince = $lastOrderDate ? $lastOrderDate->diffInDays(now()) : null;
     @endphp
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:2.5rem;">
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 mb-10">
 
-        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:0.875rem;padding:1.125rem 1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-            <p style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Last 12 Months</p>
-            <p style="font-size:1.625rem;font-weight:700;color:#1e293b;line-height:1;">£{{ number_format($total12m, 0) }}</p>
+        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+            <p class="text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1.5">Last 12 Months</p>
+            <p class="text-[1.625rem] font-bold text-slate-800 leading-none">£{{ number_format($total12m, 0) }}</p>
         </div>
 
-        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:0.875rem;padding:1.125rem 1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-            <p style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Prev 12 Months</p>
-            <p style="font-size:1.625rem;font-weight:700;color:#64748b;line-height:1;">
+        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+            <p class="text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1.5">Prev 12 Months</p>
+            <p class="text-[1.625rem] font-bold text-slate-500 leading-none">
                 {{ $totalPrev12 > 0 ? '£' . number_format($totalPrev12, 0) : '—' }}
             </p>
         </div>
 
-        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:0.875rem;padding:1.125rem 1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-            <p style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Year-on-Year</p>
+        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+            <p class="text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1.5">Year-on-Year</p>
             <p style="font-size:1.625rem;font-weight:700;color:{{ $pctColour }};line-height:1;">
                 @if($pct !== null)
                     {{ $pct > 0 ? '+' : '' }}{{ number_format($pct, 1) }}%
@@ -77,30 +77,30 @@
             </p>
         </div>
 
-        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:0.875rem;padding:1.125rem 1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-            <p style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Last Order</p>
+        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+            <p class="text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1.5">Last Order</p>
             @if($lastOrderDate)
                 <p style="font-size:1rem;font-weight:600;color:{{ $daysSince > 180 ? '#dc2626' : ($daysSince > 90 ? '#d97706' : '#1e293b') }};line-height:1.3;">
                     {{ $lastOrderDate->format('d M Y') }}
                 </p>
-                <p style="font-size:0.75rem;color:#94a3b8;margin-top:2px;">{{ $lastOrderDate->diffForHumans() }}</p>
+                <p class="text-xs text-slate-400 mt-0.5">{{ $lastOrderDate->diffForHumans() }}</p>
             @else
-                <p style="font-size:1rem;color:#94a3b8;">—</p>
+                <p class="text-base text-slate-400">—</p>
             @endif
         </div>
 
-        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:0.875rem;padding:1.125rem 1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
             @php
                 $nextDaysUntil = $expectedNext ? now()->diffInDays($expectedNext, false) : null;
                 $nextColour = ($nextDaysUntil !== null && $nextDaysUntil < 0) ? '#dc2626'
                     : (($nextDaysUntil !== null && $nextDaysUntil <= 14) ? '#d97706' : '#1e293b');
             @endphp
-            <p style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Expected Next Order</p>
+            <p class="text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1.5">Expected Next Order</p>
             @if($expectedNext)
                 <p style="font-size:1rem;font-weight:600;color:{{ $nextColour }};line-height:1.3;">
                     {{ $expectedNext->format('d M Y') }}
                 </p>
-                <p style="font-size:0.75rem;color:#94a3b8;margin-top:2px;">
+                <p class="text-xs text-slate-400 mt-0.5">
                     @if($nextDaysUntil < 0)
                         {{ abs((int) $nextDaysUntil) }}d overdue
                     @else
@@ -109,7 +109,7 @@
                     &bull; orders every ~{{ $avgDays }}d
                 </p>
             @else
-                <p style="font-size:0.875rem;color:#94a3b8;">Not enough data</p>
+                <p class="text-sm text-slate-400">Not enough data</p>
             @endif
         </div>
 
@@ -122,40 +122,40 @@
             isset($byYearNet[$yr]) && round($g['total'], 2) !== round($byYearNet[$yr]['total'], 2)
         );
     @endphp
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.875rem;flex-wrap:wrap;gap:8px;">
-        <h2 style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin:0;">Annual Spend</h2>
+    <div class="flex items-center justify-between mb-3.5 flex-wrap gap-2">
+        <h2 class="text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide">Annual Spend</h2>
         @if($hasCredits)
-        <div style="display:flex;background:#f1f5f9;border-radius:999px;padding:2px;gap:2px;font-size:0.75rem;font-weight:600;">
+        <div class="flex bg-slate-100 rounded-full p-0.5 gap-0.5 text-xs font-semibold">
             <button id="spend-net-btn" onclick="setSpendView('net')"
-                style="padding:4px 12px;border:none;border-radius:999px;cursor:pointer;background:#1e293b;color:#fff;">Credits included</button>
+                class="px-3 py-1 border-0 rounded-full cursor-pointer bg-slate-900 text-white">Credits included</button>
             <button id="spend-gross-btn" onclick="setSpendView('gross')"
-                style="padding:4px 12px;border:none;border-radius:999px;cursor:pointer;background:transparent;color:#64748b;">Credits excluded</button>
+                class="px-3 py-1 border-0 rounded-full cursor-pointer bg-transparent text-slate-500">Credits excluded</button>
         </div>
         @endif
     </div>
-    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:0.875rem;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04);margin-bottom:2.5rem;">
-        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
-        <table style="width:100%;min-width:420px;border-collapse:collapse;font-size:0.875rem;">
+    <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm mb-10">
+        <div class="overflow-x-auto">
+        <table class="w-full text-sm border-collapse" style="min-width:420px;">
             <thead>
-                <tr style="background:#f8fafc;border-bottom:1px solid #e2e8f0;">
-                    <th style="padding:9px 16px;text-align:left;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Year</th>
-                    <th style="padding:9px 16px;text-align:right;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Q1</th>
-                    <th style="padding:9px 16px;text-align:right;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Q2</th>
-                    <th style="padding:9px 16px;text-align:right;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Q3</th>
-                    <th style="padding:9px 16px;text-align:right;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Q4</th>
-                    <th style="padding:9px 16px;text-align:right;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Total</th>
+                <tr class="bg-slate-50 border-b border-slate-200">
+                    <th class="px-4 py-2.5 text-left text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide">Year</th>
+                    <th class="px-4 py-2.5 text-right text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide">Q1</th>
+                    <th class="px-4 py-2.5 text-right text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide">Q2</th>
+                    <th class="px-4 py-2.5 text-right text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide">Q3</th>
+                    <th class="px-4 py-2.5 text-right text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide">Q4</th>
+                    <th class="px-4 py-2.5 text-right text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide">Total</th>
                 </tr>
             </thead>
             <tbody id="spend-tbody">
                 @foreach($byYear as $year => $qs)
-                    <tr style="border-bottom:1px solid #f1f5f9;">
-                        <td style="padding:10px 16px;font-weight:600;color:#1e293b;">{{ $year }}</td>
+                    <tr class="border-b border-slate-50">
+                        <td class="px-4 py-2.5 font-semibold text-slate-800">{{ $year }}</td>
                         @foreach(['q1','q2','q3','q4'] as $q)
                             <td style="padding:10px 16px;text-align:right;color:{{ isset($qs[$q]) && $qs[$q] > 0 ? '#334155' : '#cbd5e1' }};">
                                 {{ isset($qs[$q]) && $qs[$q] > 0 ? '£' . number_format($qs[$q], 0) : '—' }}
                             </td>
                         @endforeach
-                        <td style="padding:10px 16px;text-align:right;font-weight:600;color:#1e293b;">
+                        <td class="px-4 py-2.5 text-right font-semibold text-slate-800">
                             £{{ number_format($qs['total'] ?? 0, 0) }}
                         </td>
                     </tr>
@@ -177,14 +177,14 @@
             var rows = '';
             Object.keys(data).sort(function(a,b){return b-a;}).forEach(function(yr) {
                 var qs = data[yr];
-                rows += '<tr style="border-bottom:1px solid #f1f5f9;">';
-                rows += '<td style="padding:10px 16px;font-weight:600;color:#1e293b;">' + yr + '</td>';
+                rows += '<tr class="border-b border-slate-50">';
+                rows += '<td class="px-4 py-2.5 font-semibold text-slate-800">' + yr + '</td>';
                 ['q1','q2','q3','q4'].forEach(function(q) {
                     var v = qs[q] || 0;
                     rows += '<td style="padding:10px 16px;text-align:right;color:' + fmtColour(v) + ';">' + fmt(v) + '</td>';
                 });
                 var t = qs['total'] || 0;
-                rows += '<td style="padding:10px 16px;text-align:right;font-weight:600;color:#1e293b;">£' + Math.round(t).toLocaleString('en-GB') + '</td>';
+                rows += '<td class="px-4 py-2.5 text-right font-semibold text-slate-800">£' + Math.round(t).toLocaleString('en-GB') + '</td>';
                 rows += '</tr>';
             });
             document.getElementById('spend-tbody').innerHTML = rows;
@@ -196,20 +196,20 @@
     </script>
     @endif
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:2.5rem;">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-10">
 
         {{-- Top products --}}
         <div>
-            <h2 style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.875rem;">Top Products</h2>
-            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:0.875rem;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-                <table style="width:100%;border-collapse:collapse;font-size:0.8125rem;">
+            <h2 class="text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-3.5">Top Products</h2>
+            <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                <table class="w-full text-[0.8125rem] border-collapse">
                     <tbody>
                         @foreach($topProducts as $p)
-                            <tr style="border-bottom:1px solid #f1f5f9;">
-                                <td style="padding:10px 14px;">
-                                    <p style="font-weight:600;color:#1e293b;">{{ $p['product_code'] }}</p>
+                            <tr class="border-b border-slate-50">
+                                <td class="px-3.5 py-2.5">
+                                    <p class="font-semibold text-slate-800">{{ $p['product_code'] }}</p>
                                 </td>
-                                <td style="padding:10px 14px;text-align:right;font-weight:600;color:#334155;">
+                                <td class="px-3.5 py-2.5 text-right font-semibold text-slate-700">
                                     £{{ number_format($p['total'], 0) }}
                                 </td>
                             </tr>
@@ -221,20 +221,20 @@
 
         {{-- Recent orders --}}
         <div>
-            <h2 style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.875rem;">Recent Orders</h2>
-            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:0.875rem;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-                <table style="width:100%;border-collapse:collapse;font-size:0.8125rem;">
+            <h2 class="text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-3.5">Recent Orders</h2>
+            <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                <table class="w-full text-[0.8125rem] border-collapse">
                     <tbody>
                         @foreach($recentOrders as $o)
-                            <tr style="border-bottom:1px solid #f1f5f9;">
-                                <td style="padding:10px 14px;">
-                                    <p style="font-weight:600;color:#1e293b;">{{ $o['order_no'] ?: '—' }}</p>
-                                    <p style="font-size:0.75rem;color:#94a3b8;">
+                            <tr class="border-b border-slate-50">
+                                <td class="px-3.5 py-2.5">
+                                    <p class="font-semibold text-slate-800">{{ $o['order_no'] ?: '—' }}</p>
+                                    <p class="text-xs text-slate-400">
                                         {{ \Carbon\Carbon::parse($o['date'])->format('d M Y') }}
                                         @if($o['warehouse']) &bull; {{ $o['warehouse'] }} @endif
                                     </p>
                                 </td>
-                                <td style="padding:10px 14px;text-align:right;font-weight:600;color:#334155;">
+                                <td class="px-3.5 py-2.5 text-right font-semibold text-slate-700">
                                     £{{ number_format($o['total'], 0) }}
                                 </td>
                             </tr>
@@ -254,23 +254,22 @@
     @endphp
 
     @if(session('crm_success'))
-        <div style="background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d;font-size:0.875rem;border-radius:8px;padding:10px 14px;margin-bottom:1.25rem;">
+        <div class="bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg px-3.5 py-2.5 mb-5">
             {{ session('crm_success') }}
         </div>
     @endif
 
-
         {{-- Notes --}}
-        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:0.875rem;padding:1.5rem;margin-bottom:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-            <h2 style="font-size:0.875rem;font-weight:600;color:#1e293b;margin-bottom:0.875rem;">Notes</h2>
+        <div class="bg-white border border-slate-200 rounded-xl p-6 mb-5 shadow-sm">
+            <h2 class="text-[0.9375rem] font-bold text-slate-800 mb-3.5">Notes</h2>
             <form action="{{ $notesAction }}" method="POST">
                 @csrf @method('PATCH')
                 <textarea name="notes" rows="3" placeholder="Any notes about this account…"
-                    style="width:100%;padding:10px 14px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;color:#1e293b;resize:none;box-sizing:border-box;overflow-y:hidden;"
+                    class="w-full px-3.5 py-2.5 border border-slate-200 rounded-lg text-sm text-slate-800 resize-none overflow-y-hidden focus:outline-none focus:ring-2 focus:ring-sky-500"
                     oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'">{{ old('notes', $keyAccount?->notes) }}</textarea>
-                <div style="margin-top:8px;display:flex;justify-content:flex-end;">
+                <div class="mt-2 flex justify-end">
                     <button type="submit"
-                        style="padding:7px 18px;background:#1e293b;color:#fff;border:none;border-radius:8px;font-size:0.875rem;font-weight:500;cursor:pointer;">
+                        class="px-4 py-2 bg-slate-900 text-white text-sm font-medium rounded-lg border-0 cursor-pointer hover:bg-slate-700 transition-colors">
                         Save Notes
                     </button>
                 </div>
@@ -278,31 +277,31 @@
         </div>
 
         {{-- Log contact --}}
-        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:0.875rem;padding:1.5rem;margin-bottom:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-            <h2 style="font-size:0.875rem;font-weight:600;color:#1e293b;margin-bottom:0.875rem;">Log Contact</h2>
+        <div class="bg-white border border-slate-200 rounded-xl p-6 mb-5 shadow-sm">
+            <h2 class="text-[0.9375rem] font-bold text-slate-800 mb-3.5">Log Contact</h2>
             <form action="{{ $contactAction }}" method="POST">
                 @csrf
                 @if($errors->has('contacted_at') || $errors->has('note'))
-                    <div style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;font-size:0.8125rem;border-radius:8px;padding:8px 12px;margin-bottom:10px;">
+                    <div class="bg-red-50 border border-red-200 text-red-600 text-[0.8125rem] rounded-lg px-3 py-2 mb-3">
                         {{ $errors->first() }}
                     </div>
                 @endif
-                <div style="display:grid;grid-template-columns:180px 1fr;gap:12px;align-items:start;">
+                <div class="grid grid-cols-1 sm:grid-cols-[180px_1fr] gap-3 items-start">
                     <div>
-                        <label style="display:block;font-size:0.8125rem;font-weight:500;color:#475569;margin-bottom:5px;">Date</label>
+                        <label class="block text-[0.8125rem] font-medium text-slate-500 mb-1.5">Date</label>
                         <input type="date" name="contacted_at" value="{{ old('contacted_at', now()->format('Y-m-d')) }}" required
-                            style="width:100%;padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;">
+                            class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
                     </div>
                     <div>
-                        <label style="display:block;font-size:0.8125rem;font-weight:500;color:#475569;margin-bottom:5px;">Note</label>
+                        <label class="block text-[0.8125rem] font-medium text-slate-500 mb-1.5">Note</label>
                         <textarea name="note" rows="2" required placeholder="What was discussed or actioned…"
                             oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
-                            style="width:100%;padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;resize:none;box-sizing:border-box;overflow-y:hidden;">{{ old('note') }}</textarea>
+                            class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm resize-none overflow-y-hidden focus:outline-none focus:ring-2 focus:ring-sky-500">{{ old('note') }}</textarea>
                     </div>
                 </div>
-                <div style="margin-top:10px;display:flex;justify-content:flex-end;">
+                <div class="mt-2.5 flex justify-end">
                     <button type="submit"
-                        style="padding:7px 18px;background:#1e293b;color:#fff;border:none;border-radius:8px;font-size:0.875rem;font-weight:500;cursor:pointer;">
+                        class="px-4 py-2 bg-slate-900 text-white text-sm font-medium rounded-lg border-0 cursor-pointer hover:bg-slate-700 transition-colors">
                         Log Contact
                     </button>
                 </div>
@@ -310,23 +309,23 @@
         </div>
 
         {{-- Contact history --}}
-        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:0.875rem;padding:1.5rem;margin-bottom:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-            <h2 style="font-size:0.875rem;font-weight:600;color:#1e293b;margin-bottom:0.875rem;">Contact History</h2>
+        <div class="bg-white border border-slate-200 rounded-xl p-6 mb-5 shadow-sm">
+            <h2 class="text-[0.9375rem] font-bold text-slate-800 mb-3.5">Contact History</h2>
             @if(!$keyAccount || $keyAccount->contacts->isEmpty())
-                <p style="font-size:0.875rem;color:#94a3b8;">No contacts logged yet.</p>
+                <p class="text-sm text-slate-400">No contacts logged yet.</p>
             @else
-                <div style="display:flex;flex-direction:column;gap:0;">
+                <div class="flex flex-col gap-0">
                     @foreach($keyAccount->contacts as $contact)
-                        <div style="display:flex;align-items:flex-start;gap:16px;padding:10px 0;border-bottom:1px solid #f1f5f9;">
-                            <span style="font-size:0.75rem;color:#94a3b8;white-space:nowrap;padding-top:2px;width:80px;flex-shrink:0;">
+                        <div class="flex items-start gap-4 py-2.5 border-b border-slate-50">
+                            <span class="text-xs text-slate-400 whitespace-nowrap pt-0.5 w-20 shrink-0">
                                 {{ $contact->contacted_at->format('d M Y') }}
                             </span>
-                            <span style="font-size:0.875rem;color:#334155;flex:1;white-space:pre-wrap;">{!! e($contact->note) !!}</span>
-                            <span style="font-size:0.75rem;color:#94a3b8;white-space:nowrap;flex-shrink:0;">{{ $contact->user?->name ?? '—' }}</span>
+                            <span class="text-sm text-slate-700 flex-1 whitespace-pre-wrap">{!! e($contact->note) !!}</span>
+                            <span class="text-xs text-slate-400 whitespace-nowrap shrink-0">{{ $contact->user?->name ?? '—' }}</span>
                             <form action="{{ route('crm.contacts.destroy', [$customerCode, $contact]) }}" method="POST"
-                                onsubmit="return confirm('Remove this contact entry?')" style="margin:0;">
+                                onsubmit="return confirm('Remove this contact entry?')">
                                 @csrf @method('DELETE')
-                                <button type="submit" style="background:none;border:none;color:#cbd5e1;font-size:1.125rem;cursor:pointer;line-height:1;padding:0;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#cbd5e1'">&times;</button>
+                                <button type="submit" class="bg-transparent border-0 text-slate-300 text-lg cursor-pointer leading-none p-0 hover:text-red-500 transition-colors">&times;</button>
                             </form>
                         </div>
                     @endforeach
@@ -336,26 +335,28 @@
 
         {{-- Gift history (only exists if there's a Key Account record with gifts) --}}
         @if($keyAccount && $keyAccount->gifts->isNotEmpty())
-        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:0.875rem;padding:1.5rem;margin-bottom:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-            <h2 style="font-size:0.875rem;font-weight:600;color:#1e293b;margin-bottom:0.875rem;">Gift History</h2>
-            <table style="width:100%;border-collapse:collapse;font-size:0.875rem;">
+        <div class="bg-white border border-slate-200 rounded-xl p-6 mb-5 shadow-sm">
+            <h2 class="text-[0.9375rem] font-bold text-slate-800 mb-3.5">Gift History</h2>
+            <div class="overflow-x-auto">
+            <table class="w-full text-sm border-collapse">
                 <thead>
-                    <tr style="border-bottom:1px solid #e2e8f0;">
-                        <th style="text-align:left;padding-bottom:8px;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Date</th>
-                        <th style="text-align:left;padding-bottom:8px;padding-left:16px;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Recipient</th>
-                        <th style="text-align:left;padding-bottom:8px;padding-left:16px;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;">Gift</th>
+                    <tr class="border-b border-slate-200">
+                        <th class="text-left pb-2 text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide">Date</th>
+                        <th class="text-left pb-2 pl-4 text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide">Recipient</th>
+                        <th class="text-left pb-2 pl-4 text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide">Gift</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($keyAccount->gifts as $gift)
-                        <tr style="border-bottom:1px solid #f1f5f9;">
-                            <td style="padding:8px 0;color:#64748b;white-space:nowrap;">{{ $gift->gifted_at->format('d M Y') }}</td>
-                            <td style="padding:8px 0 8px 16px;color:#334155;">{{ $gift->recipient }}</td>
-                            <td style="padding:8px 0 8px 16px;color:#334155;">{{ $gift->description }}</td>
+                        <tr class="border-b border-slate-50">
+                            <td class="py-2 text-slate-500 whitespace-nowrap">{{ $gift->gifted_at->format('d M Y') }}</td>
+                            <td class="py-2 pl-4 text-slate-700">{{ $gift->recipient }}</td>
+                            <td class="py-2 pl-4 text-slate-700">{{ $gift->description }}</td>
                         </tr>
                     @endforeach
                 </tbody>
             </table>
+            </div>
         </div>
         @endif
 
