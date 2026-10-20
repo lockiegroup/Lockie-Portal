@@ -10,7 +10,7 @@
     <main class="max-w-5xl mx-auto px-4 sm:px-6 py-8">
 
         {{-- Page header --}}
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:1.5rem;flex-wrap:wrap;">
+        <div class="flex items-start justify-between gap-3 mb-6 flex-wrap">
             <div>
                 <h1 class="text-2xl font-bold text-slate-800">A1 Print Schedule</h1>
                 <p class="text-slate-500 text-sm mt-1">
@@ -21,24 +21,24 @@
                 </p>
             </div>
             <a href="{{ route('print.overview') }}"
-                style="background:#f1f5f9;color:#64748b;font-size:0.75rem;padding:5px 10px;border-radius:6px;border:1px solid #e2e8f0;display:inline-flex;align-items:center;gap:5px;text-decoration:none;white-space:nowrap;">
-                <svg style="width:12px;height:12px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                class="bg-slate-100 text-slate-500 text-xs px-2.5 py-1.5 rounded-md border border-slate-200 inline-flex items-center gap-1.5 no-underline whitespace-nowrap">
+                <svg class="w-3 h-3 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
                 </svg>
                 Overview
             </a>
             <a href="{{ route('print.archive') }}"
-                style="background:#f1f5f9;color:#64748b;font-size:0.75rem;padding:5px 10px;border-radius:6px;border:1px solid #e2e8f0;display:inline-flex;align-items:center;gap:5px;text-decoration:none;white-space:nowrap;">
-                <svg style="width:12px;height:12px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                class="bg-slate-100 text-slate-500 text-xs px-2.5 py-1.5 rounded-md border border-slate-200 inline-flex items-center gap-1.5 no-underline whitespace-nowrap">
+                <svg class="w-3 h-3 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>
                 </svg>
                 Archive
             </a>
             @can('admin')
             <a href="{{ route('admin.print-settings.index') }}"
-                style="background:#f1f5f9;color:#64748b;font-size:0.75rem;padding:5px 10px;border-radius:6px;border:1px solid #e2e8f0;display:inline-flex;align-items:center;gap:5px;text-decoration:none;white-space:nowrap;"
+                class="bg-slate-100 text-slate-500 text-xs px-2.5 py-1.5 rounded-md border border-slate-200 inline-flex items-center gap-1.5 no-underline whitespace-nowrap"
                 title="Print Schedule Settings">
-                <svg style="width:12px;height:12px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg class="w-3 h-3 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="3"/>
                     <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
                 </svg>
@@ -46,15 +46,15 @@
             </a>
             @endcan
             <button onclick="openManualModal()"
-                style="background:#16a34a;color:#fff;font-size:0.75rem;padding:5px 10px;border-radius:6px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;">
-                <svg style="width:12px;height:12px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                class="bg-green-600 text-white text-xs px-2.5 py-1.5 rounded-md border-0 cursor-pointer inline-flex items-center gap-1.5 whitespace-nowrap">
+                <svg class="w-3 h-3 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
                 </svg>
                 Manual Job
             </button>
             <button id="sync-btn" onclick="triggerSync()"
-                style="background:#1e293b;color:#fff;font-size:0.75rem;padding:5px 10px;border-radius:6px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;">
-                <svg id="sync-icon" style="width:12px;height:12px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                class="bg-slate-800 text-white text-xs px-2.5 py-1.5 rounded-md border-0 cursor-pointer inline-flex items-center gap-1.5 whitespace-nowrap">
+                <svg id="sync-icon" class="w-3 h-3 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
                     <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
                 </svg>
@@ -63,23 +63,23 @@
         </div>
 
         {{-- Search bar --}}
-        <div style="margin-bottom:1.25rem;position:relative;">
-            <svg style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:#94a3b8;pointer-events:none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <div class="mb-5 relative">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
             </svg>
             <input type="text" id="schedule-search"
                 placeholder="Search orders, customer refs, print data…"
                 oninput="filterJobs(this.value)"
                 autocomplete="off"
-                style="width:100%;padding:9px 36px 9px 36px;border:1px solid #e2e8f0;border-radius:0.75rem;font-size:0.875rem;color:#1e293b;background:#fff;outline:none;box-sizing:border-box;"
+                class="w-full pl-9 pr-9 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 bg-white outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100"
                 onfocus="this.style.borderColor='#e11d48';this.style.boxShadow='0 0 0 3px rgba(225,29,72,0.1)'"
                 onblur="this.style.borderColor='#e2e8f0';this.style.boxShadow='none'">
             <button id="search-clear-btn" onclick="clearSearch()"
-                style="display:none;position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#94a3b8;font-size:1.2rem;line-height:1;padding:2px;">&#215;</button>
+                style="display:none" class="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-0 cursor-pointer text-slate-400 text-xl leading-none p-0.5">&#215;</button>
         </div>
 
         {{-- Search results info (shown when searching) --}}
-        <div id="search-results-info" style="display:none;background:#f8fafc;border:1px solid #e2e8f0;border-radius:0.75rem;padding:8px 16px;margin-bottom:1rem;font-size:0.875rem;color:#64748b;"></div>
+        <div id="search-results-info" style="display:none" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 mb-4 text-sm text-slate-500"></div>
 
         {{-- Tab bar — two rows --}}
         @php
@@ -90,11 +90,11 @@
         <div class="mb-6 space-y-0">
             @foreach(['Planning' => $planningBoards, 'Production' => $productionBoards] as $rowLabel => $rowBoards)
                 <div>
-                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:0;">
-                        <span style="font-size:0.65rem;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:#94a3b8;white-space:nowrap;padding-bottom:2px;">{{ $rowLabel }}</span>
-                        <div style="flex:1;height:1px;background:#e2e8f0;"></div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[0.65rem] font-bold uppercase tracking-[0.07em] text-slate-400 whitespace-nowrap pb-0.5">{{ $rowLabel }}</span>
+                        <div class="flex-1 h-px bg-slate-200"></div>
                     </div>
-                    <div style="display:flex;flex-wrap:wrap;gap:2px;border-bottom:1px solid #e2e8f0;margin-bottom:4px;">
+                    <div class="flex flex-wrap gap-0.5 border-b border-slate-200 mb-1">
                         @foreach($rowBoards as $key => $label)
                             @php $isFirst = $key === $firstBoardKey; @endphp
                             <button
@@ -118,7 +118,7 @@
             <div id="pane-{{ $boardKey }}" class="board-pane {{ !$loop->first ? 'hidden' : '' }}">
 
                 {{-- Board heading shown during search --}}
-                <div id="search-board-label-{{ $boardKey }}" style="display:none;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.75rem;">
+                <div id="search-board-label-{{ $boardKey }}" style="display:none" class="text-[0.7rem] font-bold text-slate-400 uppercase tracking-widest mb-3">
                     {{ $boardLabel }}
                 </div>
 
@@ -129,7 +129,7 @@
                         $totalRemaining = $machineJobs->sum(fn($j) => $j->remaining_quantity);
                         $leadTime = $machineLeadTimes[$boardKey] ?? 0;
                     @endphp
-                    <div class="mb-4 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm" style="display:flex;flex-wrap:wrap;align-items:center;gap:4px 24px;" id="banner-{{ $boardKey }}">
+                    <div class="mb-4 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm flex flex-wrap items-center gap-x-6 gap-y-1" id="banner-{{ $boardKey }}">
                         <span class="font-medium text-blue-800">
                             <span class="job-count-{{ $boardKey }}">{{ $machineJobs->count() }}</span> job{{ $machineJobs->count() !== 1 ? 's' : '' }}
                         </span>
@@ -144,7 +144,7 @@
                 @endif
 
                 {{-- Sortable job list --}}
-                <div id="sortable-{{ $boardKey }}" style="display:flex;flex-direction:column;gap:16px;" data-board="{{ $boardKey }}">
+                <div id="sortable-{{ $boardKey }}" class="flex flex-col gap-4" data-board="{{ $boardKey }}">
 
                     @forelse($boardJobs[$boardKey] as $job)
                         @include('print-schedule._job-card', ['job' => $job, 'boards' => $boards, 'orderLineCounts' => $orderLineCounts])
@@ -162,61 +162,63 @@
                 {{-- Machine run history (today) --}}
                 @if(in_array($boardKey, $machines) && isset($machineHistory[$boardKey]) && $machineHistory[$boardKey]->count() > 0)
                     @php $history = $machineHistory[$boardKey]; @endphp
-                    <div style="margin-top:2rem;border-top:1px solid #e2e8f0;padding-top:1.25rem;">
+                    <div class="mt-8 border-t border-slate-200 pt-5">
                         <button onclick="this.nextElementSibling.classList.toggle('hidden');this.querySelector('svg').classList.toggle('rotate-180')"
-                            style="display:flex;align-items:center;gap:8px;font-size:0.8rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;background:none;border:none;cursor:pointer;padding:0;margin-bottom:0.75rem;">
-                            <svg style="width:14px;height:14px;transition:transform 0.2s;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            class="flex items-center gap-2 text-[0.8rem] font-bold text-slate-500 uppercase tracking-[0.05em] bg-transparent border-0 cursor-pointer p-0 mb-3">
+                            <svg class="w-3.5 h-3.5 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                                 <polyline points="6 9 12 15 18 9"/>
                             </svg>
                             Today's Run History ({{ $history->count() }} {{ Str::plural('run', $history->count()) }})
                         </button>
                         <div class="hidden">
-                            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
-                                <table style="width:100%;border-collapse:collapse;font-size:0.8rem;">
+                            <div class="bg-slate-50 border border-slate-200 rounded-xl overflow-hidden">
+                                <div class="overflow-x-auto">
+                                <table class="w-full border-collapse text-[0.8rem]">
                                     <thead>
-                                        <tr style="background:#f1f5f9;border-bottom:1px solid #e2e8f0;">
-                                            <th style="text-align:left;padding:8px 12px;color:#64748b;font-weight:600;">Time</th>
-                                            <th style="text-align:left;padding:8px 12px;color:#64748b;font-weight:600;">Job</th>
-                                            <th style="text-align:left;padding:8px 12px;color:#64748b;font-weight:600;">Operator</th>
-                                            <th style="text-align:right;padding:8px 12px;color:#64748b;font-weight:600;">Packs</th>
-                                            <th style="text-align:left;padding:8px 12px;color:#64748b;font-weight:600;">Reason</th>
+                                        <tr class="bg-slate-100 border-b border-slate-200">
+                                            <th class="text-left px-3 py-2 text-slate-500 font-semibold">Time</th>
+                                            <th class="text-left px-3 py-2 text-slate-500 font-semibold">Job</th>
+                                            <th class="text-left px-3 py-2 text-slate-500 font-semibold">Operator</th>
+                                            <th class="text-right px-3 py-2 text-slate-500 font-semibold">Packs</th>
+                                            <th class="text-left px-3 py-2 text-slate-500 font-semibold">Reason</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @foreach($history as $run)
-                                            <tr style="border-bottom:1px solid #f1f5f9;">
-                                                <td style="padding:8px 12px;color:#475569;white-space:nowrap;">
+                                            <tr class="border-b border-slate-100">
+                                                <td class="px-3 py-2 text-slate-600 whitespace-nowrap">
                                                     {{ $run->started_at->format('H:i') }} – {{ $run->ended_at->format('H:i') }}
-                                                    <span style="color:#94a3b8;font-size:0.72rem;display:block;">
+                                                    <span class="text-slate-400 text-[0.72rem] block">
                                                         {{ gmdate('H\h i\m', $run->ended_at->diffInSeconds($run->started_at)) }}
                                                     </span>
                                                 </td>
-                                                <td style="padding:8px 12px;">
-                                                    <span style="font-weight:600;color:#334155;">{{ $run->printJob?->customer_name ?? '—' }}</span>
+                                                <td class="px-3 py-2">
+                                                    <span class="font-semibold text-slate-700">{{ $run->printJob?->customer_name ?? '—' }}</span>
                                                     @if($run->printJob?->product_code)
-                                                        <span style="color:#94a3b8;display:block;font-size:0.72rem;">{{ $run->printJob->product_code }}</span>
+                                                        <span class="text-slate-400 block text-[0.72rem]">{{ $run->printJob->product_code }}</span>
                                                     @endif
                                                 </td>
-                                                <td style="padding:8px 12px;color:#475569;">{{ $run->user?->name ?? '—' }}</td>
-                                                <td style="padding:8px 12px;text-align:right;font-weight:600;color:#334155;">
+                                                <td class="px-3 py-2 text-slate-600">{{ $run->user?->name ?? '—' }}</td>
+                                                <td class="px-3 py-2 text-right font-semibold text-slate-700">
                                                     {{ $run->packs_produced !== null ? number_format($run->packs_produced) : '—' }}
                                                 </td>
-                                                <td style="padding:8px 12px;">
+                                                <td class="px-3 py-2">
                                                     @if($run->end_reason === 'complete')
-                                                        <span style="font-size:0.72rem;font-weight:700;background:#dcfce7;color:#15803d;padding:2px 7px;border-radius:9999px;">Complete</span>
+                                                        <span class="text-[0.72rem] font-bold bg-green-100 text-green-700 px-1.5 py-px rounded-full">Complete</span>
                                                     @elseif($run->end_reason === 'pause')
-                                                        <span style="font-size:0.72rem;font-weight:700;background:#fef3c7;color:#92400e;padding:2px 7px;border-radius:9999px;">Paused</span>
+                                                        <span class="text-[0.72rem] font-bold bg-amber-100 text-amber-800 px-1.5 py-px rounded-full">Paused</span>
                                                         @if($run->pause_reason)
-                                                            <span style="color:#94a3b8;display:block;font-size:0.72rem;margin-top:2px;">{{ $run->pause_reason }}</span>
+                                                            <span class="text-slate-400 block text-[0.72rem] mt-0.5">{{ $run->pause_reason }}</span>
                                                         @endif
                                                     @elseif($run->end_reason === 'handover')
-                                                        <span style="font-size:0.72rem;font-weight:700;background:#ede9fe;color:#5b21b6;padding:2px 7px;border-radius:9999px;">Handover</span>
+                                                        <span class="text-[0.72rem] font-bold bg-violet-100 text-violet-700 px-1.5 py-px rounded-full">Handover</span>
                                                     @endif
                                                 </td>
                                             </tr>
                                         @endforeach
                                     </tbody>
                                 </table>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -879,89 +881,80 @@
     </script>
 
     {{-- Add Manual Job Modal --}}
-    <div id="manual-modal" style="display:none;position:fixed;inset:0;z-index:50;align-items:center;justify-content:center;padding:1rem;">
-        <div style="position:absolute;inset:0;background:rgba(15,23,42,0.45);" onclick="closeManualModal()"></div>
-        <div style="position:relative;background:#fff;border-radius:14px;padding:1.5rem;width:100%;max-width:460px;box-shadow:0 20px 60px rgba(0,0,0,0.15);max-height:90vh;overflow-y:auto;">
-            <h2 style="font-size:1rem;font-weight:700;color:#0f172a;margin:0 0 1.25rem;">Add Manual Job</h2>
+    <div id="manual-modal" style="display:none" class="fixed inset-0 z-50 items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/45" onclick="closeManualModal()"></div>
+        <div class="relative bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+            <h2 class="text-base font-bold text-slate-900 mb-5">Add Manual Job</h2>
             <form id="manual-form">
                 @csrf
 
-                <div style="display:grid;grid-template-columns:1fr 2fr;gap:0.75rem;margin-bottom:1rem;">
+                <div class="grid grid-cols-[1fr_2fr] gap-3 mb-4">
                     <div>
-                        <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Product Code <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Product Code <span class="text-slate-400 font-normal">(optional)</span></label>
                         <input type="text" name="product_code" placeholder="e.g. A1-BLU380"
-                            style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
-                            onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                            class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-400">
                     </div>
                     <div>
-                        <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Product Description <span style="color:#dc2626;">*</span></label>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Product Description <span class="text-red-600">*</span></label>
                         <input type="text" id="manual-description" name="product_description" required placeholder="e.g. Metal Detectable Cable Ties"
-                            style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
-                            onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                            class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-400">
                     </div>
                 </div>
 
-                <div style="margin-bottom:1rem;">
-                    <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Print Data <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+                <div class="mb-4">
+                    <label class="block text-xs font-semibold text-gray-700 mb-1.5">Print Data <span class="text-slate-400 font-normal">(optional)</span></label>
                     <textarea name="line_comment" rows="3" placeholder="e.g. PRINTED  LALLEMAND&#10;(Print 35mm FROM LOCKING HEAD)&#10;BLOCK  TYPE"
-                        style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.8rem;font-family:monospace;box-sizing:border-box;outline:none;resize:vertical;"
-                        onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'"></textarea>
+                        class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[0.8rem] font-mono outline-none resize-y focus:border-blue-400"></textarea>
                 </div>
 
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem;">
+                <div class="grid grid-cols-2 gap-3 mb-4">
                     <div>
-                        <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Customer <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Customer <span class="text-slate-400 font-normal">(optional)</span></label>
                         <input type="text" name="customer_name" placeholder="Customer name"
-                            style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
-                            onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                            class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-400">
                     </div>
                     <div>
-                        <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Ref <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Ref <span class="text-slate-400 font-normal">(optional)</span></label>
                         <input type="text" name="customer_ref" placeholder="Customer ref"
-                            style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
-                            onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                            class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-400">
                     </div>
                 </div>
 
-                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem;margin-bottom:1.5rem;">
+                <div class="grid grid-cols-3 gap-3 mb-6">
                     <div>
-                        <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Order No. <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Order No. <span class="text-slate-400 font-normal">(optional)</span></label>
                         <input type="text" name="order_number" placeholder="e.g. SO-1234"
-                            style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
-                            onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                            class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-400">
                     </div>
                     <div>
-                        <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Quantity <span style="color:#dc2626;">*</span></label>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Quantity <span class="text-red-600">*</span></label>
                         <input type="number" name="quantity" required min="1" placeholder="0"
-                            style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
-                            onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                            class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-400">
                     </div>
                     <div>
-                        <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Delivery Date <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Delivery Date <span class="text-slate-400 font-normal">(optional)</span></label>
                         <input type="date" name="required_date"
-                            style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
-                            onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                            class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-400">
                     </div>
                 </div>
 
-                <div style="margin-bottom:1.5rem;">
-                    <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Board <span style="color:#dc2626;">*</span></label>
+                <div class="mb-6">
+                    <label class="block text-xs font-semibold text-gray-700 mb-1.5">Board <span class="text-red-600">*</span></label>
                     <select name="board" required
-                        style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;background:#fff;box-sizing:border-box;outline:none;"
-                        onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                        class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white outline-none focus:border-blue-400">
                         @foreach(App\Models\PrintJob::BOARDS as $key => $label)
                         <option value="{{ $key }}">{{ $label }}</option>
                         @endforeach
                     </select>
                 </div>
 
-                <div style="display:flex;gap:0.5rem;">
+                <div class="flex gap-2">
                     <button type="button" onclick="closeManualModal()"
-                        style="flex:1;padding:0.5rem;border:1px solid #e2e8f0;background:#f8fafc;color:#374151;font-size:0.875rem;font-weight:500;border-radius:8px;cursor:pointer;">
+                        class="flex-1 py-2 border border-slate-200 bg-slate-50 text-gray-700 text-sm font-medium rounded-lg cursor-pointer">
                         Cancel
                     </button>
                     <button type="submit" id="manual-submit"
-                        style="flex:2;padding:0.5rem;background:#16a34a;color:#fff;font-size:0.875rem;font-weight:600;border-radius:8px;border:none;cursor:pointer;">
+                        class="flex-[2] py-2 bg-green-600 text-white text-sm font-semibold rounded-lg border-0 cursor-pointer">
                         Add Job
                     </button>
                 </div>
@@ -1034,77 +1027,69 @@
     </script>
 
     {{-- Edit Manual Job Modal --}}
-    <div id="edit-manual-modal" style="display:none;position:fixed;inset:0;z-index:50;align-items:center;justify-content:center;padding:1rem;">
-        <div style="position:absolute;inset:0;background:rgba(15,23,42,0.45);" onclick="closeEditManualModal()"></div>
-        <div style="position:relative;background:#fff;border-radius:14px;padding:1.5rem;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,0.15);max-height:90vh;overflow-y:auto;">
-            <h2 style="font-size:1rem;font-weight:700;color:#0f172a;margin:0 0 1.25rem;">Edit Manual Job</h2>
+    <div id="edit-manual-modal" style="display:none" class="fixed inset-0 z-50 items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/45" onclick="closeEditManualModal()"></div>
+        <div class="relative bg-white rounded-2xl p-6 w-full max-w-[480px] shadow-2xl max-h-[90vh] overflow-y-auto">
+            <h2 class="text-base font-bold text-slate-900 mb-5">Edit Manual Job</h2>
             <form id="edit-manual-form">
 
-                <div style="display:grid;grid-template-columns:1fr 2fr;gap:0.75rem;margin-bottom:1rem;">
+                <div class="grid grid-cols-[1fr_2fr] gap-3 mb-4">
                     <div>
-                        <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Product Code <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Product Code <span class="text-slate-400 font-normal">(optional)</span></label>
                         <input type="text" id="edit-product-code" name="product_code" placeholder="e.g. A1-BLU380"
-                            style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
-                            onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                            class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-400">
                     </div>
                     <div>
-                        <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Product Description <span style="color:#dc2626;">*</span></label>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Product Description <span class="text-red-600">*</span></label>
                         <input type="text" id="edit-product-description" name="product_description" required placeholder="e.g. Metal Detectable Cable Ties"
-                            style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
-                            onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                            class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-400">
                     </div>
                 </div>
 
-                <div style="margin-bottom:1rem;">
-                    <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Print Data <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+                <div class="mb-4">
+                    <label class="block text-xs font-semibold text-gray-700 mb-1.5">Print Data <span class="text-slate-400 font-normal">(optional)</span></label>
                     <textarea id="edit-line-comment" name="line_comment" rows="3" placeholder="e.g. PRINTED  LALLEMAND&#10;(Print 35mm FROM LOCKING HEAD)&#10;BLOCK  TYPE"
-                        style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.8rem;font-family:monospace;box-sizing:border-box;outline:none;resize:vertical;"
-                        onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'"></textarea>
+                        class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[0.8rem] font-mono outline-none resize-y focus:border-blue-400"></textarea>
                 </div>
 
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem;">
+                <div class="grid grid-cols-2 gap-3 mb-4">
                     <div>
-                        <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Customer <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Customer <span class="text-slate-400 font-normal">(optional)</span></label>
                         <input type="text" id="edit-customer-name" name="customer_name" placeholder="Customer name"
-                            style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
-                            onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                            class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-400">
                     </div>
                     <div>
-                        <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Ref <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Ref <span class="text-slate-400 font-normal">(optional)</span></label>
                         <input type="text" id="edit-customer-ref" name="customer_ref" placeholder="Customer ref"
-                            style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
-                            onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                            class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-400">
                     </div>
                 </div>
 
-                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem;margin-bottom:1.5rem;">
+                <div class="grid grid-cols-3 gap-3 mb-6">
                     <div>
-                        <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Order No. <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Order No. <span class="text-slate-400 font-normal">(optional)</span></label>
                         <input type="text" id="edit-order-number" name="order_number" placeholder="e.g. SO-1234"
-                            style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
-                            onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                            class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-400">
                     </div>
                     <div>
-                        <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Quantity <span style="color:#dc2626;">*</span></label>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Quantity <span class="text-red-600">*</span></label>
                         <input type="number" id="edit-quantity" name="order_quantity" required min="1" placeholder="0"
-                            style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
-                            onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                            class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-400">
                     </div>
                     <div>
-                        <label style="display:block;font-size:0.75rem;font-weight:600;color:#374151;margin-bottom:5px;">Delivery Date <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Delivery Date <span class="text-slate-400 font-normal">(optional)</span></label>
                         <input type="date" id="edit-required-date" name="required_date"
-                            style="width:100%;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:8px;font-size:0.875rem;box-sizing:border-box;outline:none;"
-                            onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e2e8f0'">
+                            class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-400">
                     </div>
                 </div>
 
-                <div style="display:flex;gap:0.5rem;">
+                <div class="flex gap-2">
                     <button type="button" onclick="closeEditManualModal()"
-                        style="flex:1;padding:0.5rem;border:1px solid #e2e8f0;background:#f8fafc;color:#374151;font-size:0.875rem;font-weight:500;border-radius:8px;cursor:pointer;">
+                        class="flex-1 py-2 border border-slate-200 bg-slate-50 text-gray-700 text-sm font-medium rounded-lg cursor-pointer">
                         Cancel
                     </button>
                     <button type="submit" id="edit-manual-submit"
-                        style="flex:2;padding:0.5rem;background:#1d4ed8;color:#fff;font-size:0.875rem;font-weight:600;border-radius:8px;border:none;cursor:pointer;">
+                        class="flex-[2] py-2 bg-blue-700 text-white text-sm font-semibold rounded-lg border-0 cursor-pointer">
                         Save Changes
                     </button>
                 </div>
@@ -1161,9 +1146,9 @@
     </script>
 
 {{-- Label download modal --}}
-<div id="label-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center;">
-    <div style="background:#fff;border-radius:1rem;padding:1.5rem;width:340px;max-width:calc(100vw - 2rem);box-shadow:0 20px 60px rgba(0,0,0,0.25);">
-        <h3 style="font-size:1rem;font-weight:700;color:#1e293b;margin:0 0 1.25rem;">Download Labels</h3>
+<div id="label-modal" style="display:none" class="fixed inset-0 bg-black/45 z-[9999] items-center justify-center">
+    <div class="bg-white rounded-2xl p-6 w-[340px] max-w-[calc(100vw-2rem)] shadow-2xl">
+        <h3 class="text-base font-bold text-slate-800 mb-5">Download Labels</h3>
         <input type="hidden" id="lm-job-id">
         <input type="hidden" id="lm-num-start">
         <input type="hidden" id="lm-num-end">
@@ -1171,46 +1156,46 @@
         <input type="hidden" id="lm-universeal" value="0">
 
         {{-- Universeal notice (shown instead of branding options for Universeal jobs) --}}
-        <div id="lm-universeal-notice" style="display:none;margin-bottom:1rem;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:9px 12px;font-size:0.8125rem;color:#1d4ed8;line-height:1.5;">
+        <div id="lm-universeal-notice" style="display:none" class="mb-4 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2.5 text-[0.8125rem] text-blue-700 leading-snug">
             Universeal format — 4 columns, each label printed twice
         </div>
 
         {{-- Label name override (Universeal only) --}}
-        <div id="lm-label-name-row" style="display:none;margin-bottom:1rem;">
-            <label for="lm-label-name" style="font-size:0.8125rem;font-weight:500;color:#475569;display:block;margin-bottom:6px;">Name on label</label>
+        <div id="lm-label-name-row" style="display:none" class="mb-4">
+            <label for="lm-label-name" class="text-[0.8125rem] font-medium text-slate-600 block mb-1.5">Name on label</label>
             <input type="text" id="lm-label-name" maxlength="40" placeholder="UNIVERSEAL"
-                style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-size:0.875rem;color:#1e293b;box-sizing:border-box;outline:none;text-transform:uppercase;">
+                class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 outline-none uppercase">
         </div>
 
         {{-- Branding (hidden for Universeal) --}}
-        <div id="lm-brand-row" style="margin-bottom:1rem;">
-            <p style="font-size:0.8125rem;font-weight:500;color:#475569;margin:0 0 8px;">Branding</p>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-                <label style="display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-size:0.875rem;color:#1e293b;padding:8px;border:2px solid #1e293b;border-radius:8px;background:#f8fafc;" id="lm-opt-branded">
+        <div id="lm-brand-row" class="mb-4">
+            <p class="text-[0.8125rem] font-medium text-slate-600 mb-2">Branding</p>
+            <div class="grid grid-cols-2 gap-2">
+                <label class="flex items-center justify-center gap-1.5 cursor-pointer text-sm text-slate-800 p-2 border-2 border-slate-800 rounded-lg bg-slate-50" id="lm-opt-branded">
                     <input type="radio" name="lm-branded" value="1" checked onchange="lmUpdate()"> Branded
                 </label>
-                <label style="display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-size:0.875rem;color:#64748b;padding:8px;border:2px solid #e2e8f0;border-radius:8px;" id="lm-opt-unbranded">
+                <label class="flex items-center justify-center gap-1.5 cursor-pointer text-sm text-slate-500 p-2 border-2 border-slate-200 rounded-lg" id="lm-opt-unbranded">
                     <input type="radio" name="lm-branded" value="0" onchange="lmUpdate()"> Unbranded
                 </label>
             </div>
         </div>
 
-        <div id="lm-pack-row" style="margin-bottom:1rem;">
-            <label for="lm-pack-size" style="font-size:0.8125rem;font-weight:500;color:#475569;display:block;margin-bottom:6px;">Products per pack</label>
+        <div id="lm-pack-row" class="mb-4">
+            <label for="lm-pack-size" class="text-[0.8125rem] font-medium text-slate-600 block mb-1.5">Products per pack</label>
             <input type="number" id="lm-pack-size" min="1" value="100"
                 oninput="lmUpdate()"
-                style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-size:0.875rem;color:#1e293b;box-sizing:border-box;outline:none;">
+                class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 outline-none">
         </div>
 
-        <div id="lm-info" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:9px 12px;font-size:0.8125rem;color:#475569;margin-bottom:1.25rem;line-height:1.4;"></div>
+        <div id="lm-info" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-[0.8125rem] text-slate-600 mb-5 leading-snug"></div>
 
-        <div style="display:flex;gap:10px;">
+        <div class="flex gap-2.5">
             <button onclick="document.getElementById('label-modal').style.display='none'"
-                style="flex:1;padding:9px 0;border:1px solid #e2e8f0;border-radius:8px;background:#fff;color:#64748b;font-size:0.875rem;cursor:pointer;">
+                class="flex-1 py-2.5 border border-slate-200 rounded-lg bg-white text-slate-500 text-sm cursor-pointer">
                 Cancel
             </button>
             <button onclick="lmDownload()"
-                style="flex:1;padding:9px 0;border:none;border-radius:8px;background:#1e293b;color:#fff;font-size:0.875rem;font-weight:600;cursor:pointer;">
+                class="flex-1 py-2.5 border-0 rounded-lg bg-slate-800 text-white text-sm font-semibold cursor-pointer">
                 Download PDF
             </button>
         </div>
