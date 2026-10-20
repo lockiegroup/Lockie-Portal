@@ -1,91 +1,91 @@
 <x-layout title="Amazon Profit Report — Lockie Portal">
 
-<main style="max-width:1400px;margin:0 auto;padding:2rem 1.5rem;">
+<main class="max-w-[1400px] mx-auto px-4 sm:px-6 py-8">
 
     {{-- Header --}}
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:1.5rem;">
+    <div class="flex items-start justify-between flex-wrap gap-3 mb-6">
         <div>
-            <h1 style="font-size:1.5rem;font-weight:700;color:#1e293b;margin:0;">Amazon Profit Report</h1>
-            <p style="font-size:0.875rem;color:#64748b;margin:0.25rem 0 0;">By product type and fulfilment channel.</p>
+            <h1 class="text-2xl font-bold text-slate-800 m-0">Amazon Profit Report</h1>
+            <p class="text-sm text-slate-500 mt-1 m-0">By product type and fulfilment channel.</p>
         </div>
-        <a href="{{ route('amazon.index') }}" style="background:#f1f5f9;color:#475569;border-radius:0.5rem;padding:0.5rem 1rem;font-size:0.875rem;font-weight:600;text-decoration:none;">
+        <a href="{{ route('amazon.index') }}" class="bg-slate-100 text-slate-600 rounded-lg px-4 py-2 text-sm font-semibold no-underline hover:bg-slate-200">
             ← Back
         </a>
     </div>
 
     {{-- Filters --}}
-    <div style="background:#fff;border-radius:0.75rem;box-shadow:0 1px 4px rgba(0,0,0,0.07);padding:1rem 1.25rem;margin-bottom:1.25rem;display:flex;align-items:center;flex-wrap:wrap;gap:1rem;">
-        <div style="display:flex;align-items:center;gap:0.5rem;">
-            <label style="font-size:0.875rem;color:#64748b;font-weight:500;">From:</label>
-            <input type="date" id="filter-start" style="border:1px solid #e2e8f0;border-radius:0.375rem;padding:0.25rem 0.5rem;font-size:0.875rem;color:#334155;">
+    <div class="bg-white rounded-xl shadow-sm px-5 py-4 mb-5 flex items-center flex-wrap gap-4">
+        <div class="flex items-center gap-2">
+            <label class="text-sm text-slate-500 font-medium">From:</label>
+            <input type="date" id="filter-start" class="border border-slate-200 rounded-md px-2 py-1 text-sm text-slate-700">
         </div>
-        <div style="display:flex;align-items:center;gap:0.5rem;">
-            <label style="font-size:0.875rem;color:#64748b;font-weight:500;">To:</label>
-            <input type="date" id="filter-end" style="border:1px solid #e2e8f0;border-radius:0.375rem;padding:0.25rem 0.5rem;font-size:0.875rem;color:#334155;">
+        <div class="flex items-center gap-2">
+            <label class="text-sm text-slate-500 font-medium">To:</label>
+            <input type="date" id="filter-end" class="border border-slate-200 rounded-md px-2 py-1 text-sm text-slate-700">
         </div>
-        <div style="display:flex;align-items:center;gap:0.5rem;">
-            <label style="font-size:0.875rem;color:#64748b;font-weight:500;">Channel:</label>
-            <select id="filter-channel" style="border:1px solid #e2e8f0;border-radius:0.375rem;padding:0.25rem 0.5rem;font-size:0.875rem;color:#334155;">
+        <div class="flex items-center gap-2">
+            <label class="text-sm text-slate-500 font-medium">Channel:</label>
+            <select id="filter-channel" class="border border-slate-200 rounded-md px-2 py-1 text-sm text-slate-700">
                 <option value="">FBM + FBA</option>
                 <option value="FBM">FBM only</option>
                 <option value="FBA">FBA only</option>
             </select>
         </div>
-        <button onclick="loadReport()" style="background:#1e293b;color:#fff;border:none;border-radius:0.5rem;padding:0.375rem 0.875rem;font-size:0.875rem;cursor:pointer;font-weight:600;">
+        <button onclick="loadReport()" class="bg-slate-800 text-white border-none rounded-lg px-3.5 py-1.5 text-sm cursor-pointer font-semibold hover:bg-slate-700">
             Apply
         </button>
-        <div style="flex:1;"></div>
-        <button onclick="clearFilters()" style="background:#f1f5f9;color:#475569;border:none;border-radius:0.375rem;padding:0.375rem 0.875rem;font-size:0.8rem;cursor:pointer;font-weight:500;">
+        <div class="flex-1"></div>
+        <button onclick="clearFilters()" class="bg-slate-100 text-slate-600 border-none rounded-md px-3.5 py-1.5 text-[0.8rem] cursor-pointer font-medium hover:bg-slate-200">
             Clear
         </button>
     </div>
 
     {{-- Summary Cards --}}
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.5rem;">
-        <div style="background:#fff;border-radius:0.75rem;box-shadow:0 1px 4px rgba(0,0,0,0.07);padding:1.25rem;">
-            <p style="font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 0.5rem;">Revenue</p>
-            <p id="card-revenue" style="font-size:1.5rem;font-weight:700;color:#1e293b;margin:0;">—</p>
+    <div class="grid gap-4 mb-6" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));">
+        <div class="bg-white rounded-xl shadow-sm px-5 py-5">
+            <p class="text-[0.75rem] font-semibold text-slate-500 uppercase tracking-wide mb-2 m-0">Revenue</p>
+            <p id="card-revenue" class="text-2xl font-bold text-slate-800 m-0">—</p>
         </div>
-        <div style="background:#fff;border-radius:0.75rem;box-shadow:0 1px 4px rgba(0,0,0,0.07);padding:1.25rem;">
-            <p style="font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 0.5rem;">Gross Profit</p>
-            <p id="card-profit" style="font-size:1.5rem;font-weight:700;color:#1e293b;margin:0;">—</p>
+        <div class="bg-white rounded-xl shadow-sm px-5 py-5">
+            <p class="text-[0.75rem] font-semibold text-slate-500 uppercase tracking-wide mb-2 m-0">Gross Profit</p>
+            <p id="card-profit" class="text-2xl font-bold text-slate-800 m-0">—</p>
         </div>
-        <div style="background:#fff;border-radius:0.75rem;box-shadow:0 1px 4px rgba(0,0,0,0.07);padding:1.25rem;">
-            <p style="font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 0.5rem;">Margin %</p>
-            <p id="card-margin" style="font-size:1.5rem;font-weight:700;color:#1e293b;margin:0;">—</p>
+        <div class="bg-white rounded-xl shadow-sm px-5 py-5">
+            <p class="text-[0.75rem] font-semibold text-slate-500 uppercase tracking-wide mb-2 m-0">Margin %</p>
+            <p id="card-margin" class="text-2xl font-bold text-slate-800 m-0">—</p>
         </div>
-        <div style="background:#fff;border-radius:0.75rem;box-shadow:0 1px 4px rgba(0,0,0,0.07);padding:1.25rem;">
-            <p style="font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 0.5rem;">Ad Spend (net)</p>
-            <p id="card-adspend" style="font-size:1.5rem;font-weight:700;color:#1e293b;margin:0;">—</p>
+        <div class="bg-white rounded-xl shadow-sm px-5 py-5">
+            <p class="text-[0.75rem] font-semibold text-slate-500 uppercase tracking-wide mb-2 m-0">Ad Spend (net)</p>
+            <p id="card-adspend" class="text-2xl font-bold text-slate-800 m-0">—</p>
         </div>
-        <div style="background:#fff;border-radius:0.75rem;box-shadow:0 1px 4px rgba(0,0,0,0.07);padding:1.25rem;">
-            <p style="font-size:0.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 0.5rem;">ROAS</p>
-            <p id="card-roas" style="font-size:1.5rem;font-weight:700;color:#1e293b;margin:0;">—</p>
+        <div class="bg-white rounded-xl shadow-sm px-5 py-5">
+            <p class="text-[0.75rem] font-semibold text-slate-500 uppercase tracking-wide mb-2 m-0">ROAS</p>
+            <p id="card-roas" class="text-2xl font-bold text-slate-800 m-0">—</p>
         </div>
     </div>
 
     {{-- Breakdown Table --}}
-    <div style="background:#fff;border-radius:0.75rem;box-shadow:0 1px 4px rgba(0,0,0,0.07);overflow:hidden;">
-        <div style="padding:1rem 1.25rem;border-bottom:1px solid #f1f5f9;">
-            <h2 style="font-size:1rem;font-weight:700;color:#1e293b;margin:0;">By Product Type</h2>
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-100">
+            <h2 class="text-base font-bold text-slate-800 m-0">By Product Type</h2>
         </div>
-        <div style="overflow-x:auto;">
-            <table style="border-collapse:collapse;width:100%;font-size:0.8125rem;">
+        <div class="overflow-x-auto">
+            <table class="border-collapse w-full text-[0.8125rem]">
                 <thead>
-                    <tr style="background:#f8fafc;">
-                        <th style="text-align:left;padding:0.625rem 1rem;font-weight:700;color:#334155;border-bottom:2px solid #e2e8f0;white-space:nowrap;">Product Type</th>
-                        <th style="text-align:center;padding:0.625rem 1rem;font-weight:700;color:#334155;border-bottom:2px solid #e2e8f0;white-space:nowrap;">Channel</th>
-                        <th style="text-align:right;padding:0.625rem 1rem;font-weight:700;color:#334155;border-bottom:2px solid #e2e8f0;white-space:nowrap;">Revenue</th>
-                        <th style="text-align:right;padding:0.625rem 1rem;font-weight:700;color:#334155;border-bottom:2px solid #e2e8f0;white-space:nowrap;">Returns</th>
-                        <th style="text-align:right;padding:0.625rem 1rem;font-weight:700;color:#334155;border-bottom:2px solid #e2e8f0;white-space:nowrap;">Referral Fees</th>
-                        <th style="text-align:right;padding:0.625rem 1rem;font-weight:700;color:#334155;border-bottom:2px solid #e2e8f0;white-space:nowrap;">FBA Fees</th>
-                        <th style="text-align:right;padding:0.625rem 1rem;font-weight:700;color:#334155;border-bottom:2px solid #e2e8f0;white-space:nowrap;">Ad Spend</th>
-                        <th style="text-align:right;padding:0.625rem 1rem;font-weight:700;color:#334155;border-bottom:2px solid #e2e8f0;white-space:nowrap;">Gross Profit</th>
-                        <th style="text-align:right;padding:0.625rem 1rem;font-weight:700;color:#334155;border-bottom:2px solid #e2e8f0;white-space:nowrap;">Margin %</th>
+                    <tr class="bg-slate-50">
+                        <th class="text-left px-4 py-2.5 font-bold text-slate-700 border-b-2 border-slate-200 whitespace-nowrap">Product Type</th>
+                        <th class="text-center px-4 py-2.5 font-bold text-slate-700 border-b-2 border-slate-200 whitespace-nowrap">Channel</th>
+                        <th class="text-right px-4 py-2.5 font-bold text-slate-700 border-b-2 border-slate-200 whitespace-nowrap">Revenue</th>
+                        <th class="text-right px-4 py-2.5 font-bold text-slate-700 border-b-2 border-slate-200 whitespace-nowrap">Returns</th>
+                        <th class="text-right px-4 py-2.5 font-bold text-slate-700 border-b-2 border-slate-200 whitespace-nowrap">Referral Fees</th>
+                        <th class="text-right px-4 py-2.5 font-bold text-slate-700 border-b-2 border-slate-200 whitespace-nowrap">FBA Fees</th>
+                        <th class="text-right px-4 py-2.5 font-bold text-slate-700 border-b-2 border-slate-200 whitespace-nowrap">Ad Spend</th>
+                        <th class="text-right px-4 py-2.5 font-bold text-slate-700 border-b-2 border-slate-200 whitespace-nowrap">Gross Profit</th>
+                        <th class="text-right px-4 py-2.5 font-bold text-slate-700 border-b-2 border-slate-200 whitespace-nowrap">Margin %</th>
                     </tr>
                 </thead>
                 <tbody id="profit-body">
-                    <tr><td colspan="9" style="text-align:center;padding:2rem;color:#94a3b8;font-size:0.875rem;">Loading…</td></tr>
+                    <tr><td colspan="9" class="text-center px-4 py-8 text-slate-400 text-sm">Loading…</td></tr>
                 </tbody>
             </table>
         </div>
