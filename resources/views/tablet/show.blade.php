@@ -801,34 +801,34 @@
      ════════════════════════════════════════════ --}}
 @if($operator)
 <div class="modal-backdrop" id="switch-modal">
-    <div class="modal" style="max-width:480px;">
+    <div class="modal max-w-[480px]">
         <h3>⇄ Switch Machine</h3>
 
-        <div id="switch-warning" style="display:none;background:#431407;border:1px solid #ea580c;border-radius:10px;padding:12px 14px;margin-bottom:20px;color:#fed7aa;font-size:0.9rem;">
+        <div id="switch-warning" style="display:none;" class="bg-[#431407] border border-orange-600 rounded-[10px] px-3.5 py-3 mb-5 text-orange-200 text-[0.9rem]">
             <strong>⚠️ A job is currently running.</strong><br>
             Please <strong>pause or end</strong> the current job before switching machines.
         </div>
 
-        <p style="color:#64748b;font-size:0.875rem;margin-bottom:20px;">Select the machine you want to move to:</p>
+        <p class="text-slate-500 text-[0.875rem] mb-5">Select the machine you want to move to:</p>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="grid grid-cols-2 gap-3">
             @foreach(\App\Models\PrintJob::MACHINES as $m)
                 @if($m !== $machine)
                     <a href="{{ route('tablet.show', $m) }}"
                         class="machine-switch-btn btn btn-ghost btn-lg"
-                        style="text-decoration:none;display:flex;align-items:center;justify-content:center;font-size:1rem;">
+                        class="no-underline flex items-center justify-center text-[1rem]">
                         {{ ucwords(str_replace('_', ' ', $m)) }}
                     </a>
                 @else
-                    <div style="display:flex;align-items:center;justify-content:center;height:52px;border-radius:10px;border:2px solid #334155;color:#475569;font-size:1rem;font-weight:600;background:#0f172a;opacity:0.5;">
+                    <div class="flex items-center justify-center h-[52px] rounded-[10px] border-2 border-slate-700 text-slate-600 text-[1rem] font-semibold bg-[#0f172a] opacity-50">
                         {{ ucwords(str_replace('_', ' ', $m)) }} ← here
                     </div>
                 @endif
             @endforeach
         </div>
 
-        <div class="modal-actions" style="margin-top:20px;">
-            <button type="button" class="btn btn-ghost btn-md" onclick="closeModal('switch-modal')" style="flex:none;">Cancel</button>
+        <div class="modal-actions mt-5">
+            <button type="button" class="btn btn-ghost btn-md flex-none" onclick="closeModal('switch-modal')">Cancel</button>
         </div>
     </div>
 </div>
@@ -838,8 +838,8 @@
      UPDATE BANNER (real-time poll detected change)
      ════════════════════════════════════════════ --}}
 @if($operator)
-<div id="update-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:200;background:#0284c7;color:#fff;padding:14px 24px;align-items:center;justify-content:center;gap:10px;font-weight:600;font-size:1rem;">
-    <svg style="width:18px;height:18px;animation:spin 1s linear infinite;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+<div id="update-banner" style="display:none;" class="fixed top-0 left-0 right-0 z-[200] bg-sky-600 text-white px-6 py-3.5 flex items-center justify-center gap-2.5 font-semibold text-[1rem]">
+    <svg style="animation:spin 1s linear infinite;" class="w-[18px] h-[18px] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
         <path d="M21 12a9 9 0 1 1-9-9"/><path d="M21 3v4h-4"/>
     </svg>
     Job schedule updated — refreshing…
@@ -852,10 +852,10 @@
      ════════════════════════════════════════════ --}}
 @if($operator)
 <div class="modal-backdrop" id="reminder-modal">
-    <div class="modal" style="border-color:#d97706;">
-        <h3 style="color:#fbbf24;">⏱ Progress Update Due</h3>
-        <p id="reminder-job-name" style="color:#94a3b8;margin-bottom:8px;font-size:0.9rem;"></p>
-        <p style="color:#64748b;font-size:0.85rem;margin-bottom:20px;">
+    <div class="modal border-amber-600">
+        <h3 class="text-amber-400">⏱ Progress Update Due</h3>
+        <p id="reminder-job-name" class="text-slate-400 mb-2 text-[0.9rem]"></p>
+        <p class="text-slate-500 text-[0.85rem] mb-5">
             It's been 2 hours since the last update. Please log the current packs count.
         </p>
         <form id="reminder-form" method="POST">
@@ -863,7 +863,7 @@
             <div class="modal-field">
                 <label>Packs produced so far</label>
                 <input type="number" name="progress_packs" min="0" placeholder="0" inputmode="numeric" required
-                    style="font-size:2rem;font-weight:700;text-align:center;padding:16px;">
+                    class="text-[2rem] font-bold text-center p-4">
             </div>
             <div class="modal-actions">
                 <button type="button" class="btn btn-ghost btn-md"
@@ -887,35 +887,35 @@
             <div class="modal-field">
                 <label>Packs produced so far</label>
                 <input type="number" id="pause-packs-input" name="packs_produced" min="0" placeholder="0" inputmode="numeric">
-                <div id="pause-packs-hint" style="font-size:0.75rem;color:#64748b;margin-top:4px;display:none;">
-                    Previously recorded: <strong id="pause-prev-packs" style="color:#94a3b8;">0</strong> packs
+                <div id="pause-packs-hint" style="display:none;" class="text-[0.75rem] text-slate-500 mt-1">
+                    Previously recorded: <strong id="pause-prev-packs" class="text-slate-400">0</strong> packs
                 </div>
-                <div id="pause-packs-error" style="display:none;color:#f87171;font-size:0.82rem;margin-top:6px;">Please enter the total packs produced so far.</div>
+                <div id="pause-packs-error" style="display:none;" class="text-red-400 text-[0.82rem] mt-1.5">Please enter the total packs produced so far.</div>
             </div>
             <div class="modal-field">
-                <label>Reason for pausing <span style="color:#f59e0b;">*</span></label>
+                <label>Reason for pausing <span class="text-amber-500">*</span></label>
 
-                <div style="font-size:0.78rem;color:#64748b;margin-bottom:6px;margin-top:4px;text-transform:uppercase;letter-spacing:0.05em;">Planned stop — doesn't count toward target</div>
-                <div class="reason-buttons" style="margin-bottom:12px;">
+                <div class="text-[0.78rem] text-slate-500 mb-1.5 mt-1 uppercase tracking-wider">Planned stop — doesn't count toward target</div>
+                <div class="reason-buttons mb-3">
                     <div class="reason-btn" onclick="selectPauseType(this,'dinner')">Dinner</div>
                     <div class="reason-btn" onclick="selectPauseType(this,'away')">Away</div>
                     <div class="reason-btn" onclick="selectPauseType(this,'end_of_shift')">End of Shift</div>
                 </div>
 
-                <div style="font-size:0.78rem;color:#fca5a5;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em;">Machine fault — still counts toward target</div>
+                <div class="text-[0.78rem] text-red-300 mb-1.5 uppercase tracking-wider">Machine fault — still counts toward target</div>
                 <div class="reason-buttons">
                     <div class="reason-btn reason-btn-fault" onclick="selectPauseType(this,'breakdown')">Breakdown</div>
                 </div>
 
-                <div id="breakdown-reason-wrap" style="display:none;margin-top:10px;">
-                    <label style="display:block;font-size:0.82rem;color:#94a3b8;margin-bottom:4px;">Describe the breakdown <span style="color:#ef4444;">*</span></label>
+                <div id="breakdown-reason-wrap" style="display:none;" class="mt-2.5">
+                    <label class="block text-[0.82rem] text-slate-400 mb-1">Describe the breakdown <span class="text-red-500">*</span></label>
                     <textarea name="pause_reason" id="pause-breakdown-reason" rows="3"
                         placeholder="What went wrong?"
-                        style="width:100%;background:#0f172a;border:2px solid #334155;border-radius:10px;padding:10px 14px;color:#f1f5f9;font-size:0.9rem;outline:none;resize:none;box-sizing:border-box;"></textarea>
-                    <div id="pause-breakdown-error" style="display:none;color:#f87171;font-size:0.82rem;margin-top:4px;">Please describe the breakdown.</div>
+                        class="w-full bg-[#0f172a] border-2 border-slate-700 rounded-[10px] px-3.5 py-2.5 text-slate-100 text-[0.9rem] outline-none resize-none box-border"></textarea>
+                    <div id="pause-breakdown-error" style="display:none;" class="text-red-400 text-[0.82rem] mt-1">Please describe the breakdown.</div>
                 </div>
 
-                <div id="pause-reason-error" style="display:none;color:#f87171;font-size:0.82rem;margin-top:8px;">Please select a reason before pausing.</div>
+                <div id="pause-reason-error" style="display:none;" class="text-red-400 text-[0.82rem] mt-2">Please select a reason before pausing.</div>
             </div>
             <div class="modal-actions">
                 <button type="button" class="btn btn-ghost btn-md" onclick="closeModal('pause-modal')">Cancel</button>
@@ -936,17 +936,17 @@
             <input type="hidden" name="fully_complete" id="fully-complete-input" value="0">
             <div class="modal-field">
                 <label>Total packs done so far</label>
-                <div style="display:flex;gap:8px;align-items:center;">
-                    <input type="number" id="end-packs-input" name="packs_produced" min="0" placeholder="0" inputmode="numeric" oninput="updateEndRemaining(); updateEndZeroReason()" style="flex:1;">
-                    <button type="button" class="btn btn-ghost btn-sm" onclick="endPacksAll()" style="white-space:nowrap;flex-shrink:0;">All done</button>
+                <div class="flex gap-2 items-center">
+                    <input type="number" id="end-packs-input" name="packs_produced" min="0" placeholder="0" inputmode="numeric" oninput="updateEndRemaining(); updateEndZeroReason()" class="flex-1">
+                    <button type="button" class="btn btn-ghost btn-sm whitespace-nowrap flex-shrink-0" onclick="endPacksAll()">All done</button>
                 </div>
-                <div id="end-remaining-info" style="margin-top:8px;font-size:0.85rem;display:none;"></div>
+                <div id="end-remaining-info" style="display:none;" class="mt-2 text-[0.85rem]"></div>
             </div>
             <div class="modal-field" id="end-zero-reason-field" style="display:none;">
-                <label style="color:#dc2626;">Why were no packs produced? <span style="font-weight:700;">*</span></label>
+                <label class="text-red-500">Why were no packs produced? <span class="font-bold">*</span></label>
                 <input type="text" id="end-zero-reason-input" name="zero_packs_reason"
                     placeholder="e.g. machine setting up, wrong stock, changeover…"
-                    style="width:100%;padding:10px 12px;border:2px solid #fca5a5;border-radius:8px;font-size:0.95rem;background:#fff5f5;box-sizing:border-box;"
+                    class="w-full px-3 py-2.5 border-2 border-red-300 rounded-lg text-[0.95rem] bg-[#fff5f5] box-border"
                     onfocus="this.style.borderColor='#ef4444'" onblur="this.style.borderColor='#fca5a5'">
             </div>
             <div class="modal-actions">
@@ -979,7 +979,7 @@
                     @endforeach
                     <div class="mpk mpk-back" onclick="hPinBack()">⌫</div>
                     <div class="mpk" onclick="hPinDigit('0')">0</div>
-                    <div class="mpk" style="background:#0284c7;color:#fff;" onclick="hPinDone()">✓</div>
+                    <div class="mpk bg-sky-600 text-white" onclick="hPinDone()">✓</div>
                 </div>
             </div>
             <div class="modal-actions">
@@ -998,16 +998,16 @@
         <h3>✎ Correct Packs</h3>
         <form id="correct-packs-form" method="POST">
             @csrf
-            <p style="color:#94a3b8;font-size:0.9rem;margin-bottom:1.25rem;line-height:1.5;">
+            <p class="text-slate-400 text-[0.9rem] mb-5 leading-relaxed">
                 Enter the correct cumulative packs total for this paused run. This replaces the previously recorded value.
             </p>
             <div class="modal-field">
                 <label>Correct packs total</label>
                 <input type="number" name="packs_produced" id="correct-packs-input" min="0" inputmode="numeric"
                        placeholder="0"
-                       style="font-size:1.75rem;font-weight:700;text-align:center;"
+                       class="text-[1.75rem] font-bold text-center"
                        oninput="updateCorrectPacksWarning()">
-                <div id="correct-packs-warning" style="display:none;margin-top:8px;padding:10px 14px;background:#431407;border:1px solid #ea580c;border-radius:8px;color:#fed7aa;font-size:0.85rem;line-height:1.4;"></div>
+                <div id="correct-packs-warning" style="display:none;" class="mt-2 px-3.5 py-2.5 bg-[#431407] border border-orange-600 rounded-lg text-orange-200 text-[0.85rem] leading-[1.4]"></div>
             </div>
             <div class="modal-actions">
                 <button type="button" class="btn btn-ghost btn-md" onclick="closeModal('correct-packs-modal')">Cancel</button>

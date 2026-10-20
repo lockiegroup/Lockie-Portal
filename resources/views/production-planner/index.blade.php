@@ -133,7 +133,7 @@
             <button id="pp-next">Next &#8594;</button>
         </div>
         <span id="pp-save-status" class="idle">Ready</span>
-        <button onclick="printWeek()" style="background:#475569;color:white;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:0.8125rem;font-weight:600;">&#128438; Print</button>
+        <button onclick="printWeek()" class="bg-slate-600 text-white border-0 rounded-md px-3.5 py-1.5 cursor-pointer text-[0.8125rem] font-semibold">&#128438; Print</button>
     </div>
 
     @php $divHueMap = $divisions->pluck('hue', 'name')->toArray(); @endphp
@@ -150,7 +150,7 @@
                 </tr>
             </thead>
             <tbody id="pp-tbody">
-                <tr><td colspan="6" style="padding:20px;text-align:center;color:#94a3b8;">Loading week data…</td></tr>
+                <tr><td colspan="6" class="px-5 py-5 text-center text-slate-400">Loading week data…</td></tr>
             </tbody>
         </table>
     </div>
@@ -159,31 +159,31 @@
     <div class="pp-bottom">
         <div class="pp-bottom-table">
             <h3>Coverage (hours per machine per day)</h3>
-            <div id="pp-coverage-wrap"><p style="padding:12px;color:#94a3b8;font-size:0.8rem;">Loading…</p></div>
+            <div id="pp-coverage-wrap"><p class="px-3 py-3 text-slate-400 text-[0.8rem]">Loading…</p></div>
         </div>
         <div class="pp-bottom-table">
             <h3>Labour Summary (operator hours)</h3>
-            <div id="pp-labour-wrap"><p style="padding:12px;color:#94a3b8;font-size:0.8rem;">Loading…</p></div>
+            <div id="pp-labour-wrap"><p class="px-3 py-3 text-slate-400 text-[0.8rem]">Loading…</p></div>
         </div>
     </div>
 
     {{-- Division allocation --}}
-    <div class="pp-bottom-table" style="margin-top:16px;">
+    <div class="pp-bottom-table mt-4">
         <h3>Labour Allocation (hours per division per day)</h3>
-        <div id="pp-division-wrap"><p style="padding:12px;color:#94a3b8;font-size:0.8rem;">Loading…</p></div>
+        <div id="pp-division-wrap"><p class="px-3 py-3 text-slate-400 text-[0.8rem]">Loading…</p></div>
     </div>
 
     {{-- Operator × Division breakdown --}}
-    <div class="pp-bottom-table" style="margin-top:16px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
-            <h3 style="margin:0;">Hours per Operator per Division</h3>
+    <div class="pp-bottom-table mt-4">
+        <div class="flex items-center justify-between mb-0.5">
+            <h3 class="m-0">Hours per Operator per Division</h3>
             <button onclick="exportOperatorDivision()"
-                style="padding:.35rem .875rem;background:#0f172a;color:#fff;border:none;border-radius:7px;font-size:.8rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:.35rem;">
+                class="px-3.5 py-[0.35rem] bg-[#0f172a] text-white border-0 rounded-[7px] text-[0.8rem] font-semibold cursor-pointer flex items-center gap-[0.35rem]">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 Export CSV
             </button>
         </div>
-        <div id="pp-op-div-wrap"><p style="padding:12px;color:#94a3b8;font-size:0.8rem;">Loading…</p></div>
+        <div id="pp-op-div-wrap"><p class="px-3 py-3 text-slate-400 text-[0.8rem]">Loading…</p></div>
     </div>
 
 </div>

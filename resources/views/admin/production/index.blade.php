@@ -83,15 +83,15 @@
                 ];
             @endphp
 
-            <div style="overflow-x:auto;">
-            <table class="ps-table" style="min-width:700px;">
+            <div class="overflow-x-auto">
+            <table class="ps-table min-w-[700px]">
                 <thead>
                     <tr>
                         <th>Name</th>
                         @foreach($schedDays as $dk => $dl)
-                            <th style="text-align:center;min-width:90px;">{{ $dl }}<br><span style="font-size:.68rem;color:#94a3b8;font-weight:500;">AM / PM</span></th>
+                            <th class="text-center min-w-[90px]">{{ $dl }}<br><span class="text-[.68rem] text-slate-400 font-medium">AM / PM</span></th>
                         @endforeach
-                        <th style="text-align:center;">Total/wk</th>
+                        <th class="text-center">Total/wk</th>
                         <th>Active</th>
                         <th></th>
                     </tr>
@@ -103,13 +103,13 @@
                         $weeklyTotal = collect($schedDays)->sum(fn($dl, $dk) => ($sched[$dk]['am'] ?? 4) + ($sched[$dk]['pm'] ?? 4));
                     @endphp
                     <tr>
-                        <td style="font-weight:600;">{{ $op->name }}</td>
+                        <td class="font-semibold">{{ $op->name }}</td>
                         @foreach($schedDays as $dk => $dl)
-                            <td style="text-align:center;font-size:.82rem;font-family:monospace;">
+                            <td class="text-center text-[.82rem] font-mono">
                                 {{ $sched[$dk]['am'] ?? 4 }}h / {{ $sched[$dk]['pm'] ?? 4 }}h
                             </td>
                         @endforeach
-                        <td style="text-align:center;font-weight:700;color:#1e293b;">{{ $weeklyTotal }}h</td>
+                        <td class="text-center font-bold text-slate-900">{{ $weeklyTotal }}h</td>
                         <td>
                             @if($op->is_active)
                                 <span class="ps-active-yes">Yes</span>
@@ -117,11 +117,11 @@
                                 <span class="ps-active-no">No</span>
                             @endif
                         </td>
-                        <td style="white-space:nowrap;">
+                        <td class="whitespace-nowrap">
                             <button class="ps-btn ps-btn-edit ps-btn-sm"
                                 onclick="psToggleEdit('op-{{ $op->id }}')">Edit</button>
                             <form method="POST" action="{{ route('admin.production.operators.destroy', $op) }}"
-                                style="display:inline;"
+                                class="inline"
                                 onsubmit="return confirm('Delete {{ addslashes($op->name) }}?')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="ps-btn ps-btn-danger ps-btn-sm">Delete</button>
@@ -130,53 +130,51 @@
                     </tr>
                     {{-- Inline edit row --}}
                     <tr id="op-{{ $op->id }}" class="ps-inline-form">
-                        <td colspan="{{ count($schedDays) + 4 }}" style="padding:0;">
+                        <td colspan="{{ count($schedDays) + 4 }}" class="p-0">
                             <form method="POST" action="{{ route('admin.production.operators.update', $op) }}"
-                                style="padding:14px 16px;background:#f0f9ff;border-bottom:1px solid #e2e8f0;">
+                                class="px-4 py-3.5 bg-sky-50 border-b border-slate-200">
                                 @csrf @method('PUT')
-                                <div class="ps-form-row" style="flex-wrap:wrap;gap:10px 20px;">
+                                <div class="ps-form-row flex-wrap gap-x-5 gap-y-2.5">
                                     <div class="ps-form-group">
                                         <label>Name</label>
-                                        <input name="name" class="ps-input" value="{{ old('name', $op->name) }}" required style="width:150px;">
+                                        <input name="name" class="ps-input w-[150px]" value="{{ old('name', $op->name) }}" required>
                                     </div>
 
                                     {{-- Per-day schedule grid --}}
-                                    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;">
+                                    <div class="flex gap-2.5 flex-wrap items-start">
                                         @foreach($schedDays as $dk => $dl)
-                                            <div class="ps-form-group" style="min-width:72px;">
-                                                <label style="text-align:center;display:block;">{{ $dl }}</label>
-                                                <div style="display:flex;gap:3px;align-items:center;">
-                                                    <input name="schedule_{{ $dk }}_am" type="number" class="ps-input"
+                                            <div class="ps-form-group min-w-[72px]">
+                                                <label class="text-center block">{{ $dl }}</label>
+                                                <div class="flex gap-1 items-center">
+                                                    <input name="schedule_{{ $dk }}_am" type="number" class="ps-input w-[44px] px-1 py-[5px] text-center"
                                                         step="0.5" min="0" max="12"
                                                         value="{{ old("schedule_{$dk}_am", $sched[$dk]['am'] ?? 4) }}"
-                                                        style="width:44px;padding:5px 4px;text-align:center;"
                                                         title="{{ $dl }} AM hours">
-                                                    <span style="color:#94a3b8;font-size:.7rem;">/</span>
-                                                    <input name="schedule_{{ $dk }}_pm" type="number" class="ps-input"
+                                                    <span class="text-slate-400 text-[.7rem]">/</span>
+                                                    <input name="schedule_{{ $dk }}_pm" type="number" class="ps-input w-[44px] px-1 py-[5px] text-center"
                                                         step="0.5" min="0" max="12"
                                                         value="{{ old("schedule_{$dk}_pm", $sched[$dk]['pm'] ?? 4) }}"
-                                                        style="width:44px;padding:5px 4px;text-align:center;"
                                                         title="{{ $dl }} PM hours">
                                                 </div>
-                                                <div style="font-size:.62rem;color:#94a3b8;text-align:center;margin-top:1px;">AM / PM</div>
+                                                <div class="text-[.62rem] text-slate-400 text-center mt-px">AM / PM</div>
                                             </div>
                                         @endforeach
                                     </div>
 
                                     <div class="ps-form-group">
                                         <label>Active</label>
-                                        <select name="is_active" class="ps-input" style="width:75px;">
+                                        <select name="is_active" class="ps-input w-[75px]">
                                             <option value="1" {{ $op->is_active ? 'selected' : '' }}>Yes</option>
                                             <option value="0" {{ !$op->is_active ? 'selected' : '' }}>No</option>
                                         </select>
                                     </div>
-                                    <div style="display:flex;gap:6px;align-items:flex-end;padding-bottom:2px;">
+                                    <div class="flex gap-1.5 items-end pb-0.5">
                                         <div class="ps-form-group">
                                             <label>Total/wk</label>
-                                            <span id="total-{{ $op->id }}" style="font-size:.9rem;font-weight:700;color:#1e293b;padding:5px 8px;display:inline-block;">{{ $weeklyTotal }}h</span>
+                                            <span id="total-{{ $op->id }}" class="text-[.9rem] font-bold text-slate-900 px-2 py-[5px] inline-block">{{ $weeklyTotal }}h</span>
                                         </div>
-                                        <button type="submit" class="ps-btn ps-btn-primary ps-btn-sm" style="align-self:flex-end;">Save</button>
-                                        <button type="button" class="ps-btn ps-btn-sm" style="align-self:flex-end;background:#f1f5f9;color:#475569;"
+                                        <button type="submit" class="ps-btn ps-btn-primary ps-btn-sm self-end">Save</button>
+                                        <button type="button" class="ps-btn ps-btn-sm self-end bg-slate-100 text-slate-600"
                                             onclick="psToggleEdit('op-{{ $op->id }}')">Cancel</button>
                                     </div>
                                 </div>
@@ -184,7 +182,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="{{ count($schedDays) + 4 }}" style="padding:16px;text-align:center;color:#94a3b8;">No operators yet.</td></tr>
+                    <tr><td colspan="{{ count($schedDays) + 4 }}" class="px-4 py-4 text-center text-slate-400">No operators yet.</td></tr>
                 @endforelse
                 </tbody>
             </table>
@@ -194,35 +192,33 @@
                 <h4>Add Operator</h4>
                 <form method="POST" action="{{ route('admin.production.operators.store') }}">
                     @csrf
-                    <div class="ps-form-row" style="flex-wrap:wrap;gap:10px 20px;">
+                    <div class="ps-form-row flex-wrap gap-x-5 gap-y-2.5">
                         <div class="ps-form-group">
                             <label>Name</label>
-                            <input name="name" class="ps-input" placeholder="Full name" required style="width:150px;" value="{{ old('name') }}">
+                            <input name="name" class="ps-input w-[150px]" placeholder="Full name" required value="{{ old('name') }}">
                         </div>
 
-                        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;">
+                        <div class="flex gap-2.5 flex-wrap items-start">
                             @foreach($schedDays as $dk => $dl)
-                                <div class="ps-form-group" style="min-width:72px;">
-                                    <label style="text-align:center;display:block;">{{ $dl }}</label>
-                                    <div style="display:flex;gap:3px;align-items:center;">
-                                        <input name="schedule_{{ $dk }}_am" type="number" class="ps-input"
+                                <div class="ps-form-group min-w-[72px]">
+                                    <label class="text-center block">{{ $dl }}</label>
+                                    <div class="flex gap-1 items-center">
+                                        <input name="schedule_{{ $dk }}_am" type="number" class="ps-input w-[44px] px-1 py-[5px] text-center"
                                             step="0.5" min="0" max="12"
                                             value="{{ old("schedule_{$dk}_am", 4) }}"
-                                            style="width:44px;padding:5px 4px;text-align:center;"
                                             title="{{ $dl }} AM hours">
-                                        <span style="color:#94a3b8;font-size:.7rem;">/</span>
-                                        <input name="schedule_{{ $dk }}_pm" type="number" class="ps-input"
+                                        <span class="text-slate-400 text-[.7rem]">/</span>
+                                        <input name="schedule_{{ $dk }}_pm" type="number" class="ps-input w-[44px] px-1 py-[5px] text-center"
                                             step="0.5" min="0" max="12"
                                             value="{{ old("schedule_{$dk}_pm", 4) }}"
-                                            style="width:44px;padding:5px 4px;text-align:center;"
                                             title="{{ $dl }} PM hours">
                                     </div>
-                                    <div style="font-size:.62rem;color:#94a3b8;text-align:center;margin-top:1px;">AM / PM</div>
+                                    <div class="text-[.62rem] text-slate-400 text-center mt-px">AM / PM</div>
                                 </div>
                             @endforeach
                         </div>
 
-                        <div style="align-self:flex-end;padding-bottom:2px;">
+                        <div class="self-end pb-0.5">
                             <button type="submit" class="ps-btn ps-btn-primary">Add</button>
                         </div>
                     </div>
@@ -249,7 +245,7 @@
                 @forelse($machines as $machine)
                     @php $mh = $divHues[$machine->division] ?? 220; @endphp
                     <tr>
-                        <td><code style="font-size:0.72rem;background:#f1f5f9;padding:2px 5px;border-radius:3px;">{{ $machine->key }}</code></td>
+                        <td><code class="text-[0.72rem] bg-slate-100 px-1.5 py-0.5 rounded">{{ $machine->key }}</code></td>
                         <td>{{ $machine->name }}</td>
                         <td>
                             <span class="ps-badge" style="background:hsl({{ $mh }},65%,70%);"></span>
@@ -262,11 +258,11 @@
                                 <span class="ps-active-no">No</span>
                             @endif
                         </td>
-                        <td style="white-space:nowrap;">
+                        <td class="whitespace-nowrap">
                             <button class="ps-btn ps-btn-edit ps-btn-sm"
                                 onclick="psToggleEdit('mc-{{ $machine->id }}')">Edit</button>
                             <form method="POST" action="{{ route('admin.production.machines.destroy', $machine) }}"
-                                style="display:inline;"
+                                class="inline"
                                 onsubmit="return confirm('Deactivate {{ addslashes($machine->name) }}?')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="ps-btn ps-btn-danger ps-btn-sm">Deactivate</button>
@@ -275,23 +271,23 @@
                     </tr>
                     {{-- Inline edit row --}}
                     <tr id="mc-{{ $machine->id }}" class="ps-inline-form">
-                        <td colspan="5" style="padding:0;">
+                        <td colspan="5" class="p-0">
                             <form method="POST" action="{{ route('admin.production.machines.update', $machine) }}"
-                                style="padding:12px 16px;background:#f0f9ff;border-bottom:1px solid #e2e8f0;">
+                                class="px-4 py-3 bg-sky-50 border-b border-slate-200">
                                 @csrf @method('PUT')
                                 <input type="hidden" name="hue" value="{{ $mh }}">
                                 <div class="ps-form-row">
                                     <div class="ps-form-group">
                                         <label>Key (slug)</label>
-                                        <input name="key" class="ps-input" value="{{ old('key', $machine->key) }}" required style="width:120px;">
+                                        <input name="key" class="ps-input w-[120px]" value="{{ old('key', $machine->key) }}" required>
                                     </div>
                                     <div class="ps-form-group">
                                         <label>Name</label>
-                                        <input name="name" class="ps-input" value="{{ old('name', $machine->name) }}" required style="width:140px;">
+                                        <input name="name" class="ps-input w-[140px]" value="{{ old('name', $machine->name) }}" required>
                                     </div>
                                     <div class="ps-form-group">
                                         <label>Division</label>
-                                        <select name="division" class="ps-input" style="width:160px;">
+                                        <select name="division" class="ps-input w-[160px]">
                                             @foreach($divisions as $div)
                                                 <option value="{{ $div->name }}" {{ $machine->division===$div->name?'selected':'' }}>{{ $div->name }}</option>
                                             @endforeach
@@ -299,20 +295,20 @@
                                     </div>
                                     <div class="ps-form-group">
                                         <label>Active</label>
-                                        <select name="is_active" class="ps-input" style="width:80px;">
+                                        <select name="is_active" class="ps-input w-[80px]">
                                             <option value="1" {{ $machine->is_active ? 'selected' : '' }}>Yes</option>
                                             <option value="0" {{ !$machine->is_active ? 'selected' : '' }}>No</option>
                                         </select>
                                     </div>
-                                    <button type="submit" class="ps-btn ps-btn-primary ps-btn-sm" style="align-self:flex-end;">Save</button>
-                                    <button type="button" class="ps-btn ps-btn-sm" style="align-self:flex-end;background:#f1f5f9;color:#475569;"
+                                    <button type="submit" class="ps-btn ps-btn-primary ps-btn-sm self-end">Save</button>
+                                    <button type="button" class="ps-btn ps-btn-sm self-end bg-slate-100 text-slate-600"
                                         onclick="psToggleEdit('mc-{{ $machine->id }}')">Cancel</button>
                                 </div>
                             </form>
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="5" style="padding:16px;text-align:center;color:#94a3b8;">No machines yet.</td></tr>
+                    <tr><td colspan="5" class="px-4 py-4 text-center text-slate-400">No machines yet.</td></tr>
                 @endforelse
                 </tbody>
             </table>
@@ -324,22 +320,22 @@
                     <div class="ps-form-row">
                         <div class="ps-form-group">
                             <label>Key (slug)</label>
-                            <input name="key" class="ps-input" placeholder="e.g. mypress" required style="width:110px;" value="{{ old('key') }}">
+                            <input name="key" class="ps-input w-[110px]" placeholder="e.g. mypress" required value="{{ old('key') }}">
                         </div>
                         <div class="ps-form-group">
                             <label>Name</label>
-                            <input name="name" class="ps-input" placeholder="Display name" required style="width:140px;" value="{{ old('name') }}">
+                            <input name="name" class="ps-input w-[140px]" placeholder="Display name" required value="{{ old('name') }}">
                         </div>
                         <div class="ps-form-group">
                             <label>Division</label>
-                            <select name="division" class="ps-input" style="width:160px;" id="add-machine-div">
+                            <select name="division" class="ps-input w-[160px]" id="add-machine-div">
                                 @foreach($divisions as $div)
                                     <option value="{{ $div->name }}" data-hue="{{ $div->hue }}" {{ old('division')===$div->name?'selected':'' }}>{{ $div->name }}</option>
                                 @endforeach
                             </select>
                         </div>
                         <input type="hidden" name="hue" id="add-machine-hue" value="22">
-                        <button type="submit" class="ps-btn ps-btn-primary" style="align-self:flex-end;">Add</button>
+                        <button type="submit" class="ps-btn ps-btn-primary self-end">Add</button>
                     </div>
                 </form>
             </div>
@@ -348,7 +344,7 @@
     </div>
 
     {{-- DIVISIONS --}}
-    <div class="ps-card" style="margin-top:20px;">
+    <div class="ps-card mt-5">
         <div class="ps-card-head">Divisions &amp; Colours</div>
         <table class="ps-table">
             <thead>
@@ -361,16 +357,16 @@
             <tbody>
             @forelse($divisions as $division)
                 <tr>
-                    <td style="font-weight:600;">{{ $division->name }}</td>
+                    <td class="font-semibold">{{ $division->name }}</td>
                     <td>
                         <span class="ps-badge" style="background:hsl({{ $division->hue }},65%,70%);"></span>
-                        <span style="font-size:0.72rem;color:#64748b;margin-left:4px;">hue {{ $division->hue }}°</span>
+                        <span class="text-[0.72rem] text-slate-500 ml-1">hue {{ $division->hue }}°</span>
                     </td>
-                    <td style="white-space:nowrap;">
+                    <td class="whitespace-nowrap">
                         <button class="ps-btn ps-btn-edit ps-btn-sm"
                             onclick="psToggleEdit('div-{{ $division->id }}')">Edit</button>
                         <form method="POST" action="{{ route('admin.production.divisions.destroy', $division) }}"
-                            style="display:inline;"
+                            class="inline"
                             onsubmit="return confirm('Delete {{ addslashes($division->name) }}? This will fail if machines are assigned to it.')">
                             @csrf @method('DELETE')
                             <button type="submit" class="ps-btn ps-btn-danger ps-btn-sm">Delete</button>
@@ -378,36 +374,36 @@
                     </td>
                 </tr>
                 <tr id="div-{{ $division->id }}" class="ps-inline-form">
-                    <td colspan="3" style="padding:0;">
+                    <td colspan="3" class="p-0">
                         <form method="POST" action="{{ route('admin.production.divisions.update', $division) }}"
-                            style="padding:12px 16px;background:#f0f9ff;border-bottom:1px solid #e2e8f0;">
+                            class="px-4 py-3 bg-sky-50 border-b border-slate-200">
                             @csrf @method('PUT')
-                            <div class="ps-form-row" style="align-items:flex-end;">
+                            <div class="ps-form-row items-end">
                                 <div class="ps-form-group">
                                     <label>Name</label>
-                                    <input name="name" class="ps-input" value="{{ old('name', $division->name) }}" required style="width:180px;">
+                                    <input name="name" class="ps-input w-[180px]" value="{{ old('name', $division->name) }}" required>
                                 </div>
                                 <div class="ps-form-group">
                                     <label>Hue (0–359)</label>
-                                    <div style="display:flex;align-items:center;gap:8px;">
+                                    <div class="flex items-center gap-2">
                                         <input name="hue" type="range" min="0" max="359"
                                             value="{{ old('hue', $division->hue) }}"
-                                            class="ps-input" style="width:120px;padding:4px 2px;"
+                                            class="ps-input w-[120px] px-0.5 py-1"
                                             oninput="psDivHuePreview(this,'div-prev-{{ $division->id }}')">
-                                        <span id="div-prev-{{ $division->id }}" class="ps-badge"
-                                            style="background:hsl({{ $division->hue }},65%,70%);width:28px;height:28px;"></span>
-                                        <span id="div-hue-val-{{ $division->id }}" style="font-size:0.75rem;color:#64748b;min-width:28px;">{{ $division->hue }}°</span>
+                                        <span id="div-prev-{{ $division->id }}" class="ps-badge w-7 h-7"
+                                            style="background:hsl({{ $division->hue }},65%,70%);"></span>
+                                        <span id="div-hue-val-{{ $division->id }}" class="text-[0.75rem] text-slate-500 min-w-[28px]">{{ $division->hue }}°</span>
                                     </div>
                                 </div>
                                 <button type="submit" class="ps-btn ps-btn-primary ps-btn-sm">Save</button>
-                                <button type="button" class="ps-btn ps-btn-sm" style="background:#f1f5f9;color:#475569;"
+                                <button type="button" class="ps-btn ps-btn-sm bg-slate-100 text-slate-600"
                                     onclick="psToggleEdit('div-{{ $division->id }}')">Cancel</button>
                             </div>
                         </form>
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="3" style="padding:16px;text-align:center;color:#94a3b8;">No divisions yet.</td></tr>
+                <tr><td colspan="3" class="px-4 py-4 text-center text-slate-400">No divisions yet.</td></tr>
             @endforelse
             </tbody>
         </table>
@@ -416,20 +412,20 @@
             <h4>Add Division</h4>
             <form method="POST" action="{{ route('admin.production.divisions.store') }}">
                 @csrf
-                <div class="ps-form-row" style="align-items:flex-end;">
+                <div class="ps-form-row items-end">
                     <div class="ps-form-group">
                         <label>Name</label>
-                        <input name="name" class="ps-input" placeholder="Division name" required style="width:180px;" value="{{ old('name') }}">
+                        <input name="name" class="ps-input w-[180px]" placeholder="Division name" required value="{{ old('name') }}">
                     </div>
                     <div class="ps-form-group">
                         <label>Hue (0–359)</label>
-                        <div style="display:flex;align-items:center;gap:8px;">
+                        <div class="flex items-center gap-2">
                             <input name="hue" type="range" min="0" max="359"
                                 value="{{ old('hue', 180) }}"
-                                class="ps-input" style="width:120px;padding:4px 2px;"
+                                class="ps-input w-[120px] px-0.5 py-1"
                                 oninput="psDivHuePreview(this,'add-div-prev')">
-                            <span id="add-div-prev" class="ps-badge" style="background:hsl(180,65%,70%);width:28px;height:28px;"></span>
-                            <span id="add-div-hue-val" style="font-size:0.75rem;color:#64748b;min-width:28px;">180°</span>
+                            <span id="add-div-prev" class="ps-badge w-7 h-7" style="background:hsl(180,65%,70%);"></span>
+                            <span id="add-div-hue-val" class="text-[0.75rem] text-slate-500 min-w-[28px]">180°</span>
                         </div>
                     </div>
                     <button type="submit" class="ps-btn ps-btn-primary">Add</button>

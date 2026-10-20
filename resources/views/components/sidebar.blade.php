@@ -16,22 +16,21 @@
 <aside id="sidebar">
 
     {{-- Logo / Brand --}}
-    <div style="padding:14px 12px;border-bottom:1px solid #1e293b;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
-        <a href="{{ route('dashboard') }}" style="display:flex;align-items:center;gap:10px;min-width:0;text-decoration:none;overflow:hidden;">
-            <img src="{{ asset('images/logo.png') }}" alt="Lockie Group" style="height:30px;width:auto;flex-shrink:0;">
-            <span class="sb-label" style="color:white;font-weight:700;font-size:0.875rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Portal</span>
+    <div class="px-3 py-3.5 border-b border-slate-800 flex items-center justify-between flex-shrink-0">
+        <a href="{{ route('dashboard') }}" class="flex items-center gap-2.5 min-w-0 no-underline overflow-hidden">
+            <img src="{{ asset('images/logo.png') }}" alt="Lockie Group" class="h-[30px] w-auto flex-shrink-0">
+            <span class="sb-label text-white font-bold text-[0.875rem] whitespace-nowrap overflow-hidden text-ellipsis">Portal</span>
         </a>
         <button onclick="sbToggle()" title="Collapse sidebar"
-            style="color:#475569;background:none;border:none;cursor:pointer;padding:6px;border-radius:6px;line-height:0;flex-shrink:0;transition:color 0.15s;"
-            onmouseover="this.style.color='#94a3b8'" onmouseout="this.style.color='#475569'">
-            <svg id="sb-chevron" style="width:15px;height:15px;transition:transform 0.2s;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            class="text-slate-600 bg-transparent border-0 cursor-pointer p-1.5 rounded-md leading-none flex-shrink-0 transition-colors hover:text-slate-400">
+            <svg id="sb-chevron" class="w-[15px] h-[15px] transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <polyline points="15 18 9 12 15 6"/>
             </svg>
         </button>
     </div>
 
     {{-- Navigation --}}
-    <nav style="flex:1;padding:10px 8px;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;-ms-overflow-style:none;" class="sb-nav">
+    <nav style="scrollbar-width:none;-ms-overflow-style:none;" class="sb-nav flex-1 py-2.5 px-2 overflow-y-auto overflow-x-hidden">
 
         <a href="{{ route('dashboard') }}"
            class="sb-item{{ request()->routeIs('dashboard') ? ' sb-active' : '' }}"
@@ -45,10 +44,10 @@
 
         {{-- FINANCE --}}
         @if($user->hasModule('sales') || $user->hasModule('stock') || $user->hasModule('amazon'))
-        <div style="height:1px;background:#1e293b;margin:10px 4px 2px;"></div>
+        <div class="h-px bg-slate-800 mx-1 mt-2.5 mb-0.5"></div>
         <button onclick="sbSection('finance')" class="sb-section-btn sb-label" data-tip="Finance">
-            <span style="font-size:0.625rem;font-weight:700;text-transform:uppercase;">Finance</span>
-            <svg id="sc-finance" style="width:10px;height:10px;flex-shrink:0;transition:transform 0.2s;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            <span class="text-[0.625rem] font-bold uppercase">Finance</span>
+            <svg id="sc-finance" class="w-2.5 h-2.5 flex-shrink-0 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div id="ss-finance">
             @if($user->hasModule('sales'))
@@ -82,10 +81,10 @@
 
         {{-- PLANNING --}}
         @if($showKeyActions || $showActionPlans || true)
-        <div style="height:1px;background:#1e293b;margin:10px 4px 2px;"></div>
+        <div class="h-px bg-slate-800 mx-1 mt-2.5 mb-0.5"></div>
         <button onclick="sbSection('planning')" class="sb-section-btn sb-label" data-tip="Planning">
-            <span style="font-size:0.625rem;font-weight:700;text-transform:uppercase;">Planning</span>
-            <svg id="sc-planning" style="width:10px;height:10px;flex-shrink:0;transition:transform 0.2s;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            <span class="text-[0.625rem] font-bold uppercase">Planning</span>
+            <svg id="sc-planning" class="w-2.5 h-2.5 flex-shrink-0 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div id="ss-planning">
             @if($showKeyActions)
@@ -115,10 +114,10 @@
 
         {{-- CUSTOMERS --}}
         @if($user->hasModule('key_accounts') || $user->hasModule('crm') || $user->can('reminders'))
-        <div style="height:1px;background:#1e293b;margin:10px 4px 2px;"></div>
+        <div class="h-px bg-slate-800 mx-1 mt-2.5 mb-0.5"></div>
         <button onclick="sbSection('customers')" class="sb-section-btn sb-label" data-tip="Customers">
-            <span style="font-size:0.625rem;font-weight:700;text-transform:uppercase;">Customers</span>
-            <svg id="sc-customers" style="width:10px;height:10px;flex-shrink:0;transition:transform 0.2s;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            <span class="text-[0.625rem] font-bold uppercase">Customers</span>
+            <svg id="sc-customers" class="w-2.5 h-2.5 flex-shrink-0 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div id="ss-customers">
             @if($user->hasModule('key_accounts'))
@@ -154,10 +153,10 @@
 
         {{-- OPERATIONS --}}
         @if($user->hasModule('envelopes') || $user->hasModule('policies') || $user->can('factory_training_view') || $user->hasModule('print_schedule') || true)
-        <div style="height:1px;background:#1e293b;margin:10px 4px 2px;"></div>
+        <div class="h-px bg-slate-800 mx-1 mt-2.5 mb-0.5"></div>
         <button onclick="sbSection('operations')" class="sb-section-btn sb-label" data-tip="Operations">
-            <span style="font-size:0.625rem;font-weight:700;text-transform:uppercase;">Operations</span>
-            <svg id="sc-operations" style="width:10px;height:10px;flex-shrink:0;transition:transform 0.2s;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            <span class="text-[0.625rem] font-bold uppercase">Operations</span>
+            <svg id="sc-operations" class="w-2.5 h-2.5 flex-shrink-0 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div id="ss-operations">
             @can('clocking_view')
@@ -226,14 +225,14 @@
             </a>
             @endcan
             @if($user->hasModule('print_schedule'))
-            <button onclick="togglePrint()" id="print-toggle" class="sb-item{{ $isPrintSection ? ' sb-active' : '' }}" style="width:100%;background:none;border:none;cursor:pointer;font-family:inherit;text-align:left;" data-tip="Print Schedule">
+            <button onclick="togglePrint()" id="print-toggle" class="sb-item{{ $isPrintSection ? ' sb-active' : '' }} w-full bg-transparent border-0 cursor-pointer font-[inherit] text-left" data-tip="Print Schedule">
                 <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="6 9 6 2 18 2 18 9"/>
                     <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
                     <rect x="6" y="14" width="12" height="8"/>
                 </svg>
-                <span class="sb-label" style="flex:1;">Print Schedule</span>
-                <svg id="print-chevron" class="sb-label" style="width:13px;height:13px;flex-shrink:0;transition:transform 0.2s;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                <span class="sb-label flex-1">Print Schedule</span>
+                <svg id="print-chevron" class="sb-label w-[13px] h-[13px] flex-shrink-0 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
             <div id="print-sub" class="sb-label sb-sub-group" style="display:none;">
                 <a href="{{ route('print.production') }}" class="sb-sub-item{{ request()->routeIs('print.production*') ? ' sb-active' : '' }}">Dashboard</a>
@@ -251,10 +250,10 @@
 
         {{-- ADMIN --}}
         @canany(['manage_users', 'print_settings', 'envelope_settings', 'policy_settings', 'key_accounts_admin', 'imports'])
-        <div style="height:1px;background:#1e293b;margin:10px 4px 2px;"></div>
+        <div class="h-px bg-slate-800 mx-1 mt-2.5 mb-0.5"></div>
         <button onclick="sbSection('admin')" class="sb-section-btn sb-label" data-tip="Admin">
-            <span style="font-size:0.625rem;font-weight:700;text-transform:uppercase;">Admin</span>
-            <svg id="sc-admin" style="width:10px;height:10px;flex-shrink:0;transition:transform 0.2s;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            <span class="text-[0.625rem] font-bold uppercase">Admin</span>
+            <svg id="sc-admin" class="w-2.5 h-2.5 flex-shrink-0 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div id="ss-admin">
             @can('manage_users')
@@ -340,19 +339,19 @@
     </nav>
 
     {{-- User footer --}}
-    <div style="border-top:1px solid #1e293b;padding:10px 8px;flex-shrink:0;">
-        <div id="sb-user-info" style="display:flex;align-items:center;gap:10px;padding:6px 10px;margin-bottom:4px;">
-            <div style="width:28px;height:28px;border-radius:50%;background:#1e293b;border:1px solid #334155;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:0.65rem;font-weight:700;flex-shrink:0;">{{ $initials }}</div>
-            <div class="sb-label" style="min-width:0;overflow:hidden;">
+    <div class="border-t border-slate-800 py-2.5 px-2 flex-shrink-0">
+        <div id="sb-user-info" class="flex items-center gap-2.5 px-2.5 py-1.5 mb-1">
+            <div class="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 text-[0.65rem] font-bold flex-shrink-0">{{ $initials }}</div>
+            <div class="sb-label min-w-0 overflow-hidden">
                 @if($user?->name)
-                    <p style="color:#e2e8f0;font-size:0.75rem;font-weight:600;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ $user->name }}</p>
+                    <p class="text-slate-200 text-[0.75rem] font-semibold leading-[1.4] whitespace-nowrap overflow-hidden text-ellipsis">{{ $user->name }}</p>
                 @endif
-                <p style="color:#475569;font-size:0.7rem;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ $user?->email }}</p>
+                <p class="text-slate-600 text-[0.7rem] leading-[1.4] whitespace-nowrap overflow-hidden text-ellipsis">{{ $user?->email }}</p>
             </div>
         </div>
-        <form action="{{ route('logout') }}" method="POST" style="margin:0;">
+        <form action="{{ route('logout') }}" method="POST" class="m-0">
             @csrf
-            <button type="submit" class="sb-item" style="width:100%;background:none;border:none;cursor:pointer;font-family:inherit;" data-tip="Sign out">
+            <button type="submit" class="sb-item w-full bg-transparent border-0 cursor-pointer font-[inherit]" data-tip="Sign out">
                 <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
                     <polyline points="16 17 21 12 16 7"/>
