@@ -24,7 +24,7 @@
 
         /* ── Clock screen ── */
         #clock-screen{background:#0f172a;}
-        #clock-time{font-size:min(22vw,18vh);font-weight:200;letter-spacing:-0.02em;
+        #clock-time{font-size:min(14vw,18vh);font-weight:200;letter-spacing:-0.02em;
             color:#e2e8f0;line-height:1;font-variant-numeric:tabular-nums;}
         #clock-date{font-size:min(4vw,3.5vh);color:#64748b;margin-top:1vh;font-weight:400;}
         #clock-prompt{font-size:min(2.5vw,2.2vh);color:#334155;margin-top:4vh;letter-spacing:0.05em;text-transform:uppercase;}
@@ -140,7 +140,7 @@ function soundError()   { playBeep(200, 0.35, 'sawtooth', 0.2); }
 
 // ── Clock ─────────────────────────────────────────────────────────────────────
 const LONDON_TZ = 'Europe/London';
-const _timeFmt = new Intl.DateTimeFormat('en-GB', { timeZone: LONDON_TZ, hour: '2-digit', minute: '2-digit', hour12: false });
+const _timeFmt = new Intl.DateTimeFormat('en-GB', { timeZone: LONDON_TZ, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
 const _dateFmt = new Intl.DateTimeFormat('en-GB', { timeZone: LONDON_TZ, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 const _shortFmt = new Intl.DateTimeFormat('en-GB', { timeZone: LONDON_TZ, hour: '2-digit', minute: '2-digit', hour12: false });
 
