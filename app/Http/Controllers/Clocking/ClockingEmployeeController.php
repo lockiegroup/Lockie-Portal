@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Clocking;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\ClockingCategory;
 use App\Models\ClockingEmployee;
 use App\Models\ClockingFob;
@@ -46,6 +47,7 @@ class ClockingEmployeeController extends Controller
         if (!empty($data['fob_uid'])) {
             $this->syncFob($emp, $data['fob_uid']);
         }
+        ActivityLog::record('clocking.employee_create', "Added employee: {$emp->name}");
         return response()->json(['ok' => true, 'id' => $emp->id]);
     }
 
@@ -74,20 +76,25 @@ class ClockingEmployeeController extends Controller
         if (array_key_exists('fob_uid', $data)) {
             $this->syncFob($employee, $data['fob_uid'] ?: null);
         }
+        ActivityLog::record('clocking.employee_update', "Updated employee: {$employee->name}");
         return response()->json(['ok' => true]);
     }
 
     public function toggle(ClockingEmployee $employee): JsonResponse
     {
         $employee->update(['is_active' => !$employee->is_active]);
+        $state = $employee->is_active ? 'activated' : 'deactivated';
+        ActivityLog::record('clocking.employee_toggle', ucfirst($state) . " employee: {$employee->name}");
         return response()->json(['ok' => true, 'is_active' => $employee->is_active]);
     }
 
     public function destroy(ClockingEmployee $employee): JsonResponse
     {
+        $name = $employee->name;
         // Unassign any active fob first
         $this->syncFob($employee, null);
         $employee->delete();
+        ActivityLog::record('clocking.employee_delete', "Deleted employee: {$name}");
         return response()->json(['ok' => true]);
     }
 

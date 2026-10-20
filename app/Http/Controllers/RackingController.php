@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\OutsideStorageItem;
 use App\Models\RackingItem;
 use App\Models\StockMovement;
@@ -87,6 +88,7 @@ class RackingController extends Controller
             } catch (\Throwable) {}
         }
 
+        ActivityLog::record('racking.slot_fill', "Filled slot {$item->bay}-{$item->slot_number}" . ($item->description ? ": {$item->description}" : ''));
         return redirect()->route('racking.index')->with('success', 'Slot filled.');
     }
 
@@ -106,6 +108,7 @@ class RackingController extends Controller
         $data['for_outside_storage'] = $request->boolean('for_outside_storage');
 
         $rackingItem->update($data);
+        ActivityLog::record('racking.slot_update', "Updated slot {$rackingItem->bay}-{$rackingItem->slot_number}" . ($rackingItem->description ? ": {$rackingItem->description}" : ''));
         return redirect()->route('racking.index')->with('success', 'Slot updated.');
     }
 
@@ -126,7 +129,10 @@ class RackingController extends Controller
             } catch (\Throwable) {}
         }
 
+        $slot = $rackingItem->bay . '-' . $rackingItem->slot_number;
+        $desc = $rackingItem->description;
         $rackingItem->delete();
+        ActivityLog::record('racking.slot_clear', "Cleared slot {$slot}" . ($desc ? ": {$desc}" : ''));
         return redirect()->route('racking.index')->with('success', 'Slot cleared.');
     }
 
@@ -158,6 +164,7 @@ class RackingController extends Controller
         } catch (\Throwable) {}
 
         $rackingItem->delete();
+        ActivityLog::record('racking.move_outside', "Moved {$rackingItem->description} from slot {$slotLabel} to outside storage");
 
         return redirect()->route('racking.index')->with('success', 'Moved to outside storage and logged.');
     }
@@ -205,6 +212,7 @@ class RackingController extends Controller
         } catch (\Throwable) {}
 
         $outsideStorageItem->delete();
+        ActivityLog::record('racking.move_to_rack', "Moved {$outsideStorageItem->colour} from outside storage to slot {$slotLabel}");
 
         return redirect()->route('racking.outside')->with('success', 'Moved to racking slot ' . $slotLabel . ' and logged.');
     }
@@ -248,6 +256,7 @@ class RackingController extends Controller
             ]);
         } catch (\Throwable) {}
 
+        ActivityLog::record('racking.slot_move', "Moved {$rackingItem->description} from {$fromLabel} to {$toLabel}");
         return redirect()->route('racking.index')->with('success', 'Moved from ' . $fromLabel . ' to ' . $toLabel . '.');
     }
 

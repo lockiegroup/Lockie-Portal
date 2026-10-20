@@ -13,10 +13,16 @@ class ActivityLogController extends Controller
     {
         $userId   = $request->input('user_id');
         $category = $request->input('category');
+        $search   = trim($request->input('search', ''));
+        $dateFrom = $request->input('date_from');
+        $dateTo   = $request->input('date_to');
 
         $logs = ActivityLog::with('user')
-            ->when($userId, fn($q) => $q->where('user_id', $userId))
+            ->when($userId,   fn($q) => $q->where('user_id', $userId))
             ->when($category, fn($q) => $q->where('action', 'like', $category . '.%'))
+            ->when($search,   fn($q) => $q->where('description', 'like', '%' . $search . '%'))
+            ->when($dateFrom, fn($q) => $q->whereDate('created_at', '>=', $dateFrom))
+            ->when($dateTo,   fn($q) => $q->whereDate('created_at', '<=', $dateTo))
             ->orderByDesc('created_at')
             ->paginate(75)
             ->withQueryString();
@@ -24,17 +30,26 @@ class ActivityLogController extends Controller
         $users = User::orderBy('name')->get(['id', 'name']);
 
         $categories = [
-            'auth'         => 'Login / Logout',
-            'envelope'     => 'Church Envelopes',
-            'print'        => 'Print Schedule',
-            'policy'       => 'Policies',
-            'cashflow'     => 'Cash Flow',
-            'users'        => 'User Management',
-            'key_accounts' => 'Key Accounts',
-            'imports'      => 'Imports',
-            'key_actions'  => 'Key Actions',
+            'auth'             => 'Login / Logout',
+            'clocking'         => 'Clocking',
+            'crm'              => 'CRM',
+            'envelope'         => 'Church Envelopes',
+            'print'            => 'Print Schedule',
+            'policy'           => 'Policies',
+            'cashflow'         => 'Cash Flow',
+            'racking'          => 'Racking',
+            'users'            => 'User Management',
+            'key_accounts'     => 'Key Accounts',
+            'key_actions'      => 'Key Actions',
+            'imports'          => 'Imports',
+            'reminders'        => 'Reminders',
+            'stock_forecast'   => 'Stock Forecast',
+            'supplier_settings'=> 'Supplier Settings',
         ];
 
-        return view('admin.activity-log.index', compact('logs', 'users', 'categories', 'userId', 'category'));
+        return view('admin.activity-log.index', compact(
+            'logs', 'users', 'categories',
+            'userId', 'category', 'search', 'dateFrom', 'dateTo'
+        ));
     }
 }

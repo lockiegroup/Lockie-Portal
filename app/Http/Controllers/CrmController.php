@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\KeyAccount;
 use App\Models\KeyAccountContact;
 use Carbon\Carbon;
@@ -504,6 +505,7 @@ class CrmController extends Controller
     {
         $keyAccount = $this->upsertKeyAccount($customerCode);
         $keyAccount->update(['notes' => $request->input('notes')]);
+        ActivityLog::record('crm.notes_update', "Updated notes for account {$customerCode}");
 
         return back()->with('crm_success', 'Notes saved.');
     }
@@ -521,6 +523,7 @@ class CrmController extends Controller
             'contacted_at' => $data['contacted_at'],
             'note'         => $data['note'],
         ]);
+        ActivityLog::record('crm.contact_add', "Logged contact for account {$customerCode}");
 
         return back()->with('crm_success', 'Contact logged.');
     }
@@ -530,6 +533,7 @@ class CrmController extends Controller
         abort_unless($contact->account?->account_code === $customerCode, 404);
 
         $contact->delete();
+        ActivityLog::record('crm.contact_delete', "Removed contact entry for account {$customerCode}");
 
         return back()->with('crm_success', 'Contact entry removed.');
     }
@@ -614,6 +618,10 @@ class CrmController extends Controller
             ]);
 
             $logged++;
+        }
+
+        if ($logged > 0) {
+            ActivityLog::record('crm.bulk_contact', "Bulk logged contact for {$logged} account(s)");
         }
 
         return response()->json(['logged' => $logged, 'skipped' => $skipped]);
