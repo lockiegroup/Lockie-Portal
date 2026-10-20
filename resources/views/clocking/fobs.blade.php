@@ -1,45 +1,45 @@
 <x-layout title="Fobs — Clocking">
-<main style="max-width:960px;margin:0 auto;padding:2rem 1.5rem;">
+<main class="max-w-4xl mx-auto px-4 sm:px-6 py-8">
 
-    <div style="margin-bottom:1.5rem;">
-        <h1 style="font-size:1.5rem;font-weight:700;color:#1e293b;margin:0 0 1rem;">Clocking</h1>
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-slate-800 mb-4">Clocking</h1>
         @include('clocking._tabs', ['active' => 'fobs'])
     </div>
 
     {{-- Enrol new fob --}}
-    <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;padding:1.5rem;margin-bottom:1.5rem;">
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-            <h2 style="font-size:0.9375rem;font-weight:700;color:#1e293b;margin:0;">Fobs</h2>
+    <div class="bg-white rounded-xl border border-slate-200 p-6 mb-6">
+        <div class="flex items-center justify-between gap-3">
+            <h2 class="text-[0.9375rem] font-bold text-slate-800">Fobs</h2>
             <button onclick="startEnrol()"
-                style="padding:0.4rem 0.875rem;background:#1e293b;color:#fff;border:none;border-radius:7px;font-size:0.8125rem;font-weight:600;cursor:pointer;">
+                class="px-3.5 py-2 bg-slate-900 text-white border-0 rounded-lg text-[0.8125rem] font-semibold cursor-pointer hover:bg-slate-700 transition-colors flex-shrink-0">
                 + Enrol New Fob
             </button>
         </div>
 
         {{-- Step 1: tap to capture UID --}}
-        <div id="enrol-tap" style="display:none;margin-top:1rem;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:1.25rem;text-align:center;">
-            <div style="font-size:2rem;margin-bottom:0.5rem;">📡</div>
-            <p style="font-size:0.9375rem;font-weight:600;color:#166534;margin:0 0 0.25rem;">Tap a fob on the reader now</p>
-            <p style="font-size:0.8125rem;color:#4ade80;margin:0 0 1rem;">Waiting for RFID input…</p>
+        <div id="enrol-tap" class="hidden mt-4 bg-green-50 border border-green-200 rounded-lg p-5 text-center">
+            <div class="text-3xl mb-2">📡</div>
+            <p class="text-[0.9375rem] font-semibold text-green-800 mb-1">Tap a fob on the reader now</p>
+            <p class="text-[0.8125rem] text-green-400 mb-4">Waiting for RFID input…</p>
             <button onclick="cancelEnrol()"
-                style="padding:0.4rem 0.875rem;background:none;border:1px solid #bbf7d0;border-radius:7px;font-size:0.8125rem;color:#166534;cursor:pointer;">
+                class="px-3.5 py-1.5 bg-transparent border border-green-200 rounded-lg text-[0.8125rem] text-green-800 cursor-pointer">
                 Cancel
             </button>
         </div>
 
         {{-- Step 2: assign + save --}}
-        <div id="enrol-assign" style="display:none;margin-top:1rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:1.25rem;">
-            <p style="font-size:0.8125rem;color:#64748b;margin:0 0 0.75rem;">Fob detected. Assign it to an employee and save.</p>
-            <div style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:flex-end;">
+        <div id="enrol-assign" class="hidden mt-4 bg-slate-50 border border-slate-200 rounded-lg p-5">
+            <p class="text-[0.8125rem] text-slate-500 mb-3">Fob detected. Assign it to an employee and save.</p>
+            <div class="flex flex-wrap gap-3 items-end">
                 <div>
-                    <label style="font-size:0.8125rem;font-weight:600;color:#374151;display:block;margin-bottom:0.25rem;">UID</label>
+                    <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1">UID</label>
                     <input type="text" id="enrol-uid" readonly
-                        style="width:160px;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:7px;font-size:0.875rem;background:#f1f5f9;font-family:monospace;">
+                        class="w-40 px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-100 font-mono focus:outline-none">
                 </div>
                 <div>
-                    <label style="font-size:0.8125rem;font-weight:600;color:#374151;display:block;margin-bottom:0.25rem;">Assign to</label>
+                    <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1">Assign to</label>
                     <select id="enrol-employee"
-                        style="padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:7px;font-size:0.875rem;min-width:180px;">
+                        class="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 min-w-[180px]">
                         <option value="">— No assignment yet —</option>
                         @foreach($employees as $emp)
                         <option value="{{ $emp->id }}">{{ $emp->name }}</option>
@@ -47,88 +47,89 @@
                     </select>
                 </div>
                 <div>
-                    <label style="font-size:0.8125rem;font-weight:600;color:#374151;display:block;margin-bottom:0.25rem;">Notes (optional)</label>
+                    <label class="block text-[0.8125rem] font-semibold text-slate-700 mb-1">Notes (optional)</label>
                     <input type="text" id="enrol-notes" maxlength="200" placeholder="e.g. spare fob"
-                        style="width:180px;padding:0.5rem 0.75rem;border:1px solid #e2e8f0;border-radius:7px;font-size:0.875rem;">
+                        class="w-44 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
                 </div>
-                <div style="display:flex;gap:0.5rem;">
+                <div class="flex gap-2">
                     <button onclick="saveEnrol()"
-                        style="padding:0.5rem 1.25rem;background:#6366f1;color:#fff;border:none;border-radius:7px;font-size:0.875rem;font-weight:600;cursor:pointer;">
+                        class="px-5 py-2 bg-indigo-500 text-white border-0 rounded-lg text-[0.875rem] font-semibold cursor-pointer hover:bg-indigo-600 transition-colors">
                         Save Fob
                     </button>
                     <button onclick="cancelEnrol()"
-                        style="padding:0.5rem 1rem;background:none;border:1px solid #e2e8f0;border-radius:7px;font-size:0.875rem;color:#64748b;cursor:pointer;">
+                        class="px-4 py-2 bg-transparent border border-slate-200 rounded-lg text-[0.875rem] text-slate-500 cursor-pointer hover:bg-slate-50 transition-colors">
                         Cancel
                     </button>
                 </div>
             </div>
-            <div id="enrol-result" style="margin-top:0.5rem;font-size:0.8125rem;"></div>
+            <div id="enrol-result" class="mt-2 text-[0.8125rem]"></div>
         </div>
     </div>
 
     {{-- Fob list --}}
-    <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;overflow:hidden;">
+    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
         @if($fobs->isEmpty())
-            <p style="padding:1.5rem;color:#94a3b8;font-size:0.875rem;">No fobs enrolled yet.</p>
+            <p class="p-6 text-slate-400 text-sm">No fobs enrolled yet.</p>
         @else
-        <table style="width:100%;border-collapse:collapse;font-size:0.875rem;">
+        <div class="overflow-x-auto">
+        <table class="w-full border-collapse text-sm" style="min-width:560px;">
             <thead>
-                <tr style="border-bottom:1px solid #e2e8f0;background:#f8fafc;">
-                    <th style="text-align:left;padding:0.625rem 1rem;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;font-weight:600;">UID</th>
-                    <th style="text-align:left;padding:0.625rem 0.75rem;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;font-weight:600;">Employee</th>
-                    <th style="text-align:left;padding:0.625rem 0.75rem;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;font-weight:600;">Assigned</th>
-                    <th style="text-align:left;padding:0.625rem 0.75rem;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;font-weight:600;">Status</th>
-                    <th style="padding:0.625rem 1rem;"></th>
+                <tr class="border-b border-slate-200 bg-slate-50">
+                    <th class="text-left py-2.5 pl-5 pr-3 text-[0.7rem] text-slate-500 uppercase tracking-wide font-semibold">UID</th>
+                    <th class="text-left py-2.5 px-3 text-[0.7rem] text-slate-500 uppercase tracking-wide font-semibold">Employee</th>
+                    <th class="text-left py-2.5 px-3 text-[0.7rem] text-slate-500 uppercase tracking-wide font-semibold">Assigned</th>
+                    <th class="text-left py-2.5 px-3 text-[0.7rem] text-slate-500 uppercase tracking-wide font-semibold">Status</th>
+                    <th class="py-2.5 pr-5"></th>
                 </tr>
             </thead>
             <tbody>
             @foreach($fobs as $fob)
-            <tr style="border-bottom:1px solid #f1f5f9;{{ $fob->is_active ? '' : 'opacity:0.5;' }}" id="fob-row-{{ $fob->id }}">
-                <td style="padding:0.75rem 1rem;font-family:monospace;font-weight:600;color:#1e293b;">{{ $fob->uid }}</td>
-                <td style="padding:0.75rem 0.75rem;color:#475569;" id="fob-emp-{{ $fob->id }}">
+            <tr class="border-b border-slate-50 {{ $fob->is_active ? '' : 'opacity-50' }}" id="fob-row-{{ $fob->id }}">
+                <td class="py-3 pl-5 pr-3 font-mono font-semibold text-slate-800">{{ $fob->uid }}</td>
+                <td class="py-3 px-3 text-slate-500" id="fob-emp-{{ $fob->id }}">
                     {{ $fob->employee?->name ?? '—' }}
                 </td>
-                <td style="padding:0.75rem 0.75rem;color:#64748b;">
+                <td class="py-3 px-3 text-slate-500">
                     {{ $fob->assigned_at ? $fob->assigned_at->setTimezone('Europe/London')->format('d M Y') : '—' }}
                 </td>
-                <td style="padding:0.75rem 0.75rem;">
+                <td class="py-3 px-3">
                     @if($fob->is_active)
-                        <span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:99px;font-size:0.72rem;font-weight:600;">Active</span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[0.72rem] font-semibold bg-green-100 text-green-800">Active</span>
                     @else
-                        <span style="background:#f1f5f9;color:#94a3b8;padding:2px 8px;border-radius:99px;font-size:0.72rem;font-weight:600;">Retired</span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[0.72rem] font-semibold bg-slate-100 text-slate-400">Retired</span>
                     @endif
                 </td>
-                <td style="padding:0.75rem 1rem;text-align:right;white-space:nowrap;">
+                <td class="py-3 pl-3 pr-5 text-right whitespace-nowrap">
                     @if($fob->is_active)
                     <button onclick="openAssign({{ $fob->id }})"
-                        style="padding:3px 10px;background:none;border:1px solid #e2e8f0;border-radius:6px;color:#475569;font-size:0.75rem;cursor:pointer;margin-right:4px;">
+                        class="px-2.5 py-1 border border-slate-200 text-slate-500 text-xs rounded-md bg-transparent cursor-pointer mr-1">
                         Assign
                     </button>
                     <button onclick="deactivateFob({{ $fob->id }})"
-                        style="padding:3px 10px;background:none;border:1px solid #fecaca;border-radius:6px;color:#ef4444;font-size:0.75rem;cursor:pointer;">
+                        class="px-2.5 py-1 border border-red-200 text-red-500 text-xs rounded-md bg-transparent cursor-pointer">
                         Retire
                     </button>
                     @endif
                 </td>
             </tr>
             {{-- Assign row (hidden) --}}
-            <tr id="fob-assign-{{ $fob->id }}" style="display:none;">
-                <td colspan="5" style="padding:0;background:#f8fafc;border-bottom:1px solid #e2e8f0;">
-                    <div style="padding:0.75rem 1rem;display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
-                        <span style="font-size:0.8125rem;color:#64748b;">Assign to:</span>
+            <tr id="fob-assign-{{ $fob->id }}" class="hidden">
+                <td colspan="5" class="p-0 bg-slate-50 border-b border-slate-200">
+                    <div class="px-5 py-3 flex items-center gap-2 flex-wrap">
+                        <span class="text-[0.8125rem] text-slate-500">Assign to:</span>
                         <select id="assign-emp-{{ $fob->id }}"
-                            style="padding:0.4rem 0.625rem;border:1px solid #e2e8f0;border-radius:7px;font-size:0.875rem;">
+                            class="px-2.5 py-1.5 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-sky-500">
                             <option value="">— Unassigned —</option>
                             @foreach($employees as $emp)
                             <option value="{{ $emp->id }}" {{ $fob->employee_id == $emp->id ? 'selected' : '' }}>{{ $emp->name }}</option>
                             @endforeach
                         </select>
                         <button onclick="saveAssign({{ $fob->id }})"
-                            style="padding:0.4rem 0.875rem;background:#6366f1;color:#fff;border:none;border-radius:7px;font-size:0.8125rem;font-weight:600;cursor:pointer;">
+                            class="px-3.5 py-1.5 bg-indigo-500 text-white border-0 rounded-lg text-[0.8125rem] font-semibold cursor-pointer hover:bg-indigo-600 transition-colors">
                             Save
                         </button>
                         <button onclick="closeAssign({{ $fob->id }})"
-                            style="padding:0.4rem 0.75rem;background:none;border:1px solid #e2e8f0;border-radius:7px;font-size:0.8125rem;color:#64748b;cursor:pointer;">
+                            class="px-3 py-1.5 bg-transparent border border-slate-200 rounded-lg text-[0.8125rem] text-slate-500 cursor-pointer">
                             Cancel
                         </button>
                     </div>
@@ -137,6 +138,7 @@
             @endforeach
             </tbody>
         </table>
+        </div>
         @endif
     </div>
 
@@ -152,23 +154,23 @@ let capturedUid = null;
 function startEnrol() {
     enrolMode  = true;
     capturedUid = null;
-    document.getElementById('enrol-tap').style.display    = 'block';
-    document.getElementById('enrol-assign').style.display = 'none';
+    document.getElementById('enrol-tap').classList.remove('hidden');
+    document.getElementById('enrol-assign').classList.add('hidden');
 }
 
 function cancelEnrol() {
     enrolMode = false;
     capturedUid = null;
-    document.getElementById('enrol-tap').style.display    = 'none';
-    document.getElementById('enrol-assign').style.display = 'none';
+    document.getElementById('enrol-tap').classList.add('hidden');
+    document.getElementById('enrol-assign').classList.add('hidden');
 }
 
 function uidCaptured(uid) {
     capturedUid = uid;
-    document.getElementById('enrol-uid').value           = uid;
-    document.getElementById('enrol-tap').style.display   = 'none';
-    document.getElementById('enrol-assign').style.display = 'block';
-    document.getElementById('enrol-result').textContent  = '';
+    document.getElementById('enrol-uid').value = uid;
+    document.getElementById('enrol-tap').classList.add('hidden');
+    document.getElementById('enrol-assign').classList.remove('hidden');
+    document.getElementById('enrol-result').textContent = '';
 }
 
 async function saveEnrol() {
@@ -194,13 +196,13 @@ async function saveEnrol() {
 // ── Assign ------------------------------------------------------------------
 function openAssign(id) {
     closeAllAssigns();
-    document.getElementById('fob-assign-' + id).style.display = 'table-row';
+    document.getElementById('fob-assign-' + id).classList.remove('hidden');
 }
 function closeAssign(id) {
-    document.getElementById('fob-assign-' + id).style.display = 'none';
+    document.getElementById('fob-assign-' + id).classList.add('hidden');
 }
 function closeAllAssigns() {
-    document.querySelectorAll('[id^="fob-assign-"]').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('[id^="fob-assign-"]').forEach(el => el.classList.add('hidden'));
 }
 
 async function saveAssign(id) {
