@@ -139,6 +139,11 @@
                         style="padding:3px 10px;background:none;border:1px solid {{ $emp->is_active ? '#fecaca' : '#e2e8f0' }};border-radius:6px;color:{{ $emp->is_active ? '#ef4444' : '#64748b' }};font-size:0.75rem;cursor:pointer;">
                         {{ $emp->is_active ? 'Deactivate' : 'Reactivate' }}
                     </button>
+                    <button onclick="deleteEmployee({{ $emp->id }}, '{{ addslashes($emp->name) }}')"
+                        style="padding:3px 10px;background:none;border:1px solid #fecaca;border-radius:6px;color:#dc2626;font-size:0.75rem;cursor:pointer;margin-left:4px;"
+                        title="Permanently delete (history is kept)">
+                        Delete
+                    </button>
                 </td>
             </tr>
             {{-- Edit row (hidden) --}}
@@ -359,6 +364,15 @@ async function toggleActive(id, currentlyActive) {
     if (!confirm(`${action} this employee?`)) return;
     const r = await fetch(`/clocking/employees/${id}/toggle`, {
         method: 'POST',
+        headers: { 'X-CSRF-TOKEN': CSRF },
+    });
+    if (r.ok) location.reload();
+}
+
+async function deleteEmployee(id, name) {
+    if (!confirm(`Permanently delete ${name}?\n\nTheir clocking history will be kept, but they will be removed from all lists and cannot be recovered.`)) return;
+    const r = await fetch(`/clocking/employees/${id}`, {
+        method: 'DELETE',
         headers: { 'X-CSRF-TOKEN': CSRF },
     });
     if (r.ok) location.reload();

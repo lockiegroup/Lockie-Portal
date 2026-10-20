@@ -369,6 +369,7 @@ Route::middleware(['otp', 'auth'])->group(function () {
         Route::post('/employees',                          [ClockingEmployeeController::class, 'store'])->name('employees.store');
         Route::put('/employees/{employee}',                [ClockingEmployeeController::class, 'update'])->name('employees.update');
         Route::post('/employees/{employee}/toggle',        [ClockingEmployeeController::class, 'toggle'])->name('employees.toggle');
+        Route::delete('/employees/{employee}',             [ClockingEmployeeController::class, 'destroy'])->name('employees.destroy');
 
         // Fobs
         Route::get('/fobs',                                [ClockingFobController::class, 'index'])->name('fobs.index');

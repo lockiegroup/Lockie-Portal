@@ -5,9 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ClockingEmployee extends Model
 {
+    use SoftDeletes;
     protected $fillable = ['name', 'is_active', 'category_id', 'schedule', 'break_override_minutes'];
 
     protected function casts(): array

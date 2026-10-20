@@ -83,6 +83,14 @@ class ClockingEmployeeController extends Controller
         return response()->json(['ok' => true, 'is_active' => $employee->is_active]);
     }
 
+    public function destroy(ClockingEmployee $employee): JsonResponse
+    {
+        // Unassign any active fob first
+        $this->syncFob($employee, null);
+        $employee->delete();
+        return response()->json(['ok' => true]);
+    }
+
     /**
      * Assign a fob UID to an employee, creating the fob record if needed.
      * If uid is null, the employee's current fob is unassigned.
