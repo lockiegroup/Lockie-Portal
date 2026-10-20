@@ -1,26 +1,26 @@
 <x-layout title="Factory Training — Lockie Portal">
-<main style="max-width:1400px;margin:0 auto;padding:2rem 1.5rem;">
+<main class="max-w-[1400px] mx-auto px-4 sm:px-6 py-8">
 
     {{-- Page header --}}
-    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1.5rem;">
+    <div class="flex flex-wrap items-start justify-between gap-4 mb-6">
         <div>
-            <h1 style="font-size:1.5rem;font-weight:700;color:#1e293b;margin:0 0 0.25rem;">Factory Training</h1>
-            <p style="color:#64748b;font-size:0.875rem;margin:0;">Operator machine training matrix &amp; records.</p>
+            <h1 class="text-2xl font-bold text-slate-800 mb-1">Factory Training</h1>
+            <p class="text-slate-500 text-sm">Operator machine training matrix &amp; records.</p>
         </div>
-        <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+        <div class="flex items-center gap-3 flex-wrap">
             @if($canEdit)
             <button onclick="openModal('departments-modal')"
-                style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.4rem 0.875rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.8125rem;font-weight:600;cursor:pointer;">
+                class="inline-flex items-center gap-1.5 px-3.5 py-[0.4rem] rounded-lg border border-slate-200 bg-white text-slate-700 text-[0.8125rem] font-semibold cursor-pointer hover:bg-slate-50 transition-colors">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                 Departments
             </button>
             <button onclick="openModal('operators-modal')"
-                style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.4rem 0.875rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.8125rem;font-weight:600;cursor:pointer;">
+                class="inline-flex items-center gap-1.5 px-3.5 py-[0.4rem] rounded-lg border border-slate-200 bg-white text-slate-700 text-[0.8125rem] font-semibold cursor-pointer hover:bg-slate-50 transition-colors">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 Operators
             </button>
             <button onclick="openModal('machines-modal')"
-                style="display:inline-flex;align-items:center;gap:0.375rem;padding:0.4rem 0.875rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.8125rem;font-weight:600;border:none;cursor:pointer;">
+                class="inline-flex items-center gap-1.5 px-3.5 py-[0.4rem] rounded-lg bg-slate-900 text-white text-[0.8125rem] font-semibold border-none cursor-pointer hover:bg-slate-800 transition-colors">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
                 Machines
             </button>
@@ -30,10 +30,10 @@
 
     {{-- Flash messages --}}
     @if(session('success'))
-    <div style="margin-bottom:1rem;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;font-size:0.875rem;border-radius:8px;padding:0.75rem 1rem;">{{ session('success') }}</div>
+    <div class="mb-4 bg-green-50 border border-green-200 text-green-800 text-sm rounded-lg px-4 py-3">{{ session('success') }}</div>
     @endif
     @if($errors->any())
-    <div style="margin-bottom:1rem;background:#fef2f2;border:1px solid #fecaca;color:#991b1b;font-size:0.875rem;border-radius:8px;padding:0.75rem 1rem;">{{ $errors->first() }}</div>
+    <div class="mb-4 bg-red-50 border border-red-200 text-red-800 text-sm rounded-lg px-4 py-3">{{ $errors->first() }}</div>
     @endif
 
     @php
@@ -54,25 +54,25 @@
     @endphp
 
     {{-- Stats bar --}}
-    <div style="display:flex;flex-wrap:wrap;gap:0.75rem;margin-bottom:1.5rem;">
-        <div style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.375rem 0.875rem;border-radius:9999px;background:#f1f5f9;color:#475569;font-size:0.8125rem;font-weight:600;">
+    <div class="flex flex-wrap gap-3 mb-6">
+        <div class="inline-flex items-center gap-2 px-3.5 py-[0.375rem] rounded-full bg-slate-100 text-slate-600 text-[0.8125rem] font-semibold">
             {{ $totalOperators }} operator{{ $totalOperators !== 1 ? 's' : '' }}
         </div>
-        <div style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.375rem 0.875rem;border-radius:9999px;background:#f1f5f9;color:#475569;font-size:0.8125rem;font-weight:600;">
+        <div class="inline-flex items-center gap-2 px-3.5 py-[0.375rem] rounded-full bg-slate-100 text-slate-600 text-[0.8125rem] font-semibold">
             {{ $totalMachines }} machine{{ $totalMachines !== 1 ? 's' : '' }}
         </div>
         @if($neverTrained > 0)
-        <div style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.375rem 0.875rem;border-radius:9999px;background:#f1f5f9;color:#64748b;font-size:0.8125rem;font-weight:600;">
+        <div class="inline-flex items-center gap-2 px-3.5 py-[0.375rem] rounded-full bg-slate-100 text-slate-500 text-[0.8125rem] font-semibold">
             {{ $neverTrained }} gap{{ $neverTrained !== 1 ? 's' : '' }}
         </div>
         @endif
         @if($expired > 0)
-        <div style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.375rem 0.875rem;border-radius:9999px;background:#fee2e2;color:#991b1b;font-size:0.8125rem;font-weight:600;">
+        <div class="inline-flex items-center gap-2 px-3.5 py-[0.375rem] rounded-full bg-red-100 text-red-800 text-[0.8125rem] font-semibold">
             {{ $expired }} overdue
         </div>
         @endif
         @if($expiring > 0)
-        <div style="display:inline-flex;align-items:center;gap:0.5rem;padding:0.375rem 0.875rem;border-radius:9999px;background:#fef3c7;color:#92400e;font-size:0.8125rem;font-weight:600;">
+        <div class="inline-flex items-center gap-2 px-3.5 py-[0.375rem] rounded-full bg-amber-100 text-amber-800 text-[0.8125rem] font-semibold">
             {{ $expiring }} due soon
         </div>
         @endif
@@ -83,15 +83,15 @@
 
     {{-- Department filter --}}
     @if($categories->isNotEmpty())
-    <div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:1rem;align-items:center;">
-        <span style="font-size:0.72rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-right:0.25rem;">Filter:</span>
+    <div class="flex flex-wrap gap-2 mb-4 items-center">
+        <span class="text-[0.72rem] font-bold text-slate-400 uppercase tracking-wide mr-1">Filter:</span>
         <button onclick="filterDept('__all__')" id="dept-btn-__all__"
-            style="padding:0.3rem 0.75rem;border-radius:9999px;border:1px solid #334155;background:#334155;color:#fff;font-size:0.78rem;font-weight:600;cursor:pointer;">
+            class="px-3 py-[0.3rem] rounded-full border border-slate-800 bg-slate-800 text-white text-[0.78rem] font-semibold cursor-pointer">
             All
         </button>
         @foreach($categories as $cat)
         <button onclick="filterDept('{{ addslashes($cat) }}')" id="dept-btn-{{ Str::slug($cat) }}"
-            style="padding:0.3rem 0.75rem;border-radius:9999px;border:1px solid #e2e8f0;background:#fff;color:#475569;font-size:0.78rem;font-weight:600;cursor:pointer;">
+            class="px-3 py-[0.3rem] rounded-full border border-slate-200 bg-white text-slate-600 text-[0.78rem] font-semibold cursor-pointer">
             {{ $cat }}
         </button>
         @endforeach
@@ -99,7 +99,7 @@
     @endif
 
     @if($operators->isEmpty() || $machines->isEmpty())
-    <div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:3rem;text-align:center;color:#94a3b8;font-size:0.875rem;">
+    <div class="bg-white rounded-xl border border-slate-200 p-12 text-center text-slate-400 text-sm">
         @if($operators->isEmpty() && $machines->isEmpty())
             No operators or machines configured yet. Use the buttons above to add them.
         @elseif($operators->isEmpty())
@@ -159,27 +159,27 @@
     }
     @endphp
 
-    <div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;">
-        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
-            <table style="border-collapse:collapse;font-size:0.8rem;white-space:nowrap;width:100%;">
+    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div class="overflow-x-auto" style="-webkit-overflow-scrolling:touch;">
+            <table class="border-collapse text-[0.8rem] whitespace-nowrap w-full">
                 <thead>
                     <tr>
-                        <th style="position:sticky;left:0;z-index:3;background:#f8fafc;padding:8px 14px;text-align:left;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid #e2e8f0;border-right:2px solid #e2e8f0;min-width:160px;">Operator</th>
+                        <th class="sticky left-0 z-[3] bg-slate-50 px-3.5 py-2 text-left text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide border-b border-slate-200 border-r-2 border-r-slate-200 min-w-[160px]">Operator</th>
                         @foreach($machineGroups as $cat => $catMachines)
                         <th colspan="{{ count($catMachines) }}" data-dept="{{ $cat }}"
-                            style="padding:6px 10px;text-align:center;font-size:0.68rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;background:#f8fafc;border-bottom:1px solid #e2e8f0;border-left:1px solid #e2e8f0;">
+                            class="px-2.5 py-1.5 text-center text-[0.68rem] font-bold text-slate-500 uppercase tracking-wider bg-slate-50 border-b border-slate-200 border-l border-l-slate-200">
                             {{ $cat }}
                         </th>
                         @endforeach
                     </tr>
                     <tr>
-                        <th style="position:sticky;left:0;z-index:3;background:#f8fafc;padding:0;border-bottom:2px solid #e2e8f0;border-right:2px solid #e2e8f0;"></th>
+                        <th class="sticky left-0 z-[3] bg-slate-50 p-0 border-b-2 border-slate-200 border-r-2 border-r-slate-200"></th>
                         @foreach($machineGroups as $cat => $catMachines)
                             @foreach($catMachines as $mac)
-                            <th data-dept="{{ $cat }}" style="padding:6px 10px;text-align:center;font-size:0.75rem;font-weight:600;color:#334155;border-bottom:2px solid #e2e8f0;border-left:1px solid #f1f5f9;min-width:110px;">
+                            <th data-dept="{{ $cat }}" class="px-2.5 py-1.5 text-center text-[0.75rem] font-semibold text-slate-700 border-b-2 border-slate-200 border-l border-l-slate-100 min-w-[110px]">
                                 {{ $mac->name }}
                                 @if($mac->retrain_months)
-                                <div style="font-size:0.65rem;font-weight:400;color:#94a3b8;">{{ $mac->retrain_months }}mo</div>
+                                <div class="text-[0.65rem] font-normal text-slate-400">{{ $mac->retrain_months }}mo</div>
                                 @endif
                             </th>
                             @endforeach
@@ -188,8 +188,8 @@
                 </thead>
                 <tbody>
                     @foreach($operators as $op)
-                    <tr style="border-bottom:1px solid #f1f5f9;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
-                        <td style="position:sticky;left:0;z-index:1;background:#fff;padding:8px 14px;font-size:0.8125rem;font-weight:600;color:#334155;border-right:2px solid #e2e8f0;min-width:160px;">
+                    <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                        <td class="sticky left-0 z-[1] bg-white px-3.5 py-2 text-[0.8125rem] font-semibold text-slate-700 border-r-2 border-r-slate-200 min-w-[160px]">
                             {{ $op->name }}
                         </td>
                         @foreach($machineGroups as $cat => $catMachines)
@@ -219,15 +219,16 @@
                                     $expiryLabel = $rec->trained_date->copy()->addMonths($mac->retrain_months)->format('d M y');
                                 }
                             @endphp
-                            <td data-dept="{{ $cat }}" style="padding:4px 6px;text-align:center;border-left:1px solid #f1f5f9;vertical-align:middle;">
+                            <td data-dept="{{ $cat }}" class="px-1.5 py-1 text-center border-l border-l-slate-100 align-middle">
                                 <span @if($canEdit) onclick="openCell({{ $op->id }}, {{ $mac->id }})" @endif
-                                    style="display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:4px 7px;border-radius:6px;background:{{ $bgColor }};color:{{ $txtColor }};font-size:0.72rem;font-weight:600;min-width:90px;position:relative;{{ $canEdit ? 'cursor:pointer;' : '' }}">
-                                    <span style="display:inline-flex;align-items:center;justify-content:center;gap:3px;">
+                                    class="inline-flex flex-col items-center justify-center gap-px px-1.5 py-1 rounded-md text-[0.72rem] font-semibold min-w-[90px] relative{{ $canEdit ? ' cursor-pointer' : '' }}"
+                                    style="background:{{ $bgColor }};color:{{ $txtColor }};">
+                                    <span class="inline-flex items-center justify-center gap-[3px]">
                                     @if($firstPlan)
-                                        <span style="font-size:0.68rem;">Planned</span>
+                                        <span class="text-[0.68rem]">Planned</span>
                                         <span>{{ $firstPlan->planned_date->format('d M y') }}</span>
                                     @elseif($status === 'none')
-                                        <span style="color:#cbd5e1;">—</span>
+                                        <span class="text-slate-300">—</span>
                                     @elseif($status === 'valid' || $status === 'no_expiry')
                                         <span>✓</span>
                                         <span>{{ $rec->trained_date->format('d M y') }}</span>
@@ -240,10 +241,10 @@
                                     @endif
                                     </span>
                                     @if($rec && !$hasPdf)
-                                    <span style="font-size:0.6rem;font-weight:700;color:#92400e;background:#fef3c7;border-radius:3px;padding:0px 4px;letter-spacing:0.02em;">No PDF</span>
+                                    <span class="text-[0.6rem] font-bold text-amber-800 bg-amber-100 rounded px-1 tracking-wide">No PDF</span>
                                     @endif
                                     @if($hasPlanned && $status !== 'none')
-                                    <span title="Planned session" style="position:absolute;top:2px;right:3px;font-size:0.6rem;color:#6366f1;">📅</span>
+                                    <span title="Planned session" class="absolute top-0.5 right-1 text-[0.6rem] text-indigo-500">📅</span>
                                     @endif
                                 </span>
                             </td>
@@ -259,90 +260,90 @@
 
     @if($canEdit)
     {{-- ====================== RECORD MODAL ====================== --}}
-    <div id="record-modal" style="display:none;position:fixed;inset:0;z-index:100;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);padding:1rem;">
-        <div style="background:#fff;border-radius:14px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid #f1f5f9;">
+    <div id="record-modal" style="display:none;" class="fixed inset-0 z-[100] items-center justify-center bg-black/45 p-4">
+        <div class="bg-white rounded-2xl w-full max-w-[560px] max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div class="flex items-center justify-between px-6 py-5 border-b border-slate-100">
                 <div>
-                    <p id="modal-operator-name" style="font-size:0.75rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 2px;"></p>
-                    <h2 id="modal-machine-name" style="font-size:1.05rem;font-weight:700;color:#1e293b;margin:0;"></h2>
+                    <p id="modal-operator-name" class="text-[0.75rem] font-bold text-slate-400 uppercase tracking-wide mb-0.5"></p>
+                    <h2 id="modal-machine-name" class="text-[1.05rem] font-bold text-slate-800 m-0"></h2>
                 </div>
-                <button onclick="closeModal('record-modal')" style="background:none;border:none;cursor:pointer;color:#94a3b8;padding:4px;border-radius:6px;line-height:0;">
+                <button onclick="closeModal('record-modal')" class="bg-transparent border-none cursor-pointer text-slate-400 p-1 rounded-md leading-none hover:text-slate-600">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
             </div>
 
-            <div style="padding:1.25rem 1.5rem;">
+            <div class="px-6 py-5">
 
                 {{-- Existing record --}}
-                <div id="modal-record-section" style="display:none;margin-bottom:1.25rem;padding:1rem;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;">
-                    <p style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 0.75rem;">Current Record</p>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;">
+                <div id="modal-record-section" style="display:none;" class="mb-5 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                    <p class="text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-3">Current Record</p>
+                    <div class="grid grid-cols-2 gap-3 mb-3">
                         <div>
-                            <p style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 2px;">Trained Date</p>
-                            <p id="modal-trained-date" style="font-size:0.875rem;font-weight:600;color:#1e293b;margin:0;"></p>
+                            <p class="text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-0.5">Trained Date</p>
+                            <p id="modal-trained-date" class="text-sm font-semibold text-slate-800 m-0"></p>
                         </div>
                         <div>
-                            <p style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 2px;">Added By</p>
-                            <p id="modal-added-by" style="font-size:0.875rem;color:#334155;margin:0;"></p>
+                            <p class="text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-0.5">Added By</p>
+                            <p id="modal-added-by" class="text-sm text-slate-700 m-0"></p>
                         </div>
                         <div id="modal-pdf-wrap">
-                            <p style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 2px;">Certificate</p>
-                            <a id="modal-pdf-link" href="#" target="_blank" style="font-size:0.8125rem;color:#2563eb;font-weight:600;text-decoration:none;">View Certificate</a>
+                            <p class="text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-0.5">Certificate</p>
+                            <a id="modal-pdf-link" href="#" target="_blank" class="text-[0.8125rem] text-blue-600 font-semibold no-underline hover:underline">View Certificate</a>
                         </div>
                     </div>
-                    <div id="modal-notes-wrap" style="margin-bottom:0.75rem;">
-                        <p style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 2px;">Notes</p>
-                        <p id="modal-notes" style="font-size:0.8125rem;color:#475569;margin:0;white-space:pre-line;"></p>
+                    <div id="modal-notes-wrap" class="mb-3">
+                        <p class="text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-0.5">Notes</p>
+                        <p id="modal-notes" class="text-[0.8125rem] text-slate-600 m-0 whitespace-pre-line"></p>
                     </div>
-                    <form id="modal-delete-record-form" method="POST" style="margin:0;" onsubmit="return confirm('Delete this training record? This cannot be undone.')">
+                    <form id="modal-delete-record-form" method="POST" class="m-0" onsubmit="return confirm('Delete this training record? This cannot be undone.')">
                         @csrf @method('DELETE')
                         <button type="submit"
-                            style="padding:0.3rem 0.75rem;border-radius:7px;border:1px solid #fca5a5;background:#fff;color:#dc2626;font-size:0.75rem;font-weight:600;cursor:pointer;">
+                            class="px-3 py-[0.3rem] rounded-lg border border-red-300 bg-white text-red-600 text-[0.75rem] font-semibold cursor-pointer hover:bg-red-50 transition-colors">
                             Delete Record
                         </button>
                     </form>
                 </div>
 
                 {{-- Training history --}}
-                <div id="modal-history-section" style="display:none;margin-bottom:1.25rem;">
-                    <p style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 0.5rem;">Previous Records</p>
+                <div id="modal-history-section" style="display:none;" class="mb-5">
+                    <p class="text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-2">Previous Records</p>
                     <div id="modal-history-list"></div>
                 </div>
 
                 {{-- Planned sessions --}}
-                <div id="modal-planned-section" style="display:none;margin-bottom:1.25rem;">
-                    <p style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 0.5rem;">Planned Sessions</p>
+                <div id="modal-planned-section" style="display:none;" class="mb-5">
+                    <p class="text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-2">Planned Sessions</p>
                     <div id="modal-planned-list"></div>
                 </div>
 
                 {{-- Add Training Record --}}
-                <details style="margin-bottom:1rem;">
-                    <summary style="font-size:0.8125rem;font-weight:700;color:#1e293b;cursor:pointer;padding:0.5rem 0;list-style:none;display:flex;align-items:center;gap:0.5rem;">
+                <details class="mb-4">
+                    <summary class="text-[0.8125rem] font-bold text-slate-800 cursor-pointer py-2 list-none flex items-center gap-2">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                         Add Training Record
                     </summary>
-                    <div style="padding:1rem;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;margin-top:0.5rem;">
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 mt-2">
                         <form id="modal-record-form" action="{{ route('training.records.store') }}" method="POST" enctype="multipart/form-data">
                             @csrf
                             <input type="hidden" name="operator_id" id="record-operator-id">
                             <input type="hidden" name="machine_id"  id="record-machine-id">
-                            <div style="margin-bottom:0.75rem;">
-                                <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Trained Date *</label>
+                            <div class="mb-3">
+                                <label class="block text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Trained Date *</label>
                                 <input type="date" name="trained_date" required
-                                    style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;background:#fff;box-sizing:border-box;">
+                                    class="w-full border border-slate-200 rounded-lg px-2.5 py-[7px] text-[0.8125rem] text-slate-700 bg-white box-border focus:outline-none focus:ring-2 focus:ring-sky-500">
                             </div>
-                            <div style="margin-bottom:0.75rem;">
-                                <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Upload Certificate (PDF or image)</label>
+                            <div class="mb-3">
+                                <label class="block text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Upload Certificate (PDF or image)</label>
                                 <input type="file" name="file" accept=".pdf,.png,.jpg,.jpeg,.gif,.webp"
-                                    style="width:100%;font-size:0.8125rem;color:#334155;">
+                                    class="w-full text-[0.8125rem] text-slate-700">
                             </div>
-                            <div style="margin-bottom:0.875rem;">
-                                <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Notes</label>
+                            <div class="mb-3.5">
+                                <label class="block text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Notes</label>
                                 <textarea name="notes" rows="2"
-                                    style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;resize:vertical;box-sizing:border-box;"></textarea>
+                                    class="w-full border border-slate-200 rounded-lg px-2.5 py-[7px] text-[0.8125rem] text-slate-700 resize-y box-border focus:outline-none focus:ring-2 focus:ring-sky-500"></textarea>
                             </div>
                             <button type="submit"
-                                style="padding:0.4rem 0.875rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.8125rem;font-weight:600;border:none;cursor:pointer;">
+                                class="px-3.5 py-[0.4rem] rounded-lg bg-slate-900 text-white text-[0.8125rem] font-semibold border-none cursor-pointer hover:bg-slate-800 transition-colors">
                                 Save Record
                             </button>
                         </form>
@@ -351,27 +352,27 @@
 
                 {{-- Add Planned Session --}}
                 <details>
-                    <summary style="font-size:0.8125rem;font-weight:700;color:#1e293b;cursor:pointer;padding:0.5rem 0;list-style:none;display:flex;align-items:center;gap:0.5rem;">
+                    <summary class="text-[0.8125rem] font-bold text-slate-800 cursor-pointer py-2 list-none flex items-center gap-2">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                         Add Planned Session
                     </summary>
-                    <div style="padding:1rem;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;margin-top:0.5rem;">
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 mt-2">
                         <form id="modal-planned-form" action="{{ route('training.planned.store') }}" method="POST">
                             @csrf
                             <input type="hidden" name="operator_id" id="planned-operator-id">
                             <input type="hidden" name="machine_id"  id="planned-machine-id">
-                            <div style="margin-bottom:0.75rem;">
-                                <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Planned Date *</label>
+                            <div class="mb-3">
+                                <label class="block text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Planned Date *</label>
                                 <input type="date" name="planned_date" required
-                                    style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;background:#fff;box-sizing:border-box;">
+                                    class="w-full border border-slate-200 rounded-lg px-2.5 py-[7px] text-[0.8125rem] text-slate-700 bg-white box-border focus:outline-none focus:ring-2 focus:ring-sky-500">
                             </div>
-                            <div style="margin-bottom:0.875rem;">
-                                <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Notes</label>
+                            <div class="mb-3.5">
+                                <label class="block text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Notes</label>
                                 <textarea name="notes" rows="2"
-                                    style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;resize:vertical;box-sizing:border-box;"></textarea>
+                                    class="w-full border border-slate-200 rounded-lg px-2.5 py-[7px] text-[0.8125rem] text-slate-700 resize-y box-border focus:outline-none focus:ring-2 focus:ring-sky-500"></textarea>
                             </div>
                             <button type="submit"
-                                style="padding:0.4rem 0.875rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.8125rem;font-weight:600;border:none;cursor:pointer;">
+                                class="px-3.5 py-[0.4rem] rounded-lg bg-slate-900 text-white text-[0.8125rem] font-semibold border-none cursor-pointer hover:bg-slate-800 transition-colors">
                                 Save Plan
                             </button>
                         </form>
@@ -383,31 +384,31 @@
     </div>
 
     {{-- ====================== MACHINES MODAL ====================== --}}
-    <div id="machines-modal" style="display:none;position:fixed;inset:0;z-index:100;align-items:flex-start;justify-content:center;background:rgba(0,0,0,0.45);padding:2rem 1rem;overflow-y:auto;">
-        <div style="background:#fff;border-radius:14px;width:100%;max-width:700px;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid #f1f5f9;">
-                <h2 style="font-size:1.05rem;font-weight:700;color:#1e293b;margin:0;">Manage Machines</h2>
-                <button onclick="closeModal('machines-modal')" style="background:none;border:none;cursor:pointer;color:#94a3b8;padding:4px;line-height:0;">
+    <div id="machines-modal" style="display:none;" class="fixed inset-0 z-[100] items-start justify-center bg-black/45 py-8 px-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl w-full max-w-[700px] shadow-2xl">
+            <div class="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+                <h2 class="text-[1.05rem] font-bold text-slate-800 m-0">Manage Machines</h2>
+                <button onclick="closeModal('machines-modal')" class="bg-transparent border-none cursor-pointer text-slate-400 p-1 leading-none hover:text-slate-600">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
             </div>
-            <div style="padding:1.25rem 1.5rem;">
+            <div class="px-6 py-5">
 
                 {{-- Add machine form --}}
-                <div style="background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;padding:1rem;margin-bottom:1.25rem;">
-                    <p style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 0.75rem;">Add New Machine</p>
+                <div class="bg-slate-50 rounded-xl border border-slate-200 p-4 mb-5">
+                    <p class="text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-3">Add New Machine</p>
                     <form action="{{ route('training.machines.store') }}" method="POST">
                         @csrf
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;">
+                        <div class="grid grid-cols-2 gap-3 mb-3">
                             <div>
-                                <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Name *</label>
+                                <label class="block text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Name *</label>
                                 <input type="text" name="name" required maxlength="100"
-                                    style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
+                                    class="w-full border border-slate-200 rounded-lg px-2.5 py-[7px] text-[0.8125rem] text-slate-700 box-border focus:outline-none focus:ring-2 focus:ring-sky-500">
                             </div>
                             <div>
-                                <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Department</label>
+                                <label class="block text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Department</label>
                                 <select name="category"
-                                    style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;background:#fff;box-sizing:border-box;">
+                                    class="w-full border border-slate-200 rounded-lg px-2.5 py-[7px] text-[0.8125rem] text-slate-700 bg-white box-border focus:outline-none focus:ring-2 focus:ring-sky-500">
                                     <option value="">— None —</option>
                                     @foreach($departments as $dept)
                                     <option value="{{ $dept->name }}">{{ $dept->name }}</option>
@@ -415,23 +416,22 @@
                                 </select>
                             </div>
                         </div>
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.875rem;">
+                        <div class="grid grid-cols-2 gap-3 mb-3.5">
                             <div>
-                                <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Re-train Interval (months)</label>
+                                <label class="block text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Re-train Interval (months)</label>
                                 <input type="number" name="retrain_months" min="1" max="120"
-                                    style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
+                                    class="w-full border border-slate-200 rounded-lg px-2.5 py-[7px] text-[0.8125rem] text-slate-700 box-border focus:outline-none focus:ring-2 focus:ring-sky-500">
                             </div>
-                            <div style="display:flex;align-items:center;padding-top:1.5rem;">
-                                <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.8125rem;color:#334155;cursor:pointer;">
+                            <div class="flex items-center pt-6">
+                                <label class="flex items-center gap-2 text-[0.8125rem] text-slate-700 cursor-pointer">
                                     <input type="hidden" name="active" value="0">
-                                    <input type="checkbox" name="active" value="1" checked
-                                        style="width:15px;height:15px;cursor:pointer;">
+                                    <input type="checkbox" name="active" value="1" checked class="w-[15px] h-[15px] cursor-pointer">
                                     Active
                                 </label>
                             </div>
                         </div>
                         <button type="submit"
-                            style="padding:0.4rem 0.875rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.8125rem;font-weight:600;border:none;cursor:pointer;">
+                            class="px-3.5 py-[0.4rem] rounded-lg bg-slate-900 text-white text-[0.8125rem] font-semibold border-none cursor-pointer hover:bg-slate-800 transition-colors">
                             Add Machine
                         </button>
                     </form>
@@ -443,57 +443,56 @@
                 $machinesByDept = $allMachines->groupBy(fn($m) => $m->category ?: 'Uncategorised');
                 @endphp
                 @if($allMachines->isEmpty())
-                <p style="color:#94a3b8;font-size:0.875rem;text-align:center;padding:1rem 0;">No machines added yet.</p>
+                <p class="text-slate-400 text-sm text-center py-4">No machines added yet.</p>
                 @else
                 @foreach($machinesByDept as $deptName => $deptMachines)
-                <div style="margin-bottom:1rem;">
-                    <div style="font-size:0.68rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;padding:0.25rem 0;margin-bottom:0.25rem;border-bottom:1px solid #e2e8f0;">
+                <div class="mb-4">
+                    <div class="text-[0.68rem] font-bold text-slate-400 uppercase tracking-wider py-1 mb-1 border-b border-slate-200">
                         {{ $deptName }}
                     </div>
-                    <div class="machine-sort-group" data-reorder-url="{{ route('training.machines.reorder') }}" style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;">
+                    <div class="machine-sort-group border border-slate-200 rounded-xl overflow-hidden" data-reorder-url="{{ route('training.machines.reorder') }}">
                         @foreach($deptMachines as $mac)
-                        <div class="machine-row" data-id="{{ $mac->id }}"
-                            style="padding:0.75rem 1rem;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:0.75rem;background:#fff;">
-                            <span class="drag-handle" title="Drag to reorder"
-                                style="color:#cbd5e1;cursor:grab;flex-shrink:0;line-height:0;padding:2px;">
+                        <div class="machine-row bg-white px-4 py-3 border-b border-slate-100 flex items-center gap-3" data-id="{{ $mac->id }}">
+                            <span class="drag-handle text-slate-300 cursor-grab flex-shrink-0 leading-none p-0.5" title="Drag to reorder">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="18" x2="16" y2="18"/></svg>
                             </span>
-                            <div style="flex:1;min-width:0;">
-                                <div style="font-size:0.8125rem;font-weight:600;color:{{ $mac->active ? '#1e293b' : '#94a3b8' }};">
+                            <div class="flex-1 min-w-0">
+                                <div class="text-[0.8125rem] font-semibold" style="color:{{ $mac->active ? '#1e293b' : '#94a3b8' }};">
                                     {{ $mac->name }}
-                                    @if(!$mac->active)<span style="font-size:0.7rem;color:#94a3b8;font-weight:400;"> (inactive)</span>@endif
+                                    @if(!$mac->active)<span class="text-[0.7rem] text-slate-400 font-normal"> (inactive)</span>@endif
                                 </div>
                                 @if($mac->retrain_months)
-                                <div style="font-size:0.75rem;color:#94a3b8;">Re-train: {{ $mac->retrain_months }}mo</div>
+                                <div class="text-[0.75rem] text-slate-400">Re-train: {{ $mac->retrain_months }}mo</div>
                                 @endif
                             </div>
                             <button onclick="toggleEdit('machine-edit-{{ $mac->id }}')"
-                                style="padding:0.25rem 0.625rem;border-radius:7px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.75rem;cursor:pointer;flex-shrink:0;">
+                                class="flex-shrink-0 px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-slate-700 text-[0.75rem] cursor-pointer hover:bg-slate-50 transition-colors">
                                 Edit
                             </button>
-                            <form action="{{ route('training.machines.destroy', $mac->id) }}" method="POST" style="margin:0;flex-shrink:0;"
+                            <form action="{{ route('training.machines.destroy', $mac->id) }}" method="POST" class="m-0 flex-shrink-0"
                                 onsubmit="return confirm('Delete machine {{ addslashes($mac->name) }}? This cannot be undone.')">
                                 @csrf @method('DELETE')
                                 <button type="submit"
-                                    style="padding:0.25rem 0.625rem;border-radius:7px;border:1px solid #fca5a5;background:#fff;color:#dc2626;font-size:0.75rem;cursor:pointer;">
+                                    class="px-2.5 py-1 rounded-lg border border-red-300 bg-white text-red-600 text-[0.75rem] cursor-pointer hover:bg-red-50 transition-colors">
                                     Delete
                                 </button>
                             </form>
                         </div>
                         {{-- Edit form --}}
-                        <div id="machine-edit-{{ $mac->id }}" class="mac-no-drag" style="display:none;padding:0.875rem 1rem;background:#f8fafc;border-bottom:1px solid #e2e8f0;">
+                        <div id="machine-edit-{{ $mac->id }}" class="mac-no-drag" style="display:none;">
+                            <div class="px-4 py-3.5 bg-slate-50 border-b border-slate-200">
                             <form action="{{ route('training.machines.update', $mac->id) }}" method="POST">
                                 @csrf @method('PUT')
-                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;">
+                                <div class="grid grid-cols-2 gap-3 mb-3">
                                     <div>
-                                        <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Name *</label>
+                                        <label class="block text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Name *</label>
                                         <input type="text" name="name" value="{{ $mac->name }}" required maxlength="100"
-                                            style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
+                                            class="w-full border border-slate-200 rounded-lg px-2.5 py-[7px] text-[0.8125rem] text-slate-700 box-border focus:outline-none focus:ring-2 focus:ring-sky-500">
                                     </div>
                                     <div>
-                                        <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Department</label>
+                                        <label class="block text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Department</label>
                                         <select name="category"
-                                            style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;background:#fff;box-sizing:border-box;">
+                                            class="w-full border border-slate-200 rounded-lg px-2.5 py-[7px] text-[0.8125rem] text-slate-700 bg-white box-border focus:outline-none focus:ring-2 focus:ring-sky-500">
                                             <option value="">— None —</option>
                                             @foreach($departments as $dept)
                                             <option value="{{ $dept->name }}" {{ $mac->category === $dept->name ? 'selected' : '' }}>{{ $dept->name }}</option>
@@ -501,32 +500,32 @@
                                         </select>
                                     </div>
                                 </div>
-                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.875rem;">
+                                <div class="grid grid-cols-2 gap-3 mb-3.5">
                                     <div>
-                                        <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Re-train Interval (months)</label>
+                                        <label class="block text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Re-train Interval (months)</label>
                                         <input type="number" name="retrain_months" value="{{ $mac->retrain_months }}" min="1" max="120"
-                                            style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
+                                            class="w-full border border-slate-200 rounded-lg px-2.5 py-[7px] text-[0.8125rem] text-slate-700 box-border focus:outline-none focus:ring-2 focus:ring-sky-500">
                                     </div>
-                                    <div style="display:flex;align-items:center;padding-top:1.5rem;">
-                                        <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.8125rem;color:#334155;cursor:pointer;">
+                                    <div class="flex items-center pt-6">
+                                        <label class="flex items-center gap-2 text-[0.8125rem] text-slate-700 cursor-pointer">
                                             <input type="hidden" name="active" value="0">
-                                            <input type="checkbox" name="active" value="1" {{ $mac->active ? 'checked' : '' }}
-                                                style="width:15px;height:15px;cursor:pointer;">
+                                            <input type="checkbox" name="active" value="1" {{ $mac->active ? 'checked' : '' }} class="w-[15px] h-[15px] cursor-pointer">
                                             Active
                                         </label>
                                     </div>
                                 </div>
-                                <div style="display:flex;gap:0.5rem;">
+                                <div class="flex gap-2">
                                     <button type="submit"
-                                        style="padding:0.35rem 0.75rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.75rem;font-weight:600;border:none;cursor:pointer;">
+                                        class="px-3 py-[0.35rem] rounded-lg bg-slate-900 text-white text-[0.75rem] font-semibold border-none cursor-pointer hover:bg-slate-800 transition-colors">
                                         Save
                                     </button>
                                     <button type="button" onclick="toggleEdit('machine-edit-{{ $mac->id }}')"
-                                        style="padding:0.35rem 0.75rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.75rem;cursor:pointer;">
+                                        class="px-3 py-[0.35rem] rounded-lg border border-slate-200 bg-white text-slate-700 text-[0.75rem] cursor-pointer hover:bg-slate-50 transition-colors">
                                         Cancel
                                     </button>
                                 </div>
                             </form>
+                            </div>
                         </div>
                         @endforeach
                     </div>
@@ -538,42 +537,42 @@
     </div>
 
     {{-- ====================== OPERATORS MODAL ====================== --}}
-    <div id="operators-modal" style="display:none;position:fixed;inset:0;z-index:100;align-items:flex-start;justify-content:center;background:rgba(0,0,0,0.45);padding:2rem 1rem;overflow-y:auto;">
-        <div style="background:#fff;border-radius:14px;width:100%;max-width:600px;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid #f1f5f9;">
-                <h2 style="font-size:1.05rem;font-weight:700;color:#1e293b;margin:0;">Manage Operators</h2>
-                <button onclick="closeModal('operators-modal')" style="background:none;border:none;cursor:pointer;color:#94a3b8;padding:4px;line-height:0;">
+    <div id="operators-modal" style="display:none;" class="fixed inset-0 z-[100] items-start justify-center bg-black/45 py-8 px-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl w-full max-w-[600px] shadow-2xl">
+            <div class="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+                <h2 class="text-[1.05rem] font-bold text-slate-800 m-0">Manage Operators</h2>
+                <button onclick="closeModal('operators-modal')" class="bg-transparent border-none cursor-pointer text-slate-400 p-1 leading-none hover:text-slate-600">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
             </div>
-            <div style="padding:1.25rem 1.5rem;">
+            <div class="px-6 py-5">
 
                 {{-- Add operator form --}}
-                <div style="background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;padding:1rem;margin-bottom:1.25rem;">
-                    <p style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 0.75rem;">Add New Operator</p>
+                <div class="bg-slate-50 rounded-xl border border-slate-200 p-4 mb-5">
+                    <p class="text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-3">Add New Operator</p>
                     <form action="{{ route('training.operators.store') }}" method="POST">
                         @csrf
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;">
+                        <div class="grid grid-cols-2 gap-3 mb-3">
                             <div>
-                                <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Name *</label>
+                                <label class="block text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Name *</label>
                                 <input type="text" name="name" required maxlength="150"
-                                    style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
+                                    class="w-full border border-slate-200 rounded-lg px-2.5 py-[7px] text-[0.8125rem] text-slate-700 box-border focus:outline-none focus:ring-2 focus:ring-sky-500">
                             </div>
                             <div>
-                                <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Email</label>
+                                <label class="block text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Email</label>
                                 <input type="email" name="email" maxlength="255"
-                                    style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
+                                    class="w-full border border-slate-200 rounded-lg px-2.5 py-[7px] text-[0.8125rem] text-slate-700 box-border focus:outline-none focus:ring-2 focus:ring-sky-500">
                             </div>
                         </div>
-                        <div style="margin-bottom:0.875rem;">
-                            <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.8125rem;color:#334155;cursor:pointer;">
+                        <div class="mb-3.5">
+                            <label class="flex items-center gap-2 text-[0.8125rem] text-slate-700 cursor-pointer">
                                 <input type="hidden" name="active" value="0">
-                                <input type="checkbox" name="active" value="1" checked style="width:15px;height:15px;cursor:pointer;">
+                                <input type="checkbox" name="active" value="1" checked class="w-[15px] h-[15px] cursor-pointer">
                                 Active
                             </label>
                         </div>
                         <button type="submit"
-                            style="padding:0.4rem 0.875rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.8125rem;font-weight:600;border:none;cursor:pointer;">
+                            class="px-3.5 py-[0.4rem] rounded-lg bg-slate-900 text-white text-[0.8125rem] font-semibold border-none cursor-pointer hover:bg-slate-800 transition-colors">
                             Add Operator
                         </button>
                     </form>
@@ -582,63 +581,63 @@
                 {{-- Operators list --}}
                 @php $allOperators = \App\Models\TrainingOperator::orderBy('name')->get(); @endphp
                 @if($allOperators->isEmpty())
-                <p style="color:#94a3b8;font-size:0.875rem;text-align:center;padding:1rem 0;">No operators added yet.</p>
+                <p class="text-slate-400 text-sm text-center py-4">No operators added yet.</p>
                 @else
-                <div style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;">
+                <div class="border border-slate-200 rounded-xl overflow-hidden">
                     @foreach($allOperators as $op)
-                    <div style="padding:0.75rem 1rem;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:0.75rem;">
-                        <div style="flex:1;min-width:0;">
-                            <div style="font-size:0.8125rem;font-weight:600;color:{{ $op->active ? '#1e293b' : '#94a3b8' }};">
+                    <div class="px-4 py-3 border-b border-slate-100 flex items-center gap-3">
+                        <div class="flex-1 min-w-0">
+                            <div class="text-[0.8125rem] font-semibold" style="color:{{ $op->active ? '#1e293b' : '#94a3b8' }};">
                                 {{ $op->name }}
-                                @if(!$op->active)<span style="font-size:0.7rem;color:#94a3b8;font-weight:400;"> (inactive)</span>@endif
+                                @if(!$op->active)<span class="text-[0.7rem] text-slate-400 font-normal"> (inactive)</span>@endif
                             </div>
                             @if($op->email)
-                            <div style="font-size:0.75rem;color:#94a3b8;">{{ $op->email }}</div>
+                            <div class="text-[0.75rem] text-slate-400">{{ $op->email }}</div>
                             @endif
                         </div>
                         <button onclick="toggleEdit('op-edit-{{ $op->id }}')"
-                            style="padding:0.25rem 0.625rem;border-radius:7px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.75rem;cursor:pointer;">
+                            class="px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-slate-700 text-[0.75rem] cursor-pointer hover:bg-slate-50 transition-colors">
                             Edit
                         </button>
-                        <form action="{{ route('training.operators.destroy', $op->id) }}" method="POST" style="margin:0;"
+                        <form action="{{ route('training.operators.destroy', $op->id) }}" method="POST" class="m-0"
                             onsubmit="return confirm('Delete operator {{ addslashes($op->name) }}? This cannot be undone.')">
                             @csrf @method('DELETE')
                             <button type="submit"
-                                style="padding:0.25rem 0.625rem;border-radius:7px;border:1px solid #fca5a5;background:#fff;color:#dc2626;font-size:0.75rem;cursor:pointer;">
+                                class="px-2.5 py-1 rounded-lg border border-red-300 bg-white text-red-600 text-[0.75rem] cursor-pointer hover:bg-red-50 transition-colors">
                                 Delete
                             </button>
                         </form>
                     </div>
                     {{-- Edit form --}}
-                    <div id="op-edit-{{ $op->id }}" style="display:none;padding:0.875rem 1rem;background:#f8fafc;border-bottom:1px solid #e2e8f0;">
+                    <div id="op-edit-{{ $op->id }}" style="display:none;" class="px-4 py-3.5 bg-slate-50 border-b border-slate-200">
                         <form action="{{ route('training.operators.update', $op->id) }}" method="POST">
                             @csrf @method('PUT')
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem;">
+                            <div class="grid grid-cols-2 gap-3 mb-3">
                                 <div>
-                                    <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Name *</label>
+                                    <label class="block text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Name *</label>
                                     <input type="text" name="name" value="{{ $op->name }}" required maxlength="150"
-                                        style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
+                                        class="w-full border border-slate-200 rounded-lg px-2.5 py-[7px] text-[0.8125rem] text-slate-700 box-border focus:outline-none focus:ring-2 focus:ring-sky-500">
                                 </div>
                                 <div>
-                                    <label style="display:block;font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Email</label>
+                                    <label class="block text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Email</label>
                                     <input type="email" name="email" value="{{ $op->email }}" maxlength="255"
-                                        style="width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
+                                        class="w-full border border-slate-200 rounded-lg px-2.5 py-[7px] text-[0.8125rem] text-slate-700 box-border focus:outline-none focus:ring-2 focus:ring-sky-500">
                                 </div>
                             </div>
-                            <div style="margin-bottom:0.875rem;">
-                                <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.8125rem;color:#334155;cursor:pointer;">
+                            <div class="mb-3.5">
+                                <label class="flex items-center gap-2 text-[0.8125rem] text-slate-700 cursor-pointer">
                                     <input type="hidden" name="active" value="0">
-                                    <input type="checkbox" name="active" value="1" {{ $op->active ? 'checked' : '' }} style="width:15px;height:15px;cursor:pointer;">
+                                    <input type="checkbox" name="active" value="1" {{ $op->active ? 'checked' : '' }} class="w-[15px] h-[15px] cursor-pointer">
                                     Active
                                 </label>
                             </div>
-                            <div style="display:flex;gap:0.5rem;">
+                            <div class="flex gap-2">
                                 <button type="submit"
-                                    style="padding:0.35rem 0.75rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.75rem;font-weight:600;border:none;cursor:pointer;">
+                                    class="px-3 py-[0.35rem] rounded-lg bg-slate-900 text-white text-[0.75rem] font-semibold border-none cursor-pointer hover:bg-slate-800 transition-colors">
                                     Save
                                 </button>
                                 <button type="button" onclick="toggleEdit('op-edit-{{ $op->id }}')"
-                                    style="padding:0.35rem 0.75rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.75rem;cursor:pointer;">
+                                    class="px-3 py-[0.35rem] rounded-lg border border-slate-200 bg-white text-slate-700 text-[0.75rem] cursor-pointer hover:bg-slate-50 transition-colors">
                                     Cancel
                                 </button>
                             </div>
@@ -652,26 +651,26 @@
     </div>
 
     {{-- ====================== DEPARTMENTS MODAL ====================== --}}
-    <div id="departments-modal" style="display:none;position:fixed;inset:0;z-index:100;align-items:flex-start;justify-content:center;background:rgba(0,0,0,0.45);padding:2rem 1rem;overflow-y:auto;">
-        <div style="background:#fff;border-radius:14px;width:100%;max-width:500px;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid #f1f5f9;">
-                <h2 style="font-size:1.05rem;font-weight:700;color:#1e293b;margin:0;">Manage Departments</h2>
-                <button onclick="closeModal('departments-modal')" style="background:none;border:none;cursor:pointer;color:#94a3b8;padding:4px;line-height:0;">
+    <div id="departments-modal" style="display:none;" class="fixed inset-0 z-[100] items-start justify-center bg-black/45 py-8 px-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl w-full max-w-[500px] shadow-2xl">
+            <div class="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+                <h2 class="text-[1.05rem] font-bold text-slate-800 m-0">Manage Departments</h2>
+                <button onclick="closeModal('departments-modal')" class="bg-transparent border-none cursor-pointer text-slate-400 p-1 leading-none hover:text-slate-600">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
             </div>
-            <div style="padding:1.25rem 1.5rem;">
+            <div class="px-6 py-5">
 
                 {{-- Add department --}}
-                <div style="background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;padding:1rem;margin-bottom:1.25rem;">
-                    <p style="font-size:0.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 0.75rem;">Add Department</p>
+                <div class="bg-slate-50 rounded-xl border border-slate-200 p-4 mb-5">
+                    <p class="text-[0.7rem] font-bold text-slate-400 uppercase tracking-wide mb-3">Add Department</p>
                     <form action="{{ route('training.departments.store') }}" method="POST">
                         @csrf
-                        <div style="display:flex;gap:0.5rem;">
+                        <div class="flex gap-2">
                             <input type="text" name="name" required maxlength="100" placeholder="Department name"
-                                style="flex:1;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
+                                class="flex-1 border border-slate-200 rounded-lg px-2.5 py-[7px] text-[0.8125rem] text-slate-700 box-border focus:outline-none focus:ring-2 focus:ring-sky-500">
                             <button type="submit"
-                                style="padding:0.4rem 0.875rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.8125rem;font-weight:600;border:none;cursor:pointer;white-space:nowrap;">
+                                class="px-3.5 py-[0.4rem] rounded-lg bg-slate-900 text-white text-[0.8125rem] font-semibold border-none cursor-pointer whitespace-nowrap hover:bg-slate-800 transition-colors">
                                 Add
                             </button>
                         </div>
@@ -681,37 +680,37 @@
                 {{-- Departments list --}}
                 @php $allDepts = \App\Models\TrainingDepartment::orderBy('name')->get(); @endphp
                 @if($allDepts->isEmpty())
-                <p style="color:#94a3b8;font-size:0.875rem;text-align:center;padding:1rem 0;">No departments added yet.</p>
+                <p class="text-slate-400 text-sm text-center py-4">No departments added yet.</p>
                 @else
-                <div style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;">
+                <div class="border border-slate-200 rounded-xl overflow-hidden">
                     @foreach($allDepts as $dept)
-                    <div style="padding:0.75rem 1rem;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:0.75rem;">
-                        <span style="flex:1;font-size:0.8125rem;font-weight:600;color:#334155;">{{ $dept->name }}</span>
+                    <div class="px-4 py-3 border-b border-slate-100 flex items-center gap-3">
+                        <span class="flex-1 text-[0.8125rem] font-semibold text-slate-700">{{ $dept->name }}</span>
                         <button onclick="toggleEdit('dept-edit-{{ $dept->id }}')"
-                            style="padding:0.25rem 0.625rem;border-radius:7px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.75rem;cursor:pointer;">
+                            class="px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-slate-700 text-[0.75rem] cursor-pointer hover:bg-slate-50 transition-colors">
                             Edit
                         </button>
-                        <form action="{{ route('training.departments.destroy', $dept->id) }}" method="POST" style="margin:0;"
+                        <form action="{{ route('training.departments.destroy', $dept->id) }}" method="POST" class="m-0"
                             onsubmit="return confirm('Delete department {{ addslashes($dept->name) }}?')">
                             @csrf @method('DELETE')
                             <button type="submit"
-                                style="padding:0.25rem 0.625rem;border-radius:7px;border:1px solid #fca5a5;background:#fff;color:#dc2626;font-size:0.75rem;cursor:pointer;">
+                                class="px-2.5 py-1 rounded-lg border border-red-300 bg-white text-red-600 text-[0.75rem] cursor-pointer hover:bg-red-50 transition-colors">
                                 Delete
                             </button>
                         </form>
                     </div>
-                    <div id="dept-edit-{{ $dept->id }}" style="display:none;padding:0.75rem 1rem;background:#f8fafc;border-bottom:1px solid #e2e8f0;">
+                    <div id="dept-edit-{{ $dept->id }}" style="display:none;" class="px-4 py-3 bg-slate-50 border-b border-slate-200">
                         <form action="{{ route('training.departments.update', $dept->id) }}" method="POST">
                             @csrf @method('PUT')
-                            <div style="display:flex;gap:0.5rem;">
+                            <div class="flex gap-2">
                                 <input type="text" name="name" value="{{ $dept->name }}" required maxlength="100"
-                                    style="flex:1;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:0.8125rem;color:#334155;box-sizing:border-box;">
+                                    class="flex-1 border border-slate-200 rounded-lg px-2.5 py-[7px] text-[0.8125rem] text-slate-700 box-border focus:outline-none focus:ring-2 focus:ring-sky-500">
                                 <button type="submit"
-                                    style="padding:0.35rem 0.75rem;border-radius:8px;background:#0f172a;color:#fff;font-size:0.75rem;font-weight:600;border:none;cursor:pointer;">
+                                    class="px-3 py-[0.35rem] rounded-lg bg-slate-900 text-white text-[0.75rem] font-semibold border-none cursor-pointer hover:bg-slate-800 transition-colors">
                                     Save
                                 </button>
                                 <button type="button" onclick="toggleEdit('dept-edit-{{ $dept->id }}')"
-                                    style="padding:0.35rem 0.75rem;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#334155;font-size:0.75rem;cursor:pointer;">
+                                    class="px-3 py-[0.35rem] rounded-lg border border-slate-200 bg-white text-slate-700 text-[0.75rem] cursor-pointer hover:bg-slate-50 transition-colors">
                                     Cancel
                                 </button>
                             </div>

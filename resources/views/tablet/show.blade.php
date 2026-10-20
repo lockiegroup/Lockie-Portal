@@ -474,8 +474,8 @@
      ════════════════════════════════════════════ --}}
 <div class="tab-header">
     {{-- Left: logo + machine name --}}
-    <div style="display:flex;align-items:center;gap:10px;white-space:nowrap;flex-shrink:0;">
-        <img src="{{ asset('images/logo.png') }}" alt="Lockie Group" style="height:28px;width:auto;opacity:0.9;flex-shrink:0;">
+    <div class="flex items-center gap-2.5 whitespace-nowrap flex-shrink-0">
+        <img src="{{ asset('images/logo.png') }}" alt="Lockie Group" class="h-7 w-auto opacity-90 flex-shrink-0">
         <h1>{{ $machineName }}</h1>
     </div>
 
@@ -485,7 +485,7 @@
             <div class="operator-info">
                 <span class="operator-name"><span class="op-label">Operator: </span><span>{{ $operator->name }}</span></span>
                 <button class="btn btn-ghost btn-sm" onclick="openSwitchModal()">⇄ Switch Machine</button>
-                <form method="POST" action="{{ route('tablet.logout', $machine) }}" style="margin:0;">
+                <form method="POST" action="{{ route('tablet.logout', $machine) }}">
                     @csrf
                     <button type="submit" class="btn btn-ghost btn-sm">Sign Out</button>
                 </form>

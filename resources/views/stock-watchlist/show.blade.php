@@ -68,53 +68,53 @@
 .info-input:focus { border-color: #6366f1; outline: none; background: white; color: #334155; }
 </style>
 
-<main style="padding:2rem 1.5rem;max-width:100%;">
+<main class="px-4 sm:px-6 py-8 max-w-full">
 
     {{-- Header --}}
-    <div style="margin-bottom:1rem;">
+    <div class="mb-4">
         <a href="{{ route('stock-watchlist.index') }}"
-           style="font-size:0.8rem;color:#64748b;text-decoration:none;display:inline-flex;align-items:center;gap:4px;margin-bottom:10px;">
+           class="text-[0.8rem] text-slate-500 no-underline inline-flex items-center gap-1 mb-2.5 hover:text-slate-700">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
             Stock Watchlist
         </a>
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+        <div class="flex items-start justify-between gap-4 flex-wrap">
             <div>
-                <h1 style="font-size:1.4rem;font-weight:700;color:#1e293b;margin:0 0 2px;">{{ $category->name }}</h1>
-                <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:4px;">
-                    <label style="display:flex;align-items:center;gap:5px;font-size:0.78rem;color:#64748b;cursor:default;">
+                <h1 class="text-[1.4rem] font-bold text-slate-800 mb-0.5">{{ $category->name }}</h1>
+                <div class="flex items-center gap-3.5 flex-wrap mt-1">
+                    <label class="flex items-center gap-1.5 text-[0.78rem] text-slate-500 cursor-default">
                         Lead time:
                         <input type="number" min="1" max="3650"
                             value="{{ $category->lead_time_days ?? 30 }}"
-                            style="width:52px;border:1px solid #cbd5e1;border-radius:4px;padding:2px 5px;font-size:0.78rem;font-weight:600;color:#0f172a;text-align:center;"
+                            class="w-13 border border-slate-300 rounded px-1.5 py-0.5 text-[0.78rem] font-semibold text-slate-900 text-center"
                             onblur="saveCatField('lead_time_days', this.value)"
                             onkeydown="if(event.key==='Enter')this.blur()">
                         days
                     </label>
-                    <label style="display:flex;align-items:center;gap:5px;font-size:0.78rem;color:#64748b;cursor:default;">
+                    <label class="flex items-center gap-1.5 text-[0.78rem] text-slate-500 cursor-default">
                         Currency:
                         <select onchange="saveCatCurrency(this.value)"
-                            style="border:1px solid #cbd5e1;border-radius:4px;padding:2px 5px;font-size:0.78rem;font-weight:600;color:#0f172a;background:white;">
+                            class="border border-slate-300 rounded px-1.5 py-0.5 text-[0.78rem] font-semibold text-slate-900 bg-white">
                             @foreach(['£','$','€','AU$','NZ$'] as $cur)
                             <option value="{{ $cur }}" {{ ($category->currency ?? '£') === $cur ? 'selected' : '' }}>{{ $cur }}</option>
                             @endforeach
                         </select>
                     </label>
                     <a href="{{ route('stock-watchlist.items.download', $category) }}"
-                        style="font-size:0.78rem;color:#3b82f6;text-decoration:none;">↓ Export CSV</a>
+                        class="text-[0.78rem] text-blue-500 no-underline hover:text-blue-700">↓ Export CSV</a>
                     <button onclick="document.getElementById('cat-import-file').click()"
-                        style="background:none;border:none;font-size:0.78rem;color:#3b82f6;cursor:pointer;padding:0;">↑ Import CSV</button>
+                        class="bg-transparent border-none text-[0.78rem] text-blue-500 cursor-pointer p-0 hover:text-blue-700">↑ Import CSV</button>
                     <input type="file" id="cat-import-file" accept=".csv,.txt" style="display:none"
                         onchange="importCatItems(this)">
-                    <span style="color:#e2e8f0;">|</span>
+                    <span class="text-slate-200">|</span>
                     <button onclick="document.getElementById('shopify-upload-file').click()"
-                        style="background:none;border:none;font-size:0.78rem;color:#7c3aed;cursor:pointer;padding:0;"
+                        class="bg-transparent border-none text-[0.78rem] text-violet-600 cursor-pointer p-0 hover:text-violet-800"
                         title="Upload Shopify products export CSV">
                         🌐 Shopify: <span id="shopify-sku-count">{{ $category->shopify_skus !== null ? number_format(count($category->shopify_skus)) . ' SKUs' : 'not set' }}</span>
                     </button>
                     <input type="file" id="shopify-upload-file" accept=".csv,.txt" style="display:none"
                         onchange="uploadPlatformFile(this, 'shopify', 'shopify-sku-count')">
                     <button onclick="document.getElementById('amazon-upload-file').click()"
-                        style="background:none;border:none;font-size:0.78rem;color:#d97706;cursor:pointer;padding:0;"
+                        class="bg-transparent border-none text-[0.78rem] text-amber-600 cursor-pointer p-0 hover:text-amber-800"
                         title="Upload Amazon inventory report TXT">
                         📦 Amazon: <span id="amazon-sku-count">{{ $category->amazon_skus !== null ? number_format(count($category->amazon_skus)) . ' SKUs' : 'not set' }}</span>
                     </button>
@@ -122,29 +122,28 @@
                         onchange="uploadPlatformFile(this, 'amazon', 'amazon-sku-count')">
                 </div>
                 <form method="POST" action="{{ route('stock-watchlist.sales.filter') }}"
-                      style="display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap;">
+                      class="flex items-center gap-1.5 mt-2 flex-wrap">
                     @csrf
-                    <span style="font-size:0.75rem;color:#64748b;font-weight:500;">Sales period:</span>
+                    <span class="text-[0.75rem] text-slate-500 font-medium">Sales period:</span>
                     <input type="date" name="sales_from" value="{{ $filterFrom }}"
-                           style="border:1px solid #cbd5e1;border-radius:6px;padding:3px 7px;font-size:0.75rem;color:#1e293b;">
-                    <span style="font-size:0.75rem;color:#94a3b8;">to</span>
+                           class="border border-slate-300 rounded-md px-1.5 py-0.5 text-[0.75rem] text-slate-800">
+                    <span class="text-[0.75rem] text-slate-400">to</span>
                     <input type="date" name="sales_to" value="{{ $filterTo }}"
-                           style="border:1px solid #cbd5e1;border-radius:6px;padding:3px 7px;font-size:0.75rem;color:#1e293b;">
+                           class="border border-slate-300 rounded-md px-1.5 py-0.5 text-[0.75rem] text-slate-800">
                     <button type="submit" class="btn-ghost" style="padding:3px 10px;font-size:0.75rem;">Apply</button>
                 </form>
                 @if($salesFrom)
-                <p style="font-size:0.7rem;color:#94a3b8;margin:2px 0 0;">Data covers: <span style="color:#64748b;font-weight:500;">{{ $salesFrom }} – {{ $salesTo }}</span></p>
+                <p class="text-[0.7rem] text-slate-400 mt-0.5">Data covers: <span class="text-slate-500 font-medium">{{ $salesFrom }} – {{ $salesTo }}</span></p>
                 @endif
             </div>
-            <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;flex-wrap:wrap;">
-                <span id="sync-status" style="font-size:0.8rem;color:#94a3b8;">
+            <div class="flex items-center gap-2.5 flex-shrink-0 flex-wrap">
+                <span id="sync-status" class="text-[0.8rem] text-slate-400">
                     @if($syncedAt) Last synced {{ \Carbon\Carbon::parse($syncedAt)->diffForHumans() }} @else Not yet synced @endif
                 </span>
                 <button class="btn-ghost" onclick="clearCatOrders()" style="color:#dc2626;border-color:#fca5a5;">Clear To Order</button>
                 <button id="sync-btn" onclick="runSync()"
-                    style="display:flex;align-items:center;gap:7px;padding:8px 16px;background:#0f172a;color:white;border:none;border-radius:8px;font-size:0.875rem;font-weight:600;cursor:pointer;transition:background 0.15s;"
-                    onmouseover="this.style.background='#1e293b'" onmouseout="this.style.background='#0f172a'">
-                    <svg id="sync-icon" style="width:15px;height:15px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    class="flex items-center gap-1.5 px-4 py-2 bg-slate-900 text-white border-none rounded-lg text-sm font-semibold cursor-pointer hover:bg-slate-800 transition-colors">
+                    <svg id="sync-icon" class="w-[15px] h-[15px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                         <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
                         <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
                     </svg>
@@ -155,12 +154,12 @@
     </div>
 
     {{-- Table --}}
-    <div style="background:white;border:1px solid #e2e8f0;border-radius:12px;overflow:clip;">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid #f1f5f9;background:#f8fafc;">
-            <span id="sw-filter-count" style="font-size:0.75rem;color:#94a3b8;"></span>
-            <div style="display:flex;align-items:center;gap:12px;">
-                <button onclick="exportTableCsv()" style="font-size:0.75rem;color:#0891b2;background:none;border:none;cursor:pointer;padding:0;">↓ Export table</button>
-                <button onclick="clearFilters()" style="font-size:0.75rem;color:#6366f1;background:none;border:none;cursor:pointer;padding:0;">Clear filters</button>
+    <div class="bg-white border border-slate-200 rounded-xl overflow-clip">
+        <div class="flex items-center justify-between px-3 py-2 border-b border-slate-100 bg-slate-50">
+            <span id="sw-filter-count" class="text-[0.75rem] text-slate-400"></span>
+            <div class="flex items-center gap-3">
+                <button onclick="exportTableCsv()" class="text-[0.75rem] text-cyan-600 bg-transparent border-none cursor-pointer p-0 hover:text-cyan-800">↓ Export table</button>
+                <button onclick="clearFilters()" class="text-[0.75rem] text-indigo-500 bg-transparent border-none cursor-pointer p-0 hover:text-indigo-700">Clear filters</button>
             </div>
         </div>
         <div class="sw-wrap">
@@ -188,24 +187,24 @@
                         <th>On Amazon</th>
                     </tr>
                     @php $yc = count($years); @endphp
-                    <tr style="background:#1e293b;">
-                        <td style="padding:3px 4px;"><input class="col-filter" data-col="0" data-type="text" placeholder="Code…" style="width:100%;box-sizing:border-box;border:1px solid #334155;border-radius:3px;padding:2px 5px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;" oninput="applyFilters()"></td>
-                        <td style="padding:3px 4px;"><input class="col-filter" data-col="1" data-type="text" placeholder="Notes…" style="width:100%;box-sizing:border-box;border:1px solid #334155;border-radius:3px;padding:2px 5px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;" oninput="applyFilters()"></td>
-                        <td style="padding:3px 4px;"><input class="col-filter" data-col="2" data-type="text" placeholder="Group…" style="width:100%;box-sizing:border-box;border:1px solid #334155;border-radius:3px;padding:2px 5px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;" oninput="applyFilters()"></td>
+                    <tr class="bg-slate-800">
+                        <td class="px-1 py-0.5"><input class="col-filter sw-filter-input" data-col="0" data-type="text" placeholder="Code…" oninput="applyFilters()"></td>
+                        <td class="px-1 py-0.5"><input class="col-filter sw-filter-input" data-col="1" data-type="text" placeholder="Notes…" oninput="applyFilters()"></td>
+                        <td class="px-1 py-0.5"><input class="col-filter sw-filter-input" data-col="2" data-type="text" placeholder="Group…" oninput="applyFilters()"></td>
                         @foreach($years as $yi => $yr)
-                        <td style="padding:3px 4px;"><input class="col-filter" data-col="{{ 3 + $yi }}" data-type="num" placeholder=">0" style="width:52px;border:1px solid #334155;border-radius:3px;padding:2px 4px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;text-align:right;" oninput="applyFilters()"></td>
+                        <td class="px-1 py-0.5"><input class="col-filter sw-filter-input" data-col="{{ 3 + $yi }}" data-type="num" placeholder=">0" style="width:52px;text-align:right;" oninput="applyFilters()"></td>
                         @endforeach
-                        <td style="padding:3px 4px;"><input class="col-filter" data-col="{{ 3+$yc }}" data-type="num" placeholder=">0" style="width:52px;border:1px solid #334155;border-radius:3px;padding:2px 4px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;text-align:right;" oninput="applyFilters()"></td>
-                        <td style="padding:3px 4px;"><input class="col-filter" data-col="{{ 3+$yc+1 }}" data-type="num" placeholder="=0" style="width:52px;border:1px solid #334155;border-radius:3px;padding:2px 4px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;text-align:right;" oninput="applyFilters()"></td>
+                        <td class="px-1 py-0.5"><input class="col-filter sw-filter-input" data-col="{{ 3+$yc }}" data-type="num" placeholder=">0" style="width:52px;text-align:right;" oninput="applyFilters()"></td>
+                        <td class="px-1 py-0.5"><input class="col-filter sw-filter-input" data-col="{{ 3+$yc+1 }}" data-type="num" placeholder="=0" style="width:52px;text-align:right;" oninput="applyFilters()"></td>
                         <td></td>{{-- Stock Value --}}
                         <td></td>{{-- Alloc'd --}}
                         <td></td>{{-- On Order --}}
-                        <td style="padding:3px 4px;"><input class="col-filter" data-col="{{ 3+$yc+5 }}" data-type="num" placeholder=">0" style="width:52px;border:1px solid #334155;border-radius:3px;padding:2px 4px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;text-align:right;" oninput="applyFilters()"></td>
+                        <td class="px-1 py-0.5"><input class="col-filter sw-filter-input" data-col="{{ 3+$yc+5 }}" data-type="num" placeholder=">0" style="width:52px;text-align:right;" oninput="applyFilters()"></td>
                         <td></td>{{-- To Order --}}
                         <td></td>{{-- Price --}}
                         <td></td>{{-- Total --}}
-                        <td style="padding:3px 4px;">
-                            <select class="col-filter" data-col="{{ 3+$yc+9 }}" data-type="select" style="width:100%;border:1px solid #334155;border-radius:3px;padding:2px 3px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;" onchange="applyFilters()">
+                        <td class="px-1 py-0.5">
+                            <select class="col-filter sw-filter-input" data-col="{{ 3+$yc+9 }}" data-type="select" onchange="applyFilters()">
                                 <option value="">All</option>
                                 <option value="OK">OK</option>
                                 <option value="Order Needed">Order Needed</option>
@@ -214,22 +213,22 @@
                                 <option value="Discontinued">Discontinued</option>
                             </select>
                         </td>
-                        <td style="padding:3px 4px;">
-                            <select class="col-filter" data-type="disc" style="width:100%;border:1px solid #334155;border-radius:3px;padding:2px 3px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;" onchange="applyFilters()">
+                        <td class="px-1 py-0.5">
+                            <select class="col-filter sw-filter-input" data-type="disc" onchange="applyFilters()">
                                 <option value="">All</option>
                                 <option value="active">Active</option>
                                 <option value="disc">Disc'd</option>
                             </select>
                         </td>
-                        <td style="padding:3px 4px;">
-                            <select class="col-filter" data-type="platform" data-platform="shopify" style="width:100%;border:1px solid #334155;border-radius:3px;padding:2px 3px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;" onchange="applyFilters()">
+                        <td class="px-1 py-0.5">
+                            <select class="col-filter sw-filter-input" data-type="platform" data-platform="shopify" onchange="applyFilters()">
                                 <option value="">All</option>
                                 <option value="yes">Yes</option>
                                 <option value="no">No</option>
                             </select>
                         </td>
-                        <td style="padding:3px 4px;">
-                            <select class="col-filter" data-type="platform" data-platform="amazon" style="width:100%;border:1px solid #334155;border-radius:3px;padding:2px 3px;font-size:0.72rem;color:#e2e8f0;background:#1e293b;" onchange="applyFilters()">
+                        <td class="px-1 py-0.5">
+                            <select class="col-filter sw-filter-input" data-type="platform" data-platform="amazon" onchange="applyFilters()">
                                 <option value="">All</option>
                                 <option value="yes">Yes</option>
                                 <option value="no">No</option>
@@ -275,7 +274,7 @@
                 <tr class="{{ $item->discontinued ? 'sw-disc-row' : '' }}" data-id="{{ $item->id }}"
                     data-group="{{ $item->product_group ?? '' }}"
                     data-status="{{ $badgeText }}">
-                    <td style="font-weight:600;color:#0f172a;">{{ $item->product_code }}</td>
+                    <td class="font-semibold text-slate-900">{{ $item->product_code }}</td>
                     <td>
                         <input type="text" class="info-input"
                             value="{{ $item->info }}"
@@ -283,7 +282,7 @@
                             onblur="saveField({{ $item->id }}, 'info', this.value)"
                             onkeydown="if(event.key==='Enter')this.blur()">
                     </td>
-                    <td style="color:#64748b;font-size:0.78rem;">{{ $item->product_group ?? '—' }}</td>
+                    <td class="text-slate-500 text-[0.78rem]">{{ $item->product_group ?? '—' }}</td>
                     @foreach($years as $yr)
                     <td class="sw-num">
                         @php $yrQty = $item->yearly[$yr] ?? 0; @endphp
@@ -295,13 +294,13 @@
                         {{ $onHand !== null ? number_format($onHand, 0) : '—' }}
                     </td>
                     @php $stockValue = $stock ? (float)$stock->total_cost : null; @endphp
-                    <td class="sw-num" style="color:#475569;font-weight:500;">
+                    <td class="sw-num text-slate-600 font-medium">
                         {{ $stockValue ? '£' . number_format($stockValue, 2) : '—' }}
                     </td>
-                    <td class="sw-num" style="color:#94a3b8;">
+                    <td class="sw-num text-slate-400">
                         {{ $allocated > 0 ? number_format($allocated, 0) : '—' }}
                     </td>
-                    <td class="sw-num" style="color:#0891b2;">
+                    <td class="sw-num text-cyan-600">
                         {{ $onOrder > 0 ? number_format($onOrder, 0) : '—' }}
                     </td>
                     <td class="sw-num {{ $reqQty > 0 ? 'sw-req-click' : '' }}"
@@ -326,29 +325,29 @@
                             onblur="saveField({{ $item->id }}, 'unit_price', this.value); recalcTotal(this.closest('tr'))"
                             onkeydown="if(event.key==='Enter')this.blur()">
                     </td>
-                    <td class="sw-num sw-total" data-amount="{{ $total > 0 ? number_format($total, 2, '.', '') : '' }}" data-currency="{{ $category->currency ?? '£' }}" style="font-weight:600;"></td>
+                    <td class="sw-num sw-total font-semibold" data-amount="{{ $total > 0 ? number_format($total, 2, '.', '') : '' }}" data-currency="{{ $category->currency ?? '£' }}"></td>
                     <td><span class="sw-badge {{ $badgeClass }}">{{ $badgeText }}</span></td>
-                    <td style="text-align:center;">
+                    <td class="text-center">
                         <input type="checkbox" {{ $item->discontinued ? 'checked' : '' }}
                             onchange="toggleDiscontinued(this, {{ $item->id }})"
-                            style="width:14px;height:14px;cursor:pointer;accent-color:#6366f1;">
+                            class="w-3.5 h-3.5 cursor-pointer accent-indigo-500">
                     </td>
                     @php
                         $onWeb     = $shopifySet !== null ? isset($shopifySet[$item->product_code]) : null;
                         $onAmazon  = $amazonSet  !== null ? isset($amazonSet[$item->product_code])  : null;
                     @endphp
-                    <td style="text-align:center;" data-platform-shopify="{{ $onWeb === null ? '' : ($onWeb ? 'yes' : 'no') }}">
+                    <td class="text-center" data-platform-shopify="{{ $onWeb === null ? '' : ($onWeb ? 'yes' : 'no') }}">
                         @if($onWeb === null)
-                            <span style="color:#cbd5e1;font-size:0.75rem;">—</span>
+                            <span class="text-slate-300 text-[0.75rem]">—</span>
                         @elseif($onWeb)
                             <span class="sw-badge sw-badge-ok">Yes</span>
                         @else
                             <span class="sw-badge sw-badge-out">No</span>
                         @endif
                     </td>
-                    <td style="text-align:center;" data-platform-amazon="{{ $onAmazon === null ? '' : ($onAmazon ? 'yes' : 'no') }}">
+                    <td class="text-center" data-platform-amazon="{{ $onAmazon === null ? '' : ($onAmazon ? 'yes' : 'no') }}">
                         @if($onAmazon === null)
-                            <span style="color:#cbd5e1;font-size:0.75rem;">—</span>
+                            <span class="text-slate-300 text-[0.75rem]">—</span>
                         @elseif($onAmazon)
                             <span class="sw-badge sw-badge-ok">Yes</span>
                         @else
@@ -357,7 +356,7 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="{{ 16 + count($years) }}" style="padding:2rem;text-align:center;color:#94a3b8;">
+                <tr><td colspan="{{ 16 + count($years) }}" class="px-4 py-8 text-center text-slate-400">
                     No products yet. Add one below.
                 </td></tr>
                 @endforelse
@@ -379,8 +378,8 @@
                     $subTotal   = $category->items->sum(fn($i) => (float)($i->to_order_qty ?? 0) * (float)($i->unit_price ?? 0));
                 @endphp
                 <tbody>
-                    <tr id="subtotal-row" style="font-weight:700;background:#f1f5f9;border-top:2px solid #e2e8f0;">
-                        <td style="font-size:0.7rem;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;">Subtotal</td>
+                    <tr id="subtotal-row" class="font-bold bg-slate-100 border-t-2 border-slate-200">
+                        <td class="text-[0.7rem] text-slate-500 uppercase tracking-wide">Subtotal</td>
                         <td></td>
                         <td></td>
                         @foreach($years as $yr)
@@ -388,7 +387,7 @@
                         @endforeach
                         <td class="sw-num">{{ $subAvg > 0 ? number_format($subAvg, 1) : '—' }}</td>
                         <td class="sw-num">{{ $subOnHand > 0 ? number_format($subOnHand, 0) : '—' }}</td>
-                        <td class="sw-num" style="font-weight:700;">{{ $subStockVal > 0 ? '£' . number_format($subStockVal, 2) : '—' }}</td>
+                        <td class="sw-num font-bold">{{ $subStockVal > 0 ? '£' . number_format($subStockVal, 2) : '—' }}</td>
                         <td class="sw-num">{{ $subAllocd > 0 ? number_format($subAllocd, 0) : '—' }}</td>
                         <td class="sw-num">{{ $subOnOrder > 0 ? number_format($subOnOrder, 0) : '—' }}</td>
                         <td class="sw-num">{{ $subReq > 0 ? number_format($subReq, 0) : '—' }}</td>
@@ -405,14 +404,14 @@
                 {{-- Add product row --}}
                 <tbody>
                     <tr class="sw-add-row">
-                        <td colspan="{{ 16 + count($years) }}" style="padding:6px 10px;">
-                            <form style="display:inline-flex;gap:8px;align-items:center;"
+                        <td colspan="{{ 16 + count($years) }}" class="px-2.5 py-1.5">
+                            <form class="inline-flex gap-2 items-center"
                                 onsubmit="addItem(event, this)">
                                 <input type="text" name="product_code" placeholder="Product code…"
-                                    style="border:1px solid #e2e8f0;border-radius:6px;padding:4px 10px;font-size:0.8rem;color:#334155;width:160px;text-transform:uppercase;"
+                                    class="border border-slate-200 rounded-md px-2.5 py-1 text-[0.8rem] text-slate-700 w-40 uppercase"
                                     oninput="this.value=this.value.toUpperCase()" required>
                                 <button type="submit"
-                                    style="padding:4px 14px;background:#0f172a;color:white;border:none;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;">
+                                    class="px-3.5 py-1 bg-slate-900 text-white border-none rounded-md text-[0.8rem] font-semibold cursor-pointer hover:bg-slate-700">
                                     + Add
                                 </button>
                             </form>
