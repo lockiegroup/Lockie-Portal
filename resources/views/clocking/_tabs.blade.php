@@ -8,11 +8,11 @@ $tabs = array_filter([
     'settings'   => $isClockingAdmin ? ['label' => 'Settings',    'route' => 'clocking.settings.index']  : null,
 ]);
 @endphp
-<div style="display:flex;gap:0.25rem;border-bottom:1px solid #e2e8f0;margin-bottom:1.5rem;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;">
+<div class="flex gap-1 border-b border-slate-200 mb-6 overflow-x-auto" style="-webkit-overflow-scrolling:touch;scrollbar-width:none;">
 @foreach($tabs as $key => $tab)
 @php $isActive = ($active ?? '') === $key; @endphp
 <a href="{{ route($tab['route']) }}"
-   style="padding:0.5rem 1rem;font-size:0.875rem;font-weight:600;text-decoration:none;border-bottom:2px solid {{ $isActive ? '#6366f1' : 'transparent' }};color:{{ $isActive ? '#6366f1' : '#64748b' }};margin-bottom:-1px;">
+   class="px-4 py-2 text-sm font-semibold no-underline -mb-px border-b-2 whitespace-nowrap {{ $isActive ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700' }}">
     {{ $tab['label'] }}
 </a>
 @endforeach
