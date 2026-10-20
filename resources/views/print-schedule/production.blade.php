@@ -314,7 +314,7 @@
 #prod-root.fullscreen-mode .prod-progress-wrap { gap: 3px; }
 </style>
 
-<main class="max-w-screen-xl mx-auto px-4 sm:px-6 py-8" style="background:#0f172a;min-height:100vh;">
+<main class="max-w-screen-xl mx-auto px-4 sm:px-6 py-8 bg-slate-900 min-h-screen">
 
 <div id="prod-root">
 
@@ -326,8 +326,8 @@
         <div class="prod-header-right">
             <span class="prod-updated" id="updated-at">—</span>
             <button class="prod-btn" id="fullscreen-btn" onclick="toggleFullscreen()">
-                <svg id="fs-icon-enter" style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
-                <svg id="fs-icon-exit"  style="width:14px;height:14px;display:none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>
+                <svg id="fs-icon-enter" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+                <svg id="fs-icon-exit"  class="w-3.5 h-3.5" style="display:none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>
                 <span id="fs-label">Full Screen</span>
             </button>
         </div>
@@ -337,7 +337,7 @@
         {{-- Skeleton cards on first load --}}
         @foreach(PrintJob::MACHINES as $machine)
         <div class="prod-card state-idle" id="card-{{ $machine }}">
-            <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div class="flex items-center justify-between">
                 <span class="prod-machine-name">{{ PrintJob::BOARDS[$machine] }}</span>
                 <span class="prod-status-badge"><span class="prod-dot"></span> Loading…</span>
             </div>

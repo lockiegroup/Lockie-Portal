@@ -167,15 +167,14 @@
 <main class="max-w-6xl mx-auto px-4 sm:px-6 py-8">
 
     {{-- Header --}}
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:1.5rem;flex-wrap:wrap;">
+    <div class="flex items-start justify-between gap-4 mb-6 flex-wrap">
         <div>
             <h1 class="text-2xl font-bold text-slate-800">Production Analytics</h1>
             <p class="text-slate-500 text-sm mt-1">Packs produced vs target by machine and operator.</p>
         </div>
         <a href="{{ route('print.machine-log') }}"
-            style="display:inline-flex;align-items:center;gap:6px;font-size:0.875rem;padding:8px 14px;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;color:#475569;text-decoration:none;transition:background 0.15s;"
-            onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'">
-            <svg style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            class="inline-flex items-center gap-1.5 text-sm px-3.5 py-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-600 no-underline hover:bg-slate-100 transition-colors">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
             </svg>
             Machine Log
@@ -183,9 +182,9 @@
     </div>
 
     {{-- Date range controls --}}
-    <div class="an-card" style="margin-bottom:20px;">
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-            <span style="font-size:0.8125rem;font-weight:600;color:#64748b;white-space:nowrap;">Period:</span>
+    <div class="an-card mb-5">
+        <div class="flex items-center gap-2.5 flex-wrap">
+            <span class="text-[0.8125rem] font-semibold text-slate-500 whitespace-nowrap">Period:</span>
             <a href="{{ route('print.analytics', ['preset' => 'this_month']) }}"
                class="an-preset-btn{{ $preset === 'this_month' ? ' active' : '' }}">This Month</a>
             <a href="{{ route('print.analytics', ['preset' => 'last_month']) }}"
@@ -194,19 +193,19 @@
                 class="an-preset-btn{{ $preset === 'custom' ? ' active' : '' }}" id="custom-btn">
                 Custom range
             </button>
-            <div id="custom-form-wrap" style="display:{{ $preset === 'custom' ? 'flex' : 'none' }};align-items:center;gap:8px;flex-wrap:wrap;">
-                <form method="GET" action="{{ route('print.analytics') }}" style="display:contents;">
+            <div id="custom-form-wrap" style="display:{{ $preset === 'custom' ? 'flex' : 'none' }}" class="items-center gap-2 flex-wrap">
+                <form method="GET" action="{{ route('print.analytics') }}" class="contents">
                     <input type="hidden" name="preset" value="custom">
                     <input type="date" name="date_from" value="{{ $dateFrom }}"
                         class="text-sm border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-rose-500"
                         onchange="this.form.submit()">
-                    <span style="color:#94a3b8;font-size:0.875rem;">→</span>
+                    <span class="text-slate-400 text-sm">→</span>
                     <input type="date" name="date_to" value="{{ $dateTo }}"
                         class="text-sm border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-rose-500"
                         onchange="this.form.submit()">
                 </form>
             </div>
-            <span style="margin-left:auto;font-size:0.8125rem;color:#94a3b8;white-space:nowrap;">
+            <span class="ml-auto text-[0.8125rem] text-slate-400 whitespace-nowrap">
                 {{ \Carbon\Carbon::parse($dateFrom)->format('d M Y') }}
                 @if($dateFrom !== $dateTo) – {{ \Carbon\Carbon::parse($dateTo)->format('d M Y') }} @endif
             </span>
@@ -225,10 +224,10 @@
             <div class="an-chips" id="machine-chips"></div>
 
             <div class="an-legend">
-                <div class="an-legend-item"><div class="an-legend-dot" style="background:#f43f5e;"></div> Produced</div>
-                <div class="an-legend-item"><div class="an-legend-dot" style="background:#cbd5e1;"></div> Target</div>
+                <div class="an-legend-item"><div class="an-legend-dot" style="background:#f43f5e"></div> Produced</div>
+                <div class="an-legend-item"><div class="an-legend-dot" style="background:#cbd5e1"></div> Target</div>
             </div>
-            <canvas id="machineChart" style="max-height:240px;cursor:pointer;"></canvas>
+            <canvas id="machineChart" class="max-h-60 cursor-pointer"></canvas>
 
             {{-- Machine summary --}}
             <div class="an-summary" id="machine-summary"></div>
@@ -243,10 +242,10 @@
             <div class="an-chips" id="op-chips"></div>
 
             <div class="an-legend">
-                <div class="an-legend-item"><div class="an-legend-dot" style="background:#6366f1;"></div> Produced</div>
-                <div class="an-legend-item"><div class="an-legend-dot" style="background:#cbd5e1;"></div> Target</div>
+                <div class="an-legend-item"><div class="an-legend-dot" style="background:#6366f1"></div> Produced</div>
+                <div class="an-legend-item"><div class="an-legend-dot" style="background:#cbd5e1"></div> Target</div>
             </div>
-            <canvas id="operatorChart" style="max-height:240px;"></canvas>
+            <canvas id="operatorChart" class="max-h-60"></canvas>
 
             {{-- Operator summary --}}
             <div class="an-summary" id="op-summary"></div>
@@ -255,13 +254,13 @@
 
     {{-- Machine drill-down --}}
     <div id="drill-panel" class="an-drill-panel" style="display:none;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+        <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
             <div>
                 <div class="an-drill-title" id="drill-title">—</div>
                 <div class="an-drill-sub" id="drill-sub">—</div>
             </div>
-            <button onclick="closeDrill()" style="background:none;border:none;cursor:pointer;color:#94a3b8;padding:4px;" title="Close">
-                <svg style="width:18px;height:18px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <button onclick="closeDrill()" class="bg-transparent border-0 cursor-pointer text-slate-400 p-1 hover:text-slate-600 transition-colors" title="Close">
+                <svg class="w-4.5 h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
             </button>

@@ -3,15 +3,15 @@
     <main class="max-w-5xl mx-auto px-4 sm:px-6 py-8">
 
         {{-- Header --}}
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:1.5rem;flex-wrap:wrap;">
+        <div class="flex items-start justify-between gap-4 mb-6 flex-wrap">
             <div>
                 <h1 class="text-2xl font-bold text-slate-800">Machine Run Log</h1>
                 <p class="text-slate-500 text-sm mt-1">Operator activity, job durations, and idle time per machine.</p>
             </div>
 
-            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <div class="flex items-center gap-2 flex-wrap">
                 <form method="GET" action="{{ route('print.machine-log') }}" id="log-filter-form"
-                    style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    class="flex items-center gap-2 flex-wrap">
 
                     {{-- Date range --}}
                     <input type="date" name="date_from" value="{{ $dateFrom }}"
@@ -61,9 +61,8 @@
 
                 {{-- Analytics --}}
                 <a href="{{ route('print.analytics') }}"
-                    style="display:inline-flex;align-items:center;gap:6px;font-size:0.875rem;padding:8px 14px;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;color:#475569;text-decoration:none;white-space:nowrap;transition:background 0.15s;"
-                    onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'">
-                    <svg style="width:14px;height:14px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    class="inline-flex items-center gap-1.5 text-sm px-3.5 py-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-600 no-underline whitespace-nowrap hover:bg-slate-100 transition-colors">
+                    <svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
                     </svg>
                     Analytics
@@ -71,9 +70,8 @@
 
                 {{-- Export CSV --}}
                 <a href="{{ route('print.machine-log.export', ['date_from' => $dateFrom, 'date_to' => $dateTo, 'machine' => $machine, 'operator' => $operator]) }}"
-                    style="display:inline-flex;align-items:center;gap:6px;font-size:0.875rem;padding:8px 14px;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;color:#475569;text-decoration:none;white-space:nowrap;transition:background 0.15s;"
-                    onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'">
-                    <svg style="width:14px;height:14px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    class="inline-flex items-center gap-1.5 text-sm px-3.5 py-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-600 no-underline whitespace-nowrap hover:bg-slate-100 transition-colors">
+                    <svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
                     </svg>
                     Export CSV
@@ -82,12 +80,12 @@
         </div>
 
         @if(collect($byMachine)->isEmpty())
-            <div style="background:#f8fafc;border:2px dashed #e2e8f0;border-radius:16px;padding:64px 24px;text-align:center;color:#94a3b8;">
-                <svg style="width:40px;height:40px;margin:0 auto 12px;color:#cbd5e1;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <div class="bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl py-16 px-6 text-center text-slate-400">
+                <svg class="w-10 h-10 mx-auto mb-3 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                     <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
                 </svg>
-                <p style="font-size:1rem;font-weight:600;color:#64748b;margin-bottom:4px;">No runs recorded</p>
-                <p style="font-size:0.875rem;">No machine activity was logged for this date.</p>
+                <p class="text-base font-semibold text-slate-500 mb-1">No runs recorded</p>
+                <p class="text-sm">No machine activity was logged for this date.</p>
             </div>
         @else
 
@@ -239,7 +237,7 @@
             @endphp
 
             {{-- Summary bar --}}
-            <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:1.5rem;">
+            <div class="flex flex-wrap gap-3 mb-6">
                 @php
                 $summaryCards = [
                     ['Total runs',   $totalRuns,                  null],
@@ -252,9 +250,9 @@
                 }
             @endphp
             @foreach($summaryCards as [$label, $value, $colour])
-                    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px 20px;text-align:center;min-width:110px;">
-                        <div style="font-size:1.25rem;font-weight:700;color:{{ $colour ?? '#334155' }};">{{ $value }}</div>
-                        <div style="font-size:0.75rem;color:#94a3b8;margin-top:2px;">{{ $label }}</div>
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl px-5 py-3 text-center min-w-[110px]">
+                        <div class="text-xl font-bold" style="color:{{ $colour ?? '#334155' }};">{{ $value }}</div>
+                        <div class="text-xs text-slate-400 mt-0.5">{{ $label }}</div>
                     </div>
                 @endforeach
             </div>
@@ -292,27 +290,27 @@
                     }
                 @endphp
 
-                <div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;margin-bottom:1.5rem;">
+                <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden mb-6">
 
                     {{-- Machine header --}}
-                    <div style="background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
-                        <div style="display:flex;align-items:center;gap:10px;">
-                            <span style="font-size:1rem;font-weight:700;color:#334155;">{{ $machineLabel }}</span>
-                            <span style="font-size:0.75rem;font-weight:600;background:#e2e8f0;color:#64748b;padding:2px 8px;border-radius:9999px;">{{ count($entries) }} {{ Str::plural('run', count($entries)) }}</span>
+                    <div class="bg-slate-50 border-b border-slate-200 px-5 py-3.5 flex items-center justify-between gap-4 flex-wrap">
+                        <div class="flex items-center gap-2.5">
+                            <span class="text-base font-bold text-slate-700">{{ $machineLabel }}</span>
+                            <span class="text-xs font-semibold bg-slate-200 text-slate-500 px-2 py-px rounded-full">{{ count($entries) }} {{ Str::plural('run', count($entries)) }}</span>
                         </div>
-                        <div style="display:flex;gap:20px;font-size:0.8rem;color:#64748b;">
+                        <div class="flex gap-5 text-[0.8rem] text-slate-500">
                             @if($machinePacks > 0)
-                                <span><strong style="color:#334155;">{{ number_format($machinePacks) }}</strong> packs done</span>
+                                <span><strong class="text-slate-700">{{ number_format($machinePacks) }}</strong> packs done</span>
                             @endif
-                            <span>Running: <strong style="color:#334155;">{{ fmtDur($machineRunSecs) }}</strong></span>
+                            <span>Running: <strong class="text-slate-700">{{ fmtDur($machineRunSecs) }}</strong></span>
                             @if($machineGapSecs > 60)
-                                <span>Idle: <strong style="color:#ef4444;">{{ fmtDur($machineGapSecs) }}</strong></span>
+                                <span>Idle: <strong class="text-red-500">{{ fmtDur($machineGapSecs) }}</strong></span>
                             @endif
                         </div>
                     </div>
 
                     {{-- Job groups — wrapped for horizontal scroll on narrow screens --}}
-                    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+                    <div class="overflow-x-auto">
                     @foreach($jobGroups as $gi => $group)
                         @php
                             $job          = $group['job'];
@@ -354,11 +352,11 @@
                             @endphp
                             @if($firstEntryGap !== null && $firstEntryGap > 60)
                                 @php $gapAlert = $firstEntryGap >= 300; @endphp
-                                <div style="display:flex;align-items:center;gap:8px;padding:5px 20px;background:{{ $gapAlert ? '#fef2f2' : '#fafafa' }};border-top:1px dashed {{ $gapAlert ? '#fca5a5' : '#e2e8f0' }};">
-                                    <svg style="width:12px;height:12px;color:{{ $gapAlert ? '#ef4444' : '#94a3b8' }};flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <div class="flex items-center gap-2 px-5 py-1.5 {{ $gapAlert ? 'bg-red-50' : 'bg-slate-50' }}" style="border-top:1px dashed {{ $gapAlert ? '#fca5a5' : '#e2e8f0' }};">
+                                    <svg class="w-3 h-3 flex-shrink-0 {{ $gapAlert ? 'text-red-500' : 'text-slate-400' }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
                                     </svg>
-                                    <span style="font-size:0.75rem;color:{{ $gapAlert ? '#b91c1c' : '#94a3b8' }};font-weight:{{ $gapAlert ? '600' : '400' }};">
+                                    <span class="text-xs {{ $gapAlert ? 'text-red-800 font-semibold' : 'text-slate-400' }}">
                                         {{ fmtDur($firstEntryGap) }} idle between jobs
                                     </span>
                                 </div>
@@ -366,39 +364,39 @@
                         @endif
 
                         {{-- Job header --}}
-                        <div style="padding:10px 20px 8px;background:{{ $gi % 2 === 0 ? '#fff' : '#fafafa' }};border-top:{{ $gi > 0 ? '2px solid #e2e8f0' : 'none' }};min-width:680px;">
-                            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                        <div class="px-5 pt-2.5 pb-2 min-w-[680px]" style="background:{{ $gi % 2 === 0 ? '#fff' : '#fafafa' }};border-top:{{ $gi > 0 ? '2px solid #e2e8f0' : 'none' }};">
+                            <div class="flex items-center justify-between gap-3">
                                 <div>
-                                    <span style="font-size:0.9rem;font-weight:700;color:#1e293b;">
+                                    <span class="text-[0.9rem] font-bold text-slate-800">
                                         {{ $job?->customer_name ?? 'Unknown Job' }}
                                     </span>
                                     @if($job?->product_code)
-                                        <span style="font-size:0.8rem;color:#94a3b8;font-family:monospace;margin-left:8px;">{{ $job->product_code }}</span>
+                                        <span class="text-[0.8rem] text-slate-400 font-mono ml-2">{{ $job->product_code }}</span>
                                     @endif
                                     @if($job?->order_number)
-                                        <span style="font-size:0.75rem;color:#94a3b8;margin-left:6px;">· {{ $job->order_number }}</span>
+                                        <span class="text-xs text-slate-400 ml-1.5">· {{ $job->order_number }}</span>
                                     @endif
                                 </div>
-                                <div style="display:flex;align-items:center;gap:16px;font-size:0.8rem;color:#64748b;flex-wrap:wrap;justify-content:flex-end;">
+                                <div class="flex items-center gap-4 text-[0.8rem] text-slate-500 flex-wrap justify-end">
                                     @if($job?->order_quantity)
-                                        <span>Order: <strong style="color:#334155;">{{ number_format($job->order_quantity) }} packs</strong></span>
+                                        <span>Order: <strong class="text-slate-700">{{ number_format($job->order_quantity) }} packs</strong></span>
                                     @endif
                                     @if($groupPacks > 0)
-                                        <span>Done this log: <strong style="color:#15803d;">{{ number_format($groupPacks) }} packs</strong></span>
+                                        <span>Done this log: <strong class="text-green-700">{{ number_format($groupPacks) }} packs</strong></span>
                                     @endif
-                                    <span>Time: <strong style="color:#334155;">{{ fmtDur($groupRunSecs) }}</strong></span>
+                                    <span>Time: <strong class="text-slate-700">{{ fmtDur($groupRunSecs) }}</strong></span>
                                     @if($groupRateStr)
                                         @php $gc = $rateColour($groupRate, $groupTargetPPH); @endphp
-                                        <span style="font-weight:700;color:{{ $gc['text'] }};background:{{ $gc['bg'] }};padding:2px 8px;border-radius:6px;font-size:0.78rem;white-space:nowrap;">
-                                            ~{{ $groupRateStr }}@if($groupTargetPPH) <span style="font-weight:400;opacity:0.75;">/ {{ $groupTargetPPH }}/hr target</span>@endif
+                                        <span class="font-bold text-[0.78rem] px-2 py-px rounded-md whitespace-nowrap" style="color:{{ $gc['text'] }};background:{{ $gc['bg'] }};">
+                                            ~{{ $groupRateStr }}@if($groupTargetPPH) <span class="font-normal opacity-75">/ {{ $groupTargetPPH }}/hr target</span>@endif
                                         </span>
                                     @endif
                                 </div>
                             </div>
                             @if($priorBaseline > 0 || $priorSecs > 0)
-                                <div style="margin-top:4px;font-size:0.78rem;color:#94a3b8;">
-                                    Job total: <strong style="color:#64748b;">{{ number_format($totalPacksAllDays) }} packs</strong> / <strong style="color:#64748b;">{{ fmtDur($totalSecsAllDays) }}</strong>
-                                    <span style="font-size:0.72rem;">(inc. prior days)</span>
+                                <div class="mt-1 text-[0.78rem] text-slate-400">
+                                    Job total: <strong class="text-slate-500">{{ number_format($totalPacksAllDays) }} packs</strong> / <strong class="text-slate-500">{{ fmtDur($totalSecsAllDays) }}</strong>
+                                    <span class="text-[0.72rem]">(inc. prior days)</span>
                                 </div>
                             @endif
                         </div>
@@ -463,26 +461,26 @@
 
                             {{-- Named break between same-job runs (e.g. Dinner) --}}
                             @if($entry['break_reason'])
-                                <div style="display:grid;grid-template-columns:150px 1fr;align-items:center;gap:8px;padding:7px 20px 7px 36px;background:#fafaf7;border-top:1px dashed #e2e8f0;border-bottom:1px dashed #e2e8f0;min-width:680px;">
+                                <div class="grid items-center gap-2 px-5 py-1.5 pl-9 bg-[#fafaf7] border-t border-b border-dashed border-slate-200 min-w-[680px]" style="grid-template-columns:150px 1fr;">
                                     <div>
-                                        <div style="font-size:0.72rem;font-weight:600;color:#b45309;margin-bottom:1px;">{{ $entry['break_start']->format('d M Y') }}</div>
-                                        <div style="font-size:0.82rem;font-weight:600;color:#92400e;font-family:monospace;">
+                                        <div class="text-[0.72rem] font-semibold text-amber-700 mb-px">{{ $entry['break_start']->format('d M Y') }}</div>
+                                        <div class="text-[0.82rem] font-semibold text-amber-800 font-mono">
                                             {{ $entry['break_start']->format('H:i') }} → {{ $entry['break_end']->format('H:i') }}
                                         </div>
-                                        <div style="font-size:0.72rem;color:#b45309;margin-top:1px;">{{ fmtDur($entry['gap']) }}</div>
+                                        <div class="text-[0.72rem] text-amber-700 mt-px">{{ fmtDur($entry['gap']) }}</div>
                                     </div>
-                                    <div style="display:flex;align-items:center;gap:7px;">
-                                        <span style="font-size:0.72rem;font-weight:700;background:#fef3c7;color:#92400e;padding:3px 9px;border-radius:9999px;">{{ $entry['break_reason'] }}</span>
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="text-[0.72rem] font-bold bg-amber-100 text-amber-800 px-2.5 py-px rounded-full">{{ $entry['break_reason'] }}</span>
                                     </div>
                                 </div>
                             @elseif($ei > 0 && ($entry['gap'] ?? 0) > 60)
                                 {{-- Unnamed idle gap between same-job runs --}}
                                 @php $gapAlert = $entry['gap'] >= 300; @endphp
-                                <div style="display:flex;align-items:center;gap:8px;padding:4px 40px;background:{{ $gapAlert ? '#fef2f2' : '#fafafa' }};border-top:1px dashed {{ $gapAlert ? '#fca5a5' : '#e2e8f0' }};">
-                                    <svg style="width:11px;height:11px;color:{{ $gapAlert ? '#ef4444' : '#94a3b8' }};flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <div class="flex items-center gap-2 py-1 px-10 {{ $gapAlert ? 'bg-red-50' : 'bg-slate-50' }}" style="border-top:1px dashed {{ $gapAlert ? '#fca5a5' : '#e2e8f0' }};">
+                                    <svg class="w-3 h-3 flex-shrink-0 {{ $gapAlert ? 'text-red-500' : 'text-slate-400' }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
                                     </svg>
-                                    <span style="font-size:0.72rem;color:{{ $gapAlert ? '#b91c1c' : '#94a3b8' }};font-weight:{{ $gapAlert ? '600' : '400' }};">
+                                    <span class="text-[0.72rem] {{ $gapAlert ? 'text-red-800 font-semibold' : 'text-slate-400' }}">
                                         {{ fmtDur($entry['gap']) }} idle
                                     </span>
                                 </div>
@@ -502,31 +500,32 @@
 
                                 {{-- Thin divider between segments of the same run --}}
                                 @if($si > 0)
-                                    <div style="height:1px;background:#f1f5f9;margin-left:36px;"></div>
+                                    <div class="h-px bg-slate-100 ml-9"></div>
                                 @endif
 
-                                <div style="display:grid;grid-template-columns:150px 120px 1fr 120px 100px 130px;align-items:center;gap:8px;padding:9px 20px 9px 36px;border-top:{{ $si === 0 ? '1px solid #f1f5f9' : 'none' }};background:{{ $gi % 2 === 0 ? '#fff' : '#fafafa' }};min-width:680px;">
+                                <div class="grid items-center gap-2 px-5 py-2.5 pl-9 min-w-[680px]"
+                                     style="grid-template-columns:150px 120px 1fr 120px 100px 130px;border-top:{{ $si === 0 ? '1px solid #f1f5f9' : 'none' }};background:{{ $gi % 2 === 0 ? '#fff' : '#fafafa' }};">
 
                                     {{-- Time --}}
                                     <div>
-                                        <div style="font-size:0.72rem;font-weight:600;color:#64748b;margin-bottom:1px;">{{ $seg['start']->format('d M Y') }}</div>
-                                        <div style="font-size:0.82rem;font-weight:600;color:#334155;font-family:monospace;">
+                                        <div class="text-[0.72rem] font-semibold text-slate-500 mb-px">{{ $seg['start']->format('d M Y') }}</div>
+                                        <div class="text-[0.82rem] font-semibold text-slate-700 font-mono">
                                             {{ $seg['start']->format('H:i') }}
                                             →
                                             @if($seg['end'])
                                                 @if($seg['end']->format('Y-m-d') !== $seg['start']->format('Y-m-d'))
-                                                    <span style="font-size:0.72rem;font-weight:600;color:#64748b;">{{ $seg['end']->format('d M') }}</span>
+                                                    <span class="text-[0.72rem] font-semibold text-slate-500">{{ $seg['end']->format('d M') }}</span>
                                                 @endif
                                                 {{ $seg['end']->format('H:i') }}
                                             @else
-                                                <span style="color:#16a34a;">now</span>
+                                                <span class="text-green-600">now</span>
                                             @endif
                                         </div>
-                                        <div style="font-size:0.72rem;color:#94a3b8;margin-top:1px;">{{ $durStr }}</div>
+                                        <div class="text-[0.72rem] text-slate-400 mt-px">{{ $durStr }}</div>
                                     </div>
 
                                     {{-- Operator (first segment of each run only) --}}
-                                    <div style="font-size:0.82rem;color:#475569;">
+                                    <div class="text-[0.82rem] text-slate-600">
                                         @if($isFirst) {{ $run->user?->name ?? '—' }} @endif
                                     </div>
 
@@ -534,52 +533,52 @@
                                     <div>
                                         @if($seg['type'] === 'running' && $run->progress_packs !== null && $run->progress_at !== null && count($run->progressLogs) === 0)
                                             {{-- Legacy: run has progress_packs but no history entries (pre-feature data) --}}
-                                            <div style="font-size:0.75rem;color:#475569;">
-                                                Last update <span style="font-family:monospace;color:#334155;">{{ $run->progress_at->format('H:i') }}</span>
+                                            <div class="text-xs text-slate-600">
+                                                Last update <span class="font-mono text-slate-700">{{ $run->progress_at->format('H:i') }}</span>
                                             </div>
-                                            <div style="font-size:0.72rem;color:#64748b;margin-top:1px;">
+                                            <div class="text-[0.72rem] text-slate-500 mt-px">
                                                 {{ number_format($run->progress_packs) }} packs logged
                                             </div>
                                         @elseif($seg['type'] === 'running')
-                                            <span style="font-size:0.72rem;color:#cbd5e1;">No updates logged</span>
+                                            <span class="text-[0.72rem] text-slate-300">No updates logged</span>
                                         @endif
                                     </div>
 
                                     {{-- Rate --}}
-                                    <div style="text-align:right;">
+                                    <div class="text-right">
                                         @if($rateStr)
                                             @php $sc = $rateColour($seg['rate'], $groupTargetPPH); @endphp
-                                            <span style="font-size:0.78rem;font-weight:700;color:{{ $sc['text'] }};background:{{ $sc['bg'] }};padding:3px 8px;border-radius:6px;white-space:nowrap;">
+                                            <span class="text-[0.78rem] font-bold px-2 py-px rounded-md whitespace-nowrap" style="color:{{ $sc['text'] }};background:{{ $sc['bg'] }};">
                                                 ~{{ $rateStr }}
                                             </span>
                                             @if($groupTargetPPH)
-                                                <div style="font-size:0.68rem;color:#94a3b8;margin-top:2px;white-space:nowrap;">target {{ $groupTargetPPH }}/hr</div>
+                                                <div class="text-[0.68rem] text-slate-400 mt-0.5 whitespace-nowrap">target {{ $groupTargetPPH }}/hr</div>
                                             @endif
                                         @elseif($groupTargetPPH)
-                                            <div style="font-size:0.68rem;color:#cbd5e1;white-space:nowrap;">target {{ $groupTargetPPH }}/hr</div>
+                                            <div class="text-[0.68rem] text-slate-300 whitespace-nowrap">target {{ $groupTargetPPH }}/hr</div>
                                         @endif
                                     </div>
 
                                     {{-- Packs --}}
-                                    <div style="text-align:right;">
+                                    <div class="text-right">
                                         @if($seg['packs'] !== null)
-                                            <span style="font-size:0.95rem;font-weight:700;color:#334155;">{{ number_format($seg['packs']) }}</span>
-                                            <span style="font-size:0.7rem;color:#94a3b8;"> packs</span>
+                                            <span class="text-[0.95rem] font-bold text-slate-700">{{ number_format($seg['packs']) }}</span>
+                                            <span class="text-[0.7rem] text-slate-400"> packs</span>
                                         @else
-                                            <span style="color:#cbd5e1;font-size:0.8rem;">—</span>
+                                            <span class="text-slate-300 text-[0.8rem]">—</span>
                                         @endif
                                     </div>
 
                                     {{-- Status --}}
-                                    <div style="text-align:right;">
+                                    <div class="text-right">
                                         @if($seg['type'] === 'logged')
-                                            <span style="font-size:0.72rem;font-weight:700;background:#f0fdf4;color:#15803d;padding:3px 9px;border-radius:9999px;">✓ Logged</span>
+                                            <span class="text-[0.72rem] font-bold bg-green-50 text-green-700 px-2.5 py-px rounded-full">✓ Logged</span>
                                         @elseif($seg['type'] === 'complete')
-                                            <span style="font-size:0.72rem;font-weight:700;background:#dcfce7;color:#15803d;padding:3px 9px;border-radius:9999px;">
+                                            <span class="text-[0.72rem] font-bold bg-green-100 text-green-700 px-2.5 py-px rounded-full">
                                                 @if($seg['fully_complete']) ✓ Complete @else Ended @endif
                                             </span>
                                             @if($seg['pause_reason'] && ($seg['packs'] === null || $seg['packs'] === 0))
-                                                <div style="font-size:0.7rem;color:#64748b;margin-top:3px;text-align:right;">{{ $seg['pause_reason'] }}</div>
+                                                <div class="text-[0.7rem] text-slate-500 mt-0.5 text-right">{{ $seg['pause_reason'] }}</div>
                                             @endif
                                         @elseif($seg['type'] === 'pause')
                                             @php
@@ -592,21 +591,21 @@
                                                 };
                                                 $isBreakdown = ($seg['pause_type'] ?? null) === 'breakdown';
                                             @endphp
-                                            <span style="font-size:0.72rem;font-weight:700;background:{{ $isBreakdown ? '#fee2e2' : '#fef3c7' }};color:{{ $isBreakdown ? '#b91c1c' : '#92400e' }};padding:3px 9px;border-radius:9999px;">{{ $pauseLabel }}</span>
+                                            <span class="text-[0.72rem] font-bold px-2.5 py-px rounded-full {{ $isBreakdown ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800' }}">{{ $pauseLabel }}</span>
                                             @php $nextBreak = $group['entries'][$ei + 1]['break_reason'] ?? null; @endphp
                                             @if($seg['pause_reason'] && !$nextBreak)
-                                                <div style="font-size:0.7rem;color:{{ $isBreakdown ? '#b91c1c' : '#b45309' }};margin-top:3px;text-align:right;">{{ $seg['pause_reason'] }}</div>
+                                                <div class="text-[0.7rem] mt-0.5 text-right {{ $isBreakdown ? 'text-red-700' : 'text-amber-700' }}">{{ $seg['pause_reason'] }}</div>
                                             @endif
                                         @elseif($seg['type'] === 'handover')
-                                            <span style="font-size:0.72rem;font-weight:700;background:#ede9fe;color:#5b21b6;padding:3px 9px;border-radius:9999px;">Handover</span>
+                                            <span class="text-[0.72rem] font-bold bg-violet-100 text-violet-800 px-2.5 py-px rounded-full">Handover</span>
                                         @elseif($seg['type'] === 'running')
-                                            <span style="font-size:0.72rem;font-weight:700;background:#dcfce7;color:#15803d;padding:3px 9px;border-radius:9999px;display:inline-flex;align-items:center;gap:5px;">
-                                                <span style="width:6px;height:6px;border-radius:50%;background:#16a34a;animation:psRun 1.5s infinite;display:inline-block;"></span>
+                                            <span class="text-[0.72rem] font-bold bg-green-100 text-green-700 px-2.5 py-px rounded-full inline-flex items-center gap-1.5">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-green-600 inline-block" style="animation:psRun 1.5s infinite;"></span>
                                                 Running
                                             </span>
                                         @endif
                                         @if($seg['type'] !== 'logged' && $run->packs_corrected_from !== null)
-                                            <div style="font-size:0.68rem;color:#b45309;background:#fef3c7;padding:2px 7px;border-radius:9999px;margin-top:4px;white-space:nowrap;">
+                                            <div class="text-[0.68rem] text-amber-700 bg-amber-100 px-1.5 py-px rounded-full mt-1 whitespace-nowrap">
                                                 ✎ Corrected: {{ $run->packs_corrected_from }} → {{ $run->packs_produced }}
                                             </div>
                                         @endif
