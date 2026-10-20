@@ -1,8 +1,8 @@
 <x-layout title="Timesheets — Clocking">
-<main style="max-width:1100px;margin:0 auto;padding:2rem 1.5rem;">
+<main class="max-w-5xl mx-auto px-4 sm:px-6 py-8">
 
-    <div style="margin-bottom:1.5rem;">
-        <h1 style="font-size:1.5rem;font-weight:700;color:#1e293b;margin:0 0 1rem;">Clocking</h1>
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-slate-800 mb-4">Clocking</h1>
         @include('clocking._tabs', ['active' => 'timesheets'])
     </div>
 
@@ -13,42 +13,42 @@
         $nextWeek = $weekStart->copy()->addWeek()->format('Y-m-d');
         $weekLabel = $weekStart->format('j M') . ' – ' . $weekStart->copy()->addDays(6)->format('j M Y');
     @endphp
-    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap;">
-        <a href="?week={{ $prevWeek }}" style="padding:0.4rem 0.875rem;background:#fff;border:1px solid #e2e8f0;border-radius:7px;font-size:0.8125rem;color:#475569;text-decoration:none;font-weight:600;">← Prev</a>
-        <span style="font-size:1rem;font-weight:700;color:#1e293b;">{{ $weekLabel }}</span>
-        <a href="?week={{ $nextWeek }}" style="padding:0.4rem 0.875rem;background:#fff;border:1px solid #e2e8f0;border-radius:7px;font-size:0.8125rem;color:#475569;text-decoration:none;font-weight:600;">Next →</a>
+    <div class="flex items-center gap-3 mb-6 flex-wrap">
+        <a href="?week={{ $prevWeek }}" class="px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-[0.8125rem] text-slate-600 no-underline font-semibold hover:bg-slate-50 transition-colors">← Prev</a>
+        <span class="text-base font-bold text-slate-800">{{ $weekLabel }}</span>
+        <a href="?week={{ $nextWeek }}" class="px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-[0.8125rem] text-slate-600 no-underline font-semibold hover:bg-slate-50 transition-colors">Next →</a>
         @if($weekStart->format('Y-m-d') !== now()->startOfWeek(\Carbon\Carbon::MONDAY)->format('Y-m-d'))
-            <a href="?" style="font-size:0.8125rem;color:#6366f1;text-decoration:none;font-weight:500;">This week</a>
+            <a href="?" class="text-[0.8125rem] text-indigo-500 no-underline font-medium">This week</a>
         @endif
         <a href="?week={{ $weekStart->format('Y-m-d') }}&export=1" onclick="this.href='/clocking/timesheets/export?week={{ $weekStart->format('Y-m-d') }}'"
-           style="margin-left:auto;padding:0.4rem 0.875rem;background:#fff;border:1px solid #e2e8f0;border-radius:7px;font-size:0.8125rem;color:#475569;text-decoration:none;font-weight:600;">
+           class="sm:ml-auto px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-[0.8125rem] text-slate-600 no-underline font-semibold hover:bg-slate-50 transition-colors">
             ↓ Export CSV
         </a>
     </div>
 
     {{-- Timesheet table --}}
-    <div style="background:#fff;border-radius:14px;border:1px solid #e2e8f0;overflow-x:auto;">
+    <div class="bg-white rounded-xl border border-slate-200 overflow-x-auto">
         @if($grid->isEmpty())
-            <p style="padding:1.5rem;color:#94a3b8;font-size:0.875rem;">No active employees.</p>
+            <p class="p-6 text-slate-400 text-sm">No active employees.</p>
         @else
-        <table style="width:100%;border-collapse:collapse;font-size:0.875rem;min-width:700px;">
+        <table class="w-full border-collapse text-sm" style="min-width:700px;">
             <thead>
-                <tr style="border-bottom:1px solid #e2e8f0;background:#f8fafc;">
-                    <th style="text-align:left;padding:0.625rem 1rem;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;font-weight:600;white-space:nowrap;">Employee</th>
+                <tr class="border-b border-slate-200 bg-slate-50">
+                    <th class="text-left px-4 py-2.5 text-xs text-slate-500 uppercase tracking-wide font-semibold whitespace-nowrap">Employee</th>
                     @foreach($days as $day)
                     @php $isToday = $day->isToday(); @endphp
-                    <th style="text-align:center;padding:0.625rem 0.5rem;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.04em;color:{{ $isToday ? '#6366f1' : '#64748b' }};font-weight:{{ $isToday ? '700' : '600' }};white-space:nowrap;">
+                    <th class="text-center px-2 py-2.5 text-xs uppercase tracking-wide font-semibold whitespace-nowrap {{ $isToday ? 'text-indigo-600 font-bold' : 'text-slate-500' }}">
                         {{ $day->format('D j') }}
                     </th>
                     @endforeach
-                    <th style="text-align:right;padding:0.625rem 1rem;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;font-weight:600;white-space:nowrap;">Week</th>
+                    <th class="text-right px-4 py-2.5 text-xs text-slate-500 uppercase tracking-wide font-semibold whitespace-nowrap">Week</th>
                 </tr>
             </thead>
             <tbody>
             @foreach($grid as $row)
             @php $emp = $row['employee']; @endphp
-            <tr style="border-bottom:1px solid #f1f5f9;">
-                <td style="padding:0.75rem 1rem;font-weight:600;color:#1e293b;white-space:nowrap;">{{ $emp->name }}</td>
+            <tr class="border-b border-slate-50">
+                <td class="px-4 py-3 font-semibold text-slate-800 whitespace-nowrap">{{ $emp->name }}</td>
                 @foreach($row['days'] as $i => $dayInfo)
                 @php
                     $sessions   = $dayInfo['sessions'];
@@ -59,32 +59,33 @@
                     $ongoing    = count($sessions) > 0 && $sessions[array_key_last($sessions)]['ongoing'];
                     $isAbsent   = isset($absentOverrides[$emp->id . '_' . $date]);
                 @endphp
-                <td style="padding:0.375rem 0.25rem;text-align:center;{{ $isToday ? 'background:#fafaff;' : '' }}">
+                <td class="px-1 py-1.5 text-center {{ $isToday ? 'bg-indigo-50/30' : '' }}">
                     <button onclick="openDay({{ $emp->id }}, '{{ $date }}')"
-                        style="width:100%;min-width:90px;padding:0.4rem 0.35rem;background:{{ $isAbsent ? '#fef9f0' : ($hasPunches ? ($ongoing ? '#fffbeb' : '#f0fdf4') : 'transparent') }};border:1px solid {{ $isAbsent ? '#fed7aa' : ($hasPunches ? ($ongoing ? '#fde68a' : '#bbf7d0') : '#e2e8f0') }};border-radius:7px;cursor:pointer;text-align:center;font-size:0.75rem;line-height:1.4;">
+                        class="w-full cursor-pointer text-center text-xs leading-snug rounded-lg border py-1.5 px-1"
+                        style="min-width:90px;background:{{ $isAbsent ? '#fef9f0' : ($hasPunches ? ($ongoing ? '#fffbeb' : '#f0fdf4') : 'transparent') }};border-color:{{ $isAbsent ? '#fed7aa' : ($hasPunches ? ($ongoing ? '#fde68a' : '#bbf7d0') : '#e2e8f0') }};">
                         @if($isAbsent)
-                            <span style="color:#92400e;font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.04em;">Absent</span>
+                            <span class="text-amber-800 font-semibold text-[0.7rem] uppercase tracking-wide">Absent</span>
                         @elseif(count($sessions) === 0 && !$hasPunches)
-                            <span style="color:#cbd5e1;">—</span>
+                            <span class="text-slate-300">—</span>
                         @elseif(count($sessions) === 0 && $hasPunches)
-                            <span style="color:#94a3b8;font-size:0.7rem;">edit</span>
+                            <span class="text-slate-400 text-[0.7rem]">edit</span>
                         @else
                             @foreach($sessions as $s)
-                            <div style="color:{{ $s['ongoing'] ? '#d97706' : '#166534' }};font-family:monospace;white-space:nowrap;">
+                            <div class="font-mono whitespace-nowrap {{ $s['ongoing'] ? 'text-amber-600' : 'text-green-800' }}">
                                 {{ $s['in']->punched_at->format('H:i') }}–{{ $s['ongoing'] ? '…' : $s['out']->punched_at->format('H:i') }}
                             </div>
                             @endforeach
                             @php $h = intdiv($total, 60); $m = $total % 60; @endphp
-                            <div style="color:{{ $ongoing ? '#d97706' : '#64748b' }};font-size:0.7rem;margin-top:1px;">
+                            <div class="text-[0.7rem] mt-px {{ $ongoing ? 'text-amber-600' : 'text-slate-500' }}">
                                 {{ $h > 0 ? $h.'h ' : '' }}{{ sprintf('%02dm', $m) }}
                             </div>
                         @endif
                     </button>
                 </td>
                 @endforeach
-                <td style="padding:0.75rem 1rem;text-align:right;white-space:nowrap;">
+                <td class="px-4 py-3 text-right whitespace-nowrap">
                     @php $wh = intdiv($row['week_total'], 60); $wm = $row['week_total'] % 60; @endphp
-                    <span style="font-weight:700;color:#1e293b;">{{ $wh > 0 ? $wh.'h ' : '' }}{{ sprintf('%02dm', $wm) }}</span>
+                    <span class="font-bold text-slate-800">{{ $wh > 0 ? $wh.'h ' : '' }}{{ sprintf('%02dm', $wm) }}</span>
                 </td>
             </tr>
             @endforeach
@@ -96,52 +97,52 @@
 </main>
 
 {{-- Day detail modal --}}
-<div id="day-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:200;align-items:center;justify-content:center;padding:1rem;">
-    <div style="background:#fff;border-radius:14px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
-        <div style="padding:1.25rem 1.25rem 0;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #f1f5f9;padding-bottom:1rem;">
+<div id="day-modal" class="hidden fixed inset-0 bg-slate-900/50 z-50 items-center justify-content-center p-4" style="align-items:center;justify-content:center;">
+    <div class="bg-white rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div class="px-5 pt-5 pb-4 flex items-center justify-between border-b border-slate-100">
             <div>
-                <div id="modal-name" style="font-size:1rem;font-weight:700;color:#1e293b;"></div>
-                <div id="modal-date" style="font-size:0.8125rem;color:#64748b;margin-top:1px;"></div>
+                <div id="modal-name" class="text-base font-bold text-slate-800"></div>
+                <div id="modal-date" class="text-[0.8125rem] text-slate-500 mt-0.5"></div>
             </div>
-            <button onclick="closeDay()" style="padding:4px 8px;background:none;border:1px solid #e2e8f0;border-radius:6px;color:#64748b;font-size:1rem;cursor:pointer;">✕</button>
+            <button onclick="closeDay()" class="px-2 py-1 bg-transparent border border-slate-200 rounded-md text-slate-500 text-base cursor-pointer">✕</button>
         </div>
-        <div id="modal-punches" style="padding:1rem 1.25rem;"></div>
+        <div id="modal-punches" class="px-5 py-4"></div>
         {{-- Absent override --}}
-        <div style="padding:0 1.25rem 0.75rem;">
+        <div class="px-5 pb-3">
             <button id="absent-btn" onclick="toggleAbsent()"
-                style="padding:0.35rem 0.875rem;background:none;border:1px solid #e2e8f0;border-radius:7px;font-size:0.8125rem;color:#64748b;cursor:pointer;width:100%;text-align:left;">
+                class="w-full text-left px-3.5 py-2 bg-transparent border border-slate-200 rounded-lg text-[0.8125rem] text-slate-500 cursor-pointer">
                 Mark as absent (suppress alert)
             </button>
         </div>
 
         {{-- Add punch form --}}
-        <div style="padding:0 1.25rem 1.25rem;">
-            <div style="border-top:1px solid #f1f5f9;padding-top:1rem;">
-                <p style="font-size:0.8125rem;font-weight:600;color:#374151;margin:0 0 0.5rem;">Add a punch</p>
-                <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:flex-end;">
+        <div class="px-5 pb-5">
+            <div class="border-t border-slate-100 pt-4">
+                <p class="text-[0.8125rem] font-semibold text-slate-700 mb-2">Add a punch</p>
+                <div class="flex gap-2 flex-wrap items-end">
                     <div>
-                        <label style="font-size:0.75rem;color:#64748b;display:block;margin-bottom:3px;">Direction</label>
-                        <select id="add-dir" onchange="togglePairedOut()" style="padding:0.4rem 0.6rem;border:1px solid #e2e8f0;border-radius:6px;font-size:0.8125rem;">
+                        <label class="block text-xs text-slate-500 mb-1">Direction</label>
+                        <select id="add-dir" onchange="togglePairedOut()" class="px-3 py-2 border border-slate-300 rounded-lg text-[0.8125rem] focus:outline-none focus:ring-2 focus:ring-sky-500">
                             <option value="in">Clock In</option>
                             <option value="out">Clock Out</option>
                         </select>
                     </div>
                     <div>
-                        <label style="font-size:0.75rem;color:#64748b;display:block;margin-bottom:3px;">Time</label>
+                        <label class="block text-xs text-slate-500 mb-1">Time</label>
                         <input type="datetime-local" id="add-time"
-                            style="padding:0.4rem 0.6rem;border:1px solid #e2e8f0;border-radius:6px;font-size:0.8125rem;">
+                            class="px-3 py-2 border border-slate-300 rounded-lg text-[0.8125rem] focus:outline-none focus:ring-2 focus:ring-sky-500">
                     </div>
                     <div id="paired-out-wrap">
-                        <label style="font-size:0.75rem;color:#64748b;display:block;margin-bottom:3px;">Clock Out <span style="color:#94a3b8;">(optional)</span></label>
+                        <label class="block text-xs text-slate-500 mb-1">Clock Out <span class="text-slate-400">(optional)</span></label>
                         <input type="datetime-local" id="add-time-out"
-                            style="padding:0.4rem 0.6rem;border:1px solid #e2e8f0;border-radius:6px;font-size:0.8125rem;">
+                            class="px-3 py-2 border border-slate-300 rounded-lg text-[0.8125rem] focus:outline-none focus:ring-2 focus:ring-sky-500">
                     </div>
                     <button onclick="submitAddPunch()"
-                        style="padding:0.4rem 1rem;background:#6366f1;color:#fff;border:none;border-radius:6px;font-size:0.8125rem;font-weight:600;cursor:pointer;">
+                        class="px-4 py-2 bg-indigo-500 text-white border-0 rounded-lg text-[0.8125rem] font-semibold cursor-pointer hover:bg-indigo-600 transition-colors">
                         Add
                     </button>
                 </div>
-                <div id="add-result" style="margin-top:0.5rem;font-size:0.8125rem;"></div>
+                <div id="add-result" class="mt-2 text-[0.8125rem]"></div>
             </div>
         </div>
     </div>
