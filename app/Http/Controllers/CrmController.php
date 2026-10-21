@@ -515,6 +515,7 @@ class CrmController extends Controller
         $data = $request->validate([
             'contacted_at' => ['required', 'date'],
             'note'         => ['required', 'string', 'max:2000'],
+            'follow_up_at' => ['nullable', 'date', 'after:today'],
         ]);
 
         $keyAccount = $this->upsertKeyAccount($customerCode);
@@ -522,8 +523,9 @@ class CrmController extends Controller
             'user_id'      => auth()->id(),
             'contacted_at' => $data['contacted_at'],
             'note'         => $data['note'],
+            'follow_up_at' => $data['follow_up_at'] ?? null,
         ]);
-        ActivityLog::record('crm.contact_add', "Logged contact for account {$customerCode}");
+        ActivityLog::record('crm.contact_add', "Logged contact for account {$customerCode}" . (!empty($data['follow_up_at']) ? " (follow-up: {$data['follow_up_at']})" : ''));
 
         return back()->with('crm_success', 'Contact logged.');
     }

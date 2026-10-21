@@ -2,7 +2,9 @@
 
 namespace App\Console\Commands;
 
+use App\Mail\ImportFailedMail;
 use App\Models\ActivityLog;
+use Illuminate\Support\Facades\Mail;
 use App\Models\StockWatchlistSubstitution;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -107,6 +109,9 @@ class ProcessSalesImport extends Command
         } catch (\Throwable $e) {
             ActivityLog::record('imports.sales.error', 'Import failed: ' . $e->getMessage());
             $this->error('Import failed: ' . $e->getMessage());
+            if ($to = config('mail.import_alert_email')) {
+                Mail::to($to)->send(new ImportFailedMail('Sales File Import', $e->getMessage(), now()->format('d M Y H:i')));
+            }
             return;
         }
 

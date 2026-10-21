@@ -27,6 +27,9 @@ Schedule::command('amazon:sync --settlements --ads')->dailyAt('06:00');
 // Default pulls last 3 years. Run manually with --from=2001-01-01 for full history.
 Schedule::command('imports:sync-unleashed --from=2021-01-01')->dailyAt('07:30');
 
+// CRM: send follow-up reminders daily at 08:00
+Schedule::command('crm:send-followup-reminders')->dailyAt('08:00');
+
 // Clocking: send absence alerts every 15 minutes during working hours
 Schedule::command('clocking:send-alerts')->everyFifteenMinutes();
 

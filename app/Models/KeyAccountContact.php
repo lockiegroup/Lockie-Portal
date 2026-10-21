@@ -7,9 +7,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class KeyAccountContact extends Model
 {
-    protected $fillable = ['key_account_id', 'user_id', 'contacted_at', 'note'];
+    protected $fillable = ['key_account_id', 'user_id', 'contacted_at', 'note', 'follow_up_at'];
 
-    protected $casts = ['contacted_at' => 'date'];
+    protected $casts = ['contacted_at' => 'date', 'follow_up_at' => 'date'];
 
     public function account(): BelongsTo
     {

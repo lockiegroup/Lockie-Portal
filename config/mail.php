@@ -115,4 +115,6 @@ return [
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
     ],
 
+    'import_alert_email' => env('IMPORT_ALERT_EMAIL'),
+
 ];

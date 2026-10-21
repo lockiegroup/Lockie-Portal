@@ -2,12 +2,14 @@
 
 namespace App\Console\Commands;
 
+use App\Mail\ImportFailedMail;
 use App\Models\ActivityLog;
 use App\Models\StockWatchlistSubstitution;
 use App\Services\UnleashedService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 
 class SyncUnleashedImports extends Command
 {
@@ -54,6 +56,9 @@ class SyncUnleashedImports extends Command
         } catch (\Throwable $e) {
             $this->error('Sync failed: ' . $e->getMessage());
             ActivityLog::record('imports.sales.error', 'Auto-sync failed: ' . substr($e->getMessage(), 0, 250));
+            if ($to = config('mail.import_alert_email')) {
+                Mail::to($to)->send(new ImportFailedMail('Unleashed Sync', $e->getMessage(), now()->format('d M Y H:i')));
+            }
             return 1;
         }
 

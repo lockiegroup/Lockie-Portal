@@ -299,6 +299,12 @@
                             class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm resize-none overflow-y-hidden focus:outline-none focus:ring-2 focus:ring-sky-500">{{ old('note') }}</textarea>
                     </div>
                 </div>
+                <div class="mt-3">
+                    <label class="block text-[0.8125rem] font-medium text-slate-500 mb-1.5">Follow-up reminder <span class="font-normal text-slate-400">(optional)</span></label>
+                    <input type="date" name="follow_up_at" value="{{ old('follow_up_at') }}" min="{{ now()->addDay()->format('Y-m-d') }}"
+                        class="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
+                    <p class="text-[0.75rem] text-slate-400 mt-1">You'll receive an email on this date reminding you to follow up.</p>
+                </div>
                 <div class="mt-2.5 flex justify-end">
                     <button type="submit"
                         class="px-4 py-2 bg-slate-900 text-white text-sm font-medium rounded-lg border-0 cursor-pointer hover:bg-slate-700 transition-colors">
@@ -320,7 +326,17 @@
                             <span class="text-xs text-slate-400 whitespace-nowrap pt-0.5 w-20 shrink-0">
                                 {{ $contact->contacted_at->format('d M Y') }}
                             </span>
-                            <span class="text-sm text-slate-700 flex-1 whitespace-pre-wrap">{!! e($contact->note) !!}</span>
+                            <div class="flex-1 min-w-0">
+                                <span class="text-sm text-slate-700 whitespace-pre-wrap">{!! e($contact->note) !!}</span>
+                                @if($contact->follow_up_at)
+                                    @php $isOverdue = $contact->follow_up_at->isPast(); $isToday = $contact->follow_up_at->isToday(); @endphp
+                                    <span class="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[0.7rem] font-semibold
+                                        {{ $isOverdue || $isToday ? 'bg-amber-100 text-amber-700' : 'bg-sky-50 text-sky-600' }}">
+                                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                        Follow up {{ $isToday ? 'today' : ($isOverdue ? 'was ' : '') }}{{ $contact->follow_up_at->format('d M Y') }}
+                                    </span>
+                                @endif
+                            </div>
                             <span class="text-xs text-slate-400 whitespace-nowrap shrink-0">{{ $contact->user?->name ?? '—' }}</span>
                             <form action="{{ route('crm.contacts.destroy', [$customerCode, $contact]) }}" method="POST"
                                 onsubmit="return confirm('Remove this contact entry?')">
