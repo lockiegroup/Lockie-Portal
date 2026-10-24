@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Mail;
 class SyncUnleashedImports extends Command
 {
     protected $signature = 'imports:sync-unleashed
-                            {--from= : Start date (Y-m-d). Defaults to 3 years ago. Use 2001-01-01 for full history.}
+                            {--from= : Start date (Y-m-d). Defaults to 12 months ago. Use 2021-01-01 for full history.}
                             {--sales-only : Only sync sales orders}
                             {--credits-only : Only sync credit notes}';
 
@@ -40,7 +40,7 @@ class SyncUnleashedImports extends Command
         $doCredits   = !$salesOnly;
 
         $fromOption = $this->option('from');
-        $from = $fromOption ? Carbon::parse($fromOption)->toDateString() : '2021-01-01';
+        $from = $fromOption ? Carbon::parse($fromOption)->toDateString() : now()->subYear()->toDateString();
         $to   = now()->subDay()->toDateString();
 
         $this->info("Unleashed import sync: {$from} → {$to}");
@@ -52,7 +52,7 @@ class SyncUnleashedImports extends Command
 
         try {
             if ($doSales)   $this->syncSales($from, $to, $substitutions);
-            if ($doCredits) $this->syncCredits($substitutions);
+            if ($doCredits) $this->syncCredits($from, $substitutions);
         } catch (\Throwable $e) {
             $this->error('Sync failed: ' . $e->getMessage());
             ActivityLog::record('imports.sales.error', 'Auto-sync failed: ' . substr($e->getMessage(), 0, 250));
@@ -97,7 +97,7 @@ class SyncUnleashedImports extends Command
         $seenGuids = [];
         $rows      = [];
 
-        DB::statement('TRUNCATE TABLE sales_lines');
+        DB::table('sales_lines')->where('order_date', '>=', $from)->delete();
 
         foreach ($allOrders as $o) {
             $guid = $o['Guid'] ?? null;
@@ -161,7 +161,7 @@ class SyncUnleashedImports extends Command
         $this->info("Sales sync complete: {$orderCount} orders, {$total} lines.");
     }
 
-    private function syncCredits(array $substitutions): void
+    private function syncCredits(string $from, array $substitutions): void
     {
         $this->info('Fetching credit notes…');
         $credits = $this->fetchAllPages('CreditNotes', [], 200);
@@ -175,7 +175,7 @@ class SyncUnleashedImports extends Command
             if ($status === 'deleted') continue;
 
             $creditDate = $this->unleashed->parseDate($c['CreditDate'] ?? null);
-            if (!$creditDate) continue;
+            if (!$creditDate || $creditDate < $from) continue;
 
             $code = ($c['Customer'] ?? [])['CustomerCode'] ?? '';
             $wh   = ($c['Warehouse'] ?? [])['WarehouseName'] ?? '';
@@ -211,7 +211,7 @@ class SyncUnleashedImports extends Command
         $count = count($insertRows);
         $this->info("Inserting {$count} credit rows…");
 
-        DB::statement('TRUNCATE TABLE credits_lines');
+        DB::table('credits_lines')->where('credit_date', '>=', $from)->delete();
         foreach (array_chunk($insertRows, 4000) as $chunk) {
             DB::table('credits_lines')->insert($chunk);
         }
