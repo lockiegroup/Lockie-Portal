@@ -57,11 +57,11 @@
                 </svg>
                 <span class="sb-label">Sales</span>
             </a>
-            <a href="{{ route('insights.customers') }}" class="sb-item{{ request()->routeIs('insights.*') ? ' sb-active' : '' }}" data-tip="Customer Insights">
+            <a href="{{ route('insights.customers') }}" class="sb-item{{ request()->routeIs('insights.*') ? ' sb-active' : '' }}" data-tip="Growth Insights">
                 <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="7" r="4"/><path d="M5.5 21a8.38 8.38 0 0 1 13 0"/><path d="M19 12l2 2-4 4"/>
                 </svg>
-                <span class="sb-label">Customer Insights</span>
+                <span class="sb-label">Growth Insights</span>
             </a>
             @endif
             @if($user->hasModule('stock'))

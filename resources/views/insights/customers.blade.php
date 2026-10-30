@@ -1,10 +1,10 @@
-<x-layout title="Customer Insights — Lockie Portal">
+<x-layout title="Growth Insights — Lockie Portal">
 
     <main class="max-w-7xl mx-auto px-6 py-10">
 
         <div class="mb-8">
-            <h1 class="text-2xl font-bold text-slate-800">Customer Insights</h1>
-            <p class="text-slate-500 mt-1">New customers acquired per month, compared year on year.</p>
+            <h1 class="text-2xl font-bold text-slate-800">Growth Insights</h1>
+            <p class="text-slate-500 mt-1">New customers acquired and order volumes, compared year on year.</p>
         </div>
 
         {{-- Filters --}}
