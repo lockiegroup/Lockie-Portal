@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\OtpController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\CustomerInsightsController;
 use App\Http\Controllers\SalesController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\ChurchEnvelopeController;
@@ -82,6 +83,8 @@ Route::middleware(['otp', 'auth'])->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/sales', [SalesController::class, 'index'])->name('sales');
     Route::get('/sales/data', [SalesController::class, 'data'])->name('sales.data');
+    Route::get('/insights/customers', [CustomerInsightsController::class, 'index'])->name('insights.customers');
+    Route::get('/insights/customers/data', [CustomerInsightsController::class, 'data'])->name('insights.customers.data');
     Route::get('/stock', [StockController::class, 'index'])->name('stock.index');
     Route::get('/stock/data', [StockController::class, 'data'])->name('stock.data');
     Route::post('/logout', LogoutController::class)->name('logout');
