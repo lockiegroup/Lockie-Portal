@@ -43,11 +43,38 @@ class CustomerInsightsController extends Controller
             }
             ksort($byYearMonth);
 
-            // Year totals
+            // Year totals (new customers)
             $yearTotals = [];
             foreach ($byYearMonth as $year => $months) {
                 $yearTotals[$year] = array_sum($months);
             }
+
+            // Total orders by month/year
+            $ordersQuery = DB::table('sales_lines')
+                ->where('status', '!=', 'deleted')
+                ->whereNotNull('order_no')
+                ->whereNotNull('order_date');
+
+            if ($warehouse) {
+                $ordersQuery->where('warehouse', $warehouse);
+            }
+
+            $orderRows = $ordersQuery
+                ->select(
+                    DB::raw('YEAR(order_date) as year'),
+                    DB::raw('MONTH(order_date) as month'),
+                    DB::raw('COUNT(DISTINCT order_no) as cnt')
+                )
+                ->groupBy(DB::raw('YEAR(order_date)'), DB::raw('MONTH(order_date)'))
+                ->get();
+
+            $ordersByYearMonth = [];
+            $orderYearTotals   = [];
+            foreach ($orderRows as $row) {
+                $ordersByYearMonth[$row->year][$row->month] = (int) $row->cnt;
+                $orderYearTotals[$row->year] = ($orderYearTotals[$row->year] ?? 0) + (int) $row->cnt;
+            }
+            ksort($ordersByYearMonth);
 
             // Warehouses for filter
             $warehouses = DB::table('sales_lines')
@@ -58,10 +85,12 @@ class CustomerInsightsController extends Controller
                 ->values();
 
             return response()->json([
-                'success'    => true,
-                'data'       => $byYearMonth,
-                'yearTotals' => $yearTotals,
-                'warehouses' => $warehouses,
+                'success'         => true,
+                'data'            => $byYearMonth,
+                'yearTotals'      => $yearTotals,
+                'ordersData'      => $ordersByYearMonth,
+                'orderYearTotals' => $orderYearTotals,
+                'warehouses'      => $warehouses,
             ]);
         } catch (\Throwable $e) {
             return response()->json([

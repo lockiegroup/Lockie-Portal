@@ -8,7 +8,21 @@
         </div>
 
         {{-- Filters --}}
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 mb-8 flex flex-wrap items-end gap-4">
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 mb-8 flex flex-wrap items-center gap-4">
+            {{-- Toggle --}}
+            <div class="flex rounded-lg border border-slate-200 overflow-hidden text-sm font-medium">
+                <button id="toggle-customers" onclick="setMode('customers')"
+                    class="px-4 py-2 bg-slate-900 text-white transition-colors">
+                    New Customers
+                </button>
+                <button id="toggle-orders" onclick="setMode('orders')"
+                    class="px-4 py-2 bg-white text-slate-600 hover:bg-slate-50 transition-colors">
+                    Total Orders
+                </button>
+            </div>
+
+            <div class="w-px h-6 bg-slate-200"></div>
+
             <div>
                 <label class="block text-[0.72rem] font-semibold text-slate-500 mb-1">Division (Warehouse)</label>
                 <select id="warehouse-filter"
@@ -17,7 +31,7 @@
                 </select>
             </div>
             <button onclick="loadData()"
-                class="px-5 py-2 bg-slate-900 hover:bg-slate-700 text-white text-sm font-semibold rounded-lg transition-colors">
+                class="px-5 py-2 bg-slate-900 hover:bg-slate-700 text-white text-sm font-semibold rounded-lg transition-colors self-end">
                 Apply
             </button>
         </div>
@@ -39,7 +53,7 @@
             {{-- Chart --}}
             <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-8">
                 <div class="flex items-center justify-between mb-5">
-                    <h2 class="font-semibold text-slate-800">New Customers per Month</h2>
+                    <h2 class="font-semibold text-slate-800" id="chart-title">New Customers per Month</h2>
                     <div id="chart-legend" class="flex flex-wrap gap-4 text-xs text-slate-500"></div>
                 </div>
                 <div class="relative" style="height:340px;">
@@ -83,10 +97,25 @@
             { line: '#a78bfa', fill: 'rgba(167,139,250,0.1)' },
         ];
 
-        let chart = null;
+        let chart   = null;
+        let mode    = 'customers'; // 'customers' | 'orders'
+        let lastRes = null;
 
         function fmtInt(n) {
             return new Intl.NumberFormat('en-GB').format(n);
+        }
+
+        function setMode(m) {
+            mode = m;
+            document.getElementById('toggle-customers').className =
+                m === 'customers'
+                    ? 'px-4 py-2 bg-slate-900 text-white transition-colors'
+                    : 'px-4 py-2 bg-white text-slate-600 hover:bg-slate-50 transition-colors';
+            document.getElementById('toggle-orders').className =
+                m === 'orders'
+                    ? 'px-4 py-2 bg-slate-900 text-white transition-colors'
+                    : 'px-4 py-2 bg-white text-slate-600 hover:bg-slate-50 transition-colors';
+            if (lastRes) render(lastRes);
         }
 
         function loadData() {
@@ -108,6 +137,7 @@
                         document.getElementById('error').classList.remove('hidden');
                         return;
                     }
+                    lastRes = res;
                     render(res);
                     document.getElementById('content').classList.remove('hidden');
                 })
@@ -120,8 +150,6 @@
 
         function populateWarehouses(warehouses) {
             const sel = document.getElementById('warehouse-filter');
-            const current = sel.value;
-            // Only populate once
             if (sel.options.length > 1) return;
             warehouses.forEach(w => {
                 const opt = document.createElement('option');
@@ -129,14 +157,15 @@
                 opt.textContent = w;
                 sel.appendChild(opt);
             });
-            if (current) sel.value = current;
         }
 
         function render(res) {
             populateWarehouses(res.warehouses || []);
 
-            const data       = res.data || {};
-            const yearTotals = res.yearTotals || {};
+            const isOrders   = mode === 'orders';
+            const data       = isOrders ? (res.ordersData || {})  : (res.data || {});
+            const yearTotals = isOrders ? (res.orderYearTotals || {}) : (res.yearTotals || {});
+            const unitLabel  = isOrders ? 'orders' : 'new customers';
             const years      = Object.keys(data).map(Number).sort();
 
             // ── Year summary cards ─────────────────────────────────────────────
@@ -169,9 +198,13 @@
                             <p class="text-slate-500 text-sm font-medium">${year}</p>
                         </div>
                         <p class="text-2xl font-bold text-slate-800">${fmtInt(total)}</p>
-                        <p class="text-slate-400 text-xs mt-1">new customers ${changeHtml}</p>
+                        <p class="text-slate-400 text-xs mt-1">${unitLabel} ${changeHtml}</p>
                     </div>`;
             });
+
+            // ── Chart title ────────────────────────────────────────────────────
+            document.getElementById('chart-title').textContent =
+                isOrders ? 'Total Orders per Month' : 'New Customers per Month';
 
             // ── Chart ──────────────────────────────────────────────────────────
             const datasets = years.map((year, i) => {
@@ -211,7 +244,7 @@
                         tooltip: {
                             callbacks: {
                                 title: items => items[0].label,
-                                label: item => ` ${item.dataset.label}: ${fmtInt(item.raw)} new customers`,
+                                label: item => ` ${item.dataset.label}: ${fmtInt(item.raw)} ${unitLabel}`,
                             },
                         },
                     },
