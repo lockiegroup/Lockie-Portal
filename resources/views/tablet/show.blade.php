@@ -1206,6 +1206,7 @@ function endPacksAll() {
     if (maxPacks) {
         document.getElementById('end-packs-input').value = maxPacks;
         updateEndRemaining();
+        updateEndZeroReason();
     }
 }
 
