@@ -70,7 +70,18 @@
             <tbody class="divide-y divide-slate-50">
                 @foreach($quote->lines as $line)
                 <tr>
-                    <td class="px-4 py-3 text-slate-700">{{ $line->description }}</td>
+                    <td class="px-4 py-3 text-slate-700">
+                        {{ $line->description }}
+                        @if($line->breaks->isNotEmpty())
+                        <div class="mt-1.5 space-y-0.5">
+                            @foreach($line->breaks as $brk)
+                            <div class="text-xs text-slate-400">
+                                From {{ rtrim(rtrim(number_format($brk->min_qty, 2), '0'), '.') }} units → £{{ number_format($brk->unit_price, 2) }} each
+                            </div>
+                            @endforeach
+                        </div>
+                        @endif
+                    </td>
                     <td class="px-4 py-3 text-slate-500 text-sm">{{ $line->unit ?: '—' }}</td>
                     <td class="px-4 py-3 text-right text-slate-600">{{ rtrim(rtrim(number_format($line->quantity, 2), '0'), '.') }}</td>
                     <td class="px-4 py-3 text-right text-slate-600">£{{ number_format($line->unit_price, 2) }}</td>

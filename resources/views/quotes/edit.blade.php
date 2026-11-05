@@ -105,6 +105,10 @@ const EXISTING_LINES = @json($quote->lines->map(fn($l) => [
     'unit'        => $l->unit,
     'quantity'    => (float) $l->quantity,
     'unit_price'  => (float) $l->unit_price,
+    'breaks'      => $l->breaks->map(fn($b) => [
+        'min_qty'    => (float) $b->min_qty,
+        'unit_price' => (float) $b->unit_price,
+    ])->values()->all(),
 ]));
 
 function fmt(n) {
@@ -156,10 +160,10 @@ document.addEventListener('click', e => {
 // ── Line items ──
 let lineIndex = 0;
 
-function addLine(desc = '', unit = '', qty = '', price = '') {
+function addLine(desc = '', unit = '', qty = '', price = '', breaks = []) {
     const i   = lineIndex++;
     const div = document.createElement('div');
-    div.className = 'line-row relative';
+    div.className = 'line-row relative border border-slate-100 rounded-lg p-2 bg-white';
     div.innerHTML = `
         <div class="grid grid-cols-[1fr_90px_80px_110px_100px_32px] gap-2 items-center">
             <div class="relative">
@@ -173,15 +177,79 @@ function addLine(desc = '', unit = '', qty = '', price = '') {
                 class="px-2 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-sky-500">
             <input type="number" name="lines[${i}][quantity]" value="${escAttr(qty)}" required min="0.01" step="any" placeholder="Qty"
                 class="qty-input px-2 py-2 border border-slate-200 rounded-lg text-sm text-right outline-none focus:ring-2 focus:ring-sky-500"
-                oninput="recalc(this)">
+                oninput="recalcWithBreaks(this)">
             <input type="number" name="lines[${i}][unit_price]" value="${escAttr(price)}" required min="0" step="any" placeholder="0.00"
                 class="price-input px-2 py-2 border border-slate-200 rounded-lg text-sm text-right outline-none focus:ring-2 focus:ring-sky-500"
                 oninput="recalc(this)">
             <span class="line-total px-2 py-2 text-sm text-right text-slate-600 font-medium">—</span>
             <button type="button" onclick="removeLine(this)" class="text-slate-300 hover:text-red-400 transition-colors text-lg leading-none">✕</button>
+        </div>
+        <div class="mt-1.5 ml-1">
+            <button type="button" onclick="toggleBreaks(this)"
+                class="text-xs text-sky-600 hover:text-sky-800 transition-colors">+ Price breaks</button>
+            <div class="breaks-panel hidden mt-2 pl-2 border-l-2 border-slate-100">
+                <div class="breaks-rows space-y-1"></div>
+                <button type="button" onclick="addBreakRow(this)"
+                    class="mt-1.5 text-xs text-slate-400 hover:text-slate-600 transition-colors">+ Add tier</button>
+            </div>
         </div>`;
     document.getElementById('lines-container').appendChild(div);
-    if (qty && price) recalc(div.querySelector('.qty-input'));
+    breaks.forEach(b => addBreakRow(div.querySelector('.breaks-panel button[onclick*="addBreakRow"]'), b.min_qty, b.unit_price));
+    if (breaks.length) {
+        div.querySelector('.breaks-panel').classList.remove('hidden');
+        div.querySelector('[onclick*="toggleBreaks"]').textContent = '− Price breaks';
+    }
+    if (qty && price) recalcAll();
+}
+
+function toggleBreaks(btn) {
+    const panel = btn.closest('.line-row').querySelector('.breaks-panel');
+    const hidden = panel.classList.toggle('hidden');
+    btn.textContent = hidden ? '+ Price breaks' : '− Price breaks';
+}
+
+function addBreakRow(btn, minQty = '', unitPrice = '') {
+    const row = document.createElement('div');
+    row.className = 'break-row flex items-center gap-2';
+    const lineRow = btn.closest('.line-row');
+    const qtyInput = lineRow.querySelector('.qty-input');
+    const nameParts = qtyInput.name.match(/lines\[(\d+)\]/);
+    const li = nameParts ? nameParts[1] : 0;
+    const bi = lineRow.querySelectorAll('.break-row').length;
+    row.innerHTML = `
+        <span class="text-xs text-slate-400 w-12 shrink-0">From</span>
+        <input type="number" name="lines[${li}][breaks][${bi}][min_qty]" value="${escAttr(minQty)}"
+            min="1" step="any" placeholder="Qty"
+            class="w-20 px-2 py-1 border border-slate-200 rounded text-xs text-right outline-none focus:ring-2 focus:ring-sky-500">
+        <span class="text-xs text-slate-400">units →</span>
+        <span class="text-xs text-slate-400">£</span>
+        <input type="number" name="lines[${li}][breaks][${bi}][unit_price]" value="${escAttr(unitPrice)}"
+            min="0" step="any" placeholder="0.00"
+            class="w-24 px-2 py-1 border border-slate-200 rounded text-xs text-right outline-none focus:ring-2 focus:ring-sky-500">
+        <span class="text-xs text-slate-300">each</span>
+        <button type="button" onclick="this.closest('.break-row').remove();recalcWithBreaks(this.closest('.line-row').querySelector('.qty-input'))"
+            class="text-slate-200 hover:text-red-400 transition-colors leading-none">✕</button>`;
+    const lineRowEl = lineRow;
+    row.querySelectorAll('input').forEach(inp => {
+        inp.addEventListener('input', () => recalcWithBreaks(lineRowEl.querySelector('.qty-input')));
+    });
+    btn.closest('.breaks-panel').querySelector('.breaks-rows').appendChild(row);
+}
+
+function recalcWithBreaks(qtyInput) {
+    const row    = qtyInput.closest('.line-row');
+    const qty    = parseFloat(qtyInput.value) || 0;
+    const breaks = [...row.querySelectorAll('.break-row')].map(r => ({
+        min_qty:    parseFloat(r.querySelectorAll('input')[0].value) || 0,
+        unit_price: parseFloat(r.querySelectorAll('input')[1].value) || null,
+    })).filter(b => b.min_qty > 0 && b.unit_price !== null).sort((a,b) => a.min_qty - b.min_qty);
+
+    if (breaks.length && qty > 0) {
+        let matched = null;
+        for (const b of breaks) { if (qty >= b.min_qty) matched = b; }
+        if (matched) row.querySelector('.price-input').value = matched.unit_price.toFixed(2);
+    }
+    recalc(qtyInput);
 }
 
 function removeLine(btn) {
@@ -252,6 +320,6 @@ document.getElementById('quote-form').addEventListener('submit', function () {
 });
 
 // Pre-populate existing lines
-EXISTING_LINES.forEach(l => addLine(l.description, l.unit ?? '', l.quantity, l.unit_price));
+EXISTING_LINES.forEach(l => addLine(l.description, l.unit ?? '', l.quantity, l.unit_price, l.breaks ?? []));
 </script>
 </x-layout>

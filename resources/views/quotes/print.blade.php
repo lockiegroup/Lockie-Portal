@@ -132,6 +132,27 @@
     tbody td.right { text-align: right; color: #1e293b; }
     tbody td.total-col { font-weight: 600; }
 
+    /* ── Price breaks ── */
+    .breaks-table {
+        margin-top: 6px;
+        font-size: 10.5px;
+        color: #94a3b8;
+        border-collapse: collapse;
+    }
+    .breaks-table td {
+        padding: 1px 6px 1px 0;
+        font-size: 10.5px;
+        color: #94a3b8;
+    }
+    .breaks-label {
+        font-size: 9.5px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #cbd5e1;
+        margin-bottom: 2px;
+    }
+
     .table-wrap {
         border: 1px solid #e2e8f0;
         border-radius: 8px;
@@ -268,7 +289,20 @@
         <tbody>
             @foreach($quote->lines as $line)
             <tr>
-                <td>{{ $line->description }}</td>
+                <td>
+                    {{ $line->description }}
+                    @if($line->breaks->isNotEmpty())
+                    <div class="breaks-label" style="margin-top:5px;">Price breaks</div>
+                    <table class="breaks-table">
+                        @foreach($line->breaks as $brk)
+                        <tr>
+                            <td>{{ rtrim(rtrim(number_format($brk->min_qty, 2), '0'), '.') }}+ units</td>
+                            <td style="padding-left:8px;">£{{ number_format($brk->unit_price, 2) }} each</td>
+                        </tr>
+                        @endforeach
+                    </table>
+                    @endif
+                </td>
                 <td style="color:#64748b;font-size:11.5px;">{{ $line->unit ?: '' }}</td>
                 <td class="right">{{ rtrim(rtrim(number_format($line->quantity, 2), '0'), '.') }}</td>
                 <td class="right">£{{ number_format($line->unit_price, 2) }}</td>
