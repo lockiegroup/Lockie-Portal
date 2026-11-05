@@ -62,13 +62,11 @@
             <table class="w-full text-sm border-collapse" style="min-width:800px;">
                 <thead>
                     <tr class="bg-slate-50 border-b border-slate-200 text-[0.72rem] text-slate-500 uppercase tracking-wide">
-                        <th class="text-left px-4 py-3 font-semibold w-8"></th>
                         <th class="text-left px-4 py-3 font-semibold">Order</th>
                         <th class="text-left px-4 py-3 font-semibold">Customer</th>
                         <th class="text-left px-4 py-3 font-semibold">Order Date</th>
                         <th class="text-left px-4 py-3 font-semibold">Required</th>
                         <th class="text-right px-4 py-3 font-semibold">Value</th>
-                        <th class="text-left px-4 py-3 font-semibold">Status</th>
                         <th class="text-left px-4 py-3 font-semibold">Notes</th>
                         <th class="px-4 py-3 w-10"></th>
                     </tr>
@@ -176,6 +174,44 @@ function loadOrders() {
         });
 }
 
+function orderRow(o) {
+    const overdue   = isOverdue(o.required_date) ? ' style="color:#ef4444;font-weight:600;"' : '';
+    const notesHtml = o.notes
+        ? `<span class="text-slate-600 text-xs">${escH(o.notes)}</span>`
+        : `<span class="text-slate-300 text-xs">—</span>`;
+    const tr = document.createElement('tr');
+    tr.className = 'border-b border-slate-50 hover:bg-slate-50/60 transition-colors';
+    tr.innerHTML = `
+        <td class="px-4 py-3 font-semibold text-slate-800 whitespace-nowrap">${escH(o.order_no)}</td>
+        <td class="px-4 py-3 text-slate-700 whitespace-nowrap">${escH(o.customer)}</td>
+        <td class="px-4 py-3 text-slate-500 whitespace-nowrap">${fmtDate(o.order_date)}</td>
+        <td class="px-4 py-3 whitespace-nowrap"${overdue}>${fmtDate(o.required_date)}</td>
+        <td class="px-4 py-3 text-right text-slate-700 whitespace-nowrap font-medium">${fmtGBP(o.total_value)}</td>
+        <td class="px-4 py-3 max-w-xs">${notesHtml}</td>
+        <td class="px-4 py-3">
+            <button onclick="openModal('${escH(o.order_no)}')"
+                class="px-2.5 py-1 text-xs font-semibold text-slate-500 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors whitespace-nowrap">
+                Edit
+            </button>
+        </td>`;
+    return tr;
+}
+
+function groupHeaderRow(label, color, count) {
+    const tr = document.createElement('tr');
+    tr.className = 'border-b border-slate-100';
+    tr.style.background = color + '18'; // 10% opacity tint
+    tr.innerHTML = `
+        <td colspan="7" class="px-4 py-2">
+            <span class="inline-flex items-center gap-2 font-semibold text-sm" style="color:${color}">
+                <span class="w-2.5 h-2.5 rounded-full" style="background:${color}"></span>
+                ${escH(label)}
+                <span class="font-normal text-xs opacity-70">${count} order${count !== 1 ? 's' : ''}</span>
+            </span>
+        </td>`;
+    return tr;
+}
+
 function renderTable(orders) {
     const countEl = document.getElementById('order-count');
     countEl.textContent = orders.length + ' open order' + (orders.length !== 1 ? 's' : '');
@@ -189,39 +225,32 @@ function renderTable(orders) {
     const tbody = document.getElementById('order-tbody');
     tbody.innerHTML = '';
 
-    orders.forEach(o => {
-        const s      = o.board_status ? STATUSES[o.board_status] : null;
-        const dot    = s
-            ? `<span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background:${s.color}"></span>`
-            : `<span class="w-2.5 h-2.5 rounded-full flex-shrink-0 bg-slate-200"></span>`;
-        const badge  = s
-            ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[0.7rem] font-semibold text-white whitespace-nowrap" style="background:${s.color}">${escH(s.label)}</span>`
-            : `<span class="text-slate-300 text-xs">—</span>`;
-        const overdue = isOverdue(o.required_date)
-            ? ' style="color:#ef4444;font-weight:600;"'
-            : '';
-        const notesHtml = o.notes
-            ? `<span class="text-slate-600 text-xs">${escH(o.notes)}</span>`
-            : `<span class="text-slate-300 text-xs">—</span>`;
+    // Group by board_status, preserving defined status order, unset at end
+    const groups = {};
+    STATUS_KEYS.forEach(k => { groups[k] = []; });
+    groups['__none'] = [];
 
-        const tr = document.createElement('tr');
-        tr.className = 'border-b border-slate-50 hover:bg-slate-50/60 transition-colors';
-        tr.innerHTML = `
-            <td class="px-4 py-3">${dot}</td>
-            <td class="px-4 py-3 font-semibold text-slate-800 whitespace-nowrap">${escH(o.order_no)}</td>
-            <td class="px-4 py-3 text-slate-700 whitespace-nowrap">${escH(o.customer)}</td>
-            <td class="px-4 py-3 text-slate-500 whitespace-nowrap">${fmtDate(o.order_date)}</td>
-            <td class="px-4 py-3 whitespace-nowrap"${overdue}>${fmtDate(o.required_date)}</td>
-            <td class="px-4 py-3 text-right text-slate-700 whitespace-nowrap font-medium">${fmtGBP(o.total_value)}</td>
-            <td class="px-4 py-3">${badge}</td>
-            <td class="px-4 py-3 max-w-xs">${notesHtml}</td>
-            <td class="px-4 py-3">
-                <button onclick="openModal('${escH(o.order_no)}')"
-                    class="px-2.5 py-1 text-xs font-semibold text-slate-500 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors whitespace-nowrap">
-                    Edit
-                </button>
-            </td>`;
-        tbody.appendChild(tr);
+    orders.forEach(o => {
+        const key = o.board_status && groups[o.board_status] !== undefined ? o.board_status : '__none';
+        groups[key].push(o);
+    });
+
+    const filterActive = document.getElementById('status-filter').value;
+
+    [...STATUS_KEYS, '__none'].forEach(key => {
+        const group = groups[key];
+        if (!group.length) return;
+
+        const isNone  = key === '__none';
+        const label   = isNone ? 'No Status' : STATUSES[key].label;
+        const color   = isNone ? '#94a3b8'   : STATUSES[key].color;
+
+        // Only show header when not already filtered to one status
+        if (!filterActive) {
+            tbody.appendChild(groupHeaderRow(label, color, group.length));
+        }
+
+        group.forEach(o => tbody.appendChild(orderRow(o)));
     });
 
     document.getElementById('table-wrap').classList.remove('hidden');
