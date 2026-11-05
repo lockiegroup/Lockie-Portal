@@ -76,6 +76,33 @@ class CustomerInsightsController extends Controller
             }
             ksort($ordersByYearMonth);
 
+            // Total value (sum of sub_total) by month/year
+            $valueQuery = DB::table('sales_lines')
+                ->where('status', '!=', 'deleted')
+                ->whereNotNull('order_date');
+
+            if ($warehouse) {
+                $valueQuery->where('warehouse', $warehouse);
+            }
+
+            $valueRows = $valueQuery
+                ->select(
+                    DB::raw('YEAR(order_date) as year'),
+                    DB::raw('MONTH(order_date) as month'),
+                    DB::raw('SUM(sub_total) as total')
+                )
+                ->groupBy(DB::raw('YEAR(order_date)'), DB::raw('MONTH(order_date)'))
+                ->get();
+
+            $valueByYearMonth = [];
+            $valueYearTotals  = [];
+            foreach ($valueRows as $row) {
+                $val = round((float) $row->total, 2);
+                $valueByYearMonth[$row->year][$row->month] = $val;
+                $valueYearTotals[$row->year] = round(($valueYearTotals[$row->year] ?? 0) + $val, 2);
+            }
+            ksort($valueByYearMonth);
+
             // Warehouses for filter
             $warehouses = DB::table('sales_lines')
                 ->distinct()
@@ -90,6 +117,8 @@ class CustomerInsightsController extends Controller
                 'yearTotals'      => $yearTotals,
                 'ordersData'      => $ordersByYearMonth,
                 'orderYearTotals' => $orderYearTotals,
+                'valueData'       => $valueByYearMonth,
+                'valueYearTotals' => $valueYearTotals,
                 'warehouses'      => $warehouses,
             ]);
         } catch (\Throwable $e) {

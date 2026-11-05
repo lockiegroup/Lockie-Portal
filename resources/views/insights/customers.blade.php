@@ -13,11 +13,15 @@
             <div class="flex rounded-lg border border-slate-200 overflow-hidden text-sm font-medium">
                 <button id="toggle-customers" onclick="setMode('customers')"
                     class="px-4 py-2 bg-slate-900 text-white transition-colors">
-                    New Customers
+                    New Customer Orders
                 </button>
                 <button id="toggle-orders" onclick="setMode('orders')"
                     class="px-4 py-2 bg-white text-slate-600 hover:bg-slate-50 transition-colors">
                     Total Orders
+                </button>
+                <button id="toggle-value" onclick="setMode('value')"
+                    class="px-4 py-2 bg-white text-slate-600 hover:bg-slate-50 transition-colors">
+                    Total Value
                 </button>
             </div>
 
@@ -97,23 +101,24 @@
         ];
 
         let chart   = null;
-        let mode    = 'customers'; // 'customers' | 'orders'
+        let mode    = 'customers'; // 'customers' | 'orders' | 'value'
         let lastRes = null;
 
         function fmtInt(n) {
             return new Intl.NumberFormat('en-GB').format(n);
         }
 
+        function fmtGBP(n) {
+            return new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP', maximumFractionDigits: 0 }).format(n);
+        }
+
         function setMode(m) {
             mode = m;
-            document.getElementById('toggle-customers').className =
-                m === 'customers'
-                    ? 'px-4 py-2 bg-slate-900 text-white transition-colors'
-                    : 'px-4 py-2 bg-white text-slate-600 hover:bg-slate-50 transition-colors';
-            document.getElementById('toggle-orders').className =
-                m === 'orders'
-                    ? 'px-4 py-2 bg-slate-900 text-white transition-colors'
-                    : 'px-4 py-2 bg-white text-slate-600 hover:bg-slate-50 transition-colors';
+            const active = 'px-4 py-2 bg-slate-900 text-white transition-colors';
+            const idle   = 'px-4 py-2 bg-white text-slate-600 hover:bg-slate-50 transition-colors';
+            document.getElementById('toggle-customers').className = m === 'customers' ? active : idle;
+            document.getElementById('toggle-orders').className    = m === 'orders'    ? active : idle;
+            document.getElementById('toggle-value').className     = m === 'value'     ? active : idle;
             if (lastRes) render(lastRes);
         }
 
@@ -166,10 +171,15 @@
             document.getElementById('active-filter-note').textContent =
                 wh ? 'Showing data for: ' + wh : 'Showing data for: All divisions';
 
-            const isOrders   = mode === 'orders';
-            const data       = isOrders ? (res.ordersData || {})  : (res.data || {});
-            const yearTotals = isOrders ? (res.orderYearTotals || {}) : (res.yearTotals || {});
-            const unitLabel  = isOrders ? 'orders' : 'new customers';
+            const isOrders = mode === 'orders';
+            const isValue  = mode === 'value';
+            const data       = isValue  ? (res.valueData       || {})
+                             : isOrders ? (res.ordersData       || {})
+                             :            (res.data             || {});
+            const yearTotals = isValue  ? (res.valueYearTotals  || {})
+                             : isOrders ? (res.orderYearTotals   || {})
+                             :            (res.yearTotals        || {});
+            const unitLabel  = isValue ? '£' : isOrders ? 'orders' : 'new customers';
             const years      = Object.keys(data).map(Number).sort();
 
             // ── Year summary cards ─────────────────────────────────────────────
@@ -201,14 +211,14 @@
                             <div class="w-2.5 h-2.5 rounded-full" style="background:${color.line}"></div>
                             <p class="text-slate-500 text-sm font-medium">${year}</p>
                         </div>
-                        <p class="text-2xl font-bold text-slate-800">${fmtInt(total)}</p>
-                        <p class="text-slate-400 text-xs mt-1">${unitLabel} ${changeHtml}</p>
+                        <p class="text-2xl font-bold text-slate-800">${isValue ? fmtGBP(total) : fmtInt(total)}</p>
+                        <p class="text-slate-400 text-xs mt-1">${isValue ? '' : unitLabel} ${changeHtml}</p>
                     </div>`;
             });
 
             // ── Chart title ────────────────────────────────────────────────────
             document.getElementById('chart-title').textContent =
-                isOrders ? 'Total Orders per Month' : 'New Customers per Month';
+                isValue ? 'Total Value per Month (£)' : isOrders ? 'Total Orders per Month' : 'New Customer Orders per Month';
 
             // ── Chart ──────────────────────────────────────────────────────────
             const datasets = years.map((year, i) => {
@@ -248,7 +258,9 @@
                         tooltip: {
                             callbacks: {
                                 title: items => items[0].label,
-                                label: item => ` ${item.dataset.label}: ${fmtInt(item.raw)} ${unitLabel}`,
+                                label: item => isValue
+                                    ? ` ${item.dataset.label}: ${fmtGBP(item.raw)}`
+                                    : ` ${item.dataset.label}: ${fmtInt(item.raw)} ${unitLabel}`,
                             },
                         },
                     },
@@ -263,8 +275,8 @@
                             ticks: {
                                 color: '#94a3b8',
                                 font: { size: 12 },
-                                stepSize: 1,
-                                callback: v => Number.isInteger(v) ? v : null,
+                                stepSize: isValue ? undefined : 1,
+                                callback: v => isValue ? fmtGBP(v) : (Number.isInteger(v) ? v : null),
                             },
                         },
                     },
@@ -291,7 +303,8 @@
                 let cells = `<td class="px-6 py-3 font-medium text-slate-700">${label}</td>`;
                 years.forEach(year => {
                     const val = (data[year] || {})[m + 1] ?? 0;
-                    cells += `<td class="px-6 py-3 text-right text-slate-600">${val > 0 ? fmtInt(val) : '<span class="text-slate-300">—</span>'}</td>`;
+                    const display = val > 0 ? (isValue ? fmtGBP(val) : fmtInt(val)) : '<span class="text-slate-300">—</span>';
+                    cells += `<td class="px-6 py-3 text-right text-slate-600">${display}</td>`;
                 });
                 tr.innerHTML = cells;
                 tbody.appendChild(tr);
@@ -302,7 +315,8 @@
             totalsRow.className = 'bg-slate-50 border-t-2 border-slate-200 font-semibold text-slate-800';
             let totalCells = `<td class="px-6 py-3">Total</td>`;
             years.forEach(year => {
-                totalCells += `<td class="px-6 py-3 text-right">${fmtInt(yearTotals[year] ?? 0)}</td>`;
+                const t = yearTotals[year] ?? 0;
+                totalCells += `<td class="px-6 py-3 text-right">${isValue ? fmtGBP(t) : fmtInt(t)}</td>`;
             });
             totalsRow.innerHTML = totalCells;
             tbody.appendChild(totalsRow);
