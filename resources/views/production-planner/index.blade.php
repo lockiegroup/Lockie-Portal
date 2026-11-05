@@ -951,6 +951,7 @@ loadWeek();
 })();
 
 // ── Date Range Summary ────────────────────────────────────────────────────
+function escHtmlS(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 let summaryData = null;
 
 function setSummaryPreset(from, to) {
@@ -995,7 +996,7 @@ function renderSummary(res, from, to) {
     html += `<table style="width:100%;border-collapse:collapse;font-size:0.78rem;">
         <thead><tr>
             <th class="pp-th-dark" style="padding:8px 14px;text-align:left;font-size:0.75rem;">Operator</th>
-            ${divisions.map(div => `<th class="pp-th-dark" style="padding:8px 12px;text-align:center;font-size:0.75rem;">${escHtml(div.name)}</th>`).join('')}
+            ${divisions.map(div => `<th class="pp-th-dark" style="padding:8px 12px;text-align:center;font-size:0.75rem;">${escHtmlS(div.name)}</th>`).join('')}
             <th class="pp-th-dark" style="padding:8px 12px;text-align:center;font-size:0.75rem;">Total</th>
         </tr></thead><tbody>`;
 
@@ -1004,7 +1005,7 @@ function renderSummary(res, from, to) {
         const total = divisions.reduce((s, div) => s + (row[div.name] || 0), 0);
         const rowBg = i % 2 === 0 ? '#f8fafc' : 'white';
         html += `<tr style="background:${rowBg};">
-            <td style="padding:8px 14px;font-weight:600;border-bottom:1px solid #f1f5f9;">${escHtml(op.name)}</td>`;
+            <td style="padding:8px 14px;font-weight:600;border-bottom:1px solid #f1f5f9;">${escHtmlS(op.name)}</td>`;
         divisions.forEach(div => {
             const v   = row[div.name] || 0;
             const hue = div.hue;
