@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class QuoteLine extends Model
 {
-    protected $fillable = ['quote_id', 'description', 'quantity', 'unit_price', 'line_total', 'sort_order'];
+    protected $fillable = ['quote_id', 'description', 'unit', 'quantity', 'unit_price', 'line_total', 'sort_order'];
 
     protected $casts = [
         'quantity'   => 'decimal:2',

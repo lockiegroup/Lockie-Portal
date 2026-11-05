@@ -48,8 +48,9 @@
         <div class="bg-white rounded-xl border border-slate-200 p-5 mb-5">
             <h2 class="font-semibold text-slate-800 mb-4">Line Items</h2>
 
-            <div class="hidden sm:grid grid-cols-[1fr_80px_110px_100px_32px] gap-2 mb-2 text-[0.7rem] text-slate-400 uppercase tracking-wide font-semibold px-1">
+            <div class="hidden sm:grid grid-cols-[1fr_90px_80px_110px_100px_32px] gap-2 mb-2 text-[0.7rem] text-slate-400 uppercase tracking-wide font-semibold px-1">
                 <span>Description / Product</span>
+                <span>Unit</span>
                 <span class="text-right">Qty</span>
                 <span class="text-right">Unit Price</span>
                 <span class="text-right">Total</span>
@@ -154,11 +155,6 @@ function selectCustomer(name, code) {
     custNameHid.value = name;
     custCodeHid.value = code;
     custDropdown.classList.add('hidden');
-    // Update product price suggestions based on this customer
-    document.querySelectorAll('.line-row').forEach(row => {
-        const prodCode = row.dataset.productCode;
-        if (prodCode) fetchProductPrice(row, prodCode, code);
-    });
 }
 
 document.addEventListener('click', e => {
@@ -170,20 +166,21 @@ document.addEventListener('click', e => {
 // ── Line items ────────────────────────────────────────────────────────────────
 let lineIndex = 0;
 
-function addLine(desc = '', qty = '', price = '', productCode = '') {
+function addLine(desc = '', unit = '', qty = '', price = '') {
     const i   = lineIndex++;
     const div = document.createElement('div');
     div.className = 'line-row relative';
-    div.dataset.productCode = productCode;
     div.innerHTML = `
-        <div class="grid grid-cols-[1fr_80px_110px_100px_32px] gap-2 items-center">
+        <div class="grid grid-cols-[1fr_90px_80px_110px_100px_32px] gap-2 items-center">
             <div class="relative">
                 <input type="text" name="lines[${i}][description]" value="${escAttr(desc)}" required
                     placeholder="Description or search product…" autocomplete="off"
                     class="desc-input w-full px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-sky-500"
                     oninput="onDescInput(this, ${i})">
-                <div class="prod-dropdown hidden absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden" data-idx="${i}"></div>
+                <div class="prod-dropdown hidden absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden"></div>
             </div>
+            <input type="text" name="lines[${i}][unit]" value="${escAttr(unit)}" placeholder="e.g. each"
+                class="px-2 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-sky-500">
             <input type="number" name="lines[${i}][quantity]" value="${escAttr(qty)}" required min="0.01" step="any" placeholder="Qty"
                 class="qty-input px-2 py-2 border border-slate-200 rounded-lg text-sm text-right outline-none focus:ring-2 focus:ring-sky-500"
                 oninput="recalc(this)">
@@ -219,11 +216,8 @@ function onDescInput(input, idx) {
             if (!data.length) { dropdown.classList.add('hidden'); return; }
             dropdown.innerHTML = data.map(p => `
                 <div class="cursor-pointer px-3 py-2 hover:bg-sky-50 text-sm border-b border-slate-50 last:border-0"
-                    onclick="selectProduct(this, '${escAttr(p.product_code)}', '${escAttr(p.product_name ?? p.product_code)}', ${p.suggested_price ?? 'null'})">
-                    <div class="flex justify-between items-center">
-                        <span class="font-mono text-xs text-slate-500">${escH(p.product_code)}</span>
-                        ${p.suggested_price ? `<span class="text-xs text-sky-600 font-semibold">${fmt(p.suggested_price)}</span>` : ''}
-                    </div>
+                    onclick="selectProduct(this, '${escAttr(p.product_code)}', '${escAttr(p.product_name ?? p.product_code)}')">
+                    <span class="font-mono text-xs text-slate-500">${escH(p.product_code)}</span>
                     <div class="text-slate-700 text-xs mt-0.5">${escH(p.product_name ?? '')}</div>
                 </div>`).join('');
             dropdown.classList.remove('hidden');
@@ -232,31 +226,10 @@ function onDescInput(input, idx) {
     descSearches[idx](q, row);
 }
 
-function selectProduct(el, code, name, price) {
-    const row      = el.closest('.line-row');
-    const dropdown = row.querySelector('.prod-dropdown');
-    const descInput = row.querySelector('.desc-input');
-    // Show "CODE — Name" in description
-    descInput.value = code + (name && name !== code ? ' — ' + name : '');
-    row.dataset.productCode = code;
-    if (price !== null) {
-        const priceInput = row.querySelector('.price-input');
-        if (!priceInput.value) priceInput.value = price.toFixed(2);
-    }
-    dropdown.classList.add('hidden');
-    recalc(row.querySelector('.qty-input'));
-}
-
-async function fetchProductPrice(row, productCode, customerCode) {
-    const url = `{{ route('quotes.api.products') }}?q=${encodeURIComponent(productCode)}&customer_code=${encodeURIComponent(customerCode)}`;
-    const res  = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-    const data = await res.json();
-    const match = data.find(p => p.product_code === productCode);
-    if (match?.suggested_price) {
-        const priceInput = row.querySelector('.price-input');
-        priceInput.value = match.suggested_price.toFixed(2);
-        recalc(priceInput);
-    }
+function selectProduct(el, code, name) {
+    const row = el.closest('.line-row');
+    row.querySelector('.desc-input').value = code + (name && name !== code ? ' — ' + name : '');
+    row.querySelector('.prod-dropdown').classList.add('hidden');
 }
 
 // Close product dropdowns on outside click

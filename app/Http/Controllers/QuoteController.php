@@ -29,12 +29,13 @@ class QuoteController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'customer_name' => 'required|string|max:255',
+            'customer_name'  => 'required|string|max:255',
             'customer_email' => 'nullable|email|max:255',
-            'reference'     => 'nullable|string|max:255',
-            'notes'         => 'nullable|string|max:2000',
-            'lines'         => 'required|array|min:1',
+            'reference'      => 'nullable|string|max:255',
+            'notes'          => 'nullable|string|max:2000',
+            'lines'          => 'required|array|min:1',
             'lines.*.description' => 'required|string|max:500',
+            'lines.*.unit'        => 'nullable|string|max:50',
             'lines.*.quantity'    => 'required|numeric|min:0.01',
             'lines.*.unit_price'  => 'required|numeric|min:0',
         ]);
@@ -42,6 +43,7 @@ class QuoteController extends Controller
         $lines = collect($request->lines)->map(function ($line, $i) {
             return [
                 'description' => $line['description'],
+                'unit'        => $line['unit'] ?? null,
                 'quantity'    => (float) $line['quantity'],
                 'unit_price'  => (float) $line['unit_price'],
                 'line_total'  => round((float) $line['quantity'] * (float) $line['unit_price'], 2),
@@ -70,6 +72,51 @@ class QuoteController extends Controller
     {
         $quote->load('lines', 'createdBy');
         return view('quotes.show', compact('quote'));
+    }
+
+    public function edit(Quote $quote)
+    {
+        $quote->load('lines');
+        return view('quotes.edit', compact('quote'));
+    }
+
+    public function update(Request $request, Quote $quote)
+    {
+        $request->validate([
+            'customer_name'  => 'required|string|max:255',
+            'customer_email' => 'nullable|email|max:255',
+            'reference'      => 'nullable|string|max:255',
+            'notes'          => 'nullable|string|max:2000',
+            'lines'          => 'required|array|min:1',
+            'lines.*.description' => 'required|string|max:500',
+            'lines.*.unit'        => 'nullable|string|max:50',
+            'lines.*.quantity'    => 'required|numeric|min:0.01',
+            'lines.*.unit_price'  => 'required|numeric|min:0',
+        ]);
+
+        $lines = collect($request->lines)->map(function ($line, $i) {
+            return [
+                'description' => $line['description'],
+                'unit'        => $line['unit'] ?? null,
+                'quantity'    => (float) $line['quantity'],
+                'unit_price'  => (float) $line['unit_price'],
+                'line_total'  => round((float) $line['quantity'] * (float) $line['unit_price'], 2),
+                'sort_order'  => $i,
+            ];
+        });
+
+        $quote->update([
+            'customer_name'  => $request->customer_name,
+            'customer_email' => $request->customer_email,
+            'reference'      => $request->reference,
+            'notes'          => $request->notes,
+            'total_value'    => $lines->sum('line_total'),
+        ]);
+
+        $quote->lines()->delete();
+        $quote->lines()->createMany($lines->all());
+
+        return redirect()->route('quotes.show', $quote)->with('success', 'Quote updated.');
     }
 
     public function print(Quote $quote)
@@ -107,8 +154,7 @@ class QuoteController extends Controller
 
     public function searchProducts(Request $request): JsonResponse
     {
-        $q           = trim($request->input('q', ''));
-        $customerCode = trim($request->input('customer_code', ''));
+        $q = trim($request->input('q', ''));
         if (strlen($q) < 1) return response()->json([]);
 
         $products = UnleashedProduct::where(function ($query) use ($q) {
@@ -119,36 +165,6 @@ class QuoteController extends Controller
             ->limit(12)
             ->get(['product_code', 'product_name']);
 
-        // Attach last unit price from sales history
-        $codes = $products->pluck('product_code')->all();
-
-        // If we have a customer, prefer their most recent price; fall back to overall average
-        $priceQuery = DB::table('sales_lines')
-            ->select('product_code', DB::raw('SUM(sub_total) / NULLIF(SUM(quantity), 0) as avg_price'))
-            ->whereIn('product_code', $codes)
-            ->where('warehouse', 'JW Products')
-            ->where('quantity', '>', 0)
-            ->where('sub_total', '>', 0)
-            ->groupBy('product_code');
-
-        if ($customerCode) {
-            $customerPrices = (clone $priceQuery)
-                ->where('customer_code', $customerCode)
-                ->pluck('avg_price', 'product_code');
-        }
-
-        $allPrices = $priceQuery->pluck('avg_price', 'product_code');
-
-        $results = $products->map(function ($p) use ($allPrices, $customerPrices) {
-            $price = isset($customerPrices) ? ($customerPrices[$p->product_code] ?? $allPrices[$p->product_code] ?? null)
-                                            : ($allPrices[$p->product_code] ?? null);
-            return [
-                'product_code' => $p->product_code,
-                'product_name' => $p->product_name,
-                'suggested_price' => $price ? round((float) $price, 2) : null,
-            ];
-        });
-
-        return response()->json($results);
+        return response()->json($products);
     }
 }

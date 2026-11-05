@@ -7,6 +7,10 @@
             <p class="text-slate-500 mt-0.5 text-sm">{{ $quote->customer_name }} &middot; {{ $quote->created_at->format('d M Y') }}</p>
         </div>
         <div class="flex items-center gap-2">
+            <a href="{{ route('quotes.edit', $quote) }}"
+                class="px-4 py-2 border border-slate-200 text-slate-700 text-sm font-semibold rounded-lg hover:bg-slate-50 transition-colors">
+                Edit
+            </a>
             <a href="{{ route('quotes.print', $quote) }}" target="_blank"
                 class="px-4 py-2 bg-slate-900 hover:bg-slate-700 text-white text-sm font-semibold rounded-lg transition-colors">
                 Print / PDF
@@ -57,6 +61,7 @@
             <thead>
                 <tr class="bg-slate-50 border-b border-slate-200 text-[0.72rem] text-slate-500 uppercase tracking-wide">
                     <th class="text-left px-4 py-3 font-semibold">Description</th>
+                    <th class="text-left px-4 py-3 font-semibold">Unit</th>
                     <th class="text-right px-4 py-3 font-semibold">Qty</th>
                     <th class="text-right px-4 py-3 font-semibold">Unit Price</th>
                     <th class="text-right px-4 py-3 font-semibold">Total</th>
@@ -66,6 +71,7 @@
                 @foreach($quote->lines as $line)
                 <tr>
                     <td class="px-4 py-3 text-slate-700">{{ $line->description }}</td>
+                    <td class="px-4 py-3 text-slate-500 text-sm">{{ $line->unit ?: '—' }}</td>
                     <td class="px-4 py-3 text-right text-slate-600">{{ rtrim(rtrim(number_format($line->quantity, 2), '0'), '.') }}</td>
                     <td class="px-4 py-3 text-right text-slate-600">£{{ number_format($line->unit_price, 2) }}</td>
                     <td class="px-4 py-3 text-right font-medium text-slate-800">£{{ number_format($line->line_total, 2) }}</td>

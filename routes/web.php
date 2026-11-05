@@ -106,6 +106,8 @@ Route::middleware(['otp', 'auth'])->group(function () {
         Route::get('/api/customers',         [QuoteController::class, 'searchCustomers'])->name('api.customers');
         Route::get('/api/products',          [QuoteController::class, 'searchProducts'])->name('api.products');
         Route::get('/{quote}',               [QuoteController::class, 'show'])->name('show');
+        Route::get('/{quote}/edit',          [QuoteController::class, 'edit'])->name('edit');
+        Route::put('/{quote}',               [QuoteController::class, 'update'])->name('update');
         Route::get('/{quote}/print',         [QuoteController::class, 'print'])->name('print');
         Route::delete('/{quote}',            [QuoteController::class, 'destroy'])->name('destroy');
     });

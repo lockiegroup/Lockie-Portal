@@ -258,7 +258,8 @@
     <table>
         <thead>
             <tr>
-                <th style="text-align:left;width:50%">Description</th>
+                <th style="text-align:left;width:46%">Description</th>
+                <th style="text-align:left;width:12%">Unit</th>
                 <th class="right">Qty</th>
                 <th class="right">Unit Price</th>
                 <th class="right">Total</th>
@@ -268,6 +269,7 @@
             @foreach($quote->lines as $line)
             <tr>
                 <td>{{ $line->description }}</td>
+                <td style="color:#64748b;font-size:11.5px;">{{ $line->unit ?: '' }}</td>
                 <td class="right">{{ rtrim(rtrim(number_format($line->quantity, 2), '0'), '.') }}</td>
                 <td class="right">£{{ number_format($line->unit_price, 2) }}</td>
                 <td class="right total-col">£{{ number_format($line->line_total, 2) }}</td>
