@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
+use Carbon\Carbon;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -34,3 +35,11 @@ Schedule::command('clocking:send-clockout-reminders')->everyFifteenMinutes();
 
 // Clocking: auto clock out anyone still clocked in at midnight, email their managers
 Schedule::command('clocking:auto-clockout')->dailyAt('00:00');
+
+// Unleashed: sync recent sales (last 90 days, sales only) every 30 minutes to keep order board current
+Schedule::call(function () {
+    Artisan::call('imports:sync-unleashed', [
+        '--sales-only' => true,
+        '--from'       => Carbon::now()->subDays(90)->toDateString(),
+    ]);
+})->everyThirtyMinutes();
