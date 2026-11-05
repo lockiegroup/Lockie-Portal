@@ -3,7 +3,7 @@
     $user           = auth()->user();
     $initials           = $user ? strtoupper(mb_substr($user->name ?? $user->email, 0, 2)) : '??';
 
-    $activeFinance    = request()->routeIs('sales*') || request()->routeIs('amazon.*') || request()->routeIs('stock.*') || request()->routeIs('insights.*');
+    $activeFinance    = request()->routeIs('sales*') || request()->routeIs('amazon.*') || request()->routeIs('stock.*') || request()->routeIs('insights.*') || request()->routeIs('order-board.*');
     $activePlanning   = request()->routeIs('key-actions.*') || request()->routeIs('action-plans.*') || request()->routeIs('ab-testing.*');
     $activeCustomers  = request()->routeIs('key-accounts.*') || request()->routeIs('crm.*') || request()->routeIs('reminders.*');
     $activeOperations = request()->routeIs('church-envelopes.*') || request()->routeIs('policies.*') || request()->routeIs('training.*') || request()->routeIs('letter-filter.*') || request()->routeIs('racking.*') || request()->routeIs('production-planner.*') || request()->routeIs('clocking.*') || $isPrintSection;
@@ -62,6 +62,13 @@
                     <circle cx="12" cy="7" r="4"/><path d="M5.5 21a8.38 8.38 0 0 1 13 0"/><path d="M19 12l2 2-4 4"/>
                 </svg>
                 <span class="sb-label">Growth Insights</span>
+            </a>
+            <a href="{{ route('order-board.index') }}" class="sb-item{{ request()->routeIs('order-board.*') ? ' sb-active' : '' }}" data-tip="Order Board">
+                <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+                    <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+                </svg>
+                <span class="sb-label">Order Board</span>
             </a>
             @endif
             @if($user->hasModule('stock'))

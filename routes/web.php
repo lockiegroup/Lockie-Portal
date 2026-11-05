@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\OtpController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\CustomerInsightsController;
+use App\Http\Controllers\OrderBoardController;
 use App\Http\Controllers\SalesController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\ChurchEnvelopeController;
@@ -85,6 +86,12 @@ Route::middleware(['otp', 'auth'])->group(function () {
     Route::get('/sales/data', [SalesController::class, 'data'])->name('sales.data');
     Route::get('/insights/customers', [CustomerInsightsController::class, 'index'])->name('insights.customers');
     Route::get('/insights/customers/data', [CustomerInsightsController::class, 'data'])->name('insights.customers.data');
+
+    Route::prefix('order-board')->name('order-board.')->group(function () {
+        Route::get('/',           [OrderBoardController::class, 'index'])->name('index');
+        Route::get('/data',       [OrderBoardController::class, 'data'])->name('data');
+        Route::post('/{orderNo}', [OrderBoardController::class, 'update'])->name('update');
+    });
     Route::get('/stock', [StockController::class, 'index'])->name('stock.index');
     Route::get('/stock/data', [StockController::class, 'data'])->name('stock.data');
     Route::post('/logout', LogoutController::class)->name('logout');
