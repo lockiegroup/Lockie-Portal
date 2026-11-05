@@ -43,15 +43,22 @@ class ProductionPlannerController extends Controller
         $from = $request->filled('from') ? Carbon::parse($request->from)->startOfDay() : now()->startOfMonth();
         $to   = $request->filled('to')   ? Carbon::parse($request->to)->endOfDay()     : now()->endOfMonth();
 
-        // Collect all Monday week keys that fall within the range
-        $weekKeys = [];
-        $cursor   = $from->copy()->startOfWeek(Carbon::MONDAY);
-        while ($cursor->lte($to)) {
-            $weekKeys[] = $cursor->format('Y-m-d');
-            $cursor->addWeek();
-        }
+        // Week keys are stored by the browser as the ISO date of Monday at midnight
+        // local time converted to UTC — this can be Sunday in BST. Query a generous
+        // window (from -7 days to to +1 day) and include any plan whose week overlaps.
+        $plans = ProductionPlan::where('week_key', '>=', $from->copy()->subDays(7)->format('Y-m-d'))
+            ->where('week_key', '<=', $to->copy()->addDay()->format('Y-m-d'))
+            ->get();
 
-        $plans     = ProductionPlan::whereIn('week_key', $weekKeys)->get()->keyBy('week_key');
+        // Filter to plans whose week (key date + 6 days) actually overlaps the range
+        $plans = $plans->filter(function ($plan) use ($from, $to) {
+            $weekStart = Carbon::parse($plan->week_key);
+            $weekEnd   = $weekStart->copy()->addDays(6)->endOfDay();
+            return $weekStart->lte($to) && $weekEnd->gte($from);
+        });
+
+        $weekKeys = $plans->pluck('week_key')->all();
+        $plans    = $plans->keyBy('week_key');
         $operators = ProductionOperator::where('is_active', true)->orderBy('sort_order')->get();
         $machines  = ProductionMachine::where('is_active', true)->orderBy('sort_order')->get()->keyBy('key');
         $divisions = ProductionDivision::orderBy('sort_order')->orderBy('id')->get();
