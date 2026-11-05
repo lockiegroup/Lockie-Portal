@@ -56,7 +56,16 @@ class OrderBoardController extends Controller
         $orderNos = $rows->pluck('order_no')->filter()->values();
         $notes    = OrderBoardNote::whereIn('order_no', $orderNos)->get()->keyBy('order_no');
 
-        $orders = $rows->map(function ($row) use ($notes) {
+        $lines = DB::table('sales_lines')
+            ->select('order_no', 'product_code', 'quantity')
+            ->whereIn('order_no', $orderNos)
+            ->where('warehouse', $warehouse)
+            ->whereNotIn('status', ['deleted', 'completed'])
+            ->orderBy('product_code')
+            ->get()
+            ->groupBy('order_no');
+
+        $orders = $rows->map(function ($row) use ($notes, $lines) {
             $note = $notes->get($row->order_no);
             return [
                 'order_no'         => $row->order_no,
@@ -71,6 +80,10 @@ class OrderBoardController extends Controller
                 'notes'            => $note?->notes ?? '',
                 'updated_by'       => $note?->updatedBy?->name ?? null,
                 'updated_at'       => $note?->updated_at?->diffForHumans() ?? null,
+                'lines'            => ($lines->get($row->order_no) ?? collect())->map(fn($l) => [
+                    'product_code' => $l->product_code,
+                    'quantity'     => (float) $l->quantity,
+                ])->values()->all(),
             ];
         });
 

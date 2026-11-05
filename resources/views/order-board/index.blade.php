@@ -177,22 +177,60 @@ function orderRow(o) {
     const notesHtml = o.notes
         ? `<span onclick="openModal('${escH(o.order_no)}')" class="text-slate-600 text-xs cursor-pointer hover:text-sky-600 transition-colors" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-width:220px;" title="Tap to edit">${escH(o.notes)}</span>`
         : `<span class="text-slate-300 text-xs">—</span>`;
+    const hasLines  = o.lines && o.lines.length > 0;
+    const chevron   = hasLines ? `<span class="chevron text-slate-400 text-xs mr-2 inline-block transition-transform duration-150">▶</span>` : '';
+    const safeNo    = escH(o.order_no);
+
     const tr = document.createElement('tr');
-    tr.className = 'border-b border-slate-50 hover:bg-slate-50/60 transition-colors';
+    tr.className = 'border-b border-slate-50 transition-colors' + (hasLines ? ' cursor-pointer hover:bg-slate-50/60' : '');
+    tr.dataset.orderNo = o.order_no;
+    if (hasLines) tr.onclick = (e) => { if (!e.target.closest('button')) toggleLines(o.order_no); };
     tr.innerHTML = `
-        <td class="px-4 py-3 font-semibold text-slate-800 whitespace-nowrap">${escH(o.order_no)}</td>
+        <td class="px-4 py-3 font-semibold text-slate-800 whitespace-nowrap">${chevron}${safeNo}</td>
         <td class="px-4 py-3 text-slate-700 whitespace-nowrap">${escH(o.customer)}</td>
         <td class="px-4 py-3 text-slate-500 whitespace-nowrap">${fmtDate(o.order_date)}</td>
         <td class="px-4 py-3 whitespace-nowrap"${overdue}>${fmtDate(o.required_date)}</td>
         <td class="px-4 py-3 text-right text-slate-700 whitespace-nowrap font-medium">${fmtGBP(o.total_value)}</td>
         <td class="px-4 py-3 max-w-xs">${notesHtml}</td>
         <td class="px-4 py-3">
-            <button onclick="openModal('${escH(o.order_no)}')"
+            <button onclick="openModal('${safeNo}')"
                 class="px-2.5 py-1 text-xs font-semibold text-slate-500 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors whitespace-nowrap">
                 Edit
             </button>
         </td>`;
-    return tr;
+
+    const detail = document.createElement('tr');
+    detail.className = 'detail-row hidden';
+    detail.dataset.orderNo = o.order_no;
+    const linesHtml = (o.lines || []).map(l =>
+        `<tr class="border-b border-slate-50 last:border-0">
+            <td class="pl-10 pr-3 py-1.5 text-xs text-slate-500 font-mono">${escH(l.product_code || '—')}</td>
+            <td class="px-3 py-1.5 text-xs text-slate-500 text-right whitespace-nowrap">${l.quantity % 1 === 0 ? l.quantity : l.quantity.toFixed(2)} units</td>
+        </tr>`
+    ).join('');
+    detail.innerHTML = `<td colspan="7" class="p-0 bg-slate-50/70">
+        <table class="w-full">
+            <thead><tr class="border-b border-slate-100">
+                <th class="pl-10 pr-3 py-1.5 text-left text-[0.65rem] text-slate-400 uppercase tracking-wide font-semibold">Product</th>
+                <th class="px-3 py-1.5 text-right text-[0.65rem] text-slate-400 uppercase tracking-wide font-semibold">Qty</th>
+            </tr></thead>
+            <tbody>${linesHtml}</tbody>
+        </table>
+    </td>`;
+
+    const frag = document.createDocumentFragment();
+    frag.appendChild(tr);
+    frag.appendChild(detail);
+    return frag;
+}
+
+function toggleLines(orderNo) {
+    const detail  = document.querySelector(`.detail-row[data-order-no="${CSS.escape(orderNo)}"]`);
+    const mainRow = document.querySelector(`tr[data-order-no="${CSS.escape(orderNo)}"]`);
+    if (!detail) return;
+    const open = detail.classList.toggle('hidden');
+    const chevron = mainRow?.querySelector('.chevron');
+    if (chevron) chevron.style.transform = open ? '' : 'rotate(90deg)';
 }
 
 function groupHeaderRow(label, color, count) {
@@ -249,6 +287,7 @@ function renderTable(orders) {
         }
 
         group.forEach(o => tbody.appendChild(orderRow(o)));
+
     });
 
     document.getElementById('table-wrap').classList.remove('hidden');
