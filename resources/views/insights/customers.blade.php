@@ -25,15 +25,11 @@
 
             <div>
                 <label class="block text-[0.72rem] font-semibold text-slate-500 mb-1">Division (Warehouse)</label>
-                <select id="warehouse-filter"
+                <select id="warehouse-filter" onchange="loadData()"
                     class="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white text-slate-800 outline-none min-w-[200px] focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                     <option value="">All divisions</option>
                 </select>
             </div>
-            <button onclick="loadData()"
-                class="px-5 py-2 bg-slate-900 hover:bg-slate-700 text-white text-sm font-semibold rounded-lg transition-colors self-end">
-                Apply
-            </button>
         </div>
 
         {{-- Loading state --}}
@@ -46,6 +42,9 @@
 
         {{-- Content --}}
         <div id="content" class="hidden">
+
+            {{-- Active filter note --}}
+            <p id="active-filter-note" class="text-xs text-slate-400 mb-4 -mt-2"></p>
 
             {{-- Year summary cards --}}
             <div id="year-cards" class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8"></div>
@@ -161,6 +160,11 @@
 
         function render(res) {
             populateWarehouses(res.warehouses || []);
+
+            // Show active filter
+            const wh = document.getElementById('warehouse-filter').value;
+            document.getElementById('active-filter-note').textContent =
+                wh ? 'Showing data for: ' + wh : 'Showing data for: All divisions';
 
             const isOrders   = mode === 'orders';
             const data       = isOrders ? (res.ordersData || {})  : (res.data || {});
