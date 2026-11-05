@@ -175,7 +175,7 @@ function loadOrders() {
 function orderRow(o) {
     const overdue   = isOverdue(o.required_date) ? ' style="color:#ef4444;font-weight:600;"' : '';
     const notesHtml = o.notes
-        ? `<span class="text-slate-600 text-xs" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-width:220px;" title="${escH(o.notes)}">${escH(o.notes)}</span>`
+        ? `<span onclick="openModal('${escH(o.order_no)}')" class="text-slate-600 text-xs cursor-pointer hover:text-sky-600 transition-colors" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-width:220px;" title="Tap to edit">${escH(o.notes)}</span>`
         : `<span class="text-slate-300 text-xs">—</span>`;
     const tr = document.createElement('tr');
     tr.className = 'border-b border-slate-50 hover:bg-slate-50/60 transition-colors';
