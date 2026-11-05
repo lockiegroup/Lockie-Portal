@@ -100,12 +100,14 @@ Route::middleware(['otp', 'auth'])->group(function () {
     });
 
     Route::prefix('quotes')->name('quotes.')->group(function () {
-        Route::get('/',              [QuoteController::class, 'index'])->name('index');
-        Route::get('/create',        [QuoteController::class, 'create'])->name('create');
-        Route::post('/',             [QuoteController::class, 'store'])->name('store');
-        Route::get('/{quote}',       [QuoteController::class, 'show'])->name('show');
-        Route::get('/{quote}/print', [QuoteController::class, 'print'])->name('print');
-        Route::delete('/{quote}',    [QuoteController::class, 'destroy'])->name('destroy');
+        Route::get('/',                      [QuoteController::class, 'index'])->name('index');
+        Route::get('/create',                [QuoteController::class, 'create'])->name('create');
+        Route::post('/',                     [QuoteController::class, 'store'])->name('store');
+        Route::get('/api/customers',         [QuoteController::class, 'searchCustomers'])->name('api.customers');
+        Route::get('/api/products',          [QuoteController::class, 'searchProducts'])->name('api.products');
+        Route::get('/{quote}',               [QuoteController::class, 'show'])->name('show');
+        Route::get('/{quote}/print',         [QuoteController::class, 'print'])->name('print');
+        Route::delete('/{quote}',            [QuoteController::class, 'destroy'])->name('destroy');
     });
     Route::get('/stock', [StockController::class, 'index'])->name('stock.index');
     Route::get('/stock/data', [StockController::class, 'data'])->name('stock.data');
