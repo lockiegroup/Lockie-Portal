@@ -36,10 +36,13 @@ Schedule::command('clocking:send-clockout-reminders')->everyFifteenMinutes();
 // Clocking: auto clock out anyone still clocked in at midnight, email their managers
 Schedule::command('clocking:auto-clockout')->dailyAt('00:00');
 
-// Unleashed: sync recent sales (last 90 days, sales only) every 30 minutes to keep order board current
+// Order Board: lightweight open-orders sync every 5 minutes (fetches only Placed/Parked/Backordered)
+Schedule::command('order-board:sync-orders')->everyFiveMinutes();
+
+// Unleashed: full sales sync nightly to pick up completions / deletions and keep history current
 Schedule::call(function () {
     Artisan::call('imports:sync-unleashed', [
         '--sales-only' => true,
         '--from'       => Carbon::now()->subDays(90)->toDateString(),
     ]);
-})->everyThirtyMinutes();
+})->dailyAt('03:00');
