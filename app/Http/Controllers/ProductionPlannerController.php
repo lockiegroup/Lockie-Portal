@@ -50,11 +50,16 @@ class ProductionPlannerController extends Controller
             ->where('week_key', '<=', $to->copy()->addDay()->format('Y-m-d'))
             ->get();
 
-        // Filter to plans whose week (key date + 6 days) actually overlaps the range
+        // Only include weeks where at least Monday–Friday falls within the range.
+        // A week key may be Sunday (UTC representation of Monday midnight in BST),
+        // so treat key date and key+1 as the possible Monday, and keep the week if
+        // that Monday is on or before $to and the Friday (Monday+4) is on or after $from.
         $plans = $plans->filter(function ($plan) use ($from, $to) {
-            $weekStart = Carbon::parse($plan->week_key);
-            $weekEnd   = $weekStart->copy()->addDays(6)->endOfDay();
-            return $weekStart->lte($to) && $weekEnd->gte($from);
+            $keyDate = Carbon::parse($plan->week_key);
+            // The actual Monday is either the key date or key+1 (BST offset)
+            $monday  = $keyDate->dayOfWeek === Carbon::MONDAY ? $keyDate : $keyDate->copy()->addDay();
+            $friday  = $monday->copy()->addDays(4)->endOfDay();
+            return $monday->lte($to) && $friday->gte($from);
         });
 
         $weekKeys = $plans->pluck('week_key')->all();
