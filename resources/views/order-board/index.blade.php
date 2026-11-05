@@ -270,7 +270,7 @@ function renderTable(orders) {
 
     const filterActive = document.getElementById('status-filter').value;
 
-    [...STATUS_KEYS, '__none'].forEach(key => {
+    ['__none', ...STATUS_KEYS].forEach(key => {
         const group = groups[key];
         if (!group.length) return;
 
