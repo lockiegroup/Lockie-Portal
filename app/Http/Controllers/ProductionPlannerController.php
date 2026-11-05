@@ -62,14 +62,14 @@ class ProductionPlannerController extends Controller
             return $monday->lte($to) && $friday->gte($from);
         });
 
-        $weekKeys = $plans->pluck('week_key')->all();
-        $plans    = $plans->keyBy('week_key');
+        $plans     = $plans->keyBy('week_key');
         $operators = ProductionOperator::where('is_active', true)->orderBy('sort_order')->get();
         $machines  = ProductionMachine::where('is_active', true)->orderBy('sort_order')->get()->keyBy('key');
         $divisions = ProductionDivision::orderBy('sort_order')->orderBy('id')->get();
 
-        $days   = ['mon', 'tue', 'wed', 'thu', 'fri'];
-        $shifts = ['am', 'pm'];
+        // Map day keys to Carbon day offsets from Monday (0=Mon … 4=Fri)
+        $dayOffsets = ['mon' => 0, 'tue' => 1, 'wed' => 2, 'thu' => 3, 'fri' => 4];
+        $shifts     = ['am', 'pm'];
 
         // totals[operator_id][division_name] = hours
         $totals = [];
@@ -80,12 +80,26 @@ class ProductionPlannerController extends Controller
             }
         }
 
-        foreach ($weekKeys as $wk) {
-            $plan        = $plans->get($wk);
-            $assignments = $plan ? ($plan->data ?? []) : [];
+        foreach ($plans as $wk => $plan) {
+            $assignments = $plan->data ?? [];
+
+            // Resolve the actual Monday for this week key (key may be Sunday in BST)
+            $keyDate = Carbon::parse($wk);
+            $monday  = $keyDate->dayOfWeek === Carbon::MONDAY ? $keyDate->copy() : $keyDate->copy()->addDay();
+
+            // Build the set of day keys that fall within the requested range
+            $validDays = [];
+            foreach ($dayOffsets as $dayKey => $offset) {
+                $date = $monday->copy()->addDays($offset);
+                if ($date->between($from, $to)) {
+                    $validDays[] = $dayKey;
+                }
+            }
+
+            if (empty($validDays)) continue;
 
             foreach ($operators as $op) {
-                foreach ($days as $day) {
+                foreach ($validDays as $day) {
                     foreach ($shifts as $shift) {
                         $cell = $assignments[$op->id][$day][$shift] ?? [];
                         foreach ([['m', 'h'], ['m2', 'h2']] as [$mk, $hk]) {
@@ -107,7 +121,7 @@ class ProductionPlannerController extends Controller
             'operators' => $operators->values(),
             'divisions' => $divisions->values(),
             'totals'    => $totals,
-            'weeks'     => count($weekKeys),
+            'weeks'     => $plans->count(),
         ]);
     }
 }
