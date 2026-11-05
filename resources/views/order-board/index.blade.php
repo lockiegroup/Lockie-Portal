@@ -4,7 +4,7 @@
     <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
             <h1 class="text-2xl font-bold text-slate-800">Order Board</h1>
-            <p class="text-slate-500 mt-0.5 text-sm">Live open orders — updates automatically every 60 seconds.</p>
+            <p class="text-slate-500 mt-0.5 text-sm">Live open orders — refresh the page to update.</p>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
             {{-- Status filter --}}
@@ -116,7 +116,6 @@ const STATUS_KEYS = Object.keys(STATUSES);
 
 let allOrders  = [];
 let editingOrder = null;
-let reloadTimer  = null;
 
 function fmtGBP(n) {
     return new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP', maximumFractionDigits: 0 }).format(n);
@@ -139,7 +138,6 @@ function escH(s) {
 }
 
 function reload() {
-    clearTimeout(reloadTimer);
     loadOrders();
 }
 
@@ -163,7 +161,6 @@ function loadOrders() {
             if (!res.ok) throw new Error(res.error || 'Server error');
             allOrders = res.orders;
             renderTable(res.orders);
-            reloadTimer = setTimeout(loadOrders, 60000);
         })
         .catch(err => {
             document.getElementById('loading').classList.add('hidden');
@@ -297,7 +294,6 @@ function openModal(orderNo) {
     const o = allOrders.find(x => x.order_no === orderNo);
     if (!o) return;
 
-    clearTimeout(reloadTimer); // pause auto-refresh while modal is open
     editingOrder = o;
 
     document.getElementById('modal-order-no').textContent = o.order_no;
@@ -324,7 +320,6 @@ function closeModal(e) {
     if (e && e.target !== document.getElementById('modal-backdrop')) return;
     document.getElementById('modal-backdrop').classList.add('hidden');
     editingOrder = null;
-    reloadTimer = setTimeout(loadOrders, 60000); // resume auto-refresh
 }
 
 function saveModal() {
@@ -364,7 +359,6 @@ document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
         document.getElementById('modal-backdrop').classList.add('hidden');
         editingOrder = null;
-        reloadTimer = setTimeout(loadOrders, 60000);
     }
 });
 
