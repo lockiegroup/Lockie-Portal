@@ -1,4 +1,4 @@
-<x-layout title="Order Board — JW Products">
+<x-layout title="Order Board">
 <main class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
 
     <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
@@ -7,12 +7,6 @@
             <p class="text-slate-500 mt-0.5 text-sm">Live open orders — updates automatically every 60 seconds.</p>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
-            {{-- Warehouse filter --}}
-            <select id="warehouse-select" onchange="reload()"
-                class="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white text-slate-700 outline-none focus:ring-2 focus:ring-sky-500">
-                <option value="JW Products">JW Products</option>
-                <option value="Hammond &amp; Harper">Hammond &amp; Harper</option>
-            </select>
             {{-- Status filter --}}
             <select id="status-filter" onchange="reload()"
                 class="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white text-slate-700 outline-none focus:ring-2 focus:ring-sky-500">
@@ -150,7 +144,7 @@ function reload() {
 }
 
 function loadOrders() {
-    const warehouse = document.getElementById('warehouse-select').value;
+    const warehouse = 'JW Products';
     const status    = document.getElementById('status-filter').value;
 
     document.getElementById('loading').classList.remove('hidden');
