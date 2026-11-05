@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Quote;
 use App\Models\QuoteLine;
+use App\Models\QuoteLineBreak;
 use App\Models\UnleashedProduct;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -63,20 +64,23 @@ class QuoteController extends Controller
             'created_by'    => auth()->id(),
         ]);
 
-        $quote->lines()->createMany($lines->all());
+        foreach ($lines as $i => $lineData) {
+            $line = $quote->lines()->create($lineData);
+            $this->saveBreaks($line, $request->input("lines.{$i}.breaks", []));
+        }
 
         return redirect()->route('quotes.show', $quote)->with('success', 'Quote created.');
     }
 
     public function show(Quote $quote)
     {
-        $quote->load('lines', 'createdBy');
+        $quote->load('lines.breaks', 'createdBy');
         return view('quotes.show', compact('quote'));
     }
 
     public function edit(Quote $quote)
     {
-        $quote->load('lines');
+        $quote->load('lines.breaks');
         return view('quotes.edit', compact('quote'));
     }
 
@@ -113,16 +117,32 @@ class QuoteController extends Controller
             'total_value'    => $lines->sum('line_total'),
         ]);
 
-        $quote->lines()->delete();
-        $quote->lines()->createMany($lines->all());
+        $quote->lines()->delete(); // cascades to breaks via FK
+        foreach ($lines as $i => $lineData) {
+            $line = $quote->lines()->create($lineData);
+            $this->saveBreaks($line, $request->input("lines.{$i}.breaks", []));
+        }
 
         return redirect()->route('quotes.show', $quote)->with('success', 'Quote updated.');
     }
 
     public function print(Quote $quote)
     {
-        $quote->load('lines', 'createdBy');
+        $quote->load('lines.breaks', 'createdBy');
         return view('quotes.print', compact('quote'));
+    }
+
+    private function saveBreaks(QuoteLine $line, array $breaks): void
+    {
+        $line->breaks()->delete();
+        $valid = collect($breaks)
+            ->filter(fn($b) => isset($b['min_qty'], $b['unit_price']) && $b['min_qty'] !== '' && $b['unit_price'] !== '')
+            ->map(fn($b) => ['min_qty' => (float)$b['min_qty'], 'unit_price' => (float)$b['unit_price']])
+            ->sortBy('min_qty')
+            ->values();
+        if ($valid->isNotEmpty()) {
+            $line->breaks()->createMany($valid->all());
+        }
     }
 
     public function destroy(Quote $quote)
