@@ -99,12 +99,7 @@ Route::middleware(['otp', 'auth'])->group(function () {
         Route::post('/settings/statuses/reorder',          [OrderBoardController::class, 'statusReorder'])->name('statuses.reorder');
     });
 
-    Route::prefix('quotes')->name('quotes.')->middleware(function ($request, $next) {
-        if (strtolower(auth()->user()?->email ?? '') !== 'tom.beresford@lockiegroup.com') {
-            abort(403);
-        }
-        return $next($request);
-    })->group(function () {
+    Route::prefix('quotes')->name('quotes.')->middleware(\App\Http\Middleware\QuotesBetaAccess::class)->group(function () {
         Route::get('/',                      [QuoteController::class, 'index'])->name('index');
         Route::get('/create',                [QuoteController::class, 'create'])->name('create');
         Route::post('/',                     [QuoteController::class, 'store'])->name('store');
