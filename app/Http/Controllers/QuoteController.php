@@ -157,9 +157,16 @@ class QuoteController extends Controller
         $q = trim($request->input('q', ''));
         if (strlen($q) < 1) return response()->json([]);
 
-        $products = UnleashedProduct::where(function ($query) use ($q) {
-                $query->where('product_code', 'like', "%{$q}%")
-                      ->orWhere('product_name', 'like', "%{$q}%");
+        $words = array_filter(explode(' ', $q));
+
+        $products = UnleashedProduct::where(function ($query) use ($words) {
+                foreach ($words as $word) {
+                    $like = "%{$word}%";
+                    $query->where(function ($q) use ($like) {
+                        $q->where('product_code', 'like', $like)
+                          ->orWhere('product_name', 'like', $like);
+                    });
+                }
             })
             ->orderBy('product_code')
             ->limit(12)
