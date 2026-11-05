@@ -186,6 +186,51 @@
         <div id="pp-op-div-wrap"><p class="px-3 py-3 text-slate-400 text-[0.8rem]">Loading…</p></div>
     </div>
 
+    {{-- Multi-week summary --}}
+    <div class="pp-bottom-table mt-4">
+        <div class="flex items-center justify-between mb-2">
+            <h3 class="m-0">Date Range Summary</h3>
+            <button onclick="exportSummary()" id="summary-export-btn" style="display:none;"
+                class="px-3.5 py-[0.35rem] bg-[#0f172a] text-white border-0 rounded-[7px] text-[0.8rem] font-semibold cursor-pointer flex items-center gap-[0.35rem]">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Export CSV
+            </button>
+        </div>
+        <div class="flex gap-3 flex-wrap items-end mb-3 px-1">
+            <div>
+                <label class="block text-[0.72rem] font-semibold text-slate-500 mb-1">From</label>
+                <input type="date" id="summary-from" value="{{ now()->startOfMonth()->format('Y-m-d') }}"
+                    class="px-3 py-1.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
+            </div>
+            <div>
+                <label class="block text-[0.72rem] font-semibold text-slate-500 mb-1">To</label>
+                <input type="date" id="summary-to" value="{{ now()->endOfMonth()->format('Y-m-d') }}"
+                    class="px-3 py-1.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
+            </div>
+            <button onclick="loadSummary()"
+                class="px-4 py-1.5 bg-slate-900 text-white text-sm font-semibold rounded-lg border-0 cursor-pointer hover:bg-slate-700 transition-colors">
+                Load
+            </button>
+            <div class="flex gap-1.5 flex-wrap items-center">
+                @php
+                    $tz = config('app.timezone');
+                    $summaryPresets = [
+                        'This month' => [now($tz)->startOfMonth()->format('Y-m-d'), now($tz)->endOfMonth()->format('Y-m-d')],
+                        'Last month' => [now($tz)->subMonthNoOverflow()->startOfMonth()->format('Y-m-d'), now($tz)->subMonthNoOverflow()->endOfMonth()->format('Y-m-d')],
+                        'This year'  => [now($tz)->startOfYear()->format('Y-m-d'), now($tz)->endOfYear()->format('Y-m-d')],
+                    ];
+                @endphp
+                @foreach($summaryPresets as $label => [$pFrom, $pTo])
+                <button type="button" onclick="setSummaryPreset('{{ $pFrom }}', '{{ $pTo }}')"
+                    class="px-2.5 py-1.5 bg-slate-100 border border-slate-200 rounded-lg text-xs text-slate-600 cursor-pointer hover:bg-slate-200 transition-colors">
+                    {{ $label }}
+                </button>
+                @endforeach
+            </div>
+        </div>
+        <div id="pp-summary-wrap"><p class="px-3 py-3 text-slate-400 text-[0.8rem]">Choose a date range and click Load.</p></div>
+    </div>
+
 </div>
 
 <script>
@@ -904,6 +949,108 @@ document.getElementById('pp-next').addEventListener('click', () => {
 loadWeek();
 
 })();
+
+// ── Date Range Summary ────────────────────────────────────────────────────
+let summaryData = null;
+
+function setSummaryPreset(from, to) {
+    document.getElementById('summary-from').value = from;
+    document.getElementById('summary-to').value   = to;
+    loadSummary();
+}
+
+window.loadSummary = function() {
+    const from = document.getElementById('summary-from').value;
+    const to   = document.getElementById('summary-to').value;
+    if (!from || !to) return;
+
+    document.getElementById('pp-summary-wrap').innerHTML = '<p class="px-3 py-3 text-slate-400 text-[0.8rem]">Loading…</p>';
+    document.getElementById('summary-export-btn').style.display = 'none';
+
+    fetch(`/production-planner/summary?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (!res.ok) {
+            document.getElementById('pp-summary-wrap').innerHTML = '<p class="px-3 py-3 text-red-500 text-[0.8rem]">Failed to load.</p>';
+            return;
+        }
+        summaryData = res;
+        renderSummary(res, from, to);
+        document.getElementById('summary-export-btn').style.display = '';
+    })
+    .catch(() => {
+        document.getElementById('pp-summary-wrap').innerHTML = '<p class="px-3 py-3 text-red-500 text-[0.8rem]">Network error.</p>';
+    });
+};
+
+function renderSummary(res, from, to) {
+    const { operators, divisions, totals, weeks } = res;
+
+    const fmtDate = s => { const [y,m,d] = s.split('-'); return `${d}/${m}/${y}`; };
+    const subtitle = `${fmtDate(from)} – ${fmtDate(to)} &nbsp;·&nbsp; ${weeks} week${weeks !== 1 ? 's' : ''}`;
+
+    let html = `<p style="font-size:0.75rem;color:#94a3b8;margin:0 0 8px 2px;">${subtitle}</p>`;
+    html += `<table style="width:100%;border-collapse:collapse;font-size:0.78rem;">
+        <thead><tr>
+            <th class="pp-th-dark" style="padding:8px 14px;text-align:left;font-size:0.75rem;">Operator</th>
+            ${divisions.map(div => `<th class="pp-th-dark" style="padding:8px 12px;text-align:center;font-size:0.75rem;">${escHtml(div.name)}</th>`).join('')}
+            <th class="pp-th-dark" style="padding:8px 12px;text-align:center;font-size:0.75rem;">Total</th>
+        </tr></thead><tbody>`;
+
+    operators.forEach((op, i) => {
+        const row   = totals[op.id] || {};
+        const total = divisions.reduce((s, div) => s + (row[div.name] || 0), 0);
+        const rowBg = i % 2 === 0 ? '#f8fafc' : 'white';
+        html += `<tr style="background:${rowBg};">
+            <td style="padding:8px 14px;font-weight:600;border-bottom:1px solid #f1f5f9;">${escHtml(op.name)}</td>`;
+        divisions.forEach(div => {
+            const v   = row[div.name] || 0;
+            const hue = div.hue;
+            const bg  = v > 0 ? `hsl(${hue},60%,92%)` : '';
+            const fg  = v > 0 ? `hsl(${hue},55%,28%)` : '#cbd5e1';
+            html += `<td style="padding:7px 10px;text-align:center;font-weight:700;background:${bg};color:${fg};border-bottom:1px solid #f1f5f9;">${v > 0 ? v+'h' : '–'}</td>`;
+        });
+        html += `<td style="padding:7px 12px;text-align:center;font-weight:800;background:${total>0?'#f1f5f9':''};color:#1e293b;border-bottom:1px solid #f1f5f9;">${total > 0 ? total+'h' : '–'}</td></tr>`;
+    });
+
+    const colTotals  = divisions.map(div => operators.reduce((s, op) => s + ((totals[op.id] || {})[div.name] || 0), 0));
+    const grandTotal = colTotals.reduce((s, t) => s + t, 0);
+    html += `<tr style="background:#f8fafc;border-top:2px solid #e2e8f0;">
+        <td style="padding:8px 14px;font-weight:800;color:#1e293b;">Total</td>
+        ${colTotals.map(v => `<td style="padding:7px 10px;text-align:center;font-weight:800;color:${v>0?'#1e293b':'#cbd5e1'};">${v > 0 ? v+'h' : '–'}</td>`).join('')}
+        <td style="padding:7px 12px;text-align:center;font-weight:800;color:#1e293b;">${grandTotal > 0 ? grandTotal+'h' : '–'}</td>
+    </tr></tbody></table>`;
+
+    document.getElementById('pp-summary-wrap').innerHTML = html;
+}
+
+window.exportSummary = function() {
+    if (!summaryData) return;
+    const { operators, divisions, totals } = summaryData;
+    const from = document.getElementById('summary-from').value;
+    const to   = document.getElementById('summary-to').value;
+
+    const header = ['Operator', ...divisions.map(d => d.name), 'Total'];
+    const rows   = [header];
+
+    operators.forEach(op => {
+        const row    = totals[op.id] || {};
+        const divHrs = divisions.map(div => row[div.name] || 0);
+        rows.push([op.name, ...divHrs, divHrs.reduce((s, v) => s + v, 0)]);
+    });
+
+    const colTotals  = divisions.map(div => operators.reduce((s, op) => s + ((totals[op.id] || {})[div.name] || 0), 0));
+    rows.push(['Total', ...colTotals, colTotals.reduce((s, v) => s + v, 0)]);
+
+    const csv      = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+    const filename = `production-summary-${from}-to-${to}.csv`;
+    const blob     = new Blob([csv], { type: 'text/csv' });
+    const url      = URL.createObjectURL(blob);
+    Object.assign(document.createElement('a'), { href: url, download: filename }).click();
+    URL.revokeObjectURL(url);
+};
 </script>
 
 </x-layout>

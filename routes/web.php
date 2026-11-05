@@ -339,6 +339,7 @@ Route::middleware(['otp', 'auth'])->group(function () {
         Route::get('/', [ProductionPlannerController::class, 'index'])->name('index');
         Route::get('/week/{weekKey}', [ProductionPlannerController::class, 'loadWeek'])->name('week.load');
         Route::put('/week/{weekKey}', [ProductionPlannerController::class, 'saveWeek'])->name('week.save');
+        Route::get('/summary', [ProductionPlannerController::class, 'summary'])->name('summary');
     });
 
     // Admin — production planner settings
