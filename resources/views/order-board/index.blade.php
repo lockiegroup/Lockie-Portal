@@ -25,6 +25,10 @@
                 class="px-4 py-2 bg-slate-900 hover:bg-slate-700 text-white text-sm font-semibold rounded-lg transition-colors">
                 Refresh
             </button>
+            <a href="{{ route('order-board.settings') }}"
+                class="px-4 py-2 border border-slate-200 text-slate-600 text-sm font-semibold rounded-lg hover:bg-slate-50 transition-colors">
+                ⚙ Settings
+            </a>
         </div>
     </div>
 

@@ -88,9 +88,14 @@ Route::middleware(['otp', 'auth'])->group(function () {
     Route::get('/insights/customers/data', [CustomerInsightsController::class, 'data'])->name('insights.customers.data');
 
     Route::prefix('order-board')->name('order-board.')->group(function () {
-        Route::get('/',           [OrderBoardController::class, 'index'])->name('index');
-        Route::get('/data',       [OrderBoardController::class, 'data'])->name('data');
-        Route::post('/{orderNo}', [OrderBoardController::class, 'update'])->name('update');
+        Route::get('/',                                    [OrderBoardController::class, 'index'])->name('index');
+        Route::get('/data',                                [OrderBoardController::class, 'data'])->name('data');
+        Route::post('/{orderNo}',                          [OrderBoardController::class, 'update'])->name('update');
+        Route::get('/settings',                            [OrderBoardController::class, 'settings'])->name('settings');
+        Route::post('/settings/statuses',                  [OrderBoardController::class, 'statusStore'])->name('statuses.store');
+        Route::put('/settings/statuses/{status}',          [OrderBoardController::class, 'statusUpdate'])->name('statuses.update');
+        Route::delete('/settings/statuses/{status}',       [OrderBoardController::class, 'statusDestroy'])->name('statuses.destroy');
+        Route::post('/settings/statuses/reorder',          [OrderBoardController::class, 'statusReorder'])->name('statuses.reorder');
     });
     Route::get('/stock', [StockController::class, 'index'])->name('stock.index');
     Route::get('/stock/data', [StockController::class, 'data'])->name('stock.data');
