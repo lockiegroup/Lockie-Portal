@@ -159,6 +159,9 @@
                 <td class="py-2 px-3 whitespace-nowrap">
                     @if($day['last_out'])
                         <span class="text-slate-800 font-medium">{{ $day['last_out']->format('H:i') }}</span>
+                        @if($day['auto_closed_out'])
+                            <span class="inline-flex items-center ml-1 px-1.5 py-0.5 rounded-full text-[0.65rem] font-semibold bg-orange-100 text-orange-700 whitespace-nowrap">Auto</span>
+                        @endif
                     @elseif($day['first_in'])
                         <span class="text-amber-500 text-[0.7rem] font-semibold">Still in</span>
                     @else

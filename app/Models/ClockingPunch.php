@@ -10,7 +10,7 @@ class ClockingPunch extends Model
 {
     protected $fillable = [
         'employee_id', 'fob_id', 'direction', 'punched_at',
-        'device_id', 'client_uuid', 'source',
+        'device_id', 'client_uuid', 'source', 'auto_closed',
         'is_flagged', 'flag_reason',
         'voided_at', 'voided_by', 'voided_reason',
     ];
@@ -18,9 +18,10 @@ class ClockingPunch extends Model
     protected function casts(): array
     {
         return [
-            'punched_at' => 'datetime',
-            'voided_at'  => 'datetime',
-            'is_flagged' => 'boolean',
+            'punched_at'  => 'datetime',
+            'voided_at'   => 'datetime',
+            'is_flagged'  => 'boolean',
+            'auto_closed' => 'boolean',
         ];
     }
 

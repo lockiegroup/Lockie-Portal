@@ -160,10 +160,15 @@ class ClockingReportsController extends Controller
                     $sessions[] = ['in' => $open, 'out' => null];
                 }
 
-                $firstIn = $sessions ? $sessions[0]['in']->punched_at : null;
-                $lastOut = null;
+                $firstIn      = $sessions ? $sessions[0]['in']->punched_at : null;
+                $lastOut      = null;
+                $autoClosedOut = false;
                 foreach (array_reverse($sessions) as $s) {
-                    if ($s['out']) { $lastOut = $s['out']->punched_at; break; }
+                    if ($s['out']) {
+                        $lastOut       = $s['out']->punched_at;
+                        $autoClosedOut = (bool) $s['out']->auto_closed;
+                        break;
+                    }
                 }
 
                 $workedMins = 0;
@@ -194,17 +199,18 @@ class ClockingReportsController extends Controller
                 }
 
                 $days[] = [
-                    'date'          => $cursor->copy(),
-                    'is_absent'     => $isAbsent,
-                    'schedule'      => $schedule,
-                    'first_in'      => $firstIn,
-                    'last_out'      => $lastOut,
-                    'worked_mins'   => $workedMins,
-                    'break_mins'    => $actualBreak,
-                    'billable_mins' => $billableMins,
-                    'late_by'       => $lateBy,
-                    'early_by'      => $earlyBy,
-                    'no_show'       => $isScheduled && !$isAbsent && $firstIn === null,
+                    'date'            => $cursor->copy(),
+                    'is_absent'       => $isAbsent,
+                    'schedule'        => $schedule,
+                    'first_in'        => $firstIn,
+                    'last_out'        => $lastOut,
+                    'auto_closed_out' => $autoClosedOut,
+                    'worked_mins'     => $workedMins,
+                    'break_mins'      => $actualBreak,
+                    'billable_mins'   => $billableMins,
+                    'late_by'         => $lateBy,
+                    'early_by'        => $earlyBy,
+                    'no_show'         => $isScheduled && !$isAbsent && $firstIn === null,
                 ];
 
                 $cursor->addDay();

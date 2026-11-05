@@ -31,3 +31,6 @@ Schedule::command('clocking:send-alerts')->everyFifteenMinutes();
 
 // Clocking: send clockout reminders every 15 minutes (fires once per employee per day via log)
 Schedule::command('clocking:send-clockout-reminders')->everyFifteenMinutes();
+
+// Clocking: auto clock out anyone still clocked in at midnight, email their managers
+Schedule::command('clocking:auto-clockout')->dailyAt('00:00');
