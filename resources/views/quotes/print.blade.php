@@ -31,18 +31,9 @@
         flex-direction: column;
         gap: 4px;
     }
-    .logo-name {
-        font-size: 22px;
-        font-weight: 800;
-        letter-spacing: -0.5px;
-        color: #0f172a;
-    }
-    .logo-name span { color: #2563eb; }
-    .logo-tagline {
-        font-size: 10px;
-        color: #94a3b8;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
+    .logo-img {
+        height: 60px;
+        width: auto;
     }
     .company-address {
         text-align: right;
@@ -225,11 +216,10 @@
 {{-- Header --}}
 <div class="header">
     <div class="logo-block">
-        <div class="logo-name">JW<span>.</span>Products</div>
-        <div class="logo-tagline">Security Seals &amp; Specialist Products</div>
+        <img src="{{ asset('images/jwp-logo.webp') }}" alt="JWP Security Seals" class="logo-img">
     </div>
     <div class="company-address">
-        JW Products Ltd<br>
+        JWP Security Seals Ltd<br>
         Haydock, Merseyside<br>
         info@jwproducts.co.uk<br>
         www.jwproducts.co.uk
@@ -316,7 +306,7 @@
 
 {{-- Footer --}}
 <div class="footer">
-    JW Products Ltd &nbsp;·&nbsp; Registered in England &amp; Wales &nbsp;·&nbsp; www.jwproducts.co.uk
+    JWP Security Seals Ltd &nbsp;·&nbsp; Registered in England &amp; Wales &nbsp;·&nbsp; www.jwproducts.co.uk
 </div>
 
 </body>
