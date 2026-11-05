@@ -264,6 +264,7 @@ function openModal(orderNo) {
     const o = allOrders.find(x => x.order_no === orderNo);
     if (!o) return;
 
+    clearTimeout(reloadTimer); // pause auto-refresh while modal is open
     editingOrder = o;
 
     document.getElementById('modal-order-no').textContent = o.order_no;
@@ -290,6 +291,7 @@ function closeModal(e) {
     if (e && e.target !== document.getElementById('modal-backdrop')) return;
     document.getElementById('modal-backdrop').classList.add('hidden');
     editingOrder = null;
+    reloadTimer = setTimeout(loadOrders, 60000); // resume auto-refresh
 }
 
 function saveModal() {
@@ -329,6 +331,7 @@ document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
         document.getElementById('modal-backdrop').classList.add('hidden');
         editingOrder = null;
+        reloadTimer = setTimeout(loadOrders, 60000);
     }
 });
 
