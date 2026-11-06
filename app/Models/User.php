@@ -26,18 +26,22 @@ class User extends Authenticatable
     ];
 
     const MODULES = [
-        'sales'            => 'Sales',
-        'stock'            => 'Stock Overview',
-        'envelopes'        => 'Church Envelopes',
-        'policies'         => 'Policies',
-        'print_schedule'   => 'Print Schedule',
-        'amazon'           => 'Amazon & Xero',
-        'key_accounts'     => 'Key Accounts',
-        'crm'              => 'Customer Insights (CRM)',
+        'sales'              => 'Sales',
+        'stock'              => 'Stock Overview',
+        'envelopes'          => 'Church Envelopes',
+        'policies'           => 'Policies',
+        'print_schedule'     => 'Print Schedule',
+        'amazon'             => 'Amazon & Xero',
+        'key_accounts'       => 'Key Accounts',
+        'crm'                => 'Customer Insights (CRM)',
         'factory_training'   => 'Factory Training',
         'reminders'          => 'Order Reminders',
-        'production_planner'  => 'Production Planner',
+        'production_planner' => 'Production Planner',
+        'order_board'        => 'Order Board',
     ];
+
+    // Modules that must be explicitly enabled — not granted by the null=all default
+    const OPT_IN_MODULES = ['order_board'];
 
     protected $fillable = ['name', 'email', 'password', 'role', 'is_active', 'permissions', 'modules', 'last_login_at', 'operator_pin'];
     protected $hidden   = ['password', 'remember_token', 'operator_pin'];
@@ -79,7 +83,12 @@ class User extends Authenticatable
             return true;
         }
 
-        // null means all modules visible (default for existing/new staff)
+        // Opt-in modules must be explicitly enabled regardless of null default
+        if (in_array($module, self::OPT_IN_MODULES, true)) {
+            return in_array($module, $this->modules ?? [], true);
+        }
+
+        // null means all standard modules visible (default for existing/new staff)
         if ($this->modules === null) {
             return true;
         }

@@ -88,7 +88,7 @@ Route::middleware(['otp', 'auth'])->group(function () {
     Route::get('/insights/customers', [CustomerInsightsController::class, 'index'])->name('insights.customers');
     Route::get('/insights/customers/data', [CustomerInsightsController::class, 'data'])->name('insights.customers.data');
 
-    Route::prefix('order-board')->name('order-board.')->group(function () {
+    Route::prefix('order-board')->name('order-board.')->middleware(\App\Http\Middleware\OrderBoardAccess::class)->group(function () {
         Route::get('/',                                    [OrderBoardController::class, 'index'])->name('index');
         Route::get('/data',                                [OrderBoardController::class, 'data'])->name('data');
         Route::post('/{orderNo}',                          [OrderBoardController::class, 'update'])->name('update');

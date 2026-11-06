@@ -72,6 +72,7 @@
                 <span class="sb-label">Quotes <span style="font-size:0.65rem;opacity:0.6;font-weight:600;letter-spacing:0.02em;">(TB)</span></span>
             </a>
             @endif
+            @if($user->hasModule('order_board'))
             <a href="{{ route('order-board.index') }}" class="sb-item{{ request()->routeIs('order-board.*') ? ' sb-active' : '' }}" data-tip="Order Board">
                 <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
@@ -79,6 +80,7 @@
                 </svg>
                 <span class="sb-label">Order Board</span>
             </a>
+            @endif
             @endif
             @if($user->hasModule('stock'))
             <a href="{{ route('stock.index') }}" class="sb-item{{ request()->routeIs('stock.*') ? ' sb-active' : '' }}" data-tip="Stock Overview">
