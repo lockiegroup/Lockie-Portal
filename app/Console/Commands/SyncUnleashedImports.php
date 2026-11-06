@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Mail;
 class SyncUnleashedImports extends Command
 {
     protected $signature = 'imports:sync-unleashed
-                            {--from= : Start date (Y-m-d). Defaults to 2022-01-01. Use 2021-01-01 for full history.}
+                            {--from= : Start date (Y-m-d). Defaults to 12 months ago. Use 2021-01-01 for full history.}
                             {--sales-only : Only sync sales orders}
                             {--credits-only : Only sync credit notes}';
 
@@ -40,7 +40,7 @@ class SyncUnleashedImports extends Command
         $doCredits   = !$salesOnly;
 
         $fromOption = $this->option('from');
-        $from = $fromOption ? Carbon::parse($fromOption)->toDateString() : '2022-01-01';
+        $from = $fromOption ? Carbon::parse($fromOption)->toDateString() : now()->subYear()->toDateString();
         $to   = now()->subDay()->toDateString();
 
         $this->info("Unleashed import sync: {$from} → {$to}");
