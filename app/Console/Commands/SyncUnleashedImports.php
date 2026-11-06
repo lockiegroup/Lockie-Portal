@@ -99,7 +99,7 @@ class SyncUnleashedImports extends Command
         // endpoint (same behaviour as SalesInvoices), so a year-by-year loop would fetch
         // the full history on every iteration and duplicate any orders that lack a Guid.
         $this->info('Fetching all sales orders…');
-        $allOrders = $this->fetchAllPages('SalesOrders', [], 200);
+        $allOrders = $this->fetchAllPages('SalesOrders', [], 500);
         $this->line('  ' . count($allOrders) . ' orders fetched');
 
         $now       = now()->toDateTimeString();
