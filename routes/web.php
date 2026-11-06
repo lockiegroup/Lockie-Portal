@@ -6,7 +6,6 @@ use App\Http\Controllers\Auth\OtpController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\CustomerInsightsController;
 use App\Http\Controllers\OrderBoardController;
-use App\Http\Controllers\QuoteController;
 use App\Http\Controllers\SalesController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\ChurchEnvelopeController;
@@ -99,18 +98,7 @@ Route::middleware(['otp', 'auth'])->group(function () {
         Route::post('/settings/statuses/reorder',          [OrderBoardController::class, 'statusReorder'])->name('statuses.reorder');
     });
 
-    Route::prefix('quotes')->name('quotes.')->middleware(\App\Http\Middleware\QuotesBetaAccess::class)->group(function () {
-        Route::get('/',                      [QuoteController::class, 'index'])->name('index');
-        Route::get('/create',                [QuoteController::class, 'create'])->name('create');
-        Route::post('/',                     [QuoteController::class, 'store'])->name('store');
-        Route::get('/api/customers',         [QuoteController::class, 'searchCustomers'])->name('api.customers');
-        Route::get('/api/products',          [QuoteController::class, 'searchProducts'])->name('api.products');
-        Route::get('/{quote}',               [QuoteController::class, 'show'])->name('show');
-        Route::get('/{quote}/edit',          [QuoteController::class, 'edit'])->name('edit');
-        Route::put('/{quote}',               [QuoteController::class, 'update'])->name('update');
-        Route::get('/{quote}/print',         [QuoteController::class, 'print'])->name('print');
-        Route::delete('/{quote}',            [QuoteController::class, 'destroy'])->name('destroy');
-    });
+
     Route::get('/stock', [StockController::class, 'index'])->name('stock.index');
     Route::get('/stock/data', [StockController::class, 'data'])->name('stock.data');
     Route::post('/logout', LogoutController::class)->name('logout');
