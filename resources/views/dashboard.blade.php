@@ -13,79 +13,24 @@
     </div>
 
     {{-- ── Stat tiles ── --}}
+    @if($salesStats)
     @php
-        $tiles = [];
-
-        if ($salesStats) {
-            $change    = $salesStats['mtd_change'];
-            $changeStr = $change !== null ? (($change >= 0 ? '+' : '') . number_format($change, 1) . '%') : null;
-            $tiles[] = [
-                'label'    => 'Revenue MTD',
-                'value'    => '£' . number_format($salesStats['mtd'], 0),
-                'sub'      => $changeStr ? $changeStr . ' vs last month' : null,
-                'subColor' => $change !== null ? ($change >= 0 ? 'text-green-600' : 'text-red-500') : 'text-slate-400',
-                'href'     => route('sales'),
-                'icon'     => '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>',
-            ];
-            $tiles[] = [
-                'label'    => 'Revenue YTD',
-                'value'    => '£' . number_format($salesStats['ytd'], 0),
-                'sub'      => now()->format('Y'),
-                'subColor' => 'text-slate-400',
-                'href'     => route('sales'),
-                'icon'     => '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>',
-            ];
-        }
-
-        if ($orderStats) {
-            $tiles[] = [
-                'label'    => 'Open Orders',
-                'value'    => number_format($orderStats['open']),
-                'sub'      => 'on the board',
-                'subColor' => 'text-slate-400',
-                'href'     => route('order-board.index'),
-                'icon'     => '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
-            ];
-        }
-
-        if ($myTasks !== null) {
-            $totalTasks = $myTasks->flatten()->count();
-            $tiles[] = [
-                'label'    => 'My Tasks',
-                'value'    => $totalTasks,
-                'sub'      => $overdueCount > 0 ? $overdueCount . ' overdue' : 'all on track',
-                'subColor' => $overdueCount > 0 ? 'text-red-500 font-semibold' : 'text-green-600',
-                'href'     => route('key-actions.index'),
-                'icon'     => '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
-            ];
-        }
-
-        if ($reminderStats) {
-            $tiles[] = [
-                'label'    => 'Reminders',
-                'value'    => number_format($reminderStats['pending']),
-                'sub'      => 'pending calls',
-                'subColor' => $reminderStats['pending'] > 0 ? 'text-amber-500' : 'text-slate-400',
-                'href'     => route('reminders.index'),
-                'icon'     => '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
-            ];
-        }
+        $change    = $salesStats['mtd_change'];
+        $changeStr = $change !== null ? (($change >= 0 ? '+' : '') . number_format($change, 1) . '%') : null;
     @endphp
-
-    @if(count($tiles))
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3.5 mb-8">
-        @foreach($tiles as $tile)
-        <a href="{{ $tile['href'] }}" class="bg-white border border-slate-200 rounded-xl px-5 py-4 shadow-sm hover:shadow-md hover:border-slate-300 transition-all no-underline group">
+    <div class="mb-8">
+        <a href="{{ route('sales') }}" class="inline-block bg-white border border-slate-200 rounded-xl px-5 py-4 shadow-sm hover:shadow-md hover:border-slate-300 transition-all no-underline group w-full sm:w-56">
             <div class="flex items-center justify-between mb-3">
-                <span class="text-[0.68rem] font-bold text-slate-400 uppercase tracking-[0.08em]">{{ $tile['label'] }}</span>
-                <svg class="w-4 h-4 text-slate-300 group-hover:text-slate-400 transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">{!! $tile['icon'] !!}</svg>
+                <span class="text-[0.68rem] font-bold text-slate-400 uppercase tracking-[0.08em]">Revenue MTD</span>
+                <svg class="w-4 h-4 text-slate-300 group-hover:text-slate-400 transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+                </svg>
             </div>
-            <div class="text-[1.625rem] font-bold text-slate-800 leading-none mb-1.5">{{ $tile['value'] }}</div>
-            @if($tile['sub'])
-            <div class="text-xs {{ $tile['subColor'] }}">{{ $tile['sub'] }}</div>
+            <div class="text-[1.625rem] font-bold text-slate-800 leading-none mb-1.5">£{{ number_format($salesStats['mtd'], 0) }}</div>
+            @if($changeStr)
+            <div class="text-xs {{ $change >= 0 ? 'text-green-600' : 'text-red-500' }}">{{ $changeStr }} vs last month</div>
             @endif
         </a>
-        @endforeach
     </div>
     @endif
 
@@ -185,7 +130,7 @@
     </div>
 
     {{-- Fallback --}}
-    @if(!count($tiles) && $myTasks === null && $printStats === null)
+    @if(!$salesStats && $myTasks === null && $printStats === null)
     <div class="bg-white border border-slate-200 rounded-xl p-14 text-center shadow-sm">
         <p class="text-slate-400 text-sm">Use the sidebar to navigate to your tools.</p>
     </div>

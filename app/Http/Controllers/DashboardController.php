@@ -4,10 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\KeyActionGroup;
 use App\Models\KeyActionTask;
-use App\Models\OrderBoardNote;
 use App\Models\PrintJob;
 use App\Models\PrintScheduleSetting;
-use App\Models\ReminderEntry;
 use App\Models\SalesLine;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -25,40 +23,23 @@ class DashboardController extends Controller
             $now           = now();
             $mtdStart      = $now->copy()->startOfMonth();
             $lastMonthSame = $now->copy()->subMonthNoOverflow();
-            $ytdStart      = $now->copy()->startOfYear();
 
-            $mtd = (float) SalesLine::where('warehouse', 'JW Products')
-                ->whereBetween('order_date', [$mtdStart, $now])
+            $mtd = (float) SalesLine::whereBetween('order_date', [$mtdStart, $now])
                 ->sum('sub_total');
 
-            $lastMtd = (float) SalesLine::where('warehouse', 'JW Products')
-                ->whereYear('order_date',  $lastMonthSame->year)
+            $lastMtd = (float) SalesLine::whereYear('order_date',  $lastMonthSame->year)
                 ->whereMonth('order_date', $lastMonthSame->month)
                 ->whereDay('order_date', '<=', $now->day)
                 ->sum('sub_total');
 
-            $ytd = (float) SalesLine::where('warehouse', 'JW Products')
-                ->whereBetween('order_date', [$ytdStart, $now])
-                ->sum('sub_total');
-
             $salesStats = [
-                'mtd'          => $mtd,
-                'last_mtd'     => $lastMtd,
-                'mtd_change'   => $lastMtd > 0 ? (($mtd - $lastMtd) / $lastMtd) * 100 : null,
-                'ytd'          => $ytd,
+                'mtd'        => $mtd,
+                'last_mtd'   => $lastMtd,
+                'mtd_change' => $lastMtd > 0 ? (($mtd - $lastMtd) / $lastMtd) * 100 : null,
             ];
         }
 
-        // ── Order board ───────────────────────────────────────────────────────
         $orderStats = null;
-        if ($user->hasModule('order_board')) {
-            $openOrders = SalesLine::where('warehouse', 'JW Products')
-                ->whereIn('status', ['Placed', 'Parked', 'Back Order'])
-                ->distinct('order_no')
-                ->count('order_no');
-
-            $orderStats = ['open' => $openOrders];
-        }
 
         // ── Key Actions ───────────────────────────────────────────────────────
         $myTasks    = null;
@@ -79,12 +60,7 @@ class DashboardController extends Controller
                 ->count();
         }
 
-        // ── Reminders ─────────────────────────────────────────────────────────
         $reminderStats = null;
-        if ($user->hasModule('reminders')) {
-            $pendingCount = ReminderEntry::where('status', 'pending')->count();
-            $reminderStats = ['pending' => $pendingCount];
-        }
 
         // ── Print Schedule ────────────────────────────────────────────────────
         $printStats = null;
