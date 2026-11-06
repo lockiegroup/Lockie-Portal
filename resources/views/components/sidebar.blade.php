@@ -44,7 +44,7 @@
 
         {{-- FINANCE --}}
         @if($user->hasModule('sales') || $user->hasModule('stock') || $user->hasModule('amazon'))
-        <div class="h-px bg-slate-800 mx-1 mt-2.5 mb-0.5"></div>
+        <div class="sb-divider h-px bg-slate-800 mx-1 mt-2.5 mb-0.5"></div>
         <button onclick="sbSection('finance')" class="sb-section-btn sb-label" data-tip="Finance">
             <span class="text-[0.625rem] font-bold uppercase">Finance</span>
             <svg id="sc-finance" class="w-2.5 h-2.5 flex-shrink-0 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
@@ -57,17 +57,16 @@
                 </svg>
                 <span class="sb-label">Sales</span>
             </a>
-            <a href="{{ route('insights.customers') }}" class="sb-item{{ request()->routeIs('insights.*') ? ' sb-active' : '' }}" data-tip="Growth Insights">
+            <a href="{{ route('insights.customers') }}" class="sb-item{{ request()->routeIs('insights.*') ? ' sb-active' : '' }}" data-tip="Insights">
                 <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="7" r="4"/><path d="M5.5 21a8.38 8.38 0 0 1 13 0"/><path d="M19 12l2 2-4 4"/>
                 </svg>
-                <span class="sb-label">Growth Insights</span>
+                <span class="sb-label">Insights</span>
             </a>
             @if($user->hasModule('order_board'))
             <a href="{{ route('order-board.index') }}" class="sb-item{{ request()->routeIs('order-board.*') ? ' sb-active' : '' }}" data-tip="Order Board">
                 <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-                    <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+                    <rect x="3" y="3" width="4" height="18" rx="1"/><rect x="10" y="3" width="4" height="18" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/>
                 </svg>
                 <span class="sb-label">Order Board</span>
             </a>
@@ -96,7 +95,7 @@
 
         {{-- PLANNING --}}
         @if($showKeyActions || $showActionPlans || true)
-        <div class="h-px bg-slate-800 mx-1 mt-2.5 mb-0.5"></div>
+        <div class="sb-divider h-px bg-slate-800 mx-1 mt-2.5 mb-0.5"></div>
         <button onclick="sbSection('planning')" class="sb-section-btn sb-label" data-tip="Planning">
             <span class="text-[0.625rem] font-bold uppercase">Planning</span>
             <svg id="sc-planning" class="w-2.5 h-2.5 flex-shrink-0 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
@@ -129,7 +128,7 @@
 
         {{-- CUSTOMERS --}}
         @if($user->hasModule('key_accounts') || $user->hasModule('crm') || $user->can('reminders'))
-        <div class="h-px bg-slate-800 mx-1 mt-2.5 mb-0.5"></div>
+        <div class="sb-divider h-px bg-slate-800 mx-1 mt-2.5 mb-0.5"></div>
         <button onclick="sbSection('customers')" class="sb-section-btn sb-label" data-tip="Customers">
             <span class="text-[0.625rem] font-bold uppercase">Customers</span>
             <svg id="sc-customers" class="w-2.5 h-2.5 flex-shrink-0 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
@@ -168,7 +167,7 @@
 
         {{-- OPERATIONS --}}
         @if($user->hasModule('envelopes') || $user->hasModule('policies') || $user->can('factory_training_view') || $user->hasModule('print_schedule') || true)
-        <div class="h-px bg-slate-800 mx-1 mt-2.5 mb-0.5"></div>
+        <div class="sb-divider h-px bg-slate-800 mx-1 mt-2.5 mb-0.5"></div>
         <button onclick="sbSection('operations')" class="sb-section-btn sb-label" data-tip="Operations">
             <span class="text-[0.625rem] font-bold uppercase">Operations</span>
             <svg id="sc-operations" class="w-2.5 h-2.5 flex-shrink-0 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
@@ -265,7 +264,7 @@
 
         {{-- ADMIN --}}
         @canany(['manage_users', 'print_settings', 'envelope_settings', 'policy_settings', 'key_accounts_admin', 'imports'])
-        <div class="h-px bg-slate-800 mx-1 mt-2.5 mb-0.5"></div>
+        <div class="sb-divider h-px bg-slate-800 mx-1 mt-2.5 mb-0.5"></div>
         <button onclick="sbSection('admin')" class="sb-section-btn sb-label" data-tip="Admin">
             <span class="text-[0.625rem] font-bold uppercase">Admin</span>
             <svg id="sc-admin" class="w-2.5 h-2.5 flex-shrink-0 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>

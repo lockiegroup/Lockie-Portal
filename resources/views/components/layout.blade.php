@@ -35,6 +35,8 @@
         body.sb-collapsed .sb-section,
         body.sb-collapsed .sb-sub-group  { display: none !important; }
         body.sb-collapsed .sb-item       { justify-content: center; padding-left: 0; padding-right: 0; }
+        body.sb-collapsed .sb-item.sb-active { box-shadow: inset 3px 0 0 #3b82f6; padding-left: 0; }
+        body.sb-collapsed .sb-divider    { margin-left: 10px; margin-right: 10px; }
 
         /* Collapsed: hover tooltips */
         body.sb-collapsed .sb-item       { position: relative; }
@@ -57,7 +59,7 @@
             transition: background 0.12s, color 0.12s; cursor: pointer;
         }
         .sb-item:hover     { background: rgba(255,255,255,0.06); color: #cbd5e1; }
-        .sb-item.sb-active { background: rgba(146,170,200,0.1); color: #92aac8; }
+        .sb-item.sb-active { background: rgba(146,170,200,0.12); color: #93c5fd; box-shadow: inset 3px 0 0 #3b82f6; padding-left: 9px; }
 
         .sb-sub-item {
             display: flex; align-items: center;
@@ -88,15 +90,19 @@
     @auth
         <x-sidebar />
         <div id="sb-overlay" onclick="sbMobileToggle()"></div>
+        @php $pageLabel = explode(' — ', $title ?? '')[0]; @endphp
         <div id="mobile-topbar" style="position:sticky;top:0;z-index:40;background:#0f172a;padding:10px 16px;align-items:center;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,0.3);">
             <button onclick="sbMobileToggle()" style="color:#94a3b8;background:none;border:none;cursor:pointer;padding:4px;display:flex;line-height:0;">
                 <svg style="width:20px;height:20px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
                 </svg>
             </button>
-            <a href="{{ route('dashboard') }}" style="line-height:0;">
+            <a href="{{ route('dashboard') }}" style="line-height:0;flex-shrink:0;">
                 <img src="{{ asset('images/logo.png') }}" alt="Lockie Group" style="height:28px;width:auto;">
             </a>
+            @if($pageLabel && $pageLabel !== 'Dashboard' && $pageLabel !== 'Lockie Portal')
+            <span style="color:#cbd5e1;font-size:0.8125rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;">{{ $pageLabel }}</span>
+            @endif
         </div>
         @if(session('impersonating_id'))
         <div style="background:#7c3aed;color:#fff;text-align:center;padding:8px 1rem;font-size:0.8125rem;font-weight:600;position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:center;gap:1rem;">
