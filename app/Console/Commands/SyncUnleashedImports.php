@@ -72,7 +72,17 @@ class SyncUnleashedImports extends Command
         $page     = 1;
         $maxPages = 1;
         do {
-            $data     = $this->unleashed->get("{$endpoint}/{$page}", array_merge($params, ['pageSize' => $pageSize]));
+            $data = null;
+            for ($attempt = 1; $attempt <= 3; $attempt++) {
+                try {
+                    $data = $this->unleashed->get("{$endpoint}/{$page}", array_merge($params, ['pageSize' => $pageSize]));
+                    break;
+                } catch (\Throwable $e) {
+                    if ($attempt === 3) throw $e;
+                    $this->line("    page {$page} attempt {$attempt} failed, retrying in 5s…");
+                    sleep(5);
+                }
+            }
             $fetched  = $data['Items'] ?? [];
             $items    = array_merge($items, $fetched);
             // Unleashed can return NumberOfPages=0 for empty results; treat as 1
@@ -89,7 +99,7 @@ class SyncUnleashedImports extends Command
         // endpoint (same behaviour as SalesInvoices), so a year-by-year loop would fetch
         // the full history on every iteration and duplicate any orders that lack a Guid.
         $this->info('Fetching all sales orders…');
-        $allOrders = $this->fetchAllPages('SalesOrders', [], 1000);
+        $allOrders = $this->fetchAllPages('SalesOrders', [], 200);
         $this->line('  ' . count($allOrders) . ' orders fetched');
 
         $now       = now()->toDateTimeString();
