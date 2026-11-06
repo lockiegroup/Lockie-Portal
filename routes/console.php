@@ -3,8 +3,6 @@
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
-use Carbon\Carbon;
-
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
@@ -39,10 +37,3 @@ Schedule::command('clocking:auto-clockout')->dailyAt('00:00');
 // Order Board: lightweight open-orders sync every 5 minutes (fetches only Placed/Parked/Backordered)
 Schedule::command('order-board:sync-orders')->everyFiveMinutes();
 
-// Unleashed: full sales sync nightly to pick up completions / deletions and keep history current
-Schedule::call(function () {
-    Artisan::call('imports:sync-unleashed', [
-        '--sales-only' => true,
-        '--from'       => Carbon::now()->subDays(90)->toDateString(),
-    ]);
-})->dailyAt('03:00');
